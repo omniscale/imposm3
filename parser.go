@@ -7,6 +7,7 @@ import (
 	// "goposm/osmpbf/fileformat"
 	"bytes"
 	"compress/zlib"
+	"goposm/model"
 	"io"
 	"log"
 	"os"
@@ -20,13 +21,11 @@ type PBF struct {
 }
 
 func Open(filename string) (f *PBF, err error) {
-	f = new(PBF)
-	f.filename = filename
 	file, err := os.Open(filename)
-	f.file = file
 	if err != nil {
 		return nil, err
 	}
+	f = &PBF{filename: filename, file: file}
 	return f, nil
 }
 
@@ -101,6 +100,53 @@ func ReadPrimitiveBlock(file *os.File, offset int64, size int32) *osmpbf.Primiti
 	return block
 }
 
+// type Node struct {
+// 	Id   int64
+// 	Tags map[string]string
+// 	Lon  uint32
+// 	Lat  uint32
+// }
+
+func DenseNodeTags(stringtable []string, keyvals []int32) (tags map[string]string, nextPos int) {
+	tags = make(map[string]string)
+	nextPos = 0
+	for {
+		keyId := keyvals[nextPos]
+		nextPos += 1
+		if keyId == 0 {
+			return
+		}
+		key := stringtable[keyId]
+		valId := keyvals[nextPos]
+		nextPos += 1
+		val := stringtable[valId]
+
+		tags[key] = val
+	}
+	return
+}
+
+func ReadDenseNodes(dense *osmpbf.DenseNodes, block *osmpbf.PrimitiveBlock) (nodes []model.Node) {
+	var lastId int64
+	var lastLon, lastLat int64
+	nodes = make([]model.Node, len(dense.Id))
+	granularity := int64(block.GetGranularity())
+	latOffset := block.GetLatOffset()
+	lonOffset := block.GetLonOffset()
+	coordScale := 0.000000001
+
+	for i := range nodes {
+		lastId += dense.Id[i]
+		lastLon += dense.Lon[i]
+		lastLat += dense.Lat[i]
+		nodes[i].Id = lastId
+		nodes[i].FromWgsCoord(
+			(coordScale * float64(lonOffset+(granularity*lastLon))),
+			(coordScale * float64(latOffset+(granularity*lastLat))))
+	}
+	return nodes
+}
+
 func blockPositions(filename string) {
 	pbf, err := Open(filename)
 
@@ -121,6 +167,9 @@ func blockPositions(filename string) {
 		for _, group := range block.Primitivegroup {
 			dense := group.GetDense()
 			if dense != nil {
+				nodes := ReadDenseNodes(dense, block)
+				lon, lat := nodes[1].WgsCoord()
+				fmt.Printf("%12d %10.8f %10.8f\n", nodes[0].Id, lon, lat)
 				nodesCounter += len(dense.Id)
 			}
 			nodesCounter += len(group.Nodes)

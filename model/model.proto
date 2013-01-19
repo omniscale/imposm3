@@ -1,0 +1,31 @@
+package model;
+
+message Tag {
+    required string key = 1;
+    required string val = 2;
+}
+
+message Way {
+    required int64 id = 1;
+
+    repeated Tag tags = 2;
+    repeated int64 nodes = 3 [packed = true];
+}
+
+message Relation {
+    required int64 id = 1;
+
+    repeated Tag tags = 2;
+    repeated RelationMember members = 3;
+}
+
+message RelationMember {
+    required int64 member_ids = 1;
+    enum MemberType {
+        NODE = 0;
+        WAY = 1;
+        RELATION = 2;
+    }
+    required MemberType member_types = 2;
+    required string member_roles = 3;
+}
