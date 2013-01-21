@@ -20,6 +20,12 @@ type PBF struct {
 	offset   int64
 }
 
+type BlockPosition struct {
+	filename string
+	offset   int64
+	size     int32
+}
+
 func Open(filename string) (f *PBF, err error) {
 	file, err := os.Open(filename)
 	if err != nil {
@@ -40,6 +46,21 @@ func (pbf *PBF) NextDataPosition() (offset int64, size int32) {
 	if header.GetType() == "OSMHeader" {
 		return pbf.NextDataPosition()
 	}
+	return
+}
+
+func (pbf *PBF) BlockPositions() (positions chan BlockPosition) {
+	positions = make(chan BlockPosition)
+	go func() {
+		for {
+			offset, size := pbf.NextDataPosition()
+			if size == 0 {
+				close(positions)
+				return
+			}
+			positions <- BlockPosition{pbf.filename, offset, size}
+		}
+	}()
 	return
 }
 
@@ -149,20 +170,19 @@ func ReadDenseNodes(dense *osmpbf.DenseNodes, block *osmpbf.PrimitiveBlock) (nod
 
 func blockPositions(filename string) {
 	pbf, err := Open(filename)
-
-	file, err := os.Open(filename)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	var nodesCounter, relationsCounter, waysCounter int
 
-	for {
-		offset, size := pbf.NextDataPosition()
-		if size == 0 {
-			break
+	for pos := range pbf.BlockPositions() {
+		file, err := os.Open(pos.filename)
+		if err != nil {
+			log.Fatal(err)
 		}
-		block := ReadPrimitiveBlock(file, offset, size)
+
+		block := ReadPrimitiveBlock(file, pos.offset, pos.size)
 
 		for _, group := range block.Primitivegroup {
 			dense := group.GetDense()
