@@ -1,5 +1,13 @@
 package model;
 
+message Node {
+    required int64 id = 1;
+    required uint32 long = 2;
+    required uint32 lat= 3;
+    repeated Tag tags = 4;
+}
+
+
 message Tag {
     required string key = 1;
     required string val = 2;

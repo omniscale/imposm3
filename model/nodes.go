@@ -3,12 +3,12 @@ package model
 import "code.google.com/p/goprotobuf/proto"
 import "log"
 
-type Node struct {
-	Id   int64
-	Tags map[string]string
-	Lon  uint32
-	Lat  uint32
-}
+// type Node struct {
+// 	Id   int64
+// 	Tags map[string]string
+// 	Lon  uint32
+// 	Lat  uint32
+// }
 
 const COORD_FACTOR float64 = 11930464.7083 // ((2<<31)-1)/360.0
 
@@ -21,14 +21,16 @@ func intToCoord(coord uint32) float64 {
 }
 
 func (this *Node) WgsCoord() (lon float64, lat float64) {
-	lon = intToCoord(this.Lon)
-	lat = intToCoord(this.Lat)
+	lon = intToCoord(this.GetLong())
+	lat = intToCoord(this.GetLat())
 	return
 }
 
 func (this *Node) FromWgsCoord(lon float64, lat float64) {
-	this.Lon = coordToInt(lon)
-	this.Lat = coordToInt(lat)
+	longInt := coordToInt(lon)
+	latInt := coordToInt(lat)
+	this.Long = &longInt
+	this.Lat = &latInt
 }
 
 func (this *Way) Marshal() []byte {

@@ -2,12 +2,14 @@ package main
 
 import (
 	"code.google.com/p/goprotobuf/proto"
-	"encoding/binary"
+	structs "encoding/binary"
 	"fmt"
 	// "goposm/osmpbf/fileformat"
 	"bytes"
 	"compress/zlib"
-	"goposm/model"
+	"goposm/binary"
+	"goposm/element"
+	// "goposm/model"
 	"io"
 	"log"
 	"os"
@@ -66,7 +68,7 @@ func (pbf *PBF) BlockPositions() (positions chan BlockPosition) {
 
 func (pbf *PBF) nextBlobHeaderSize() (size int32) {
 	pbf.offset += 4
-	binary.Read(pbf.file, binary.BigEndian, &size)
+	structs.Read(pbf.file, structs.BigEndian, &size)
 	return
 }
 
@@ -121,13 +123,6 @@ func ReadPrimitiveBlock(file *os.File, offset int64, size int32) *osmpbf.Primiti
 	return block
 }
 
-// type Node struct {
-// 	Id   int64
-// 	Tags map[string]string
-// 	Lon  uint32
-// 	Lat  uint32
-// }
-
 func DenseNodeTags(stringtable []string, keyvals []int32) (tags map[string]string, nextPos int) {
 	tags = make(map[string]string)
 	nextPos = 0
@@ -147,10 +142,20 @@ func DenseNodeTags(stringtable []string, keyvals []int32) (tags map[string]strin
 	return
 }
 
-func ReadDenseNodes(dense *osmpbf.DenseNodes, block *osmpbf.PrimitiveBlock) (nodes []model.Node) {
+const COORD_FACTOR float64 = 11930464.7083 // ((2<<31)-1)/360.0
+
+func coordToInt(coord float64) uint32 {
+	return uint32((coord + 180.0) * COORD_FACTOR)
+}
+
+func intToCoord(coord uint32) float64 {
+	return float64((float64(coord) / COORD_FACTOR) - 180.0)
+}
+
+func ReadDenseNodes(dense *osmpbf.DenseNodes, block *osmpbf.PrimitiveBlock) (nodes []element.Node) {
 	var lastId int64
 	var lastLon, lastLat int64
-	nodes = make([]model.Node, len(dense.Id))
+	nodes = make([]element.Node, len(dense.Id))
 	granularity := int64(block.GetGranularity())
 	latOffset := block.GetLatOffset()
 	lonOffset := block.GetLonOffset()
@@ -160,10 +165,9 @@ func ReadDenseNodes(dense *osmpbf.DenseNodes, block *osmpbf.PrimitiveBlock) (nod
 		lastId += dense.Id[i]
 		lastLon += dense.Lon[i]
 		lastLat += dense.Lat[i]
-		nodes[i].Id = lastId
-		nodes[i].FromWgsCoord(
-			(coordScale * float64(lonOffset+(granularity*lastLon))),
-			(coordScale * float64(latOffset+(granularity*lastLat))))
+		nodes[i].Id = element.OSMID(lastId)
+		nodes[i].Long = (coordScale * float64(lonOffset+(granularity*lastLon)))
+		nodes[i].Lat = (coordScale * float64(latOffset+(granularity*lastLat)))
 	}
 	return nodes
 }
@@ -188,7 +192,10 @@ func blockPositions(filename string) {
 			dense := group.GetDense()
 			if dense != nil {
 				nodes := ReadDenseNodes(dense, block)
-				lon, lat := nodes[1].WgsCoord()
+				lon, lat := nodes[0].Long, nodes[0].Lat
+				data, _ := binary.Marshal(nodes[0])
+				fmt.Printf("len: %d", len(data))
+				fmt.Printf("%v", data)
 				fmt.Printf("%12d %10.8f %10.8f\n", nodes[0].Id, lon, lat)
 				nodesCounter += len(dense.Id)
 			}
