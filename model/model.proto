@@ -4,26 +4,20 @@ message Node {
     required int64 id = 1;
     required uint32 long = 2;
     required uint32 lat= 3;
-    repeated Tag tags = 4;
-}
-
-
-message Tag {
-    required string key = 1;
-    required string val = 2;
+    repeated string tags = 4;
 }
 
 message Way {
     required int64 id = 1;
 
-    repeated Tag tags = 2;
+    repeated string tags = 2;
     repeated int64 nodes = 3 [packed = true];
 }
 
 message Relation {
     required int64 id = 1;
 
-    repeated Tag tags = 2;
+    repeated string tags = 2;
     repeated RelationMember members = 3;
 }
 

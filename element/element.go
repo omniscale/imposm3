@@ -1,39 +1,41 @@
 package element
 
 type Tags map[string]string
-type OSMID int64
 
 type OSMElem struct {
-	Id   OSMID
+	Id   int64
 	Tags Tags
 }
 
 type Node struct {
-	OSMElem
+	Id   int64
+	Tags Tags
 	Lat  float64
 	Long float64
 }
 
 type Way struct {
-	OSMElem
-	Nodes []OSMID
+	Id    int64
+	Tags  Tags
+	Nodes []int64
 }
 
 type MemberType int
 
 const (
-	NODE     MemberType = iota
-	WAY      MemberType = iota
-	RELATION MemberType = iota
+	NODE MemberType = iota
+	WAY
+	RELATION
 )
 
 type Member struct {
-	Id   OSMID
+	Id   int64
 	Type MemberType
 	Role string
 }
 
 type Relation struct {
-	OSMElem
+	Id      int64
+	Tags    Tags
 	Members []Member
 }
