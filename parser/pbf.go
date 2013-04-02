@@ -2,7 +2,6 @@ package parser
 
 import (
 	"fmt"
-	"goposm/binary"
 	"goposm/element"
 	"log"
 	"os"
@@ -30,6 +29,10 @@ func Open(filename string) (f *PBF, err error) {
 	return f, nil
 }
 
+func (pbf *PBF) Close() error {
+	return pbf.file.Close()
+}
+
 func (pbf *PBF) NextDataPosition() (offset int64, size int32) {
 	header := pbf.nextBlobHeader()
 	size = header.GetDatasize()
@@ -40,25 +43,6 @@ func (pbf *PBF) NextDataPosition() (offset int64, size int32) {
 
 	if header.GetType() == "OSMHeader" {
 		return pbf.NextDataPosition()
-	}
-	return
-}
-
-func DenseNodeTags(stringtable []string, keyvals []int32) (tags map[string]string, nextPos int) {
-	tags = make(map[string]string)
-	nextPos = 0
-	for {
-		keyId := keyvals[nextPos]
-		nextPos += 1
-		if keyId == 0 {
-			return
-		}
-		key := stringtable[keyId]
-		valId := keyvals[nextPos]
-		nextPos += 1
-		val := stringtable[valId]
-
-		tags[key] = val
 	}
 	return
 }
@@ -76,7 +60,7 @@ func intToCoord(coord uint32) float64 {
 func ReadDenseNodes(
 	dense *osmpbf.DenseNodes,
 	block *osmpbf.PrimitiveBlock,
-	stringtable *StringTable) (nodes []element.Node) {
+	stringtable StringTable) (nodes []element.Node) {
 
 	var lastId int64
 	var lastLon, lastLat int64
@@ -91,7 +75,7 @@ func ReadDenseNodes(
 		lastId += dense.Id[i]
 		lastLon += dense.Lon[i]
 		lastLat += dense.Lat[i]
-		nodes[i].Id = element.OSMID(lastId)
+		nodes[i].Id = lastId
 		nodes[i].Long = (coordScale * float64(lonOffset+(granularity*lastLon)))
 		nodes[i].Lat = (coordScale * float64(latOffset+(granularity*lastLat)))
 		if dense.KeysVals[lastKeyValPos] != 0 {
@@ -103,7 +87,7 @@ func ReadDenseNodes(
 	return nodes
 }
 
-func ParseDenseNodeTags(stringtable *StringTable, keysVals *[]int32, pos *int) map[string]string {
+func ParseDenseNodeTags(stringtable StringTable, keysVals *[]int32, pos *int) map[string]string {
 	result := make(map[string]string)
 	for {
 		if *pos >= len(*keysVals) {
@@ -116,22 +100,120 @@ func ParseDenseNodeTags(stringtable *StringTable, keysVals *[]int32, pos *int) m
 		}
 		val := (*keysVals)[*pos]
 		*pos += 1
-		result[(*stringtable)[key]] = (*stringtable)[val]
+		result[stringtable[key]] = stringtable[val]
+	}
+	return result
+}
+func ParseTags(stringtable StringTable, keys []uint32, vals []uint32) map[string]string {
+	tags := make(map[string]string)
+	for i := 0; i < len(keys); i++ {
+		key := stringtable[keys[i]]
+		val := stringtable[vals[i]]
+		tags[key] = val
+	}
+	return tags
+}
+
+func ReadNodes(
+	nodes []*osmpbf.Node,
+	block *osmpbf.PrimitiveBlock,
+	stringtable StringTable) []element.Node {
+
+	result := make([]element.Node, len(nodes))
+	granularity := int64(block.GetGranularity())
+	latOffset := block.GetLatOffset()
+	lonOffset := block.GetLonOffset()
+	coordScale := 0.000000001
+
+	for i := range nodes {
+		id := *nodes[i].Id
+		lon := *nodes[i].Lon
+		lat := *nodes[i].Lat
+		result[i].Id = id
+		result[i].Long = (coordScale * float64(lonOffset+(granularity*lon)))
+		result[i].Lat = (coordScale * float64(latOffset+(granularity*lat)))
+		result[i].Tags = ParseTags(stringtable, nodes[i].Keys, nodes[i].Vals)
+	}
+	return result
+}
+
+func ParseDeltaRefs(refs []int64) []int64 {
+	result := make([]int64, len(refs))
+	var lastRef int64
+
+	for i, refDelta := range refs {
+		lastRef += refDelta
+		result[i] = lastRef
+	}
+	return result
+}
+
+func ReadWays(
+	ways []*osmpbf.Way,
+	block *osmpbf.PrimitiveBlock,
+	stringtable StringTable) []element.Way {
+
+	result := make([]element.Way, len(ways))
+
+	for i := range ways {
+		id := *ways[i].Id
+		result[i].Id = id
+		result[i].Tags = ParseTags(stringtable, ways[i].Keys, ways[i].Vals)
+		result[i].Nodes = ParseDeltaRefs(ways[i].Refs)
+	}
+	return result
+}
+
+func ParseRelationMembers(rel *osmpbf.Relation, stringtable StringTable) []element.Member {
+	result := make([]element.Member, len(rel.Memids))
+
+	var lastId int64
+	for i := range rel.Memids {
+		lastId += rel.Memids[i]
+		result[i].Id = lastId
+		result[i].Role = stringtable[rel.RolesSid[i]]
+		result[i].Type = element.MemberType(rel.Types[i])
+	}
+	return result
+}
+
+func ReadRelations(
+	relations []*osmpbf.Relation,
+	block *osmpbf.PrimitiveBlock,
+	stringtable StringTable) []element.Relation {
+
+	result := make([]element.Relation, len(relations))
+
+	for i := range relations {
+		id := *relations[i].Id
+		result[i].Id = id
+		result[i].Tags = ParseTags(stringtable, relations[i].Keys, relations[i].Vals)
+		result[i].Members = ParseRelationMembers(relations[i], stringtable)
 	}
 	return result
 }
 
 type StringTable []string
 
-func NewStringTable(source *osmpbf.StringTable) *StringTable {
+func NewStringTable(source *osmpbf.StringTable) StringTable {
 	result := make(StringTable, len(source.S))
 	for i, bytes := range source.S {
 		result[i] = string(bytes)
 	}
-	return &result
+	return result
 }
 
-func BlockPositions(filename string) {
+func PBFBlockPositions(filename string) chan BlockPosition {
+	pbf, err := Open(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer pbf.Close()
+
+	return pbf.BlockPositions()
+}
+
+func PBFStats(filename string) {
 	pbf, err := Open(filename)
 	if err != nil {
 		log.Fatal(err)
@@ -146,17 +228,16 @@ func BlockPositions(filename string) {
 		for _, group := range block.Primitivegroup {
 			dense := group.GetDense()
 			if dense != nil {
-				nodes := ReadDenseNodes(dense, block, stringtable)
-				lon, lat := nodes[0].Long, nodes[0].Lat
-				data, _ := binary.Marshal(nodes[0])
-				fmt.Printf("len: %d", len(data))
-				fmt.Printf("%v", data)
-				fmt.Printf("%12d %10.8f %10.8f\n", nodes[0].Id, lon, lat)
+				_ = ReadDenseNodes(dense, block, stringtable)
 				nodesCounter += len(dense.Id)
 			}
+			_ = ReadNodes(group.Nodes, block, stringtable)
 			nodesCounter += len(group.Nodes)
 			waysCounter += len(group.Ways)
+			_ = ReadWays(group.Ways, block, stringtable)
 			relationsCounter += len(group.Relations)
+			_ = ReadRelations(group.Relations, block, stringtable)
+
 		}
 	}
 	fmt.Printf("nodes: %v\tways: %v\trelations:%v\n", nodesCounter, waysCounter, relationsCounter)

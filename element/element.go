@@ -8,24 +8,22 @@ type OSMElem struct {
 }
 
 type Node struct {
-	Id   int64
-	Tags Tags
+	OSMElem
 	Lat  float64
 	Long float64
 }
 
 type Way struct {
-	Id    int64
-	Tags  Tags
+	OSMElem
 	Nodes []int64
 }
 
 type MemberType int
 
 const (
-	NODE MemberType = iota
-	WAY
-	RELATION
+	NODE     MemberType = 0
+	WAY                 = 1
+	RELATION            = 2
 )
 
 type Member struct {
@@ -35,7 +33,22 @@ type Member struct {
 }
 
 type Relation struct {
-	Id      int64
-	Tags    Tags
+	OSMElem
 	Members []Member
+}
+
+func (elem *OSMElem) TagsFromArray(arr []string) {
+	result := make(Tags)
+	for i := 0; i < len(arr); i += 2 {
+		result[arr[i]] = arr[i+1]
+	}
+	elem.Tags = result
+}
+
+func (elem *OSMElem) TagsAsArray() []string {
+	result := make([]string, 0, 2*len(elem.Tags))
+	for key, val := range elem.Tags {
+		result = append(result, key, val)
+	}
+	return result
 }

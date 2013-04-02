@@ -7,6 +7,6 @@ import (
 )
 
 func main() {
-	parser.BlockPositions(os.Args[1])
+	parser.PBFStats(os.Args[1])
 	fmt.Println("done")
 }

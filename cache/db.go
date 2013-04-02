@@ -16,6 +16,7 @@ type Cache struct {
 func NewCache(path string) *Cache {
 	result := &Cache{}
 	opts := levigo.NewOptions()
+	opts.SetCache(levigo.NewLRUCache(1024 * 1024 * 50))
 	opts.SetCreateIfMissing(true)
 	db, err := levigo.Open(path, opts)
 	if err != nil {
@@ -30,6 +31,30 @@ func NewCache(path string) *Cache {
 func (p *Cache) PutCoord(node *element.Node) {
 	keyBuf := make([]byte, 8)
 	bin.PutVarint(keyBuf, int64(node.Id))
+	data, err := binary.MarshalCoord(node)
+	if err != nil {
+		panic(err)
+	}
+	p.db.Put(p.wo, keyBuf, data)
+}
+
+func (p *Cache) GetCoord(id int64) *element.Node {
+	keyBuf := make([]byte, 8)
+	bin.PutVarint(keyBuf, int64(id))
+	data, err := p.db.Get(p.ro, keyBuf)
+	if err != nil {
+		panic(err)
+	}
+	node, err := binary.UnmarshalCoord(id, data)
+	if err != nil {
+		panic(err)
+	}
+	return node
+}
+
+func (p *Cache) PutNode(node *element.Node) {
+	keyBuf := make([]byte, 8)
+	bin.PutVarint(keyBuf, int64(node.Id))
 	data, err := binary.MarshalNode(node)
 	if err != nil {
 		panic(err)
@@ -37,7 +62,7 @@ func (p *Cache) PutCoord(node *element.Node) {
 	p.db.Put(p.wo, keyBuf, data)
 }
 
-func (p *Cache) GetCoord(id element.OSMID) *element.Node {
+func (p *Cache) GetNode(id int64) *element.Node {
 	keyBuf := make([]byte, 8)
 	bin.PutVarint(keyBuf, int64(id))
 	data, err := p.db.Get(p.ro, keyBuf)
@@ -49,6 +74,30 @@ func (p *Cache) GetCoord(id element.OSMID) *element.Node {
 		panic(err)
 	}
 	return node
+}
+
+func (p *Cache) PutWay(way *element.Way) {
+	keyBuf := make([]byte, 8)
+	bin.PutVarint(keyBuf, int64(way.Id))
+	data, err := binary.MarshalWay(way)
+	if err != nil {
+		panic(err)
+	}
+	p.db.Put(p.wo, keyBuf, data)
+}
+
+func (p *Cache) GetWay(id int64) *element.Way {
+	keyBuf := make([]byte, 8)
+	bin.PutVarint(keyBuf, int64(id))
+	data, err := p.db.Get(p.ro, keyBuf)
+	if err != nil {
+		panic(err)
+	}
+	way, err := binary.UnmarshalWay(data)
+	if err != nil {
+		panic(err)
+	}
+	return way
 }
 
 func (p *Cache) Close() {

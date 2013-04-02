@@ -1,29 +1,21 @@
 package binary
 
 import (
+	"bytes"
 	"code.google.com/p/goprotobuf/proto"
+	bin "encoding/binary"
 	"goposm/element"
 	"goposm/model"
 )
 
-// struct MarshalError {
-//     msg string
-// }
+const COORD_FACTOR float64 = 11930464.7083 // ((2<<31)-1)/360.0
 
-func tagsFromArray(arr []string) *element.Tags {
-	result := make(element.Tags)
-	for i := 0; i < len(arr); i += 2 {
-		result[arr[i]] = arr[i+1]
-	}
-	return &result
+func coordToInt(coord float64) uint32 {
+	return uint32((coord + 180.0) * COORD_FACTOR)
 }
 
-func tagsAsArray(tags *element.Tags) []string {
-	result := make([]string, 0, 2*len(*tags))
-	for key, val := range *tags {
-		result = append(result, key, val)
-	}
-	return result
+func intToCoord(coord uint32) float64 {
+	return float64((float64(coord) / COORD_FACTOR) - 180.0)
 }
 
 func Marshal(elem interface{}) ([]byte, error) {
@@ -37,12 +29,46 @@ func Marshal(elem interface{}) ([]byte, error) {
 	return []byte{}, nil
 }
 
+func MarshalCoord(node *element.Node) ([]byte, error) {
+	data := make([]byte, 8)
+
+	buf := bytes.NewBuffer(data)
+	err := bin.Write(buf, bin.LittleEndian, coordToInt(node.Long))
+	if err != nil {
+		return nil, err
+	}
+	err = bin.Write(buf, bin.LittleEndian, coordToInt(node.Lat))
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func UnmarshalCoord(id int64, data []byte) (node *element.Node, err error) {
+	var long, lat uint32
+	buf := bytes.NewBuffer(data)
+	err = bin.Read(buf, bin.LittleEndian, &long)
+	if err != nil {
+		return nil, err
+	}
+	err = bin.Read(buf, bin.LittleEndian, &lat)
+	if err != nil {
+		return nil, err
+	}
+
+	node = &element.Node{}
+	node.Id = id
+	node.Long = intToCoord(long)
+	node.Lat = intToCoord(lat)
+	return node, nil
+}
+
 func MarshalNode(node *element.Node) ([]byte, error) {
 	pbfNode := &model.Node{}
 	nodeId := node.Id
 	pbfNode.Id = &nodeId
 	pbfNode.FromWgsCoord(node.Long, node.Lat)
-	pbfNode.Tags = tagsAsArray(&node.Tags)
+	pbfNode.Tags = node.TagsAsArray()
 	return proto.Marshal(pbfNode)
 }
 
@@ -56,7 +82,7 @@ func UnmarshalNode(data []byte) (node *element.Node, err error) {
 	node = &element.Node{}
 	node.Id = *pbfNode.Id
 	node.Long, node.Lat = pbfNode.WgsCoord()
-	node.Tags = *tagsFromArray(pbfNode.Tags)
+	node.TagsFromArray(pbfNode.Tags)
 	return node, nil
 }
 
@@ -64,7 +90,7 @@ func MarshalWay(way *element.Way) ([]byte, error) {
 	pbfWay := &model.Way{}
 	pbfWay.Id = &way.Id
 	pbfWay.Nodes = way.Nodes
-	pbfWay.Tags = tagsAsArray(&way.Tags)
+	pbfWay.Tags = way.TagsAsArray()
 	return proto.Marshal(pbfWay)
 }
 
@@ -78,6 +104,6 @@ func UnmarshalWay(data []byte) (way *element.Way, err error) {
 	way = &element.Way{}
 	way.Id = *pbfWay.Id
 	way.Nodes = pbfWay.Nodes
-	way.Tags = *tagsFromArray(pbfWay.Tags)
+	way.TagsFromArray(pbfWay.Tags)
 	return way, nil
 }
