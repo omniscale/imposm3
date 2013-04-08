@@ -52,6 +52,7 @@ func (pbf *PBF) BlockPositions() (positions chan BlockPosition) {
 			offset, size := pbf.NextDataPosition()
 			if size == 0 {
 				close(positions)
+				pbf.Close()
 				return
 			}
 			positions <- BlockPosition{pbf.filename, offset, size}

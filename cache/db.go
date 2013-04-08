@@ -45,6 +45,10 @@ func (p *Cache) GetCoord(id int64) *element.Node {
 	if err != nil {
 		panic(err)
 	}
+	if data == nil {
+		return nil
+	}
+
 	node, err := binary.UnmarshalCoord(id, data)
 	if err != nil {
 		panic(err)
@@ -68,6 +72,9 @@ func (p *Cache) GetNode(id int64) *element.Node {
 	data, err := p.db.Get(p.ro, keyBuf)
 	if err != nil {
 		panic(err)
+	}
+	if data == nil {
+		return nil
 	}
 	node, err := binary.UnmarshalNode(data)
 	if err != nil {
@@ -93,11 +100,41 @@ func (p *Cache) GetWay(id int64) *element.Way {
 	if err != nil {
 		panic(err)
 	}
+	if data == nil {
+		return nil
+	}
 	way, err := binary.UnmarshalWay(data)
 	if err != nil {
 		panic(err)
 	}
 	return way
+}
+
+func (p *Cache) PutRelation(relation *element.Relation) {
+	keyBuf := make([]byte, 8)
+	bin.PutVarint(keyBuf, int64(relation.Id))
+	data, err := binary.MarshalRelation(relation)
+	if err != nil {
+		panic(err)
+	}
+	p.db.Put(p.wo, keyBuf, data)
+}
+
+func (p *Cache) GetRelation(id int64) *element.Relation {
+	keyBuf := make([]byte, 8)
+	bin.PutVarint(keyBuf, int64(id))
+	data, err := p.db.Get(p.ro, keyBuf)
+	if err != nil {
+		panic(err)
+	}
+	if data == nil {
+		return nil
+	}
+	relation, err := binary.UnmarshalRelation(data)
+	if err != nil {
+		panic(err)
+	}
+	return relation
 }
 
 func (p *Cache) Close() {

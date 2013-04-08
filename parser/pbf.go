@@ -208,9 +208,36 @@ func PBFBlockPositions(filename string) chan BlockPosition {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer pbf.Close()
 
 	return pbf.BlockPositions()
+}
+
+func ParseBlock(pos BlockPosition, nodes chan element.Node, ways chan element.Way, relations chan element.Relation) {
+	block := ReadPrimitiveBlock(pos)
+	stringtable := NewStringTable(block.GetStringtable())
+
+	for _, group := range block.Primitivegroup {
+		dense := group.GetDense()
+		if dense != nil {
+			parsedNodes := ReadDenseNodes(dense, block, stringtable)
+			for _, node := range parsedNodes {
+				nodes <- node
+			}
+		}
+		parsedNodes := ReadNodes(group.Nodes, block, stringtable)
+		for _, node := range parsedNodes {
+			nodes <- node
+		}
+		parsedWays := ReadWays(group.Ways, block, stringtable)
+		for _, way := range parsedWays {
+			ways <- way
+		}
+		parsedRelations := ReadRelations(group.Relations, block, stringtable)
+		for _, rel := range parsedRelations {
+			relations <- rel
+		}
+	}
+
 }
 
 func PBFStats(filename string) {

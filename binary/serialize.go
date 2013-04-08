@@ -107,3 +107,25 @@ func UnmarshalWay(data []byte) (way *element.Way, err error) {
 	way.TagsFromArray(pbfWay.Tags)
 	return way, nil
 }
+
+func MarshalRelation(relation *element.Relation) ([]byte, error) {
+	pbfRelation := &model.Relation{}
+	pbfRelation.Id = &relation.Id
+	//pbfRelation.Members = relation.Members
+	pbfRelation.Tags = relation.TagsAsArray()
+	return proto.Marshal(pbfRelation)
+}
+
+func UnmarshalRelation(data []byte) (relation *element.Relation, err error) {
+	pbfRelation := &model.Relation{}
+	err = proto.Unmarshal(data, pbfRelation)
+	if err != nil {
+		return nil, err
+	}
+
+	relation = &element.Relation{}
+	relation.Id = *pbfRelation.Id
+	//relation.Nodes = pbfRelation.Node
+	relation.TagsFromArray(pbfRelation.Tags)
+	return relation, nil
+}
