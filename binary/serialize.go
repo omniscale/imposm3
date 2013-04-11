@@ -10,11 +10,11 @@ import (
 
 const COORD_FACTOR float64 = 11930464.7083 // ((2<<31)-1)/360.0
 
-func coordToInt(coord float64) uint32 {
+func CoordToInt(coord float64) uint32 {
 	return uint32((coord + 180.0) * COORD_FACTOR)
 }
 
-func intToCoord(coord uint32) float64 {
+func IntToCoord(coord uint32) float64 {
 	return float64((float64(coord) / COORD_FACTOR) - 180.0)
 }
 
@@ -33,11 +33,11 @@ func MarshalCoord(node *element.Node) ([]byte, error) {
 	data := make([]byte, 8)
 
 	buf := bytes.NewBuffer(data)
-	err := bin.Write(buf, bin.LittleEndian, coordToInt(node.Long))
+	err := bin.Write(buf, bin.LittleEndian, CoordToInt(node.Long))
 	if err != nil {
 		return nil, err
 	}
-	err = bin.Write(buf, bin.LittleEndian, coordToInt(node.Lat))
+	err = bin.Write(buf, bin.LittleEndian, CoordToInt(node.Lat))
 	if err != nil {
 		return nil, err
 	}
@@ -58,8 +58,8 @@ func UnmarshalCoord(id int64, data []byte) (node *element.Node, err error) {
 
 	node = &element.Node{}
 	node.Id = id
-	node.Long = intToCoord(long)
-	node.Lat = intToCoord(lat)
+	node.Long = IntToCoord(long)
+	node.Lat = IntToCoord(lat)
 	return node, nil
 }
 

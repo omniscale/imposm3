@@ -11,8 +11,8 @@ import (
 )
 
 func parse(filename string) {
-	nodes := make(chan element.Node)
-	ways := make(chan element.Way)
+	nodes := make(chan []element.Node)
+	ways := make(chan []element.Way)
 	relations := make(chan element.Relation)
 
 	positions := parser.PBFBlockPositions(filename)
@@ -29,41 +29,41 @@ func parse(filename string) {
 	}
 
 	waitCounter := sync.WaitGroup{}
+	wayCache := cache.NewCache("/tmp/goposm/way.cache")
+	defer wayCache.Close()
+	for i := 0; i < 2; i++ {
+		waitCounter.Add(1)
+		go func() {
+			wayCounter := 0
+			for ws := range ways {
+				wayCache.PutWays(ws)
+				wayCounter += 1
+			}
+			fmt.Println("ways", wayCounter)
+			waitCounter.Done()
+		}()
+	}
+	relCache := cache.NewCache("/tmp/goposm/relation.cache")
+	defer relCache.Close()
 	waitCounter.Add(1)
 	go func() {
-		cache := cache.NewCache("/tmp/goposm/way.cache")
-		defer cache.Close()
-
-		wayCounter := 0
-		for way := range ways {
-			cache.PutWay(&way)
-			wayCounter += 1
-		}
-		fmt.Println("ways", wayCounter)
-		waitCounter.Done()
-	}()
-	waitCounter.Add(1)
-	go func() {
-		cache := cache.NewCache("/tmp/goposm/relation.cache")
-		defer cache.Close()
-
 		relationCounter := 0
 		for rel := range relations {
-			cache.PutRelation(&rel)
+			relCache.PutRelation(&rel)
 			relationCounter += 1
 		}
 		fmt.Println("relations", relationCounter)
 		waitCounter.Done()
 	}()
 
-	cache := cache.NewCache("/tmp/goposm/node.cache")
-	defer cache.Close()
-	for i := 0; i < 4; i++ {
+	nodeCache := cache.NewCache("/tmp/goposm/node.cache")
+	defer nodeCache.Close()
+	for i := 0; i < 2; i++ {
 		waitCounter.Add(1)
 		go func() {
 			nodeCounter := 0
-			for node := range nodes {
-				cache.PutNode(&node)
+			for nds := range nodes {
+				nodeCache.PutCoordsPacked(nds)
 				nodeCounter += 1
 			}
 			fmt.Println("nodes", nodeCounter)

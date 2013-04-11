@@ -1,0 +1,8 @@
+package imposm.cache.internal;
+
+message DeltaCoords {
+   repeated sint64 ids = 1 [packed = true];
+   repeated sint64 lats = 2 [packed = true];
+   repeated sint64 lons = 3 [packed = true];
+}
+

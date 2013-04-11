@@ -212,7 +212,7 @@ func PBFBlockPositions(filename string) chan BlockPosition {
 	return pbf.BlockPositions()
 }
 
-func ParseBlock(pos BlockPosition, nodes chan element.Node, ways chan element.Way, relations chan element.Relation) {
+func ParseBlock(pos BlockPosition, nodes chan []element.Node, ways chan []element.Way, relations chan element.Relation) {
 	block := ReadPrimitiveBlock(pos)
 	stringtable := NewStringTable(block.GetStringtable())
 
@@ -220,18 +220,18 @@ func ParseBlock(pos BlockPosition, nodes chan element.Node, ways chan element.Wa
 		dense := group.GetDense()
 		if dense != nil {
 			parsedNodes := ReadDenseNodes(dense, block, stringtable)
-			for _, node := range parsedNodes {
-				nodes <- node
-			}
+			nodes <- parsedNodes
 		}
 		parsedNodes := ReadNodes(group.Nodes, block, stringtable)
-		for _, node := range parsedNodes {
-			nodes <- node
-		}
+		nodes <- parsedNodes
+		//for _, node := range parsedNodes {
+		//nodes <- node
+		//}
 		parsedWays := ReadWays(group.Ways, block, stringtable)
-		for _, way := range parsedWays {
-			ways <- way
-		}
+		ways <- parsedWays
+		//for _, way := range parsedWays {
+		//ways <- way
+		//}
 		parsedRelations := ReadRelations(group.Relations, block, stringtable)
 		for _, rel := range parsedRelations {
 			relations <- rel

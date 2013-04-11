@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"code.google.com/p/goprotobuf/proto"
 	bin "encoding/binary"
 	"github.com/jmhodges/levigo"
 	"goposm/binary"
@@ -32,6 +33,37 @@ func (p *Cache) PutCoord(node *element.Node) {
 	keyBuf := make([]byte, 8)
 	bin.PutVarint(keyBuf, int64(node.Id))
 	data, err := binary.MarshalCoord(node)
+	if err != nil {
+		panic(err)
+	}
+	p.db.Put(p.wo, keyBuf, data)
+}
+
+func (p *Cache) PutCoords(nodes []element.Node) {
+	batch := levigo.NewWriteBatch()
+	defer batch.Close()
+
+	keyBuf := make([]byte, 8)
+	for _, node := range nodes {
+		bin.PutVarint(keyBuf, int64(node.Id))
+		data, err := binary.MarshalCoord(&node)
+		if err != nil {
+			panic(err)
+		}
+		batch.Put(keyBuf, data)
+	}
+	p.db.Write(p.wo, batch)
+}
+
+func (p *Cache) PutCoordsPacked(nodes []element.Node) {
+	if len(nodes) == 0 {
+		return
+	}
+	keyBuf := make([]byte, 8)
+	bin.PutVarint(keyBuf, int64(nodes[0].Id))
+
+	deltaCoords := packNodes(nodes)
+	data, err := proto.Marshal(deltaCoords)
 	if err != nil {
 		panic(err)
 	}
@@ -91,6 +123,22 @@ func (p *Cache) PutWay(way *element.Way) {
 		panic(err)
 	}
 	p.db.Put(p.wo, keyBuf, data)
+}
+
+func (p *Cache) PutWays(ways []element.Way) {
+	batch := levigo.NewWriteBatch()
+	defer batch.Close()
+
+	keyBuf := make([]byte, 8)
+	for _, way := range ways {
+		bin.PutVarint(keyBuf, int64(way.Id))
+		data, err := binary.MarshalWay(&way)
+		if err != nil {
+			panic(err)
+		}
+		batch.Put(keyBuf, data)
+	}
+	p.db.Write(p.wo, batch)
 }
 
 func (p *Cache) GetWay(id int64) *element.Way {
