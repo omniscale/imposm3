@@ -56,20 +56,43 @@ func parse(filename string) {
 		waitCounter.Done()
 	}()
 
-	nodeCache := cache.NewCache("/tmp/goposm/node.cache")
+	nodeCacheInternal := cache.NewCache("/tmp/goposm/node.cache")
+	nodeCache := cache.NewCoordsCache(nodeCacheInternal)
 	defer nodeCache.Close()
 	for i := 0; i < 2; i++ {
 		waitCounter.Add(1)
 		go func() {
 			nodeCounter := 0
 			for nds := range nodes {
-				nodeCache.PutCoordsPacked(nds)
+				if len(nds) == 0 {
+					continue
+				}
+				nodeCache.PutCoords(nds)
 				nodeCounter += 1
 			}
 			fmt.Println("nodes", nodeCounter)
 			waitCounter.Done()
 		}()
 	}
+	/*
+		nodeCache := cache.NewCache("/tmp/goposm/node.cache")
+		defer nodeCache.Close()
+		for i := 0; i < 2; i++ {
+			waitCounter.Add(1)
+			go func() {
+				nodeCounter := 0
+				for nds := range nodes {
+					if len(nds) == 0 {
+						continue
+					}
+					nodeCache.PutCoordsPacked(nds[0].Id/8196, nds)
+					nodeCounter += 1
+				}
+				fmt.Println("nodes", nodeCounter)
+				waitCounter.Done()
+			}()
+		}
+	*/
 	waitParser.Wait()
 	close(nodes)
 	close(ways)

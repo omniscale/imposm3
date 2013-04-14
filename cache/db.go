@@ -55,12 +55,12 @@ func (p *Cache) PutCoords(nodes []element.Node) {
 	p.db.Write(p.wo, batch)
 }
 
-func (p *Cache) PutCoordsPacked(nodes []element.Node) {
+func (p *Cache) PutCoordsPacked(bunchId int64, nodes []element.Node) {
 	if len(nodes) == 0 {
 		return
 	}
 	keyBuf := make([]byte, 8)
-	bin.PutVarint(keyBuf, int64(nodes[0].Id))
+	bin.PutVarint(keyBuf, bunchId)
 
 	deltaCoords := packNodes(nodes)
 	data, err := proto.Marshal(deltaCoords)
@@ -68,6 +68,24 @@ func (p *Cache) PutCoordsPacked(nodes []element.Node) {
 		panic(err)
 	}
 	p.db.Put(p.wo, keyBuf, data)
+}
+
+func (p *Cache) GetCoordsPacked(bunchId int64) []element.Node {
+	keyBuf := make([]byte, 8)
+	bin.PutVarint(keyBuf, bunchId)
+
+	data, err := p.db.Get(p.ro, keyBuf)
+	if err != nil {
+		panic(err)
+	}
+	deltaCoords := &DeltaCoords{}
+	err = proto.Unmarshal(data, deltaCoords)
+	if err != nil {
+		panic(err)
+	}
+
+	nodes := unpackNodes(deltaCoords)
+	return nodes
 }
 
 func (p *Cache) GetCoord(id int64) *element.Node {
