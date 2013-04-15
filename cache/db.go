@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"code.google.com/p/goprotobuf/proto"
 	bin "encoding/binary"
 	"github.com/jmhodges/levigo"
 	"goposm/binary"
@@ -14,8 +13,8 @@ type Cache struct {
 	ro *levigo.ReadOptions
 }
 
-func NewCache(path string) *Cache {
-	result := &Cache{}
+func NewCache(path string) Cache {
+	result := Cache{}
 	opts := levigo.NewOptions()
 	opts.SetCache(levigo.NewLRUCache(1024 * 1024 * 50))
 	opts.SetCreateIfMissing(true)
@@ -29,7 +28,47 @@ func NewCache(path string) *Cache {
 	return result
 }
 
-func (p *Cache) PutCoord(node *element.Node) {
+type NodesCache struct {
+	Cache
+}
+
+func NewNodesCache(path string) *NodesCache {
+	cache := NewCache(path)
+	nodesCache := NodesCache{cache}
+	return &nodesCache
+}
+
+type CoordsCache struct {
+	Cache
+}
+
+func NewCoordsCache(path string) *CoordsCache {
+	cache := NewCache(path)
+	coordsCache := CoordsCache{cache}
+	return &coordsCache
+}
+
+type WaysCache struct {
+	Cache
+}
+
+func NewWaysCache(path string) *WaysCache {
+	cache := NewCache(path)
+	waysCache := WaysCache{cache}
+	return &waysCache
+}
+
+type RelationsCache struct {
+	Cache
+}
+
+func NewRelationsCache(path string) *RelationsCache {
+	cache := NewCache(path)
+	relationsCache := RelationsCache{cache}
+	return &relationsCache
+}
+
+func (p *CoordsCache) PutCoord(node *element.Node) {
 	keyBuf := make([]byte, 8)
 	bin.PutVarint(keyBuf, int64(node.Id))
 	data, err := binary.MarshalCoord(node)
@@ -39,7 +78,7 @@ func (p *Cache) PutCoord(node *element.Node) {
 	p.db.Put(p.wo, keyBuf, data)
 }
 
-func (p *Cache) PutCoords(nodes []element.Node) {
+func (p *CoordsCache) PutCoords(nodes []element.Node) {
 	batch := levigo.NewWriteBatch()
 	defer batch.Close()
 
@@ -55,40 +94,7 @@ func (p *Cache) PutCoords(nodes []element.Node) {
 	p.db.Write(p.wo, batch)
 }
 
-func (p *Cache) PutCoordsPacked(bunchId int64, nodes []element.Node) {
-	if len(nodes) == 0 {
-		return
-	}
-	keyBuf := make([]byte, 8)
-	bin.PutVarint(keyBuf, bunchId)
-
-	deltaCoords := packNodes(nodes)
-	data, err := proto.Marshal(deltaCoords)
-	if err != nil {
-		panic(err)
-	}
-	p.db.Put(p.wo, keyBuf, data)
-}
-
-func (p *Cache) GetCoordsPacked(bunchId int64) []element.Node {
-	keyBuf := make([]byte, 8)
-	bin.PutVarint(keyBuf, bunchId)
-
-	data, err := p.db.Get(p.ro, keyBuf)
-	if err != nil {
-		panic(err)
-	}
-	deltaCoords := &DeltaCoords{}
-	err = proto.Unmarshal(data, deltaCoords)
-	if err != nil {
-		panic(err)
-	}
-
-	nodes := unpackNodes(deltaCoords)
-	return nodes
-}
-
-func (p *Cache) GetCoord(id int64) *element.Node {
+func (p *CoordsCache) GetCoord(id int64) *element.Node {
 	keyBuf := make([]byte, 8)
 	bin.PutVarint(keyBuf, int64(id))
 	data, err := p.db.Get(p.ro, keyBuf)
@@ -106,7 +112,7 @@ func (p *Cache) GetCoord(id int64) *element.Node {
 	return node
 }
 
-func (p *Cache) PutNode(node *element.Node) {
+func (p *NodesCache) PutNode(node *element.Node) {
 	keyBuf := make([]byte, 8)
 	bin.PutVarint(keyBuf, int64(node.Id))
 	data, err := binary.MarshalNode(node)
@@ -116,7 +122,7 @@ func (p *Cache) PutNode(node *element.Node) {
 	p.db.Put(p.wo, keyBuf, data)
 }
 
-func (p *Cache) GetNode(id int64) *element.Node {
+func (p *NodesCache) GetNode(id int64) *element.Node {
 	keyBuf := make([]byte, 8)
 	bin.PutVarint(keyBuf, int64(id))
 	data, err := p.db.Get(p.ro, keyBuf)
@@ -133,7 +139,7 @@ func (p *Cache) GetNode(id int64) *element.Node {
 	return node
 }
 
-func (p *Cache) PutWay(way *element.Way) {
+func (p *WaysCache) PutWay(way *element.Way) {
 	keyBuf := make([]byte, 8)
 	bin.PutVarint(keyBuf, int64(way.Id))
 	data, err := binary.MarshalWay(way)
@@ -143,7 +149,7 @@ func (p *Cache) PutWay(way *element.Way) {
 	p.db.Put(p.wo, keyBuf, data)
 }
 
-func (p *Cache) PutWays(ways []element.Way) {
+func (p *WaysCache) PutWays(ways []element.Way) {
 	batch := levigo.NewWriteBatch()
 	defer batch.Close()
 
@@ -159,7 +165,7 @@ func (p *Cache) PutWays(ways []element.Way) {
 	p.db.Write(p.wo, batch)
 }
 
-func (p *Cache) GetWay(id int64) *element.Way {
+func (p *WaysCache) GetWay(id int64) *element.Way {
 	keyBuf := make([]byte, 8)
 	bin.PutVarint(keyBuf, int64(id))
 	data, err := p.db.Get(p.ro, keyBuf)
@@ -176,7 +182,7 @@ func (p *Cache) GetWay(id int64) *element.Way {
 	return way
 }
 
-func (p *Cache) PutRelation(relation *element.Relation) {
+func (p *RelationsCache) PutRelation(relation *element.Relation) {
 	keyBuf := make([]byte, 8)
 	bin.PutVarint(keyBuf, int64(relation.Id))
 	data, err := binary.MarshalRelation(relation)
@@ -186,7 +192,7 @@ func (p *Cache) PutRelation(relation *element.Relation) {
 	p.db.Put(p.wo, keyBuf, data)
 }
 
-func (p *Cache) GetRelation(id int64) *element.Relation {
+func (p *RelationsCache) GetRelation(id int64) *element.Relation {
 	keyBuf := make([]byte, 8)
 	bin.PutVarint(keyBuf, int64(id))
 	data, err := p.db.Get(p.ro, keyBuf)

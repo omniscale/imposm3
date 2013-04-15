@@ -29,7 +29,7 @@ func parse(filename string) {
 	}
 
 	waitCounter := sync.WaitGroup{}
-	wayCache := cache.NewCache("/tmp/goposm/way.cache")
+	wayCache := cache.NewWaysCache("/tmp/goposm/way.cache")
 	defer wayCache.Close()
 	for i := 0; i < 2; i++ {
 		waitCounter.Add(1)
@@ -43,7 +43,7 @@ func parse(filename string) {
 			waitCounter.Done()
 		}()
 	}
-	relCache := cache.NewCache("/tmp/goposm/relation.cache")
+	relCache := cache.NewRelationsCache("/tmp/goposm/relation.cache")
 	defer relCache.Close()
 	waitCounter.Add(1)
 	go func() {
@@ -56,8 +56,7 @@ func parse(filename string) {
 		waitCounter.Done()
 	}()
 
-	nodeCacheInternal := cache.NewCache("/tmp/goposm/node.cache")
-	nodeCache := cache.NewCoordsCache(nodeCacheInternal)
+	nodeCache := cache.NewDeltaCoordsCache("/tmp/goposm/node.cache")
 	defer nodeCache.Close()
 	for i := 0; i < 2; i++ {
 		waitCounter.Add(1)
