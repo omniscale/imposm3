@@ -13,72 +13,83 @@ type Cache struct {
 	ro *levigo.ReadOptions
 }
 
-func NewCache(path string) Cache {
-	result := Cache{}
+func (c *Cache) open(path string) error {
 	opts := levigo.NewOptions()
 	opts.SetCache(levigo.NewLRUCache(1024 * 1024 * 50))
 	opts.SetCreateIfMissing(true)
 	db, err := levigo.Open(path, opts)
 	if err != nil {
-		panic("unable to open db")
+		return err
 	}
-	result.db = db
-	result.wo = levigo.NewWriteOptions()
-	result.ro = levigo.NewReadOptions()
-	return result
+	c.db = db
+	c.wo = levigo.NewWriteOptions()
+	c.ro = levigo.NewReadOptions()
+	return nil
 }
 
 type NodesCache struct {
 	Cache
 }
 
-func NewNodesCache(path string) *NodesCache {
-	cache := NewCache(path)
-	nodesCache := NodesCache{cache}
-	return &nodesCache
+func NewNodesCache(path string) (*NodesCache, error) {
+	cache := NodesCache{}
+	err := cache.open(path)
+	if err != nil {
+		return nil, err
+	}
+	return &cache, err
 }
 
 type CoordsCache struct {
 	Cache
 }
 
-func NewCoordsCache(path string) *CoordsCache {
-	cache := NewCache(path)
-	coordsCache := CoordsCache{cache}
-	return &coordsCache
+func NewCoordsCache(path string) (*CoordsCache, error) {
+	cache := CoordsCache{}
+	err := cache.open(path)
+	if err != nil {
+		return nil, err
+	}
+	return &cache, err
 }
 
 type WaysCache struct {
 	Cache
 }
 
-func NewWaysCache(path string) *WaysCache {
-	cache := NewCache(path)
-	waysCache := WaysCache{cache}
-	return &waysCache
+func NewWaysCache(path string) (*WaysCache, error) {
+	cache := WaysCache{}
+	err := cache.open(path)
+	if err != nil {
+		return nil, err
+	}
+	return &cache, err
 }
 
 type RelationsCache struct {
 	Cache
 }
 
-func NewRelationsCache(path string) *RelationsCache {
-	cache := NewCache(path)
-	relationsCache := RelationsCache{cache}
-	return &relationsCache
+func NewRelationsCache(path string) (*RelationsCache, error) {
+	cache := RelationsCache{}
+	err := cache.open(path)
+	if err != nil {
+		return nil, err
+	}
+	return &cache, err
 }
 
-func (p *CoordsCache) PutCoord(node *element.Node) {
+func (p *CoordsCache) PutCoord(node *element.Node) error {
 	keyBuf := make([]byte, 8)
 	bin.PutVarint(keyBuf, int64(node.Id))
 	data, err := binary.MarshalCoord(node)
 	if err != nil {
 		panic(err)
 	}
-	p.db.Put(p.wo, keyBuf, data)
+	return p.db.Put(p.wo, keyBuf, data)
 }
 
-func (p *CoordsCache) PutCoords(nodes []element.Node) {
+func (p *CoordsCache) PutCoords(nodes []element.Node) error {
 	batch := levigo.NewWriteBatch()
 	defer batch.Close()
 
@@ -91,65 +102,65 @@ func (p *CoordsCache) PutCoords(nodes []element.Node) {
 		}
 		batch.Put(keyBuf, data)
 	}
-	p.db.Write(p.wo, batch)
+	return p.db.Write(p.wo, batch)
 }
 
-func (p *CoordsCache) GetCoord(id int64) *element.Node {
+func (p *CoordsCache) GetCoord(id int64) (*element.Node, error) {
 	keyBuf := make([]byte, 8)
 	bin.PutVarint(keyBuf, int64(id))
 	data, err := p.db.Get(p.ro, keyBuf)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	if data == nil {
-		return nil
+		return nil, nil
 	}
 
 	node, err := binary.UnmarshalCoord(id, data)
 	if err != nil {
 		panic(err)
 	}
-	return node
+	return node, nil
 }
 
-func (p *NodesCache) PutNode(node *element.Node) {
+func (p *NodesCache) PutNode(node *element.Node) error {
 	keyBuf := make([]byte, 8)
 	bin.PutVarint(keyBuf, int64(node.Id))
 	data, err := binary.MarshalNode(node)
 	if err != nil {
 		panic(err)
 	}
-	p.db.Put(p.wo, keyBuf, data)
+	return p.db.Put(p.wo, keyBuf, data)
 }
 
-func (p *NodesCache) GetNode(id int64) *element.Node {
+func (p *NodesCache) GetNode(id int64) (*element.Node, error) {
 	keyBuf := make([]byte, 8)
 	bin.PutVarint(keyBuf, int64(id))
 	data, err := p.db.Get(p.ro, keyBuf)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	if data == nil {
-		return nil
+		return nil, nil
 	}
 	node, err := binary.UnmarshalNode(data)
 	if err != nil {
 		panic(err)
 	}
-	return node
+	return node, nil
 }
 
-func (p *WaysCache) PutWay(way *element.Way) {
+func (p *WaysCache) PutWay(way *element.Way) error {
 	keyBuf := make([]byte, 8)
 	bin.PutVarint(keyBuf, int64(way.Id))
 	data, err := binary.MarshalWay(way)
 	if err != nil {
 		panic(err)
 	}
-	p.db.Put(p.wo, keyBuf, data)
+	return p.db.Put(p.wo, keyBuf, data)
 }
 
-func (p *WaysCache) PutWays(ways []element.Way) {
+func (p *WaysCache) PutWays(ways []element.Way) error {
 	batch := levigo.NewWriteBatch()
 	defer batch.Close()
 
@@ -162,51 +173,51 @@ func (p *WaysCache) PutWays(ways []element.Way) {
 		}
 		batch.Put(keyBuf, data)
 	}
-	p.db.Write(p.wo, batch)
+	return p.db.Write(p.wo, batch)
 }
 
-func (p *WaysCache) GetWay(id int64) *element.Way {
+func (p *WaysCache) GetWay(id int64) (*element.Way, error) {
 	keyBuf := make([]byte, 8)
 	bin.PutVarint(keyBuf, int64(id))
 	data, err := p.db.Get(p.ro, keyBuf)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	if data == nil {
-		return nil
+		return nil, nil
 	}
 	way, err := binary.UnmarshalWay(data)
 	if err != nil {
 		panic(err)
 	}
-	return way
+	return way, nil
 }
 
-func (p *RelationsCache) PutRelation(relation *element.Relation) {
+func (p *RelationsCache) PutRelation(relation *element.Relation) error {
 	keyBuf := make([]byte, 8)
 	bin.PutVarint(keyBuf, int64(relation.Id))
 	data, err := binary.MarshalRelation(relation)
 	if err != nil {
 		panic(err)
 	}
-	p.db.Put(p.wo, keyBuf, data)
+	return p.db.Put(p.wo, keyBuf, data)
 }
 
-func (p *RelationsCache) GetRelation(id int64) *element.Relation {
+func (p *RelationsCache) GetRelation(id int64) (*element.Relation, error) {
 	keyBuf := make([]byte, 8)
 	bin.PutVarint(keyBuf, int64(id))
 	data, err := p.db.Get(p.ro, keyBuf)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	if data == nil {
-		return nil
+		return nil, nil
 	}
 	relation, err := binary.UnmarshalRelation(data)
 	if err != nil {
 		panic(err)
 	}
-	return relation
+	return relation, err
 }
 
 func (p *Cache) Close() {

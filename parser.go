@@ -5,6 +5,7 @@ import (
 	"goposm/cache"
 	"goposm/element"
 	"goposm/parser"
+	"log"
 	"os"
 	"runtime"
 	"sync"
@@ -18,7 +19,7 @@ func parse(filename string) {
 	positions := parser.PBFBlockPositions(filename)
 
 	waitParser := sync.WaitGroup{}
-	for i := 0; i < 4; i++ {
+	for i := 0; i < 2; i++ {
 		waitParser.Add(1)
 		go func() {
 			for pos := range positions {
@@ -29,7 +30,10 @@ func parse(filename string) {
 	}
 
 	waitCounter := sync.WaitGroup{}
-	wayCache := cache.NewWaysCache("/tmp/goposm/way.cache")
+	wayCache, err := cache.NewWaysCache("/tmp/goposm/way.cache")
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer wayCache.Close()
 	for i := 0; i < 2; i++ {
 		waitCounter.Add(1)
@@ -43,7 +47,10 @@ func parse(filename string) {
 			waitCounter.Done()
 		}()
 	}
-	relCache := cache.NewRelationsCache("/tmp/goposm/relation.cache")
+	relCache, err := cache.NewRelationsCache("/tmp/goposm/relation.cache")
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer relCache.Close()
 	waitCounter.Add(1)
 	go func() {
@@ -56,7 +63,10 @@ func parse(filename string) {
 		waitCounter.Done()
 	}()
 
-	nodeCache := cache.NewDeltaCoordsCache("/tmp/goposm/node.cache")
+	nodeCache, err := cache.NewDeltaCoordsCache("/tmp/goposm/node.cache")
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer nodeCache.Close()
 	for i := 0; i < 2; i++ {
 		waitCounter.Add(1)

@@ -73,14 +73,16 @@ type DeltaCoordsCache struct {
 	mu       sync.Mutex
 }
 
-func NewDeltaCoordsCache(path string) *DeltaCoordsCache {
-	cache := NewCache(path)
+func NewDeltaCoordsCache(path string) (*DeltaCoordsCache, error) {
 	coordsCache := DeltaCoordsCache{}
-	coordsCache.Cache = cache
+	err := coordsCache.open(path)
+	if err != nil {
+		return nil, err
+	}
 	coordsCache.lruList = list.New()
 	coordsCache.table = make(map[int64]*CoordsBunch)
 	coordsCache.capacity = 100
-	return &coordsCache
+	return &coordsCache, nil
 }
 
 func (self *DeltaCoordsCache) Close() {
