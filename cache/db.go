@@ -55,10 +55,13 @@ func NewCoordsCache(path string) (*CoordsCache, error) {
 
 type WaysCache struct {
 	Cache
+	toWrite chan []element.Way
 }
 
 func NewWaysCache(path string) (*WaysCache, error) {
 	cache := WaysCache{}
+	cache.toWrite = make(chan []element.Way)
+	go cache.wayWriter()
 	err := cache.open(path)
 	if err != nil {
 		return nil, err
@@ -176,6 +179,28 @@ func (p *WaysCache) PutWays(ways []element.Way) error {
 	return p.db.Write(p.wo, batch)
 }
 
+func (p *WaysCache) _PutWays(ways []element.Way) {
+	p.toWrite <- ways
+}
+
+func (p *WaysCache) wayWriter() {
+	for ways := range p.toWrite {
+		batch := levigo.NewWriteBatch()
+		defer batch.Close()
+
+		keyBuf := make([]byte, 8)
+		for _, way := range ways {
+			bin.PutVarint(keyBuf, int64(way.Id))
+			data, err := binary.MarshalWay(&way)
+			if err != nil {
+				panic(err)
+			}
+			batch.Put(keyBuf, data)
+		}
+		_ = p.db.Write(p.wo, batch)
+	}
+}
+
 func (p *WaysCache) GetWay(id int64) (*element.Way, error) {
 	keyBuf := make([]byte, 8)
 	bin.PutVarint(keyBuf, int64(id))
@@ -201,6 +226,22 @@ func (p *RelationsCache) PutRelation(relation *element.Relation) error {
 		panic(err)
 	}
 	return p.db.Put(p.wo, keyBuf, data)
+}
+
+func (p *RelationsCache) PutRelations(rels []element.Relation) error {
+	batch := levigo.NewWriteBatch()
+	defer batch.Close()
+
+	keyBuf := make([]byte, 8)
+	for _, rel := range rels {
+		bin.PutVarint(keyBuf, int64(rel.Id))
+		data, err := binary.MarshalRelation(&rel)
+		if err != nil {
+			panic(err)
+		}
+		batch.Put(keyBuf, data)
+	}
+	return p.db.Write(p.wo, batch)
 }
 
 func (p *RelationsCache) GetRelation(id int64) (*element.Relation, error) {
