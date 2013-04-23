@@ -49,7 +49,7 @@ func TestMarshalWay(t *testing.T) {
 	way.Tags = make(element.Tags)
 	way.Tags["name"] = "test"
 	way.Tags["highway"] = "trunk"
-	way.Nodes = append(way.Nodes, 1, 2, 3, 4)
+	way.Refs = append(way.Refs, 1, 2, 3, 4)
 
 	data, _ := MarshalWay(way)
 	way, _ = UnmarshalWay(data)
@@ -68,7 +68,7 @@ func TestMarshalWay(t *testing.T) {
 		t.Error("tags len does not match")
 	}
 
-	if !compareNodes(way.Nodes, []int64{1, 2, 3, 4}) {
+	if !compareNodes(way.Refs, []int64{1, 2, 3, 4}) {
 		t.Error("nodes do not match")
 	}
 

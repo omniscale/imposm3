@@ -53,7 +53,6 @@ func TestPolygonNotClosed(t *testing.T) {
 	if err == nil {
 		t.Fatal("no error")
 	}
-
 }
 
 func BenchmarkLineString(b *testing.B) {

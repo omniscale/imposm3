@@ -159,7 +159,7 @@ func ReadWays(
 		id := *ways[i].Id
 		result[i].Id = id
 		result[i].Tags = ParseTags(stringtable, ways[i].Keys, ways[i].Vals)
-		result[i].Nodes = ParseDeltaRefs(ways[i].Refs)
+		result[i].Refs = ParseDeltaRefs(ways[i].Refs)
 	}
 	return result
 }

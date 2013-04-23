@@ -89,7 +89,7 @@ func UnmarshalNode(data []byte) (node *element.Node, err error) {
 func MarshalWay(way *element.Way) ([]byte, error) {
 	pbfWay := &model.Way{}
 	pbfWay.Id = &way.Id
-	pbfWay.Nodes = way.Nodes
+	pbfWay.Refs = way.Refs
 	pbfWay.Tags = way.TagsAsArray()
 	return proto.Marshal(pbfWay)
 }
@@ -103,7 +103,7 @@ func UnmarshalWay(data []byte) (way *element.Way, err error) {
 
 	way = &element.Way{}
 	way.Id = *pbfWay.Id
-	way.Nodes = pbfWay.Nodes
+	way.Refs = pbfWay.Refs
 	way.TagsFromArray(pbfWay.Tags)
 	return way, nil
 }

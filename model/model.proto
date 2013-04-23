@@ -11,7 +11,7 @@ message Way {
     required int64 id = 1;
 
     repeated string tags = 2;
-    repeated int64 nodes = 3 [packed = true];
+    repeated int64 refs = 3 [packed = true];
 }
 
 message Relation {
