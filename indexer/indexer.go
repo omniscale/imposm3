@@ -13,39 +13,53 @@ import (
 )
 
 type Entry struct {
-	Pos    parser.BlockPosition
-	NodeId int64
-	WayId  int64
-	RelId  int64
+	Pos                 parser.BlockPosition
+	NodeFirst, NodeLast int64
+	WayFirst, WayLast   int64
+	RelFirst, RelLast   int64
 }
 
 func CreateEntry(pos parser.BlockPosition) Entry {
 	block := parser.ReadPrimitiveBlock(pos)
 
-	entry := Entry{pos, -1, -1, -1}
+	entry := Entry{pos, -1, -1, -1, -1, -1, -1}
 
 	for _, group := range block.Primitivegroup {
-		if entry.NodeId == -1 {
+		if entry.NodeFirst == -1 {
 			dense := group.GetDense()
 			if dense != nil && len(dense.Id) > 0 {
-				entry.NodeId = dense.Id[0]
+				entry.NodeFirst = dense.Id[0]
 			}
 			if len(group.Nodes) > 0 {
-				entry.NodeId = *group.Nodes[0].Id
+				entry.NodeFirst = *group.Nodes[0].Id
 			}
 		}
-		if entry.WayId == -1 {
+		dense := group.GetDense()
+		if dense != nil && len(dense.Id) > 0 {
+			var id int64
+			for _, idDelta := range dense.Id {
+				id += idDelta
+			}
+			entry.NodeLast = id
+		}
+		if len(group.Nodes) > 0 {
+			entry.NodeLast = *group.Nodes[len(group.Nodes)-1].Id
+		}
+		if entry.WayFirst == -1 {
 			if len(group.Ways) > 0 {
-				entry.WayId = *group.Ways[0].Id
+				entry.WayFirst = *group.Ways[0].Id
 			}
 		}
-		if entry.RelId == -1 {
+		if len(group.Ways) > 0 {
+			entry.WayLast = *group.Ways[len(group.Ways)-1].Id
+		}
+		if entry.RelFirst == -1 {
 			if len(group.Relations) > 0 {
-				entry.RelId = *group.Relations[0].Id
+				entry.RelFirst = *group.Relations[0].Id
 			}
 		}
-		if entry.NodeId == -1 && entry.WayId == -1 && entry.RelId == -1 {
-			break
+		if len(group.Relations) > 0 {
+			entry.RelLast = *group.Relations[len(group.Relations)-1].Id
 		}
 	}
 	return entry
@@ -65,19 +79,36 @@ func initIndex(filename string) *IndexCache {
 		log.Fatal(err)
 	}
 	stmts := []string{
-		"create table indices (id integer not null primary key, node integer, way integer, rel integer, offset integer, size integer)",
-		"create index indices_node_idx on indices (node)",
-		"create index indices_way_idx on indices (way)",
-		"create index indices_rel_idx on indices (rel)",
+		`create table indices (
+			id integer not null primary key,
+			node_first integer,
+			node_last integer,
+			way_first integer,
+			way_last integer,
+			rel_first integer,
+			rel_last integer,
+			offset integer,
+			size integer
+		)`,
+		"create index indices_node_idx on indices (node_first)",
+		"create index indices_way_idx on indices (way_first)",
+		"create index indices_rel_idx on indices (rel_first)",
 	}
 	for _, stmt := range stmts {
 		_, err = db.Exec(stmt)
 		if err != nil {
-			log.Fatal("%q: %s\n", err, stmt)
+			log.Fatalf("%q: %s\n", err, stmt)
 		}
 	}
 
-	insertStmt, err := db.Prepare("insert into indices (node, way, rel, offset, size) values (?, ?, ?, ?, ?)")
+	insertStmt, err := db.Prepare(`
+		insert into indices (
+			node_first, node_last,
+			way_first, way_last,
+			rel_first, rel_last,
+			offset, size
+		)
+		values (?, ?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -86,7 +117,11 @@ func initIndex(filename string) *IndexCache {
 }
 
 func (index *IndexCache) addEntry(entry Entry) {
-	_, err := index.insertStmt.Exec(entry.NodeId, entry.WayId, entry.RelId, entry.Pos.Offset, entry.Pos.Size)
+	_, err := index.insertStmt.Exec(
+		entry.NodeFirst, entry.NodeLast,
+		entry.WayFirst, entry.WayLast,
+		entry.RelFirst, entry.RelLast,
+		entry.Pos.Offset, entry.Pos.Size)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -119,7 +154,7 @@ func main() {
 	}
 	go func() {
 		for entry := range indices {
-			//index.addEntry(entry)
+			index.addEntry(entry)
 			fmt.Printf("%+v\n", entry)
 		}
 	}()
