@@ -12,7 +12,7 @@ import (
 )
 
 func ReadPrimitiveBlock(pos BlockPosition) *osmpbf.PrimitiveBlock {
-	file, err := os.Open(pos.filename)
+	file, err := os.Open(pos.Filename)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -21,8 +21,8 @@ func ReadPrimitiveBlock(pos BlockPosition) *osmpbf.PrimitiveBlock {
 	var block = &osmpbf.PrimitiveBlock{}
 	var blob = &osmpbf.Blob{}
 
-	blobData := make([]byte, pos.size)
-	file.Seek(pos.offset, 0)
+	blobData := make([]byte, pos.Size)
+	file.Seek(pos.Offset, 0)
 	io.ReadFull(file, blobData)
 	err = proto.Unmarshal(blobData, blob)
 	if err != nil {

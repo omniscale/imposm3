@@ -15,9 +15,9 @@ type PBF struct {
 }
 
 type BlockPosition struct {
-	filename string
-	offset   int64
-	size     int32
+	Filename string
+	Offset   int64
+	Size     int32
 }
 
 func Open(filename string) (f *PBF, err error) {
