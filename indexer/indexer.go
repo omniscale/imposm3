@@ -301,6 +301,45 @@ func FillIndex(index *IndexCache, pbfFilename string) {
 	close(indices)
 }
 
+func loadNode(id int64, index *IndexCache) (*element.Node, error) {
+	entry, err := index.queryNode(id)
+	if err != nil {
+		return nil, err
+	}
+	entry.Pos.Filename = flag.Arg(0)
+	node, err := entry.readNode(id)
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
+}
+
+func loadWay(id int64, index *IndexCache) (*element.Way, error) {
+	entry, err := index.queryWay(id)
+	if err != nil {
+		return nil, err
+	}
+	entry.Pos.Filename = flag.Arg(0)
+	way, err := entry.readWay(id)
+	if err != nil {
+		return nil, err
+	}
+	return way, nil
+}
+
+func loadRel(id int64, index *IndexCache) (*element.Relation, error) {
+	entry, err := index.queryRel(id)
+	if err != nil {
+		return nil, err
+	}
+	entry.Pos.Filename = flag.Arg(0)
+	rel, err := entry.readRel(id)
+	if err != nil {
+		return nil, err
+	}
+	return rel, nil
+}
+
 func main() {
 	flag.Parse()
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -313,13 +352,7 @@ func main() {
 	}
 
 	if queryNode != -1 {
-		entry, err := index.queryNode(queryNode)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		entry.Pos.Filename = flag.Arg(0)
-		node, err := entry.readNode(queryNode)
+		node, err := loadNode(queryNode, index)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -327,33 +360,47 @@ func main() {
 
 		fmt.Println("queryNode:", node)
 	} else if queryWay != -1 {
-		entry, err := index.queryWay(queryWay)
+		way, err := loadWay(queryWay, index)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
-		entry.Pos.Filename = flag.Arg(0)
-		way, err := entry.readWay(queryWay)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
 		fmt.Println("queryWay:", way)
-	} else if queryRel != -1 {
-		entry, err := index.queryRel(queryRel)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		entry.Pos.Filename = flag.Arg(0)
-		rel, err := entry.readRel(queryRel)
-		if err != nil {
-			fmt.Println(err)
-			return
+
+		for _, nodeId := range way.Refs {
+			node, err := loadNode(nodeId, index)
+			if err != nil {
+				fmt.Println(err, nodeId)
+				return
+			}
+			fmt.Println("\t", node)
 		}
 
+	} else if queryRel != -1 {
+		rel, err := loadRel(queryRel, index)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 		fmt.Println("queryRel:", rel)
+
+		for _, member := range rel.Members {
+			way, err := loadWay(member.Id, index)
+			if err != nil {
+				fmt.Println(err, member.Id)
+				return
+			}
+			fmt.Println("\t", way)
+			for _, nodeId := range way.Refs {
+				node, err := loadNode(nodeId, index)
+				if err != nil {
+					fmt.Println(err, nodeId, node)
+					return
+				}
+				fmt.Println("\t\t", node)
+			}
+		}
+
 	}
 
 }
