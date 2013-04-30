@@ -8,6 +8,7 @@ import (
 	"goposm/element"
 	"goposm/parser"
 	"log"
+	"osmpbf"
 	"runtime"
 	"sort"
 	"sync"
@@ -28,10 +29,7 @@ func (e *NotFound) Error() string {
 	return "not found"
 }
 
-func (entry *Entry) readNode(id int64) (*element.Node, error) {
-	block := parser.ReadPrimitiveBlock(entry.Pos)
-	stringtable := parser.NewStringTable(block.GetStringtable())
-
+func readNode(block *osmpbf.PrimitiveBlock, stringtable parser.StringTable, id int64) (*element.Node, error) {
 	for _, group := range block.Primitivegroup {
 		dense := group.GetDense()
 		if dense != nil {
@@ -301,19 +299,6 @@ func FillIndex(index *IndexCache, pbfFilename string) {
 	close(indices)
 }
 
-func loadNode(id int64, index *IndexCache) (*element.Node, error) {
-	entry, err := index.queryNode(id)
-	if err != nil {
-		return nil, err
-	}
-	entry.Pos.Filename = flag.Arg(0)
-	node, err := entry.readNode(id)
-	if err != nil {
-		return nil, err
-	}
-	return node, nil
-}
-
 func loadWay(id int64, index *IndexCache) (*element.Way, error) {
 	entry, err := index.queryWay(id)
 	if err != nil {
@@ -340,19 +325,45 @@ func loadRel(id int64, index *IndexCache) (*element.Relation, error) {
 	return rel, nil
 }
 
+type Loader struct {
+	filename string
+	index    *IndexCache
+	blocks   map[int64]*osmpbf.PrimitiveBlock
+}
+
+func (loader *Loader) loadNode(id int64) (*element.Node, error) {
+	entry, err := loader.index.queryNode(id)
+	if err != nil {
+		return nil, err
+	}
+	block, ok := loader.blocks[entry.Pos.Offset]
+	if !ok {
+		entry.Pos.Filename = loader.filename
+		block = parser.ReadPrimitiveBlock(entry.Pos)
+		loader.blocks[entry.Pos.Offset] = block
+	}
+	stringtable := parser.NewStringTable(block.GetStringtable())
+	node, err := readNode(block, stringtable, id)
+	if err != nil {
+		return nil, err
+	}
+	return node, nil
+}
+
 func main() {
 	flag.Parse()
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	index := NewIndex("/tmp/index.sqlite")
 	defer index.close()
+	loader := Loader{flag.Arg(0), index, make(map[int64]*osmpbf.PrimitiveBlock)}
 
 	if createIndex {
 		FillIndex(index, flag.Arg(0))
 	}
 
 	if queryNode != -1 {
-		node, err := loadNode(queryNode, index)
+		node, err := loader.loadNode(queryNode)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -368,7 +379,7 @@ func main() {
 		fmt.Println("queryWay:", way)
 
 		for _, nodeId := range way.Refs {
-			node, err := loadNode(nodeId, index)
+			node, err := loader.loadNode(nodeId)
 			if err != nil {
 				fmt.Println(err, nodeId)
 				return
@@ -392,7 +403,7 @@ func main() {
 			}
 			fmt.Println("\t", way)
 			for _, nodeId := range way.Refs {
-				node, err := loadNode(nodeId, index)
+				node, err := loader.loadNode(nodeId)
 				if err != nil {
 					fmt.Println(err, nodeId, node)
 					return
