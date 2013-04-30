@@ -20,7 +20,7 @@ func BenchmarkHello(b *testing.B) {
 	}
 
 	for pos := range pbf.BlockPositions() {
-		fmt.Println(pos.size, pos.offset)
+		fmt.Println(pos.Size, pos.Offset)
 		b.StartTimer()
 		for i := 0; i < b.N; i++ {
 			ReadPrimitiveBlock(pos)
