@@ -8,8 +8,10 @@ import (
 	"goposm/element"
 	"goposm/parser"
 	"log"
+	"os"
 	"osmpbf"
 	"runtime"
+	"runtime/pprof"
 	"sort"
 	"sync"
 )
@@ -142,12 +144,18 @@ type IndexCache struct {
 	filename   string
 	db         *sql.DB
 	insertStmt *sql.Stmt
+	nodeCache  []*Entry
 }
 
-func NewIndex(filename string) *IndexCache {
+func NewIndex(filename string, clear bool) *IndexCache {
 	db, err := sql.Open("sqlite3", filename)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	index := &IndexCache{filename, db, nil, make([]*Entry, 0)}
+	if clear {
+		index.clear()
 	}
 	insertStmt, err := db.Prepare(`
 		insert into indices (
@@ -160,8 +168,9 @@ func NewIndex(filename string) *IndexCache {
 	if err != nil {
 		log.Fatal(err)
 	}
+	index.insertStmt = insertStmt
 
-	return &IndexCache{filename, db, insertStmt}
+	return index
 }
 
 func (index *IndexCache) clear() {
@@ -191,6 +200,13 @@ func (index *IndexCache) clear() {
 }
 
 func (index *IndexCache) queryNode(id int64) (Entry, error) {
+	// 1000->40000 40001->60000 60001->80000
+	i := sort.Search(len(index.nodeCache), func(i int) bool {
+		return index.nodeCache[i].NodeLast >= id
+	})
+	if i < len(index.nodeCache) && index.nodeCache[i].NodeFirst <= id && index.nodeCache[i].NodeLast >= id {
+		return *index.nodeCache[i], nil
+	}
 	entry := Entry{}
 	stmt, err := index.db.Prepare(
 		`select node_first, node_last, offset, size 
@@ -206,6 +222,17 @@ func (index *IndexCache) queryNode(id int64) (Entry, error) {
 	err = row.Scan(&entry.NodeFirst, &entry.NodeLast, &entry.Pos.Offset, &entry.Pos.Size)
 	if err != nil {
 		return entry, err
+	}
+
+	i = sort.Search(len(index.nodeCache), func(i int) bool {
+		return index.nodeCache[i].NodeFirst >= id
+	})
+	if i < len(index.nodeCache) && index.nodeCache[i].NodeFirst >= id {
+		index.nodeCache = append(index.nodeCache, nil)
+		copy(index.nodeCache[i+1:], index.nodeCache[i:])
+		index.nodeCache[i] = &entry
+	} else {
+		index.nodeCache = append(index.nodeCache, &entry)
 	}
 	return entry, nil
 }
@@ -266,12 +293,14 @@ func (index *IndexCache) close() {
 
 var createIndex bool
 var queryNode, queryWay, queryRel int64
+var cpuprofile string
 
 func init() {
 	flag.BoolVar(&createIndex, "create-index", false, "create a new index")
 	flag.Int64Var(&queryNode, "node", -1, "query node")
 	flag.Int64Var(&queryWay, "way", -1, "query way")
 	flag.Int64Var(&queryRel, "rel", -1, "query relation")
+	flag.StringVar(&cpuprofile, "cpuprofile", "", "write cpu profile to file")
 }
 
 func FillIndex(index *IndexCache, pbfFilename string) {
@@ -354,13 +383,22 @@ func main() {
 	flag.Parse()
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	index := NewIndex("/tmp/index.sqlite")
+	if cpuprofile != "" {
+		f, err := os.Create(cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
+	index := NewIndex("/tmp/index.sqlite", createIndex)
 	defer index.close()
-	loader := Loader{flag.Arg(0), index, make(map[int64]*osmpbf.PrimitiveBlock)}
 
 	if createIndex {
 		FillIndex(index, flag.Arg(0))
 	}
+
+	loader := Loader{flag.Arg(0), index, make(map[int64]*osmpbf.PrimitiveBlock)}
 
 	if queryNode != -1 {
 		node, err := loader.loadNode(queryNode)
@@ -401,14 +439,14 @@ func main() {
 				fmt.Println(err, member.Id)
 				return
 			}
-			fmt.Println("\t", way)
+			//fmt.Println("\t", way)
 			for _, nodeId := range way.Refs {
 				node, err := loader.loadNode(nodeId)
 				if err != nil {
 					fmt.Println(err, nodeId, node)
 					return
 				}
-				fmt.Println("\t\t", node)
+				//fmt.Println("\t\t", node)
 			}
 		}
 
