@@ -85,7 +85,7 @@ func mergeRings(rings []*Ring) []*Ring {
 	for _, ring := range endpoints {
 		uniqueRings[ring] = true
 	}
-	result := make([]*Ring, len(uniqueRings))
+	result := make([]*Ring, 0, len(uniqueRings))
 	for ring, _ := range uniqueRings {
 		result = append(result, ring)
 	}
