@@ -9,7 +9,6 @@ import (
 	"goposm/parser"
 	"log"
 	"os"
-	"osmpbf"
 	"runtime"
 	"runtime/pprof"
 	"sort"
@@ -31,29 +30,12 @@ func (e *NotFound) Error() string {
 	return "not found"
 }
 
-func readNode(block *osmpbf.PrimitiveBlock, stringtable parser.StringTable, id int64) (*element.Node, error) {
-	for _, group := range block.Primitivegroup {
-		dense := group.GetDense()
-		if dense != nil {
-			parsedNodes := parser.ReadDenseNodes(dense, block, stringtable)
-			if len(parsedNodes) > 0 {
-				i := sort.Search(len(parsedNodes), func(i int) bool {
-					return parsedNodes[i].Id >= id
-				})
-				if i < len(parsedNodes) && parsedNodes[i].Id == id {
-					return &parsedNodes[i], nil
-				}
-			}
-		}
-		parsedNodes := parser.ReadNodes(group.Nodes, block, stringtable)
-		if len(parsedNodes) > 0 {
-			i := sort.Search(len(parsedNodes), func(i int) bool {
-				return parsedNodes[i].Id >= id
-			})
-			if i < len(parsedNodes) && parsedNodes[i].Id == id {
-				return &parsedNodes[i], nil
-			}
-		}
+func searchNode(nodes []element.Node, id int64) (*element.Node, error) {
+	i := sort.Search(len(nodes), func(i int) bool {
+		return nodes[i].Id >= id
+	})
+	if i < len(nodes) && nodes[i].Id == id {
+		return &nodes[i], nil
 	}
 	return nil, &NotFound{id}
 }
@@ -357,7 +339,7 @@ func loadRel(id int64, index *IndexCache) (*element.Relation, error) {
 type Loader struct {
 	filename string
 	index    *IndexCache
-	blocks   map[int64]*osmpbf.PrimitiveBlock
+	nodes    map[int64][]element.Node
 }
 
 func (loader *Loader) loadNode(id int64) (*element.Node, error) {
@@ -365,14 +347,22 @@ func (loader *Loader) loadNode(id int64) (*element.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	block, ok := loader.blocks[entry.Pos.Offset]
+	nodes, ok := loader.nodes[entry.Pos.Offset]
 	if !ok {
 		entry.Pos.Filename = loader.filename
-		block = parser.ReadPrimitiveBlock(entry.Pos)
-		loader.blocks[entry.Pos.Offset] = block
+		block := parser.ReadPrimitiveBlock(entry.Pos)
+		stringtable := parser.NewStringTable(block.GetStringtable())
+		nodes = make([]element.Node, 0, len(block.Primitivegroup)*8000)
+		for _, group := range block.Primitivegroup {
+			dense := group.GetDense()
+			if dense != nil {
+				nodes = append(nodes, parser.ReadDenseNodes(dense, block, stringtable)...)
+			}
+			nodes = append(nodes, parser.ReadNodes(group.Nodes, block, stringtable)...)
+		}
+		loader.nodes[entry.Pos.Offset] = nodes
 	}
-	stringtable := parser.NewStringTable(block.GetStringtable())
-	node, err := readNode(block, stringtable, id)
+	node, err := searchNode(nodes, id)
 	if err != nil {
 		return nil, err
 	}
@@ -398,7 +388,7 @@ func main() {
 		FillIndex(index, flag.Arg(0))
 	}
 
-	loader := Loader{flag.Arg(0), index, make(map[int64]*osmpbf.PrimitiveBlock)}
+	loader := Loader{flag.Arg(0), index, make(map[int64][]element.Node)}
 
 	if queryNode != -1 {
 		node, err := loader.loadNode(queryNode)
@@ -436,15 +426,15 @@ func main() {
 		for _, member := range rel.Members {
 			way, err := loadWay(member.Id, index)
 			if err != nil {
-				fmt.Println(err, member.Id)
-				return
+				fmt.Println(err, "member:", member.Id)
+				continue
 			}
 			//fmt.Println("\t", way)
 			for _, nodeId := range way.Refs {
 				node, err := loader.loadNode(nodeId)
 				if err != nil {
-					fmt.Println(err, nodeId, node)
-					return
+					fmt.Println(err, "node:", nodeId, node)
+					continue
 				}
 				//fmt.Println("\t\t", node)
 			}
