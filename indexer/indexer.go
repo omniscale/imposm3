@@ -123,22 +123,23 @@ func CreateEntry(pos parser.BlockPosition) Entry {
 }
 
 type IndexCache struct {
-	filename   string
-	db         *sql.DB
-	insertStmt *sql.Stmt
-	nodeCache  []*Entry
+	pbfFilename string
+	filename    string
+	db          *sql.DB
+	insertStmt  *sql.Stmt
+	nodeCache   []*Entry
 }
 
-func NewIndex(filename string, clear bool) *IndexCache {
+func NewIndex(pbfFilename string) *IndexCache {
+	filename := pbfFilename + ".index"
 	db, err := sql.Open("sqlite3", filename)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	index := &IndexCache{filename, db, nil, make([]*Entry, 0)}
-	if clear {
-		index.clear()
-	}
+	index := &IndexCache{pbfFilename, filename, db, nil, make([]*Entry, 0)}
+	index.initTables()
+
 	insertStmt, err := db.Prepare(`
 		insert into indices (
 			node_first, node_last,
@@ -157,8 +158,20 @@ func NewIndex(filename string, clear bool) *IndexCache {
 
 func (index *IndexCache) clear() {
 	stmts := []string{
-		"drop table if exists indices",
-		`create table indices (
+		"delete from indices",
+		"vacuum",
+	}
+	for _, stmt := range stmts {
+		_, err := index.db.Exec(stmt)
+		if err != nil {
+			log.Fatalf("%q: %s\n", err, stmt)
+		}
+	}
+}
+
+func (index *IndexCache) initTables() {
+	stmts := []string{
+		`create table if not exists indices (
 			id integer not null primary key,
 			node_first integer,
 			node_last integer,
@@ -169,9 +182,9 @@ func (index *IndexCache) clear() {
 			offset integer,
 			size integer
 		)`,
-		"create index indices_node_idx on indices (node_first)",
-		"create index indices_way_idx on indices (way_first)",
-		"create index indices_rel_idx on indices (rel_first)",
+		"create index if not exists indices_node_idx on indices (node_first)",
+		"create index if not exists indices_way_idx on indices (way_first)",
+		"create index if not exists indices_rel_idx on indices (rel_first)",
 	}
 	for _, stmt := range stmts {
 		_, err := index.db.Exec(stmt)
@@ -285,10 +298,10 @@ func init() {
 	flag.StringVar(&cpuprofile, "cpuprofile", "", "write cpu profile to file")
 }
 
-func FillIndex(index *IndexCache, pbfFilename string) {
+func (index *IndexCache) Rebuild() {
 	indices := make(chan Entry)
 
-	positions := parser.PBFBlockPositions(pbfFilename)
+	positions := parser.PBFBlockPositions(index.pbfFilename)
 
 	waitParser := sync.WaitGroup{}
 	for i := 0; i < runtime.NumCPU(); i++ {
@@ -351,14 +364,13 @@ func (loader *Loader) loadNode(id int64) (*element.Node, error) {
 	if !ok {
 		entry.Pos.Filename = loader.filename
 		block := parser.ReadPrimitiveBlock(entry.Pos)
-		stringtable := parser.NewStringTable(block.GetStringtable())
 		nodes = make([]element.Node, 0, len(block.Primitivegroup)*8000)
 		for _, group := range block.Primitivegroup {
 			dense := group.GetDense()
 			if dense != nil {
-				nodes = append(nodes, parser.ReadDenseNodes(dense, block, stringtable)...)
+				nodes = append(nodes, parser.ReadDenseNodes(dense, block, nil)...)
 			}
-			nodes = append(nodes, parser.ReadNodes(group.Nodes, block, stringtable)...)
+			nodes = append(nodes, parser.ReadNodes(group.Nodes, block, nil)...)
 		}
 		loader.nodes[entry.Pos.Offset] = nodes
 	}
@@ -381,11 +393,11 @@ func main() {
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()
 	}
-	index := NewIndex("/tmp/index.sqlite", createIndex)
+	index := NewIndex(flag.Arg(0))
 	defer index.close()
 
 	if createIndex {
-		FillIndex(index, flag.Arg(0))
+		index.Rebuild()
 	}
 
 	loader := Loader{flag.Arg(0), index, make(map[int64][]element.Node)}
