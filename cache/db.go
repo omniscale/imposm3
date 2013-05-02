@@ -242,6 +242,26 @@ func (p *WaysCache) GetWay(id int64) (*element.Way, error) {
 	return way, nil
 }
 
+func (p *WaysCache) Iter() chan *element.Way {
+	way := make(chan *element.Way)
+	go func() {
+		ro := levigo.NewReadOptions()
+		ro.SetFillCache(false)
+		it := p.db.NewIterator(ro)
+		defer it.Close()
+		it.SeekToFirst()
+		for it = it; it.Valid(); it.Next() {
+			ways, err := binary.UnmarshalWay(it.Value())
+			if err != nil {
+				panic(err)
+			}
+			way <- ways
+		}
+		close(way)
+	}()
+	return way
+}
+
 func (p *RelationsCache) PutRelation(relation *element.Relation) error {
 	keyBuf := make([]byte, 8)
 	bin.PutVarint(keyBuf, int64(relation.Id))
@@ -266,6 +286,26 @@ func (p *RelationsCache) PutRelations(rels []element.Relation) error {
 		batch.Put(keyBuf, data)
 	}
 	return p.db.Write(p.wo, batch)
+}
+
+func (p *RelationsCache) Iter() chan *element.Relation {
+	rel := make(chan *element.Relation)
+	go func() {
+		ro := levigo.NewReadOptions()
+		ro.SetFillCache(false)
+		it := p.db.NewIterator(ro)
+		defer it.Close()
+		it.SeekToFirst()
+		for it = it; it.Valid(); it.Next() {
+			relation, err := binary.UnmarshalRelation(it.Value())
+			if err != nil {
+				panic(err)
+			}
+			rel <- relation
+		}
+		close(rel)
+	}()
+	return rel
 }
 
 func (p *RelationsCache) GetRelation(id int64) (*element.Relation, error) {

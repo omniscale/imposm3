@@ -81,7 +81,7 @@ func NewDeltaCoordsCache(path string) (*DeltaCoordsCache, error) {
 	}
 	coordsCache.lruList = list.New()
 	coordsCache.table = make(map[int64]*CoordsBunch)
-	coordsCache.capacity = 100
+	coordsCache.capacity = 1024
 	return &coordsCache, nil
 }
 
@@ -103,6 +103,13 @@ func (self *DeltaCoordsCache) GetCoord(id int64) (element.Node, bool) {
 		return element.Node{}, false
 	}
 	return node, true
+}
+
+func (self *DeltaCoordsCache) FillWay(way *element.Way) {
+	way.Nodes = make([]element.Node, len(way.Refs))
+	for i, id := range way.Refs {
+		way.Nodes[i], _ = self.GetCoord(id)
+	}
 }
 
 func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) {

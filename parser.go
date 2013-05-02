@@ -7,7 +7,9 @@ import (
 	"goposm/element"
 	"goposm/parser"
 	"log"
+	"os"
 	"runtime"
+	"runtime/pprof"
 	"sync"
 )
 
@@ -109,16 +111,48 @@ func parse(filename string) {
 }
 
 func main() {
-	//f, err := os.Create("/tmp/goposm.pprof")
-	//if err != nil {
-	//log.Fatal(err)
-	//}
-	//pprof.StartCPUProfile(f)
-	//defer pprof.StopCPUProfile()
+	f, err := os.Create("/tmp/goposm.pprof")
+	if err != nil {
+		log.Fatal(err)
+	}
+	pprof.StartCPUProfile(f)
+	defer pprof.StopCPUProfile()
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	flag.Parse()
-	parse(flag.Arg(0))
+	//parse(flag.Arg(0))
+
+	relCache, err := cache.NewRelationsCache("/tmp/goposm/relation.cache")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer relCache.Close()
+
+	rel := relCache.Iter()
+	for r := range rel {
+		fmt.Println(r)
+	}
+
+	wayCache, err := cache.NewWaysCache("/tmp/goposm/way.cache")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer wayCache.Close()
+
+	coordCache, err := cache.NewDeltaCoordsCache("/tmp/goposm/coords.cache")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer coordCache.Close()
+
+	way := wayCache.Iter()
+	i := 0
+	for w := range way {
+		i += 1
+		coordCache.FillWay(w)
+		//fmt.Println(i)
+	}
+	fmt.Println(i)
 	//parser.PBFStats(os.Args[1])
 	fmt.Println("done")
 }
