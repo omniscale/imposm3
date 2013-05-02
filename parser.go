@@ -1,18 +1,19 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"goposm/cache"
 	"goposm/element"
 	"goposm/parser"
 	"log"
-	"os"
 	"runtime"
 	"sync"
 )
 
 func parse(filename string) {
 	nodes := make(chan []element.Node)
+	coords := make(chan []element.Node)
 	ways := make(chan []element.Way)
 	relations := make(chan []element.Relation)
 
@@ -23,7 +24,7 @@ func parse(filename string) {
 		waitParser.Add(1)
 		go func() {
 			for pos := range positions {
-				parser.ParseBlock(pos, nodes, ways, relations)
+				parser.ParseBlock(pos, coords, nodes, ways, relations)
 			}
 			waitParser.Done()
 		}()
@@ -64,43 +65,43 @@ func parse(filename string) {
 			waitCounter.Done()
 		}()
 	}
-	nodeCache, err := cache.NewDeltaCoordsCache("/tmp/goposm/node.cache")
+	coordCache, err := cache.NewDeltaCoordsCache("/tmp/goposm/coords.cache")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer nodeCache.Close()
+	defer coordCache.Close()
 	for i := 0; i < runtime.NumCPU(); i++ {
 		waitCounter.Add(1)
 		go func() {
 			nodeCounter := 0
-			for nds := range nodes {
-				nodeCache.PutCoords(nds)
+			for nds := range coords {
+				coordCache.PutCoords(nds)
 				nodeCounter += len(nds)
+			}
+			fmt.Println("coords", nodeCounter)
+			waitCounter.Done()
+		}()
+	}
+	nodeCache, err := cache.NewNodesCache("/tmp/goposm/node.cache")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer nodeCache.Close()
+	for i := 0; i < 2; i++ {
+		waitCounter.Add(1)
+		go func() {
+			nodeCounter := 0
+			for nds := range nodes {
+				n, _ := nodeCache.PutNodes(nds)
+				nodeCounter += n
 			}
 			fmt.Println("nodes", nodeCounter)
 			waitCounter.Done()
 		}()
 	}
-	/*
-		nodeCache := cache.NewCache("/tmp/goposm/node.cache")
-		defer nodeCache.Close()
-		for i := 0; i < 2; i++ {
-			waitCounter.Add(1)
-			go func() {
-				nodeCounter := 0
-				for nds := range nodes {
-					if len(nds) == 0 {
-						continue
-					}
-					nodeCache.PutCoordsPacked(nds[0].Id/8196, nds)
-					nodeCounter += 1
-				}
-				fmt.Println("nodes", nodeCounter)
-				waitCounter.Done()
-			}()
-		}
-	*/
+
 	waitParser.Wait()
+	close(coords)
 	close(nodes)
 	close(ways)
 	close(relations)
@@ -114,8 +115,10 @@ func main() {
 	//}
 	//pprof.StartCPUProfile(f)
 	//defer pprof.StopCPUProfile()
+	log.SetFlags(log.LstdFlags | log.Llongfile)
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	parse(os.Args[1])
+	flag.Parse()
+	parse(flag.Arg(0))
 	//parser.PBFStats(os.Args[1])
 	fmt.Println("done")
 }

@@ -78,10 +78,12 @@ func ReadDenseNodes(
 		nodes[i].Id = lastId
 		nodes[i].Long = (coordScale * float64(lonOffset+(granularity*lastLon)))
 		nodes[i].Lat = (coordScale * float64(latOffset+(granularity*lastLat)))
-		if dense.KeysVals[lastKeyValPos] != 0 {
-			nodes[i].Tags = ParseDenseNodeTags(stringtable, &dense.KeysVals, &lastKeyValPos)
-		} else {
-			lastKeyValPos += 1
+		if stringtable != nil {
+			if dense.KeysVals[lastKeyValPos] != 0 {
+				nodes[i].Tags = ParseDenseNodeTags(stringtable, &dense.KeysVals, &lastKeyValPos)
+			} else {
+				lastKeyValPos += 1
+			}
 		}
 	}
 	return nodes
@@ -132,7 +134,9 @@ func ReadNodes(
 		result[i].Id = id
 		result[i].Long = (coordScale * float64(lonOffset+(granularity*lon)))
 		result[i].Lat = (coordScale * float64(latOffset+(granularity*lat)))
-		result[i].Tags = ParseTags(stringtable, nodes[i].Keys, nodes[i].Vals)
+		if stringtable != nil {
+			result[i].Tags = ParseTags(stringtable, nodes[i].Keys, nodes[i].Vals)
+		}
 	}
 	return result
 }
@@ -212,7 +216,7 @@ func PBFBlockPositions(filename string) chan BlockPosition {
 	return pbf.BlockPositions()
 }
 
-func ParseBlock(pos BlockPosition, nodes chan []element.Node, ways chan []element.Way, relations chan []element.Relation) {
+func ParseBlock(pos BlockPosition, coords chan []element.Node, nodes chan []element.Node, ways chan []element.Way, relations chan []element.Relation) {
 	block := ReadPrimitiveBlock(pos)
 	stringtable := NewStringTable(block.GetStringtable())
 
@@ -222,11 +226,13 @@ func ParseBlock(pos BlockPosition, nodes chan []element.Node, ways chan []elemen
 			parsedNodes := ReadDenseNodes(dense, block, stringtable)
 			if len(parsedNodes) > 0 {
 				nodes <- parsedNodes
+				coords <- parsedNodes
 			}
 		}
 		parsedNodes := ReadNodes(group.Nodes, block, stringtable)
 		if len(parsedNodes) > 0 {
 			nodes <- parsedNodes
+			coords <- parsedNodes
 		}
 		parsedWays := ReadWays(group.Ways, block, stringtable)
 		if len(parsedWays) > 0 {

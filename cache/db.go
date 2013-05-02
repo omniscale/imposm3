@@ -127,6 +127,9 @@ func (p *CoordsCache) GetCoord(id int64) (*element.Node, error) {
 }
 
 func (p *NodesCache) PutNode(node *element.Node) error {
+	if node.Tags == nil {
+		return nil
+	}
 	keyBuf := make([]byte, 8)
 	bin.PutVarint(keyBuf, int64(node.Id))
 	data, err := binary.MarshalNode(node)
@@ -134,6 +137,27 @@ func (p *NodesCache) PutNode(node *element.Node) error {
 		panic(err)
 	}
 	return p.db.Put(p.wo, keyBuf, data)
+}
+
+func (p *NodesCache) PutNodes(nodes []element.Node) (int, error) {
+	batch := levigo.NewWriteBatch()
+	defer batch.Close()
+
+	keyBuf := make([]byte, 8)
+	var n int
+	for _, node := range nodes {
+		if node.Tags == nil {
+			continue
+		}
+		bin.PutVarint(keyBuf, int64(node.Id))
+		data, err := binary.MarshalNode(&node)
+		if err != nil {
+			panic(err)
+		}
+		batch.Put(keyBuf, data)
+		n += 1
+	}
+	return n, p.db.Write(p.wo, batch)
 }
 
 func (p *NodesCache) GetNode(id int64) (*element.Node, error) {
