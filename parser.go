@@ -13,7 +13,7 @@ import (
 	"sync"
 )
 
-func parse(filename string) {
+func parse(cache *cache.OSMCache, filename string) {
 	nodes := make(chan []element.Node)
 	coords := make(chan []element.Node)
 	ways := make(chan []element.Way)
@@ -33,68 +33,49 @@ func parse(filename string) {
 	}
 
 	waitCounter := sync.WaitGroup{}
-	wayCache, err := cache.NewWaysCache("/tmp/goposm/way.cache")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer wayCache.Close()
+
 	for i := 0; i < runtime.NumCPU(); i++ {
 		waitCounter.Add(1)
 		go func() {
 			wayCounter := 0
 			for ws := range ways {
-				wayCache.PutWays(ws)
+				cache.Ways.PutWays(ws)
 				wayCounter += len(ws)
 			}
 			fmt.Println("ways", wayCounter)
 			waitCounter.Done()
 		}()
 	}
-	relCache, err := cache.NewRelationsCache("/tmp/goposm/relation.cache")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer relCache.Close()
 	for i := 0; i < runtime.NumCPU(); i++ {
 		waitCounter.Add(1)
 		go func() {
 			relationCounter := 0
 			for rels := range relations {
-				relCache.PutRelations(rels)
+				cache.Relations.PutRelations(rels)
 				relationCounter += len(rels)
 			}
 			fmt.Println("relations", relationCounter)
 			waitCounter.Done()
 		}()
 	}
-	coordCache, err := cache.NewDeltaCoordsCache("/tmp/goposm/coords.cache")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer coordCache.Close()
 	for i := 0; i < runtime.NumCPU(); i++ {
 		waitCounter.Add(1)
 		go func() {
 			nodeCounter := 0
 			for nds := range coords {
-				coordCache.PutCoords(nds)
+				cache.Coords.PutCoords(nds)
 				nodeCounter += len(nds)
 			}
 			fmt.Println("coords", nodeCounter)
 			waitCounter.Done()
 		}()
 	}
-	nodeCache, err := cache.NewNodesCache("/tmp/goposm/node.cache")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer nodeCache.Close()
 	for i := 0; i < 2; i++ {
 		waitCounter.Add(1)
 		go func() {
 			nodeCounter := 0
 			for nds := range nodes {
-				n, _ := nodeCache.PutNodes(nds)
+				n, _ := cache.Nodes.PutNodes(nds)
 				nodeCounter += n
 			}
 			fmt.Println("nodes", nodeCounter)
@@ -120,36 +101,24 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	flag.Parse()
-	//parse(flag.Arg(0))
-
-	relCache, err := cache.NewRelationsCache("/tmp/goposm/relation.cache")
+	cache, err := cache.NewOSMCache("/tmp/goposm")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer relCache.Close()
+	defer cache.Close()
 
-	rel := relCache.Iter()
+	parse(cache, flag.Arg(0))
+
+	rel := cache.Relations.Iter()
 	for r := range rel {
 		fmt.Println(r)
 	}
 
-	wayCache, err := cache.NewWaysCache("/tmp/goposm/way.cache")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer wayCache.Close()
-
-	coordCache, err := cache.NewDeltaCoordsCache("/tmp/goposm/coords.cache")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer coordCache.Close()
-
-	way := wayCache.Iter()
+	way := cache.Ways.Iter()
 	i := 0
 	for w := range way {
 		i += 1
-		coordCache.FillWay(w)
+		cache.Coords.FillWay(w)
 		//fmt.Println(i)
 	}
 	fmt.Println(i)

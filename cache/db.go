@@ -5,7 +5,60 @@ import (
 	"github.com/jmhodges/levigo"
 	"goposm/binary"
 	"goposm/element"
+	"path/filepath"
 )
+
+type OSMCache struct {
+	Dir       string
+	Coords    *DeltaCoordsCache
+	Ways      *WaysCache
+	Nodes     *NodesCache
+	Relations *RelationsCache
+}
+
+func (c *OSMCache) Close() {
+	if c.Coords != nil {
+		c.Coords.close()
+		c.Coords = nil
+	}
+	if c.Nodes != nil {
+		c.Nodes.close()
+		c.Nodes = nil
+	}
+	if c.Ways != nil {
+		c.Ways.close()
+		c.Ways = nil
+	}
+	if c.Relations != nil {
+		c.Relations.close()
+		c.Relations = nil
+	}
+}
+
+func NewOSMCache(dir string) (*OSMCache, error) {
+	cache := &OSMCache{Dir: dir}
+	var err error
+	cache.Coords, err = NewDeltaCoordsCache(filepath.Join(dir, "coords"))
+	if err != nil {
+		return nil, err
+	}
+	cache.Nodes, err = NewNodesCache(filepath.Join(dir, "nodes"))
+	if err != nil {
+		cache.Close()
+		return nil, err
+	}
+	cache.Ways, err = NewWaysCache(filepath.Join(dir, "ways"))
+	if err != nil {
+		cache.Close()
+		return nil, err
+	}
+	cache.Relations, err = NewRelationsCache(filepath.Join(dir, "relations"))
+	if err != nil {
+		cache.Close()
+		return nil, err
+	}
+	return cache, nil
+}
 
 type Cache struct {
 	db *levigo.DB
@@ -25,6 +78,10 @@ func (c *Cache) open(path string) error {
 	c.wo = levigo.NewWriteOptions()
 	c.ro = levigo.NewReadOptions()
 	return nil
+}
+
+func (c *Cache) close() {
+	c.db.Close()
 }
 
 type NodesCache struct {
