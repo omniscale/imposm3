@@ -26,8 +26,15 @@ func parse(cache *cache.OSMCache, filename string) {
 		waitParser.Add(1)
 		go func() {
 			for pos := range positions {
-				parser.ParseBlock(pos, coords, nodes, ways, relations)
+				parser.ParseBlock(
+					pos,
+					coords,
+					nodes,
+					ways,
+					relations,
+				)
 			}
+			//runtime.GC()
 			waitParser.Done()
 		}()
 	}
@@ -92,34 +99,52 @@ func parse(cache *cache.OSMCache, filename string) {
 }
 
 func main() {
-	f, err := os.Create("/tmp/goposm.pprof")
-	if err != nil {
-		log.Fatal(err)
+	if false {
+		f, err := os.Create("/tmp/goposm.pprof")
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
 	}
-	pprof.StartCPUProfile(f)
-	defer pprof.StopCPUProfile()
+
 	log.SetFlags(log.LstdFlags | log.Llongfile)
-	runtime.GOMAXPROCS(runtime.NumCPU())
+	//runtime.GOMAXPROCS(runtime.NumCPU())
 	flag.Parse()
-	cache, err := cache.NewOSMCache("/tmp/goposm")
+	osmCache, err := cache.NewOSMCache("/tmp/goposm")
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer cache.Close()
+	defer osmCache.Close()
 
-	parse(cache, flag.Arg(0))
+	parse(osmCache, flag.Arg(0))
+	fmt.Println("foo")
 
-	rel := cache.Relations.Iter()
-	for r := range rel {
-		fmt.Println(r)
-	}
+	//rel := osmCache.Relations.Iter()
+	//for r := range rel {
+	//fmt.Println(r)
+	//}
 
-	way := cache.Ways.Iter()
+	way := osmCache.Ways.Iter()
 	i := 0
+	refCache, err := cache.NewRefIndex("/tmp/refindex")
+	if err != nil {
+		log.Fatal(err)
+	}
 	for w := range way {
 		i += 1
-		cache.Coords.FillWay(w)
-		//fmt.Println(i)
+		ok := osmCache.Coords.FillWay(w)
+		if !ok {
+			continue
+		}
+		if true {
+			for _, node := range w.Nodes {
+				refCache.Add(node.Id, w.Id)
+			}
+		}
+		if i%1000 == 0 {
+			fmt.Println(i)
+		}
 	}
 	fmt.Println(i)
 	//parser.PBFStats(os.Args[1])
