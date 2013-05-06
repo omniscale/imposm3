@@ -5,7 +5,6 @@ import (
 	"code.google.com/p/goprotobuf/proto"
 	bin "encoding/binary"
 	"goposm/element"
-	"goposm/model"
 )
 
 const COORD_FACTOR float64 = 11930464.7083 // ((2<<31)-1)/360.0
@@ -64,7 +63,7 @@ func UnmarshalCoord(id int64, data []byte) (node *element.Node, err error) {
 }
 
 func MarshalNode(node *element.Node) ([]byte, error) {
-	pbfNode := &model.Node{}
+	pbfNode := &Node{}
 	nodeId := node.Id
 	pbfNode.Id = &nodeId
 	pbfNode.FromWgsCoord(node.Long, node.Lat)
@@ -73,7 +72,7 @@ func MarshalNode(node *element.Node) ([]byte, error) {
 }
 
 func UnmarshalNode(data []byte) (node *element.Node, err error) {
-	pbfNode := &model.Node{}
+	pbfNode := &Node{}
 	err = proto.Unmarshal(data, pbfNode)
 	if err != nil {
 		return nil, err
@@ -87,7 +86,7 @@ func UnmarshalNode(data []byte) (node *element.Node, err error) {
 }
 
 func MarshalWay(way *element.Way) ([]byte, error) {
-	pbfWay := &model.Way{}
+	pbfWay := &Way{}
 	pbfWay.Id = &way.Id
 	pbfWay.Refs = way.Refs
 	pbfWay.Tags = way.TagsAsArray()
@@ -95,7 +94,7 @@ func MarshalWay(way *element.Way) ([]byte, error) {
 }
 
 func UnmarshalWay(data []byte) (way *element.Way, err error) {
-	pbfWay := &model.Way{}
+	pbfWay := &Way{}
 	err = proto.Unmarshal(data, pbfWay)
 	if err != nil {
 		return nil, err
@@ -109,7 +108,7 @@ func UnmarshalWay(data []byte) (way *element.Way, err error) {
 }
 
 func MarshalRelation(relation *element.Relation) ([]byte, error) {
-	pbfRelation := &model.Relation{}
+	pbfRelation := &Relation{}
 	pbfRelation.Id = &relation.Id
 	//pbfRelation.Members = relation.Members
 	pbfRelation.Tags = relation.TagsAsArray()
@@ -117,7 +116,7 @@ func MarshalRelation(relation *element.Relation) ([]byte, error) {
 }
 
 func UnmarshalRelation(data []byte) (relation *element.Relation, err error) {
-	pbfRelation := &model.Relation{}
+	pbfRelation := &Relation{}
 	err = proto.Unmarshal(data, pbfRelation)
 	if err != nil {
 		return nil, err

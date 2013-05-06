@@ -1,4 +1,4 @@
-package model;
+package binary;
 
 message Node {
     required int64 id = 1;

@@ -2,7 +2,7 @@
 // source: model/model.proto
 // DO NOT EDIT!
 
-package model
+package binary
 
 import proto "code.google.com/p/goprotobuf/proto"
 import json "encoding/json"
