@@ -40,8 +40,12 @@ func packNodes(nodes []element.Node) *DeltaCoords {
 	return &DeltaCoords{Ids: ids, Lats: lats, Lons: lons}
 }
 
-func unpackNodes(deltaCoords *DeltaCoords) []element.Node {
-	nodes := make([]element.Node, len(deltaCoords.Ids))
+func unpackNodes(deltaCoords *DeltaCoords, nodes []element.Node) []element.Node {
+	if len(deltaCoords.Ids) > cap(nodes) {
+		nodes = make([]element.Node, len(deltaCoords.Ids))
+	} else {
+		nodes = nodes[:len(deltaCoords.Ids)]
+	}
 
 	var lastLon, lastLat int64
 	var lon, lat int64
@@ -74,10 +78,11 @@ type CoordsBunch struct {
 
 type DeltaCoordsCache struct {
 	Cache
-	lruList  *list.List
-	table    map[int64]*CoordsBunch
-	capacity int64
-	mu       sync.Mutex
+	lruList   *list.List
+	table     map[int64]*CoordsBunch
+	freeNodes [][]element.Node
+	capacity  int64
+	mu        sync.Mutex
 }
 
 func NewDeltaCoordsCache(path string) (*DeltaCoordsCache, error) {
@@ -89,6 +94,7 @@ func NewDeltaCoordsCache(path string) (*DeltaCoordsCache, error) {
 	coordsCache.lruList = list.New()
 	coordsCache.table = make(map[int64]*CoordsBunch)
 	coordsCache.capacity = 1024
+	coordsCache.freeNodes = make([][]element.Node, 0)
 	return &coordsCache, nil
 }
 
@@ -167,7 +173,7 @@ func (p *DeltaCoordsCache) putCoordsPacked(bunchId int64, nodes []element.Node) 
 	p.db.Put(p.wo, keyBuf, data)
 }
 
-func (p *DeltaCoordsCache) getCoordsPacked(bunchId int64) []element.Node {
+func (p *DeltaCoordsCache) getCoordsPacked(bunchId int64, nodes []element.Node) []element.Node {
 	keyBuf := make([]byte, 8)
 	bin.PutVarint(keyBuf, bunchId)
 
@@ -176,7 +182,8 @@ func (p *DeltaCoordsCache) getCoordsPacked(bunchId int64) []element.Node {
 		panic(err)
 	}
 	if data == nil {
-		return make([]element.Node, 0)
+		// clear before returning
+		return nodes[:0]
 	}
 	deltaCoords := &DeltaCoords{}
 	err = proto.Unmarshal(data, deltaCoords)
@@ -184,7 +191,7 @@ func (p *DeltaCoordsCache) getCoordsPacked(bunchId int64) []element.Node {
 		panic(err)
 	}
 
-	nodes := unpackNodes(deltaCoords)
+	nodes = unpackNodes(deltaCoords, nodes)
 	return nodes
 }
 
@@ -196,9 +203,16 @@ func (self *DeltaCoordsCache) getBunch(bunchId int64) *CoordsBunch {
 	self.mu.Lock()
 	defer self.mu.Unlock()
 	bunch, ok := self.table[bunchId]
+	var nodes []element.Node
 	if !ok {
 		elem := self.lruList.PushFront(bunchId)
-		nodes := self.getCoordsPacked(bunchId)
+		if len(self.freeNodes) > 0 {
+			nodes = self.freeNodes[len(self.freeNodes)-1]
+			self.freeNodes = self.freeNodes[:len(self.freeNodes)-1]
+		} else {
+			nodes = make([]element.Node, 0)
+		}
+		nodes = self.getCoordsPacked(bunchId, nodes)
 		bunch = &CoordsBunch{id: bunchId, coords: nodes, elem: elem}
 		self.table[bunchId] = bunch
 	} else {
@@ -218,6 +232,7 @@ func (self *DeltaCoordsCache) CheckCapacity() {
 		if bunch.needsWrite {
 			self.putCoordsPacked(bunchId, bunch.coords)
 		}
+		self.freeNodes = append(self.freeNodes, bunch.coords)
 		delete(self.table, bunchId)
 	}
 }

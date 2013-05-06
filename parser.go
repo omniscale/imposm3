@@ -99,7 +99,7 @@ func parse(cache *cache.OSMCache, filename string) {
 }
 
 func main() {
-	if false {
+	if true {
 		f, err := os.Create("/tmp/goposm.pprof")
 		if err != nil {
 			log.Fatal(err)
@@ -117,7 +117,7 @@ func main() {
 	}
 	defer osmCache.Close()
 
-	parse(osmCache, flag.Arg(0))
+	//parse(osmCache, flag.Arg(0))
 	fmt.Println("foo")
 
 	//rel := osmCache.Relations.Iter()
