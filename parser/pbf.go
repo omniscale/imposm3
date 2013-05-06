@@ -78,7 +78,7 @@ func ReadDenseNodes(
 		nodes[i].Id = lastId
 		nodes[i].Long = (coordScale * float64(lonOffset+(granularity*lastLon)))
 		nodes[i].Lat = (coordScale * float64(latOffset+(granularity*lastLat)))
-		if stringtable != nil {
+		if stringtable != nil && len(dense.KeysVals) > 0 {
 			if dense.KeysVals[lastKeyValPos] != 0 {
 				nodes[i].Tags = ParseDenseNodeTags(stringtable, &dense.KeysVals, &lastKeyValPos)
 			} else {
