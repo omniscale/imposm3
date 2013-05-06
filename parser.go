@@ -6,6 +6,7 @@ import (
 	"goposm/cache"
 	"goposm/element"
 	"goposm/parser"
+	"goposm/stats"
 	"log"
 	"os"
 	"runtime"
@@ -13,7 +14,7 @@ import (
 	"sync"
 )
 
-func parse(cache *cache.OSMCache, filename string) {
+func parse(cache *cache.OSMCache, progress *stats.Statistics, filename string) {
 	nodes := make(chan []element.Node)
 	coords := make(chan []element.Node)
 	ways := make(chan []element.Way)
@@ -44,48 +45,40 @@ func parse(cache *cache.OSMCache, filename string) {
 	for i := 0; i < runtime.NumCPU(); i++ {
 		waitCounter.Add(1)
 		go func() {
-			wayCounter := 0
 			for ws := range ways {
 				cache.Ways.PutWays(ws)
-				wayCounter += len(ws)
+				progress.AddWays(len(ws))
 			}
-			fmt.Println("ways", wayCounter)
 			waitCounter.Done()
 		}()
 	}
 	for i := 0; i < runtime.NumCPU(); i++ {
 		waitCounter.Add(1)
 		go func() {
-			relationCounter := 0
 			for rels := range relations {
 				cache.Relations.PutRelations(rels)
-				relationCounter += len(rels)
+				progress.AddRelations(len(rels))
 			}
-			fmt.Println("relations", relationCounter)
 			waitCounter.Done()
 		}()
 	}
 	for i := 0; i < runtime.NumCPU(); i++ {
 		waitCounter.Add(1)
 		go func() {
-			nodeCounter := 0
 			for nds := range coords {
 				cache.Coords.PutCoords(nds)
-				nodeCounter += len(nds)
+				progress.AddCoords(len(nds))
 			}
-			fmt.Println("coords", nodeCounter)
 			waitCounter.Done()
 		}()
 	}
 	for i := 0; i < 2; i++ {
 		waitCounter.Add(1)
 		go func() {
-			nodeCounter := 0
 			for nds := range nodes {
 				n, _ := cache.Nodes.PutNodes(nds)
-				nodeCounter += n
+				progress.AddNodes(n)
 			}
-			fmt.Println("nodes", nodeCounter)
 			waitCounter.Done()
 		}()
 	}
@@ -117,8 +110,10 @@ func main() {
 	}
 	defer osmCache.Close()
 
-	// parse(osmCache, flag.Arg(0))
-	fmt.Println("foo")
+	fmt.Println("start")
+	progress := stats.StatsReporter()
+
+	// parse(osmCache, progress, flag.Arg(0))
 
 	//rel := osmCache.Relations.Iter()
 	//for r := range rel {
@@ -136,8 +131,8 @@ func main() {
 		waitFill.Add(1)
 
 		go func() {
-			i := 0
 			for w := range way {
+				progress.AddWays(-1)
 				ok := osmCache.Coords.FillWay(w)
 				if !ok {
 					continue
@@ -147,10 +142,6 @@ func main() {
 						refCache.Add(node.Id, w.Id)
 					}
 				}
-				if i%1000 == 0 {
-					fmt.Println(i)
-				}
-				i++
 			}
 			waitFill.Done()
 		}()
