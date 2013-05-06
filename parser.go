@@ -91,9 +91,18 @@ func parse(cache *cache.OSMCache, progress *stats.Statistics, filename string) {
 	waitCounter.Wait()
 }
 
+var (
+	cpuprofile = flag.String("cpuprofile", "", "filename of cpu profile output")
+	cachedir   = flag.String("cachedir", "/tmp/goposm", "cache directory")
+)
+
 func main() {
-	if true {
-		f, err := os.Create("/tmp/goposm.pprof")
+	log.SetFlags(log.LstdFlags | log.Llongfile)
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	flag.Parse()
+
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -101,10 +110,7 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	log.SetFlags(log.LstdFlags | log.Llongfile)
-	runtime.GOMAXPROCS(runtime.NumCPU())
-	flag.Parse()
-	osmCache, err := cache.NewOSMCache("/tmp/goposm")
+	osmCache, err := cache.NewOSMCache(*cachedir)
 	if err != nil {
 		log.Fatal(err)
 	}
