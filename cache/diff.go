@@ -3,6 +3,7 @@ package cache
 import (
 	"code.google.com/p/goprotobuf/proto"
 	bin "encoding/binary"
+	"sort"
 	"sync"
 )
 
@@ -39,8 +40,7 @@ func (index *RefIndex) Add(id, ref int64) error {
 		refs.Ids = make([]int64, 0, 1)
 	}
 	// TODO change to delta encoding
-	// TODO check for duplicates
-	refs.Ids = append(refs.Ids, ref)
+	refs.insertId(ref)
 
 	data, err = proto.Marshal(refs)
 	if err != nil {
@@ -48,6 +48,19 @@ func (index *RefIndex) Add(id, ref int64) error {
 	}
 	err = index.db.Put(index.wo, keyBuf, data)
 	return err
+}
+
+func (r *Refs) insertId(ref int64) {
+	i := sort.Search(len(r.Ids), func(i int) bool {
+		return r.Ids[i] >= ref
+	})
+	if i < len(r.Ids) && r.Ids[i] >= ref {
+		r.Ids = append(r.Ids, 0)
+		copy(r.Ids[i+1:], r.Ids[i:])
+		r.Ids[i] = ref
+	} else {
+		r.Ids = append(r.Ids, ref)
+	}
 }
 
 func (index *RefIndex) Get(id int64) []int64 {
