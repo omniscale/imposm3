@@ -92,8 +92,12 @@ func parse(cache *cache.OSMCache, progress *stats.Statistics, filename string) {
 }
 
 var (
-	cpuprofile = flag.String("cpuprofile", "", "filename of cpu profile output")
-	cachedir   = flag.String("cachedir", "/tmp/goposm", "cache directory")
+	cpuprofile     = flag.String("cpuprofile", "", "filename of cpu profile output")
+	cachedir       = flag.String("cachedir", "/tmp/goposm", "cache directory")
+	overwritecache = flag.Bool("overwritecache", false, "overwritecache")
+	appendcache    = flag.Bool("appendcache", false, "append cache")
+	read           = flag.String("read", "", "read")
+	write          = flag.Bool("write", false, "write")
 )
 
 func main() {
@@ -110,7 +114,21 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	osmCache, err := cache.NewOSMCache(*cachedir)
+	osmCache := cache.NewOSMCache(*cachedir)
+
+	if *read != "" && osmCache.Exists() {
+		if *overwritecache {
+			log.Println("removing existing cache", *cachedir)
+			err := osmCache.Remove()
+			if err != nil {
+				log.Fatal("unable to remove cache:", err)
+			}
+		} else if !*appendcache {
+			log.Fatal("cache already exists use -appendcache or -overwritecache")
+		}
+	}
+
+	err := osmCache.Open()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -119,40 +137,45 @@ func main() {
 	fmt.Println("start")
 	progress := stats.StatsReporter()
 
-	// parse(osmCache, progress, flag.Arg(0))
-
-	//rel := osmCache.Relations.Iter()
-	//for r := range rel {
-	//fmt.Println(r)
-	//}
-
-	way := osmCache.Ways.Iter()
-	refCache, err := cache.NewRefIndex("/tmp/refindex")
-	if err != nil {
-		log.Fatal(err)
+	if *read != "" {
+		parse(osmCache, progress, *read)
 	}
 
-	waitFill := sync.WaitGroup{}
-	for i := 0; i < runtime.NumCPU(); i++ {
-		waitFill.Add(1)
+	if *write {
+		rel := osmCache.Relations.Iter()
+		for r := range rel {
+			fmt.Println(r)
+		}
 
-		go func() {
-			for w := range way {
-				progress.AddWays(-1)
-				ok := osmCache.Coords.FillWay(w)
-				if !ok {
-					continue
-				}
-				if true {
-					for _, node := range w.Nodes {
-						refCache.Add(node.Id, w.Id)
+		way := osmCache.Ways.Iter()
+		refCache, err := cache.NewRefIndex("/tmp/refindex")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		waitFill := sync.WaitGroup{}
+		for i := 0; i < runtime.NumCPU(); i++ {
+			waitFill.Add(1)
+
+			go func() {
+				for w := range way {
+					progress.AddWays(-1)
+					ok := osmCache.Coords.FillWay(w)
+					if !ok {
+						continue
+					}
+					if true {
+						for _, node := range w.Nodes {
+							refCache.Add(node.Id, w.Id)
+						}
 					}
 				}
-			}
-			waitFill.Done()
-		}()
+				waitFill.Done()
+			}()
+		}
+		waitFill.Wait()
 	}
-	waitFill.Wait()
+
 	//parser.PBFStats(os.Args[1])
 	fmt.Println("done")
 }

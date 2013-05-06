@@ -5,6 +5,7 @@ import (
 	"github.com/jmhodges/levigo"
 	"goposm/binary"
 	"goposm/element"
+	"os"
 	"path/filepath"
 )
 
@@ -14,6 +15,7 @@ type OSMCache struct {
 	Ways      *WaysCache
 	Nodes     *NodesCache
 	Relations *RelationsCache
+	opened    bool
 }
 
 func (c *OSMCache) Close() {
@@ -35,29 +37,72 @@ func (c *OSMCache) Close() {
 	}
 }
 
-func NewOSMCache(dir string) (*OSMCache, error) {
+func NewOSMCache(dir string) *OSMCache {
 	cache := &OSMCache{Dir: dir}
+	return cache
+}
+
+func (c *OSMCache) Open() error {
 	var err error
-	cache.Coords, err = NewDeltaCoordsCache(filepath.Join(dir, "coords"))
+	c.Coords, err = NewDeltaCoordsCache(filepath.Join(c.Dir, "coords"))
 	if err != nil {
-		return nil, err
+		return err
 	}
-	cache.Nodes, err = NewNodesCache(filepath.Join(dir, "nodes"))
+	c.Nodes, err = NewNodesCache(filepath.Join(c.Dir, "nodes"))
 	if err != nil {
-		cache.Close()
-		return nil, err
+		c.Close()
+		return err
 	}
-	cache.Ways, err = NewWaysCache(filepath.Join(dir, "ways"))
+	c.Ways, err = NewWaysCache(filepath.Join(c.Dir, "ways"))
 	if err != nil {
-		cache.Close()
-		return nil, err
+		c.Close()
+		return err
 	}
-	cache.Relations, err = NewRelationsCache(filepath.Join(dir, "relations"))
+	c.Relations, err = NewRelationsCache(filepath.Join(c.Dir, "relations"))
 	if err != nil {
-		cache.Close()
-		return nil, err
+		c.Close()
+		return err
 	}
-	return cache, nil
+	c.opened = true
+	return nil
+}
+
+func (c *OSMCache) Exists() bool {
+	if c.opened {
+		return true
+	}
+	if _, err := os.Stat(filepath.Join(c.Dir, "coords")); !os.IsNotExist(err) {
+		return true
+	}
+	if _, err := os.Stat(filepath.Join(c.Dir, "nodes")); !os.IsNotExist(err) {
+		return true
+	}
+	if _, err := os.Stat(filepath.Join(c.Dir, "ways")); !os.IsNotExist(err) {
+		return true
+	}
+	if _, err := os.Stat(filepath.Join(c.Dir, "relations")); !os.IsNotExist(err) {
+		return true
+	}
+	return false
+}
+
+func (c *OSMCache) Remove() error {
+	if c.opened {
+		c.Close()
+	}
+	if err := os.RemoveAll(filepath.Join(c.Dir, "coords")); err != nil {
+		return err
+	}
+	if err := os.RemoveAll(filepath.Join(c.Dir, "nodes")); err != nil {
+		return err
+	}
+	if err := os.RemoveAll(filepath.Join(c.Dir, "ways")); err != nil {
+		return err
+	}
+	if err := os.RemoveAll(filepath.Join(c.Dir, "relations")); err != nil {
+		return err
+	}
+	return nil
 }
 
 type Cache struct {
