@@ -93,7 +93,7 @@ func NewDeltaCoordsCache(path string) (*DeltaCoordsCache, error) {
 	}
 	coordsCache.lruList = list.New()
 	coordsCache.table = make(map[int64]*CoordsBunch)
-	coordsCache.capacity = 1024
+	coordsCache.capacity = 1024 * 8
 	coordsCache.freeNodes = make([][]element.Node, 0)
 	return &coordsCache, nil
 }
@@ -196,7 +196,7 @@ func (p *DeltaCoordsCache) getCoordsPacked(bunchId int64, nodes []element.Node) 
 }
 
 func getBunchId(nodeId int64) int64 {
-	return nodeId / (1024 * 8)
+	return nodeId / (64)
 }
 
 func (self *DeltaCoordsCache) getBunch(bunchId int64) *CoordsBunch {
