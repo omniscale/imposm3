@@ -22,12 +22,16 @@ type Statistics struct {
 	nodes     chan int
 	ways      chan int
 	relations chan int
+	reset     chan bool
+	messages  chan string
 }
 
 func (s *Statistics) AddCoords(n int)    { s.coords <- n }
 func (s *Statistics) AddNodes(n int)     { s.nodes <- n }
 func (s *Statistics) AddWays(n int)      { s.ways <- n }
 func (s *Statistics) AddRelations(n int) { s.relations <- n }
+func (s *Statistics) Reset()             { s.reset <- true }
+func (s *Statistics) Message(msg string) { s.messages <- msg }
 
 func StatsReporter() *Statistics {
 	c := counter{}
@@ -36,6 +40,8 @@ func StatsReporter() *Statistics {
 	s.nodes = make(chan int)
 	s.ways = make(chan int)
 	s.relations = make(chan int)
+	s.reset = make(chan bool)
+	s.messages = make(chan string)
 
 	go func() {
 		tick := time.Tick(time.Second)
@@ -49,6 +55,11 @@ func StatsReporter() *Statistics {
 				c.ways += int64(n)
 			case n := <-s.relations:
 				c.relations += int64(n)
+			case <-s.reset:
+				c = counter{}
+			case msg := <-s.messages:
+				c.Print()
+				fmt.Println("\n", msg)
 			case <-tick:
 				c.Print()
 			}
@@ -59,12 +70,12 @@ func StatsReporter() *Statistics {
 
 func (c *counter) Print() {
 	dur := time.Since(c.lastReport)
-	coordsPS := float64(c.coords-c.lastCoords) / dur.Seconds()
-	nodesPS := float64(c.nodes-c.lastNodes) / dur.Seconds()
-	waysPS := float64(c.ways-c.lastWays) / dur.Seconds()
-	relationsPS := float64(c.relations-c.lastRelations) / dur.Seconds()
+	coordsPS := int32(float64(c.coords-c.lastCoords)/dur.Seconds()/1000) * 1000
+	nodesPS := int32(float64(c.nodes-c.lastNodes)/dur.Seconds()/100) * 100
+	waysPS := int32(float64(c.ways-c.lastWays)/dur.Seconds()/100) * 100
+	relationsPS := int32(float64(c.relations-c.lastRelations)/dur.Seconds()/10) * 10
 
-	fmt.Printf("Coords: %8.1f (%10d) Nodes: %6.1f (%9d) Ways: %6.1f (%8d) Relations: %6.1f (%7d)\r\b",
+	fmt.Printf("Coords: %6d/s (%10d) Nodes: %6d/s (%9d) Ways: %6d/s (%8d) Relations: %6d/s (%7d)\r\b",
 		coordsPS,
 		c.coords,
 		nodesPS,

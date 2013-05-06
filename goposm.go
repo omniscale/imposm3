@@ -101,7 +101,7 @@ var (
 )
 
 func main() {
-	log.SetFlags(log.LstdFlags | log.Llongfile)
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	flag.Parse()
 
@@ -139,17 +139,24 @@ func main() {
 
 	if *read != "" {
 		parse(osmCache, progress, *read)
+		progress.Message("done reading")
 	}
 
 	if *write {
+		progress.Reset()
 		rel := osmCache.Relations.Iter()
-		for r := range rel {
-			fmt.Println(r)
+		for _ = range rel {
+			progress.AddRelations(1)
+			// fmt.Println(r)
 		}
 
 		way := osmCache.Ways.Iter()
-		refCache, err := cache.NewRefIndex("/tmp/refindex")
-		if err != nil {
+
+		diffCache := cache.NewDiffCache(*cachedir)
+		if err = diffCache.Remove(); err != nil {
+			log.Fatal(err)
+		}
+		if err = diffCache.Open(); err != nil {
 			log.Fatal(err)
 		}
 
@@ -159,14 +166,14 @@ func main() {
 
 			go func() {
 				for w := range way {
-					progress.AddWays(-1)
+					progress.AddWays(1)
 					ok := osmCache.Coords.FillWay(w)
 					if !ok {
 						continue
 					}
 					if true {
 						for _, node := range w.Nodes {
-							refCache.Add(node.Id, w.Id)
+							diffCache.Coords.Add(node.Id, w.Id)
 						}
 					}
 				}
@@ -177,5 +184,5 @@ func main() {
 	}
 
 	//parser.PBFStats(os.Args[1])
-	fmt.Println("done")
+	fmt.Println("\ndone")
 }

@@ -3,9 +3,76 @@ package cache
 import (
 	"code.google.com/p/goprotobuf/proto"
 	bin "encoding/binary"
+	"os"
+	"path/filepath"
 	"sort"
 	"sync"
 )
+
+type DiffCache struct {
+	Dir    string
+	Coords *RefIndex
+	Ways   *RefIndex
+	opened bool
+}
+
+func (c *DiffCache) Close() {
+	if c.Coords != nil {
+		c.Coords.close()
+		c.Coords = nil
+	}
+	if c.Ways != nil {
+		c.Ways.close()
+		c.Ways = nil
+	}
+}
+
+func NewDiffCache(dir string) *DiffCache {
+	cache := &DiffCache{Dir: dir}
+	return cache
+}
+
+func (c *DiffCache) Open() error {
+	var err error
+	c.Coords, err = NewRefIndex(filepath.Join(c.Dir, "coords_index"))
+	if err != nil {
+		c.Close()
+		return err
+	}
+	c.Ways, err = NewRefIndex(filepath.Join(c.Dir, "ways_index"))
+	if err != nil {
+		c.Close()
+		return err
+	}
+	c.opened = true
+	return nil
+}
+
+func (c *DiffCache) Exists() bool {
+	if c.opened {
+		return true
+	}
+	if _, err := os.Stat(filepath.Join(c.Dir, "coords_index")); !os.IsNotExist(err) {
+		return true
+	}
+	if _, err := os.Stat(filepath.Join(c.Dir, "ways_index")); !os.IsNotExist(err) {
+		return true
+	}
+	return false
+}
+
+func (c *DiffCache) Remove() error {
+	if c.opened {
+		c.Close()
+	}
+	if err := os.RemoveAll(filepath.Join(c.Dir, "coords_index")); err != nil {
+		return err
+	}
+	if err := os.RemoveAll(filepath.Join(c.Dir, "ways_index")); err != nil {
+		return err
+	}
+	return nil
+}
 
 type RefIndex struct {
 	Cache
