@@ -109,7 +109,7 @@ func main() {
 	}
 
 	log.SetFlags(log.LstdFlags | log.Llongfile)
-	//runtime.GOMAXPROCS(runtime.NumCPU())
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	flag.Parse()
 	osmCache, err := cache.NewOSMCache("/tmp/goposm")
 	if err != nil {
@@ -117,7 +117,7 @@ func main() {
 	}
 	defer osmCache.Close()
 
-	//parse(osmCache, flag.Arg(0))
+	// parse(osmCache, flag.Arg(0))
 	fmt.Println("foo")
 
 	//rel := osmCache.Relations.Iter()
@@ -126,27 +126,36 @@ func main() {
 	//}
 
 	way := osmCache.Ways.Iter()
-	i := 0
 	refCache, err := cache.NewRefIndex("/tmp/refindex")
 	if err != nil {
 		log.Fatal(err)
 	}
-	for w := range way {
-		i += 1
-		ok := osmCache.Coords.FillWay(w)
-		if !ok {
-			continue
-		}
-		if true {
-			for _, node := range w.Nodes {
-				refCache.Add(node.Id, w.Id)
+
+	waitFill := sync.WaitGroup{}
+	for i := 0; i < runtime.NumCPU(); i++ {
+		waitFill.Add(1)
+
+		go func() {
+			i := 0
+			for w := range way {
+				ok := osmCache.Coords.FillWay(w)
+				if !ok {
+					continue
+				}
+				if true {
+					for _, node := range w.Nodes {
+						refCache.Add(node.Id, w.Id)
+					}
+				}
+				if i%1000 == 0 {
+					fmt.Println(i)
+				}
+				i++
 			}
-		}
-		if i%1000 == 0 {
-			fmt.Println(i)
-		}
+			waitFill.Done()
+		}()
 	}
-	fmt.Println(i)
+	waitFill.Wait()
 	//parser.PBFStats(os.Args[1])
 	fmt.Println("done")
 }
