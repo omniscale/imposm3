@@ -5,6 +5,21 @@ import (
 	"goposm/element"
 )
 
+func PointWKB(geos *gogeos.GEOS, node element.Node) ([]byte, error) {
+	coordSeq, err := geos.CreateCoordSeq(1, 2)
+	if err != nil {
+		return nil, err
+	}
+	// coordSeq inherited by LineString
+	coordSeq.SetXY(geos, 0, nd.Long, nd.Lat)
+	geom, err := coordSeq.AsPoint(geos)
+	if err != nil {
+		return nil, err
+	}
+	defer geos.Destroy(geom)
+	return geos.AsWKB(geom)
+}
+
 func LineStringWKB(geos *gogeos.GEOS, nodes []element.Node) ([]byte, error) {
 	coordSeq, err := geos.CreateCoordSeq(uint32(len(nodes)), 2)
 	if err != nil {
