@@ -3,7 +3,7 @@ package parser
 import (
 	"fmt"
 	"goposm/element"
-	"goposm/osmpbf"
+	"goposm/parser/osmpbf"
 	"log"
 	"os"
 )

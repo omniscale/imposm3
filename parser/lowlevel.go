@@ -5,7 +5,7 @@ import (
 	"code.google.com/p/goprotobuf/proto"
 	"compress/zlib"
 	structs "encoding/binary"
-	"goposm/osmpbf"
+	"goposm/parser/osmpbf"
 	"io"
 	"log"
 	"os"
