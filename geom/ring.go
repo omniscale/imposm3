@@ -7,7 +7,7 @@ import (
 type Ring struct {
 	ways  []*element.Way
 	refs  []int64
-	nodes []*element.Node
+	nodes []element.Node
 }
 
 func reverseRefs(refs []int64) {
@@ -16,7 +16,7 @@ func reverseRefs(refs []int64) {
 	}
 }
 
-func reverseNodes(nodes []*element.Node) {
+func reverseNodes(nodes []element.Node) {
 	for i, j := 0, len(nodes)-1; i < j; i, j = i+1, j-1 {
 		nodes[i], nodes[j] = nodes[j], nodes[i]
 	}
@@ -24,6 +24,7 @@ func reverseNodes(nodes []*element.Node) {
 
 func mergeRings(rings []*Ring) []*Ring {
 	endpoints := make(map[int64]*Ring)
+
 	for _, ring := range rings {
 		left := ring.refs[0]
 		right := ring.refs[len(ring.refs)-1]
@@ -40,22 +41,19 @@ func mergeRings(rings []*Ring) []*Ring {
 			}
 			origRing.ways = append(origRing.ways, ring.ways...)
 			// TODO tags
-
 			if rightRing, ok := endpoints[right]; ok && rightRing != origRing {
 				// close gap
 				delete(endpoints, right)
-				if right == ring.refs[0] {
-					origRing.refs = append(origRing.refs, ring.refs[1:]...)
-					origRing.nodes = append(origRing.nodes, ring.nodes[1:]...)
+				if right == rightRing.refs[0] {
+					origRing.refs = append(origRing.refs, rightRing.refs[1:]...)
+					origRing.nodes = append(origRing.nodes, rightRing.nodes[1:]...)
 				} else {
-
-					reverseRefs(ring.refs)
-					origRing.refs = append(origRing.refs[:len(origRing.refs)-2], ring.refs...)
-					reverseNodes(ring.nodes)
-					origRing.nodes = append(origRing.nodes[:len(origRing.nodes)-2], ring.nodes...)
+					reverseRefs(rightRing.refs)
+					origRing.refs = append(origRing.refs[:len(origRing.refs)-1], rightRing.refs...)
+					reverseNodes(rightRing.nodes)
+					origRing.nodes = append(origRing.nodes[:len(origRing.nodes)-1], rightRing.nodes...)
 				}
-
-				origRing.ways = append(origRing.ways, ring.ways...)
+				origRing.ways = append(origRing.ways, rightRing.ways...)
 				right := origRing.refs[len(origRing.refs)-1]
 				endpoints[right] = origRing
 
@@ -69,9 +67,9 @@ func mergeRings(rings []*Ring) []*Ring {
 				origRing.nodes = append(ring.nodes[:len(ring.nodes)-1], origRing.nodes...)
 			} else {
 				reverseRefs(ring.refs)
-				origRing.refs = append(origRing.refs[:len(origRing.refs)-2], ring.refs...)
+				origRing.refs = append(origRing.refs[:len(origRing.refs)-1], ring.refs...)
 				reverseNodes(ring.nodes)
-				origRing.nodes = append(origRing.nodes[:len(origRing.nodes)-2], ring.nodes...)
+				origRing.nodes = append(origRing.nodes[:len(origRing.nodes)-1], ring.nodes...)
 			}
 			origRing.ways = append(origRing.ways, ring.ways...)
 			// TODO tags
