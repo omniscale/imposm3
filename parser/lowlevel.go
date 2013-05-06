@@ -5,10 +5,10 @@ import (
 	"code.google.com/p/goprotobuf/proto"
 	"compress/zlib"
 	structs "encoding/binary"
+	"goposm/osmpbf"
 	"io"
 	"log"
 	"os"
-	"osmpbf"
 )
 
 func ReadPrimitiveBlock(pos BlockPosition) *osmpbf.PrimitiveBlock {

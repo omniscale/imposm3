@@ -3,9 +3,9 @@ package parser
 import (
 	"fmt"
 	"goposm/element"
+	"goposm/osmpbf"
 	"log"
 	"os"
-	"osmpbf"
 )
 
 type PBF struct {
