@@ -15,6 +15,20 @@ import (
 	"sync"
 )
 
+var skipCoords, skipNodes, skipWays bool
+
+func init() {
+	if os.Getenv("GOPOSM_SKIP_COORDS") != "" {
+		skipCoords = true
+	}
+	if os.Getenv("GOPOSM_SKIP_NODES") != "" {
+		skipNodes = true
+	}
+	if os.Getenv("GOPOSM_SKIP_WAYS") != "" {
+		skipWays = true
+	}
+}
+
 func parse(cache *cache.OSMCache, progress *stats.Statistics, filename string) {
 	nodes := make(chan []element.Node)
 	coords := make(chan []element.Node)
@@ -47,6 +61,9 @@ func parse(cache *cache.OSMCache, progress *stats.Statistics, filename string) {
 		waitCounter.Add(1)
 		go func() {
 			for ws := range ways {
+				if skipWays {
+					continue
+				}
 				for _, w := range ws {
 					mapping.WayTags.Filter(w.Tags)
 				}
@@ -73,6 +90,9 @@ func parse(cache *cache.OSMCache, progress *stats.Statistics, filename string) {
 		waitCounter.Add(1)
 		go func() {
 			for nds := range coords {
+				if skipCoords {
+					continue
+				}
 				cache.Coords.PutCoords(nds)
 				progress.AddCoords(len(nds))
 			}
@@ -83,6 +103,9 @@ func parse(cache *cache.OSMCache, progress *stats.Statistics, filename string) {
 		waitCounter.Add(1)
 		go func() {
 			for nds := range nodes {
+				if skipNodes {
+					continue
+				}
 				for _, nd := range nds {
 					ok := mapping.PointTags.Filter(nd.Tags)
 					if !ok {
