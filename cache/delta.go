@@ -85,6 +85,14 @@ type DeltaCoordsCache struct {
 	mu        sync.Mutex
 }
 
+// bunchSize defines how many coordinates should be stored in a
+// single record. This is the maximum and a bunch will typically contain
+// less coordinates (e.g. when nodes are removes).
+//
+// A higher number improves -read mode (writing the cache) but also
+// increases the overhead during -write mode (reading coords).
+const bunchSize = 128
+
 func NewDeltaCoordsCache(path string) (*DeltaCoordsCache, error) {
 	coordsCache := DeltaCoordsCache{}
 	err := coordsCache.open(path)
@@ -141,24 +149,26 @@ func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) {
 	var start, currentBunchId int64
 	currentBunchId = getBunchId(nodes[0].Id)
 	start = 0
+	totalNodes := len(nodes)
 	for i, node := range nodes {
 		bunchId := getBunchId(node.Id)
 		if bunchId != currentBunchId {
-			bunch := self.getBunch(currentBunchId)
-			bunch.coords = append(bunch.coords, nodes[start:i]...)
-			// make sure our coords are sorted
-			sort.Sort(Nodes(bunch.coords))
+			if i > bunchSize && i < totalNodes-bunchSize {
+				// no need to handle concurrent updates to the same
+				// bunch if we are not at the boundary of a bunchSize
+				self.putCoordsPacked(bunchId, nodes[start:i])
+			} else {
+				bunch := self.getBunch(currentBunchId)
+				bunch.coords = append(bunch.coords, nodes[start:i]...)
+				bunch.needsWrite = true
+				bunch.Unlock()
+			}
 			currentBunchId = bunchId
 			start = int64(i)
-			bunch.needsWrite = true
-			bunch.Unlock()
 		}
 	}
 	bunch := self.getBunch(currentBunchId)
 	bunch.coords = append(bunch.coords, nodes[start:]...)
-	// make sure our coords are sorted
-	sort.Sort(Nodes(bunch.coords))
-
 	bunch.needsWrite = true
 	bunch.Unlock()
 }
@@ -201,7 +211,7 @@ func (p *DeltaCoordsCache) getCoordsPacked(bunchId int64, nodes []element.Node) 
 }
 
 func getBunchId(nodeId int64) int64 {
-	return nodeId / (64)
+	return nodeId / bunchSize
 }
 
 func (self *DeltaCoordsCache) getBunch(bunchId int64) *CoordsBunch {
