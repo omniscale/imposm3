@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"bytes"
 	bin "encoding/binary"
 	"github.com/jmhodges/levigo"
 	"goposm/binary"
@@ -149,6 +150,12 @@ type NodesCache struct {
 	Cache
 }
 
+func idToKeyBuf(id int64) []byte {
+	var b bytes.Buffer
+	bin.Write(&b, bin.BigEndian, &id)
+	return b.Bytes()
+}
+
 func NewNodesCache(path string) (*NodesCache, error) {
 	cache := NodesCache{}
 	err := cache.open(path)
@@ -201,8 +208,7 @@ func NewRelationsCache(path string) (*RelationsCache, error) {
 }
 
 func (p *CoordsCache) PutCoord(node *element.Node) error {
-	keyBuf := make([]byte, 8)
-	bin.PutVarint(keyBuf, int64(node.Id))
+	keyBuf := idToKeyBuf(node.Id)
 	data, err := binary.MarshalCoord(node)
 	if err != nil {
 		panic(err)
@@ -214,9 +220,8 @@ func (p *CoordsCache) PutCoords(nodes []element.Node) error {
 	batch := levigo.NewWriteBatch()
 	defer batch.Close()
 
-	keyBuf := make([]byte, 8)
 	for _, node := range nodes {
-		bin.PutVarint(keyBuf, int64(node.Id))
+		keyBuf := idToKeyBuf(node.Id)
 		data, err := binary.MarshalCoord(&node)
 		if err != nil {
 			panic(err)
@@ -227,8 +232,7 @@ func (p *CoordsCache) PutCoords(nodes []element.Node) error {
 }
 
 func (p *CoordsCache) GetCoord(id int64) (*element.Node, error) {
-	keyBuf := make([]byte, 8)
-	bin.PutVarint(keyBuf, int64(id))
+	keyBuf := idToKeyBuf(id)
 	data, err := p.db.Get(p.ro, keyBuf)
 	if err != nil {
 		return nil, err
@@ -248,8 +252,7 @@ func (p *NodesCache) PutNode(node *element.Node) error {
 	if node.Tags == nil {
 		return nil
 	}
-	keyBuf := make([]byte, 8)
-	bin.PutVarint(keyBuf, int64(node.Id))
+	keyBuf := idToKeyBuf(node.Id)
 	data, err := binary.MarshalNode(node)
 	if err != nil {
 		panic(err)
@@ -261,13 +264,12 @@ func (p *NodesCache) PutNodes(nodes []element.Node) (int, error) {
 	batch := levigo.NewWriteBatch()
 	defer batch.Close()
 
-	keyBuf := make([]byte, 8)
 	var n int
 	for _, node := range nodes {
 		if len(node.Tags) == 0 {
 			continue
 		}
-		bin.PutVarint(keyBuf, int64(node.Id))
+		keyBuf := idToKeyBuf(node.Id)
 		data, err := binary.MarshalNode(&node)
 		if err != nil {
 			panic(err)
@@ -279,8 +281,7 @@ func (p *NodesCache) PutNodes(nodes []element.Node) (int, error) {
 }
 
 func (p *NodesCache) GetNode(id int64) (*element.Node, error) {
-	keyBuf := make([]byte, 8)
-	bin.PutVarint(keyBuf, int64(id))
+	keyBuf := idToKeyBuf(id)
 	data, err := p.db.Get(p.ro, keyBuf)
 	if err != nil {
 		return nil, err
@@ -296,8 +297,7 @@ func (p *NodesCache) GetNode(id int64) (*element.Node, error) {
 }
 
 func (p *WaysCache) PutWay(way *element.Way) error {
-	keyBuf := make([]byte, 8)
-	bin.PutVarint(keyBuf, int64(way.Id))
+	keyBuf := idToKeyBuf(way.Id)
 	data, err := binary.MarshalWay(way)
 	if err != nil {
 		panic(err)
@@ -309,9 +309,8 @@ func (p *WaysCache) PutWays(ways []element.Way) error {
 	batch := levigo.NewWriteBatch()
 	defer batch.Close()
 
-	keyBuf := make([]byte, 8)
 	for _, way := range ways {
-		bin.PutVarint(keyBuf, int64(way.Id))
+		keyBuf := idToKeyBuf(way.Id)
 		data, err := binary.MarshalWay(&way)
 		if err != nil {
 			panic(err)
@@ -330,9 +329,8 @@ func (p *WaysCache) wayWriter() {
 		batch := levigo.NewWriteBatch()
 		defer batch.Close()
 
-		keyBuf := make([]byte, 8)
 		for _, way := range ways {
-			bin.PutVarint(keyBuf, int64(way.Id))
+			keyBuf := idToKeyBuf(way.Id)
 			data, err := binary.MarshalWay(&way)
 			if err != nil {
 				panic(err)
@@ -344,8 +342,7 @@ func (p *WaysCache) wayWriter() {
 }
 
 func (p *WaysCache) GetWay(id int64) (*element.Way, error) {
-	keyBuf := make([]byte, 8)
-	bin.PutVarint(keyBuf, int64(id))
+	keyBuf := idToKeyBuf(id)
 	data, err := p.db.Get(p.ro, keyBuf)
 	if err != nil {
 		return nil, err
@@ -381,8 +378,7 @@ func (p *WaysCache) Iter() chan *element.Way {
 }
 
 func (p *RelationsCache) PutRelation(relation *element.Relation) error {
-	keyBuf := make([]byte, 8)
-	bin.PutVarint(keyBuf, int64(relation.Id))
+	keyBuf := idToKeyBuf(relation.Id)
 	data, err := binary.MarshalRelation(relation)
 	if err != nil {
 		panic(err)
@@ -394,9 +390,8 @@ func (p *RelationsCache) PutRelations(rels []element.Relation) error {
 	batch := levigo.NewWriteBatch()
 	defer batch.Close()
 
-	keyBuf := make([]byte, 8)
 	for _, rel := range rels {
-		bin.PutVarint(keyBuf, int64(rel.Id))
+		keyBuf := idToKeyBuf(rel.Id)
 		data, err := binary.MarshalRelation(&rel)
 		if err != nil {
 			panic(err)
@@ -427,8 +422,7 @@ func (p *RelationsCache) Iter() chan *element.Relation {
 }
 
 func (p *RelationsCache) GetRelation(id int64) (*element.Relation, error) {
-	keyBuf := make([]byte, 8)
-	bin.PutVarint(keyBuf, int64(id))
+	keyBuf := idToKeyBuf(id)
 	data, err := p.db.Get(p.ro, keyBuf)
 	if err != nil {
 		return nil, err
