@@ -135,6 +135,8 @@ func (self *DeltaCoordsCache) FillWay(way *element.Way) bool {
 	return true
 }
 
+// PutCoords puts nodes into cache.
+// nodes need to be sorted by Id.
 func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) {
 	var start, currentBunchId int64
 	currentBunchId = getBunchId(nodes[0].Id)
@@ -143,7 +145,8 @@ func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) {
 		bunchId := getBunchId(node.Id)
 		if bunchId != currentBunchId {
 			bunch := self.getBunch(currentBunchId)
-			bunch.coords = append(bunch.coords, nodes[start:i-1]...)
+			bunch.coords = append(bunch.coords, nodes[start:i]...)
+			// make sure our coords are sorted
 			sort.Sort(Nodes(bunch.coords))
 			currentBunchId = bunchId
 			start = int64(i)
@@ -153,7 +156,9 @@ func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) {
 	}
 	bunch := self.getBunch(currentBunchId)
 	bunch.coords = append(bunch.coords, nodes[start:]...)
+	// make sure our coords are sorted
 	sort.Sort(Nodes(bunch.coords))
+
 	bunch.needsWrite = true
 	bunch.Unlock()
 }
