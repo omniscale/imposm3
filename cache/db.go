@@ -248,7 +248,7 @@ func (p *NodesCache) PutNodes(nodes []element.Node) (int, error) {
 	keyBuf := make([]byte, 8)
 	var n int
 	for _, node := range nodes {
-		if node.Tags == nil {
+		if len(node.Tags) == 0 {
 			continue
 		}
 		bin.PutVarint(keyBuf, int64(node.Id))

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"goposm/cache"
 	"goposm/element"
+	"goposm/mapping"
 	"goposm/parser"
 	"goposm/stats"
 	"log"
@@ -46,6 +47,9 @@ func parse(cache *cache.OSMCache, progress *stats.Statistics, filename string) {
 		waitCounter.Add(1)
 		go func() {
 			for ws := range ways {
+				for _, w := range ws {
+					mapping.WayTags.Filter(w.Tags)
+				}
 				cache.Ways.PutWays(ws)
 				progress.AddWays(len(ws))
 			}
@@ -56,6 +60,9 @@ func parse(cache *cache.OSMCache, progress *stats.Statistics, filename string) {
 		waitCounter.Add(1)
 		go func() {
 			for rels := range relations {
+				for _, r := range rels {
+					mapping.RelationTags.Filter(r.Tags)
+				}
 				cache.Relations.PutRelations(rels)
 				progress.AddRelations(len(rels))
 			}
@@ -76,6 +83,12 @@ func parse(cache *cache.OSMCache, progress *stats.Statistics, filename string) {
 		waitCounter.Add(1)
 		go func() {
 			for nds := range nodes {
+				for _, nd := range nds {
+					ok := mapping.PointTags.Filter(nd.Tags)
+					if !ok {
+						nd.Tags = nil
+					}
+				}
 				n, _ := cache.Nodes.PutNodes(nds)
 				progress.AddNodes(n)
 			}
