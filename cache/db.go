@@ -7,7 +7,17 @@ import (
 	"goposm/element"
 	"os"
 	"path/filepath"
+	"strconv"
 )
+
+var levelDbWriteBufferSize, levelDbWriteBlockSize int64
+
+func init() {
+	levelDbWriteBufferSize, _ = strconv.ParseInt(
+		os.Getenv("GOPOSM_LEVELDB_BUFFERSIZE"), 10, 32)
+	levelDbWriteBlockSize, _ = strconv.ParseInt(
+		os.Getenv("GOPOSM_LEVELDB_BLOCKSIZE"), 10, 32)
+}
 
 type OSMCache struct {
 	Dir       string
@@ -115,6 +125,12 @@ func (c *Cache) open(path string) error {
 	opts := levigo.NewOptions()
 	opts.SetCache(levigo.NewLRUCache(1024 * 1024 * 50))
 	opts.SetCreateIfMissing(true)
+	if levelDbWriteBufferSize != 0 {
+		opts.SetWriteBufferSize(int(levelDbWriteBufferSize))
+	}
+	if levelDbWriteBlockSize != 0 {
+		opts.SetBlockSize(int(levelDbWriteBlockSize))
+	}
 	db, err := levigo.Open(path, opts)
 	if err != nil {
 		return err
