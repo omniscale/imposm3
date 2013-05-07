@@ -2,6 +2,7 @@ package stats
 
 import (
 	"fmt"
+	"os"
 	"time"
 )
 
@@ -75,7 +76,7 @@ func (c *counter) Print() {
 	waysPS := int32(float64(c.ways-c.lastWays)/dur.Seconds()/100) * 100
 	relationsPS := int32(float64(c.relations-c.lastRelations)/dur.Seconds()/10) * 10
 
-	fmt.Printf("Coords: %6d/s (%10d) Nodes: %6d/s (%9d) Ways: %6d/s (%8d) Relations: %6d/s (%7d)\r\b",
+	fmt.Printf("Coords: %6d/s (%10d) Nodes: %6d/s (%9d) Ways: %6d/s (%8d) Relations: %6d/s (%7d)",
 		coordsPS,
 		c.coords,
 		nodesPS,
@@ -85,6 +86,11 @@ func (c *counter) Print() {
 		relationsPS,
 		c.relations,
 	)
+	if val := os.Getenv("GOGCTRACE"); val != "" {
+		fmt.Print("\n")
+	} else {
+		fmt.Print("\r\b")
+	}
 	c.lastCoords = c.coords
 	c.lastNodes = c.nodes
 	c.lastWays = c.ways
