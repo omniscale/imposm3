@@ -76,7 +76,7 @@ func (c *counter) Print() {
 	waysPS := int32(float64(c.ways-c.lastWays)/dur.Seconds()/100) * 100
 	relationsPS := int32(float64(c.relations-c.lastRelations)/dur.Seconds()/10) * 10
 
-	fmt.Printf("Coords: %6d/s (%10d) Nodes: %6d/s (%9d) Ways: %6d/s (%8d) Relations: %6d/s (%7d)",
+	fmt.Printf("Coords: %7d/s (%10d) Nodes: %7d/s (%9d) Ways: %7d/s (%8d) Relations: %6d/s (%7d)",
 		coordsPS,
 		c.coords,
 		nodesPS,
