@@ -4,9 +4,13 @@ import (
 	"flag"
 	"fmt"
 	"goposm/cache"
+	"goposm/db"
 	"goposm/element"
+	"goposm/geom"
+	"goposm/geom/geos"
 	"goposm/mapping"
 	"goposm/parser"
+	"goposm/proj"
 	"goposm/stats"
 	"log"
 	"os"
@@ -197,26 +201,76 @@ func main() {
 		}
 
 		waitFill := sync.WaitGroup{}
+		wayChan := make(chan []element.Way)
+		waitDb := &sync.WaitGroup{}
+		config := db.Config{"postgres", "user=olt host=localhost dbname=olt sslmode=disable", 3857, "public"}
+		pg, err := db.Open(config)
+		if err != nil {
+			log.Fatal(err)
+		}
+		specs := []db.TableSpec{
+			{
+				"goposm_test",
+				config.Schema,
+				[]db.ColumnSpec{
+					{"name", "VARCHAR"},
+					{"highway", "VARCHAR"},
+				},
+				"LINESTRING",
+				config.Srid,
+			},
+		}
+		pg.Init(specs)
+		for i := 0; i < runtime.NumCPU(); i++ {
+			waitDb.Add(1)
+			go func() {
+				for ways := range wayChan {
+					pg.InsertWays(ways, specs[0])
+				}
+				waitDb.Done()
+			}()
+		}
+
 		for i := 0; i < runtime.NumCPU(); i++ {
 			waitFill.Add(1)
-
 			go func() {
+				geos := geos.NewGEOS()
+				defer geos.Finish()
+
+				batch := make([]element.Way, 0, 10*1024)
 				for w := range way {
 					progress.AddWays(1)
 					ok := osmCache.Coords.FillWay(w)
 					if !ok {
 						continue
 					}
+
+					proj.NodesToMerc(w.Nodes)
+					w.Wkb, err = geom.LineStringWKB(geos, w.Nodes)
+					if err != nil {
+						log.Println(err)
+						continue
+					}
+					batch = append(batch, *w)
+
+					if len(batch) >= 10*1024 {
+						wayChan <- batch
+						batch = make([]element.Way, 0, 10*1024)
+					}
+
 					if true {
 						for _, node := range w.Nodes {
 							diffCache.Coords.Add(node.Id, w.Id)
 						}
 					}
 				}
+				wayChan <- batch
 				waitFill.Done()
 			}()
 		}
 		waitFill.Wait()
+		close(wayChan)
+		waitDb.Wait()
 	}
 
 	//parser.PBFStats(os.Args[1])

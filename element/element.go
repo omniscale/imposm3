@@ -17,6 +17,7 @@ type Way struct {
 	OSMElem
 	Refs  []int64
 	Nodes []Node
+	Wkb   []byte
 }
 
 type MemberType int

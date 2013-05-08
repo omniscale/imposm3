@@ -86,6 +86,7 @@ func UnmarshalNode(data []byte) (node *element.Node, err error) {
 }
 
 func MarshalWay(way *element.Way) ([]byte, error) {
+	// TODO reuse Way to avoid make(Tags) for each way in TagsAsArray
 	pbfWay := &Way{}
 	pbfWay.Id = &way.Id
 	pbfWay.Refs = way.Refs
