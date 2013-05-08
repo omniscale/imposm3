@@ -53,8 +53,8 @@ func unpackNodes(deltaCoords *DeltaCoords, nodes []element.Node) []element.Node 
 
 	for i := 0; i < len(deltaCoords.Ids); i++ {
 		id = lastId + deltaCoords.Ids[i]
-		lon = lastLon + deltaCoords.Lats[i]
-		lat = lastLat + deltaCoords.Lons[i]
+		lon = lastLon + deltaCoords.Lons[i]
+		lat = lastLat + deltaCoords.Lats[i]
 		nodes[i] = element.Node{
 			OSMElem: element.OSMElem{Id: int64(id)},
 			Long:    binary.IntToCoord(uint32(lon)),
