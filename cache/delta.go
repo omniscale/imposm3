@@ -156,7 +156,7 @@ func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) {
 			if i > bunchSize && i < totalNodes-bunchSize {
 				// no need to handle concurrent updates to the same
 				// bunch if we are not at the boundary of a bunchSize
-				self.putCoordsPacked(bunchId, nodes[start:i])
+				self.putCoordsPacked(currentBunchId, nodes[start:i])
 			} else {
 				bunch := self.getBunch(currentBunchId)
 				bunch.coords = append(bunch.coords, nodes[start:i]...)
