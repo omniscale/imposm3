@@ -145,8 +145,19 @@ type PostGIS struct {
 
 func (pg *PostGIS) Open() error {
 	var err error
-	pg.Db, err = sql.Open("postgres", "user=olt host=localhost dbname=olt sslmode=disable")
-	return err
+	pg.Db, err = sql.Open("postgres", pg.Config.ConnectionParams)
+	if err != nil {
+		return err
+	}
+	// sql.Open is lazy, make a query to check that the
+	// connection actually works
+	row := pg.Db.QueryRow("SELECT 1;")
+	var v string
+	err = row.Scan(&v)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (pg *PostGIS) WayInserter(spec TableSpec, ways chan []element.Way) error {
