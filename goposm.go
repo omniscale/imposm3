@@ -138,6 +138,7 @@ var (
 	appendcache    = flag.Bool("appendcache", false, "append cache")
 	read           = flag.String("read", "", "read")
 	write          = flag.Bool("write", false, "write")
+	connection     = flag.String("connection", "", "connection parameters")
 )
 
 func main() {
@@ -203,7 +204,7 @@ func main() {
 		waitFill := sync.WaitGroup{}
 		wayChan := make(chan []element.Way)
 		waitDb := &sync.WaitGroup{}
-		config := db.Config{"postgres", "user=olt host=localhost dbname=olt sslmode=disable", 3857, "public"}
+		config := db.Config{"postgres", *connection, 3857, "public"}
 		pg, err := db.Open(config)
 		if err != nil {
 			log.Fatal(err)
@@ -244,7 +245,6 @@ func main() {
 					if !ok {
 						continue
 					}
-
 					proj.NodesToMerc(w.Nodes)
 					w.Wkb, err = geom.LineStringWKB(geos, w.Nodes)
 					if err != nil {
@@ -258,7 +258,7 @@ func main() {
 						batch = make([]element.Way, 0, 10*1024)
 					}
 
-					if true {
+					if false {
 						for _, node := range w.Nodes {
 							diffCache.Coords.Add(node.Id, w.Id)
 						}
