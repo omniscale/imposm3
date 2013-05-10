@@ -112,7 +112,6 @@ func (pg *PostGIS) createTable(spec TableSpec) error {
 	}
 
 	sql = spec.CreateTableSQL()
-	log.Println(sql)
 	_, err = pg.Db.Exec(sql)
 	if err != nil {
 		return &SQLError{sql, err}
@@ -129,6 +128,22 @@ func (pg *PostGIS) createTable(spec TableSpec) error {
 func (pg *PostGIS) createSchema() error {
 	var sql string
 	var err error
+
+	sql = fmt.Sprintf("SELECT EXISTS(SELECT schema_name FROM information_schema.schemata WHERE schema_name = '%s');",
+		pg.Config.Schema)
+	row := pg.Db.QueryRow(sql)
+	var exists bool
+	err = row.Scan(&exists)
+	if err != nil {
+		return &SQLError{sql, err}
+	}
+	if exists {
+		return nil
+	}
+
+	if err != nil {
+		return &SQLError{sql, err}
+	}
 
 	sql = fmt.Sprintf("CREATE SCHEMA \"%s\"", pg.Config.Schema)
 	_, err = pg.Db.Exec(sql)
