@@ -221,12 +221,18 @@ func main() {
 				config.Srid,
 			},
 		}
-		pg.Init(specs)
+		err = pg.Init(specs)
+		if err != nil {
+			log.Fatal(err)
+		}
 		for i := 0; i < runtime.NumCPU(); i++ {
 			waitDb.Add(1)
 			go func() {
 				for ways := range wayChan {
-					pg.InsertWays(ways, specs[0])
+					err = pg.InsertWays(ways, specs[0])
+					if err != nil {
+						log.Fatal(err)
+					}
 				}
 				waitDb.Done()
 			}()
