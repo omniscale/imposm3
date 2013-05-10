@@ -16,10 +16,12 @@ import (
 	"os"
 	"runtime"
 	"runtime/pprof"
+	"strconv"
 	"sync"
 )
 
 var skipCoords, skipNodes, skipWays bool
+var dbImportBatchSize int64
 
 func init() {
 	if os.Getenv("GOPOSM_SKIP_COORDS") != "" {
@@ -30,6 +32,13 @@ func init() {
 	}
 	if os.Getenv("GOPOSM_SKIP_WAYS") != "" {
 		skipWays = true
+	}
+
+	dbImportBatchSize, _ = strconv.ParseInt(
+		os.Getenv("GOPOSM_DBIMPORT_BATCHSIZE"), 10, 32)
+
+	if dbImportBatchSize == 0 {
+		dbImportBatchSize = 4096
 	}
 }
 
@@ -263,7 +272,7 @@ func main() {
 				geos := geos.NewGEOS()
 				defer geos.Finish()
 
-				batch := make([]element.Way, 0, 10*1024)
+				batch := make([]element.Way, 0, dbImportBatchSize)
 				for w := range way {
 					progress.AddWays(1)
 					ok := osmCache.Coords.FillWay(w)
@@ -283,9 +292,9 @@ func main() {
 					}
 					batch = append(batch, *w)
 
-					if len(batch) >= 10*1024 {
+					if len(batch) >= int(dbImportBatchSize) {
 						wayChan <- batch
-						batch = make([]element.Way, 0, 10*1024)
+						batch = make([]element.Way, 0, dbImportBatchSize)
 					}
 
 					if *diff {
