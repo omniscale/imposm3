@@ -208,7 +208,7 @@ func (p *DeltaCoordsCache) getCoordsPacked(bunchId int64, nodes []element.Node) 
 }
 
 func getBunchId(nodeId int64) int64 {
-	return nodeId / bunchSize
+	return nodeId / deltaCachBunchSize
 }
 
 func (self *DeltaCoordsCache) getBunch(bunchId int64) *CoordsBunch {

@@ -12,12 +12,19 @@ import (
 )
 
 var levelDbWriteBufferSize, levelDbWriteBlockSize int64
+var deltaCachBunchSize int64
 
 func init() {
 	levelDbWriteBufferSize, _ = strconv.ParseInt(
 		os.Getenv("GOPOSM_LEVELDB_BUFFERSIZE"), 10, 32)
 	levelDbWriteBlockSize, _ = strconv.ParseInt(
 		os.Getenv("GOPOSM_LEVELDB_BLOCKSIZE"), 10, 32)
+	deltaCachBunchSize, _ = strconv.ParseInt(
+		os.Getenv("GOPOSM_DELTACACHE_BUNCHSIZE"), 10, 32)
+
+	if deltaCachBunchSize == 0 {
+		deltaCachBunchSize = 128
+	}
 }
 
 type OSMCache struct {
