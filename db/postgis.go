@@ -129,6 +129,10 @@ func (pg *PostGIS) createSchema() error {
 	var sql string
 	var err error
 
+	if pg.Config.Schema == "public" {
+		return nil
+	}
+
 	sql = fmt.Sprintf("SELECT EXISTS(SELECT schema_name FROM information_schema.schemata WHERE schema_name = '%s');",
 		pg.Config.Schema)
 	row := pg.Db.QueryRow(sql)
@@ -139,10 +143,6 @@ func (pg *PostGIS) createSchema() error {
 	}
 	if exists {
 		return nil
-	}
-
-	if err != nil {
-		return &SQLError{sql, err}
 	}
 
 	sql = fmt.Sprintf("CREATE SCHEMA \"%s\"", pg.Config.Schema)
