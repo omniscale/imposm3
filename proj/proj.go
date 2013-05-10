@@ -20,7 +20,7 @@ func mercToWgs(x, y float64) (long, lat float64) {
 }
 
 func NodesToMerc(nodes []element.Node) {
-	for _, nd := range nodes {
-		nd.Long, nd.Lat = wgsToMerc(nd.Long, nd.Lat)
+	for i, nd := range nodes {
+		nodes[i].Long, nodes[i].Lat = wgsToMerc(nd.Long, nd.Lat)
 	}
 }
