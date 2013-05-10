@@ -33,6 +33,10 @@ func init() {
 	}
 }
 
+type ErrorLevel interface {
+	Level() int
+}
+
 func parse(cache *cache.OSMCache, progress *stats.Statistics, filename string) {
 	nodes := make(chan []element.Node)
 	coords := make(chan []element.Node)
@@ -254,6 +258,11 @@ func main() {
 					proj.NodesToMerc(w.Nodes)
 					w.Wkb, err = geom.LineStringWKB(geos, w.Nodes)
 					if err != nil {
+						if err, ok := err.(ErrorLevel); ok {
+							if err.Level() <= 0 {
+								continue
+							}
+						}
 						log.Println(err)
 						continue
 					}

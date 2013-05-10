@@ -1,13 +1,29 @@
 package geom
 
 import (
-	"errors"
 	"goposm/element"
 	"goposm/geom/geos"
 )
 
+type GeomError struct {
+	message string
+	level   int
+}
+
+func (e *GeomError) Error() string {
+	return e.message
+}
+
+func (e *GeomError) Level() int {
+	return e.level
+}
+
+func NewGeomError(message string, level int) *GeomError {
+	return &GeomError{message, level}
+}
+
 var (
-	ErrorOneNodeWay = errors.New("need at least two separate nodes for way")
+	ErrorOneNodeWay = NewGeomError("need at least two separate nodes for way", 0)
 )
 
 func PointWKB(g *geos.GEOS, node element.Node) ([]byte, error) {
