@@ -2,7 +2,6 @@ package cache
 
 import (
 	"code.google.com/p/goprotobuf/proto"
-	bin "encoding/binary"
 	"os"
 	"path/filepath"
 	"sort"
@@ -89,8 +88,7 @@ func NewRefIndex(path string) (*RefIndex, error) {
 }
 
 func (index *RefIndex) Add(id, ref int64) error {
-	keyBuf := make([]byte, 8)
-	bin.PutVarint(keyBuf, id)
+	keyBuf := idToKeyBuf(id)
 	data, err := index.db.Get(index.ro, keyBuf)
 	if err != nil {
 		panic(err)
@@ -131,8 +129,7 @@ func (r *Refs) insertId(ref int64) {
 }
 
 func (index *RefIndex) Get(id int64) []int64 {
-	keyBuf := make([]byte, 8)
-	bin.PutVarint(keyBuf, id)
+	keyBuf := idToKeyBuf(id)
 	data, err := index.db.Get(index.ro, keyBuf)
 	refs := &Refs{}
 	if data != nil {

@@ -3,7 +3,6 @@ package cache
 import (
 	"code.google.com/p/goprotobuf/proto"
 	"container/list"
-	bin "encoding/binary"
 	"goposm/binary"
 	"goposm/element"
 	"sort"
@@ -177,8 +176,7 @@ func (p *DeltaCoordsCache) putCoordsPacked(bunchId int64, nodes []element.Node) 
 	if len(nodes) == 0 {
 		return
 	}
-	keyBuf := make([]byte, 8)
-	bin.PutVarint(keyBuf, bunchId)
+	keyBuf := idToKeyBuf(bunchId)
 
 	deltaCoords := packNodes(nodes)
 	data, err := proto.Marshal(deltaCoords)
@@ -189,8 +187,7 @@ func (p *DeltaCoordsCache) putCoordsPacked(bunchId int64, nodes []element.Node) 
 }
 
 func (p *DeltaCoordsCache) getCoordsPacked(bunchId int64, nodes []element.Node) []element.Node {
-	keyBuf := make([]byte, 8)
-	bin.PutVarint(keyBuf, bunchId)
+	keyBuf := idToKeyBuf(bunchId)
 
 	data, err := p.db.Get(p.ro, keyBuf)
 	if err != nil {
