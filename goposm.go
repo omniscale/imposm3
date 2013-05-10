@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"goposm/cache"
 	"goposm/db"
 	"goposm/element"
@@ -189,12 +188,11 @@ func main() {
 	}
 	defer osmCache.Close()
 
-	fmt.Println("start")
 	progress := stats.StatsReporter()
 
 	if *read != "" {
 		parse(osmCache, progress, *read)
-		progress.Message("done reading")
+		progress.Reset()
 	}
 
 	if *write {
@@ -311,7 +309,7 @@ func main() {
 		waitDiff.Wait()
 		waitDb.Wait()
 	}
+	progress.Stop()
 
 	//parser.PBFStats(os.Args[1])
-	fmt.Println("\ndone")
 }
