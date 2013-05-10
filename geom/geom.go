@@ -1,8 +1,13 @@
 package geom
 
 import (
+	"errors"
 	"goposm/element"
 	"goposm/geom/geos"
+)
+
+var (
+	ErrorOneNodeWay = errors.New("need at least two separate nodes for way")
 )
 
 func PointWKB(g *geos.GEOS, node element.Node) ([]byte, error) {
@@ -21,6 +26,10 @@ func PointWKB(g *geos.GEOS, node element.Node) ([]byte, error) {
 }
 
 func LineStringWKB(g *geos.GEOS, nodes []element.Node) ([]byte, error) {
+	if len(nodes) < 2 {
+		return nil, ErrorOneNodeWay
+	}
+
 	coordSeq, err := g.CreateCoordSeq(uint32(len(nodes)), 2)
 	if err != nil {
 		return nil, err
