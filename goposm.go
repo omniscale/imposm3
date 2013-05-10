@@ -143,6 +143,7 @@ var (
 	read           = flag.String("read", "", "read")
 	write          = flag.Bool("write", false, "write")
 	connection     = flag.String("connection", "", "connection parameters")
+	diff           = flag.Bool("diff", false, "enable diff support")
 )
 
 func main() {
@@ -206,7 +207,9 @@ func main() {
 		}
 
 		waitFill := sync.WaitGroup{}
+		waitDiff := sync.WaitGroup{}
 		wayChan := make(chan []element.Way)
+		diffChan := make(chan *element.Way)
 		waitDb := &sync.WaitGroup{}
 		config := db.Config{"postgres", *connection, 3857, "public"}
 		pg, err := db.Open(config)
@@ -243,6 +246,18 @@ func main() {
 		}
 
 		for i := 0; i < runtime.NumCPU(); i++ {
+			waitDiff.Add(1)
+			go func() {
+				for way := range diffChan {
+					for _, node := range way.Nodes {
+						diffCache.Coords.Add(node.Id, way.Id)
+					}
+				}
+				waitDiff.Done()
+			}()
+		}
+
+		for i := 0; i < runtime.NumCPU(); i++ {
 			waitFill.Add(1)
 			go func() {
 				geos := geos.NewGEOS()
@@ -273,10 +288,8 @@ func main() {
 						batch = make([]element.Way, 0, 10*1024)
 					}
 
-					if false {
-						for _, node := range w.Nodes {
-							diffCache.Coords.Add(node.Id, w.Id)
-						}
+					if *diff {
+						diffChan <- w
 					}
 				}
 				wayChan <- batch
@@ -285,6 +298,8 @@ func main() {
 		}
 		waitFill.Wait()
 		close(wayChan)
+		close(diffChan)
+		waitDiff.Wait()
 		waitDb.Wait()
 	}
 
