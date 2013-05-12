@@ -133,6 +133,13 @@ func (this *GEOS) AsWKB(geom *Geom) ([]byte, error) {
 	return C.GoBytes(unsafe.Pointer(buf), C.int(size)), nil
 }
 
+func (this *GEOS) IsValid(geom *Geom) bool {
+	if C.GEOSisValid_r(this.v, geom.v) == 1 {
+		return true
+	}
+	return false
+}
+
 func (this *GEOS) Area(geom *Geom) float64 {
 	var area C.double
 	C.GEOSArea_r(this.v, geom.v, &area)
