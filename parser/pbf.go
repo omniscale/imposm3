@@ -104,8 +104,8 @@ func ParseDenseNodeTags(stringtable StringTable, keysVals *[]int32, pos *int) ma
 		*pos += 1
 		result[stringtable[key]] = stringtable[val]
 	}
-	return result
 }
+
 func ParseTags(stringtable StringTable, keys []uint32, vals []uint32) map[string]string {
 	tags := make(map[string]string)
 	for i := 0; i < len(keys); i++ {

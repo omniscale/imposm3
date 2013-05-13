@@ -238,7 +238,12 @@ func main() {
 		waitFill := sync.WaitGroup{}
 		wayChan := make(chan []element.Way)
 		waitDb := &sync.WaitGroup{}
-		config := db.Config{"postgres", *connection, 3857, "public"}
+		config := db.Config{
+			Type:             "postgres",
+			ConnectionParams: *connection,
+			Srid:             3857,
+			Schema:           "public",
+		}
 		pg, err := db.Open(config)
 		if err != nil {
 			log.Fatal(err)

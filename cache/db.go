@@ -382,7 +382,7 @@ func (p *WaysCache) Iter() chan *element.Way {
 		it := p.db.NewIterator(ro)
 		defer it.Close()
 		it.SeekToFirst()
-		for it = it; it.Valid(); it.Next() {
+		for ; it.Valid(); it.Next() {
 			ways, err := binary.UnmarshalWay(it.Value())
 			if err != nil {
 				panic(err)
@@ -426,7 +426,7 @@ func (p *RelationsCache) Iter() chan *element.Relation {
 		it := p.db.NewIterator(ro)
 		defer it.Close()
 		it.SeekToFirst()
-		for it = it; it.Valid(); it.Next() {
+		for ; it.Valid(); it.Next() {
 			relation, err := binary.UnmarshalRelation(it.Value())
 			if err != nil {
 				panic(err)

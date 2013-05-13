@@ -24,8 +24,6 @@ func Marshal(elem interface{}) ([]byte, error) {
 	default:
 		panic("invalid elem to marshal")
 	}
-
-	return []byte{}, nil
 }
 
 func MarshalCoord(node *element.Node) ([]byte, error) {
