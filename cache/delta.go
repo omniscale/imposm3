@@ -185,7 +185,10 @@ func (p *DeltaCoordsCache) putCoordsPacked(bunchId int64, nodes []element.Node) 
 	if err != nil {
 		panic(err)
 	}
-	p.db.Put(p.wo, keyBuf, data)
+	err = p.db.Put(p.wo, keyBuf, data)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (p *DeltaCoordsCache) getCoordsPacked(bunchId int64, nodes []element.Node) []element.Node {
