@@ -83,10 +83,30 @@ func UnmarshalNode(data []byte) (node *element.Node, err error) {
 	return node, nil
 }
 
+func deltaPack(data []int64) {
+	if len(data) < 2 {
+		return
+	}
+	lastVal := data[0]
+	for i := 1; i < len(data); i++ {
+		data[i], lastVal = data[i]-lastVal, data[i]
+	}
+}
+
+func deltaUnpack(data []int64) {
+	if len(data) < 2 {
+		return
+	}
+	for i := 1; i < len(data); i++ {
+		data[i] = data[i] + data[i-1]
+	}
+}
+
 func MarshalWay(way *element.Way) ([]byte, error) {
 	// TODO reuse Way to avoid make(Tags) for each way in TagsAsArray
 	pbfWay := &Way{}
 	pbfWay.Id = &way.Id
+	deltaPack(way.Refs)
 	pbfWay.Refs = way.Refs
 	pbfWay.Tags = way.TagsAsArray()
 	return proto.Marshal(pbfWay)
@@ -101,6 +121,7 @@ func UnmarshalWay(data []byte) (way *element.Way, err error) {
 
 	way = &element.Way{}
 	way.Id = *pbfWay.Id
+	deltaUnpack(pbfWay.Refs)
 	way.Refs = pbfWay.Refs
 	way.TagsFromArray(pbfWay.Tags)
 	return way, nil
@@ -109,6 +130,7 @@ func UnmarshalWay(data []byte) (way *element.Way, err error) {
 func MarshalRelation(relation *element.Relation) ([]byte, error) {
 	pbfRelation := &Relation{}
 	pbfRelation.Id = &relation.Id
+	// TODO store members
 	//pbfRelation.Members = relation.Members
 	pbfRelation.Tags = relation.TagsAsArray()
 	return proto.Marshal(pbfRelation)

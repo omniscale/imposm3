@@ -73,3 +73,25 @@ func TestMarshalWay(t *testing.T) {
 	}
 
 }
+
+func TestDeltaPack(t *testing.T) {
+	ids := []int64{1000, 999, 1001, -8, 1234}
+	deltaPack(ids)
+
+	for i, id := range []int64{1000, -1, 2, -1009, 1242} {
+		if ids[i] != id {
+			t.Fatal(ids[i], id, ids)
+		}
+	}
+}
+
+func TestDeltaUnpack(t *testing.T) {
+	ids := []int64{1000, -1, 2, -1009, 1242}
+	deltaUnpack(ids)
+
+	for i, id := range []int64{1000, 999, 1001, -8, 1234} {
+		if ids[i] != id {
+			t.Fatal(ids[i], id, ids)
+		}
+	}
+}

@@ -289,7 +289,7 @@ func main() {
 		for i := 0; i < runtime.NumCPU(); i++ {
 			waitFill.Add(1)
 			go func() {
-				m := mapping.WayTagFilter()
+				// m := mapping.WayTagFilter()
 				var err error
 				geos := geos.NewGEOS()
 				defer geos.Finish()
