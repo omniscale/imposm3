@@ -16,7 +16,9 @@ import (
 	"runtime"
 	"runtime/pprof"
 	"strconv"
+	"strings"
 	"sync"
+	"time"
 )
 
 var skipCoords, skipNodes, skipWays bool
@@ -145,6 +147,7 @@ func parse(cache *cache.OSMCache, progress *stats.Statistics, filename string) {
 
 var (
 	cpuprofile     = flag.String("cpuprofile", "", "filename of cpu profile output")
+	memprofile     = flag.String("memprofile", "", "dir name of mem profile output and interval (fname:interval)")
 	cachedir       = flag.String("cachedir", "/tmp/goposm", "cache directory")
 	overwritecache = flag.Bool("overwritecache", false, "overwritecache")
 	appendcache    = flag.Bool("appendcache", false, "append cache")
@@ -166,6 +169,23 @@ func main() {
 		}
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()
+	}
+
+	if *memprofile != "" {
+		parts := strings.Split(*memprofile, string(os.PathListSeparator))
+		var interval time.Duration
+
+		if len(parts) < 2 {
+			interval, _ = time.ParseDuration("1m")
+		} else {
+			var err error
+			interval, err = time.ParseDuration(parts[1])
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+
+		go stats.MemProfiler(parts[0], interval)
 	}
 
 	osmCache := cache.NewOSMCache(*cachedir)
