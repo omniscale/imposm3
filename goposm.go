@@ -245,7 +245,7 @@ func main() {
 			waitDb.Add(1)
 			go func() {
 				for ways := range wayChan {
-					err = pg.InsertWays(ways, specs[0])
+					err := pg.InsertWays(ways, specs[0])
 					if err != nil {
 						log.Fatal(err)
 					}
@@ -269,6 +269,7 @@ func main() {
 		for i := 0; i < runtime.NumCPU(); i++ {
 			waitFill.Add(1)
 			go func() {
+				var err error
 				geos := geos.NewGEOS()
 				defer geos.Finish()
 
