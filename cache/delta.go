@@ -77,11 +77,12 @@ type CoordsBunch struct {
 
 type DeltaCoordsCache struct {
 	Cache
-	lruList   *list.List
-	table     map[int64]*CoordsBunch
-	freeNodes [][]element.Node
-	capacity  int64
-	mu        sync.Mutex
+	lruList      *list.List
+	table        map[int64]*CoordsBunch
+	freeNodes    [][]element.Node
+	capacity     int64
+	linearImport bool
+	mu           sync.Mutex
 }
 
 // bunchSize defines how many coordinates should be stored in a
@@ -103,6 +104,10 @@ func NewDeltaCoordsCache(path string) (*DeltaCoordsCache, error) {
 	coordsCache.capacity = 1024 * 8
 	coordsCache.freeNodes = make([][]element.Node, 0)
 	return &coordsCache, nil
+}
+
+func (self *DeltaCoordsCache) SetLinearImport(v bool) {
+	self.linearImport = v
 }
 
 func (self *DeltaCoordsCache) Close() {
@@ -152,7 +157,7 @@ func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) {
 	for i, node := range nodes {
 		bunchId := getBunchId(node.Id)
 		if bunchId != currentBunchId {
-			if i > bunchSize && i < totalNodes-bunchSize {
+			if self.linearImport && i > bunchSize && i < totalNodes-bunchSize {
 				// no need to handle concurrent updates to the same
 				// bunch if we are not at the boundary of a bunchSize
 				self.putCoordsPacked(currentBunchId, nodes[start:i])

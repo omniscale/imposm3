@@ -191,7 +191,9 @@ func main() {
 	progress := stats.StatsReporter()
 
 	if *read != "" {
+		osmCache.Coords.SetLinearImport(true)
 		parse(osmCache, progress, *read)
+		osmCache.Coords.SetLinearImport(false)
 		progress.Reset()
 	}
 
