@@ -85,14 +85,6 @@ type DeltaCoordsCache struct {
 	mu           sync.Mutex
 }
 
-// bunchSize defines how many coordinates should be stored in a
-// single record. This is the maximum and a bunch will typically contain
-// less coordinates (e.g. when nodes are removes).
-//
-// A higher number improves -read mode (writing the cache) but also
-// increases the overhead during -write mode (reading coords).
-const bunchSize = 128
-
 func NewDeltaCoordsCache(path string) (*DeltaCoordsCache, error) {
 	coordsCache := DeltaCoordsCache{}
 	err := coordsCache.open(path)
@@ -101,6 +93,7 @@ func NewDeltaCoordsCache(path string) (*DeltaCoordsCache, error) {
 	}
 	coordsCache.lruList = list.New()
 	coordsCache.table = make(map[int64]*CoordsBunch)
+	// mem req for cache approx. capacity*deltaCacheBunchSize*30
 	coordsCache.capacity = 1024 * 8
 	coordsCache.freeNodes = make([][]element.Node, 0)
 	return &coordsCache, nil
@@ -157,9 +150,9 @@ func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) {
 	for i, node := range nodes {
 		bunchId := getBunchId(node.Id)
 		if bunchId != currentBunchId {
-			if self.linearImport && i > bunchSize && i < totalNodes-bunchSize {
+			if self.linearImport && int64(i) > deltaCacheBunchSize && int64(i) < int64(totalNodes)-deltaCacheBunchSize {
 				// no need to handle concurrent updates to the same
-				// bunch if we are not at the boundary of a bunchSize
+				// bunch if we are not at the boundary of a deltaCacheBunchSize
 				self.putCoordsPacked(currentBunchId, nodes[start:i])
 			} else {
 				bunch := self.getBunch(currentBunchId)
@@ -218,7 +211,7 @@ func (p *DeltaCoordsCache) getCoordsPacked(bunchId int64, nodes []element.Node) 
 }
 
 func getBunchId(nodeId int64) int64 {
-	return nodeId / deltaCachBunchSize
+	return nodeId / deltaCacheBunchSize
 }
 
 func (self *DeltaCoordsCache) getBunch(bunchId int64) *CoordsBunch {
@@ -232,7 +225,7 @@ func (self *DeltaCoordsCache) getBunch(bunchId int64) *CoordsBunch {
 			nodes = self.freeNodes[len(self.freeNodes)-1]
 			self.freeNodes = self.freeNodes[:len(self.freeNodes)-1]
 		} else {
-			nodes = make([]element.Node, 0)
+			nodes = make([]element.Node, 0, deltaCacheBunchSize)
 		}
 		nodes = self.getCoordsPacked(bunchId, nodes)
 		bunch = &CoordsBunch{id: bunchId, coords: nodes, elem: elem}

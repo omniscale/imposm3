@@ -12,18 +12,25 @@ import (
 )
 
 var levelDbWriteBufferSize, levelDbWriteBlockSize int64
-var deltaCachBunchSize int64
+var deltaCacheBunchSize int64
 
 func init() {
 	levelDbWriteBufferSize, _ = strconv.ParseInt(
 		os.Getenv("GOPOSM_LEVELDB_BUFFERSIZE"), 10, 32)
 	levelDbWriteBlockSize, _ = strconv.ParseInt(
 		os.Getenv("GOPOSM_LEVELDB_BLOCKSIZE"), 10, 32)
-	deltaCachBunchSize, _ = strconv.ParseInt(
+
+	// bunchSize defines how many coordinates should be stored in a
+	// single record. This is the maximum and a bunch will typically contain
+	// less coordinates (e.g. when nodes are removes).
+	//
+	// A higher number improves -read mode (writing the cache) but also
+	// increases the overhead during -write mode (reading coords).
+	deltaCacheBunchSize, _ = strconv.ParseInt(
 		os.Getenv("GOPOSM_DELTACACHE_BUNCHSIZE"), 10, 32)
 
-	if deltaCachBunchSize == 0 {
-		deltaCachBunchSize = 128
+	if deltaCacheBunchSize == 0 {
+		deltaCacheBunchSize = 128
 	}
 }
 
