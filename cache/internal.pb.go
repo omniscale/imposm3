@@ -45,21 +45,5 @@ func (m *DeltaCoords) GetLons() []int64 {
 	return nil
 }
 
-type Refs struct {
-	Ids              []int64 `protobuf:"zigzag64,1,rep,packed,name=ids" json:"ids,omitempty"`
-	XXX_unrecognized []byte  `json:"-"`
-}
-
-func (m *Refs) Reset()         { *m = Refs{} }
-func (m *Refs) String() string { return proto.CompactTextString(m) }
-func (*Refs) ProtoMessage()    {}
-
-func (m *Refs) GetIds() []int64 {
-	if m != nil {
-		return m.Ids
-	}
-	return nil
-}
-
 func init() {
 }

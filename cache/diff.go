@@ -1,7 +1,10 @@
 package cache
 
 import (
-	"code.google.com/p/goprotobuf/proto"
+	"bytes"
+	"encoding/binary"
+	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -93,50 +96,86 @@ func (index *RefIndex) Add(id, ref int64) error {
 	if err != nil {
 		panic(err)
 	}
-	refs := &Refs{}
+
+	var refs []int64
+
 	if data != nil {
-		err = proto.Unmarshal(data, refs)
-		if err != nil {
-			panic(err)
-		}
+		refs = UnmarshalRefs(data)
 	}
 
-	if refs.Ids == nil {
-		refs.Ids = make([]int64, 0, 1)
+	if refs == nil {
+		refs = make([]int64, 0, 1)
 	}
-	// TODO change to delta encoding
-	refs.insertId(ref)
+	refs = insertRefs(refs, ref)
 
-	data, err = proto.Marshal(refs)
-	if err != nil {
-		panic(err)
-	}
+	data = MarshalRefs(refs)
+
 	err = index.db.Put(index.wo, keyBuf, data)
 	return err
 }
 
-func (r *Refs) insertId(ref int64) {
-	i := sort.Search(len(r.Ids), func(i int) bool {
-		return r.Ids[i] >= ref
+func insertRefs(refs []int64, ref int64) []int64 {
+	i := sort.Search(len(refs), func(i int) bool {
+		return refs[i] >= ref
 	})
-	if i < len(r.Ids) && r.Ids[i] >= ref {
-		r.Ids = append(r.Ids, 0)
-		copy(r.Ids[i+1:], r.Ids[i:])
-		r.Ids[i] = ref
+	if i < len(refs) && refs[i] >= ref {
+		refs = append(refs, 0)
+		copy(refs[i+1:], refs[i:])
+		refs[i] = ref
 	} else {
-		r.Ids = append(r.Ids, ref)
+		refs = append(refs, ref)
 	}
+	return refs
 }
 
 func (index *RefIndex) Get(id int64) []int64 {
 	keyBuf := idToKeyBuf(id)
 	data, err := index.db.Get(index.ro, keyBuf)
-	refs := &Refs{}
+	var refs []int64
 	if data != nil {
-		err = proto.Unmarshal(data, refs)
+		refs = UnmarshalRefs(data)
 		if err != nil {
 			panic(err)
 		}
 	}
-	return refs.Ids
+	return refs
+}
+
+func UnmarshalRefs(buf []byte) []int64 {
+	refs := make([]int64, 0, 8)
+
+	r := bytes.NewBuffer(buf)
+
+	lastRef := int64(0)
+	for {
+		ref, err := binary.ReadVarint(r)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Println("error while unmarshaling refs:", err)
+			break
+		}
+		ref = lastRef + ref
+		refs = append(refs, ref)
+		lastRef = ref
+	}
+
+	return refs
+}
+
+func MarshalRefs(refs []int64) []byte {
+	buf := make([]byte, len(refs)*4+binary.MaxVarintLen64)
+
+	lastRef := int64(0)
+	nextPos := 0
+	for _, ref := range refs {
+		if len(buf)-nextPos < binary.MaxVarintLen64 {
+			tmp := make([]byte, len(buf)*2)
+			buf = append(tmp, buf...)
+		}
+		nextPos += binary.PutVarint(buf[nextPos:], ref-lastRef)
+		lastRef = ref
+	}
+	return buf[:nextPos]
 }
