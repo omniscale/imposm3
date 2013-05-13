@@ -216,7 +216,7 @@ func main() {
 		waitFill := sync.WaitGroup{}
 		waitDiff := sync.WaitGroup{}
 		wayChan := make(chan []element.Way)
-		diffChan := make(chan *element.Way)
+		diffChan := make(chan *element.Way, 1024)
 		waitDb := &sync.WaitGroup{}
 		config := db.Config{"postgres", *connection, 3857, "public"}
 		pg, err := db.Open(config)
