@@ -140,6 +140,7 @@ func (c *Cache) open(path string) error {
 	opts := levigo.NewOptions()
 	opts.SetCache(levigo.NewLRUCache(1024 * 1024 * 50))
 	opts.SetCreateIfMissing(true)
+	opts.SetMaxOpenFiles(64)
 	// save a few bytes by allowing leveldb to use delta enconding
 	// for up to n keys (instead of only 16)
 	opts.SetBlockRestartInterval(128)
