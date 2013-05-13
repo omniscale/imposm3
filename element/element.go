@@ -20,6 +20,10 @@ type Way struct {
 	Wkb   []byte
 }
 
+func (w *Way) IsClosed() bool {
+	return len(w.Refs) >= 4 && w.Refs[0] == w.Refs[len(w.Refs)-1]
+}
+
 type MemberType int
 
 const (

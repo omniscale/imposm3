@@ -101,6 +101,15 @@ func (e *SQLError) Error() string {
 	return fmt.Sprintf("SQL Error: %s in query %s", e.originalError.Error(), e.query)
 }
 
+type SQLInsertError struct {
+	SQLError
+	data interface{}
+}
+
+func (e *SQLInsertError) Error() string {
+	return fmt.Sprintf("SQL Error: %s in query %s (%+v)", e.originalError.Error(), e.query, e.data)
+}
+
 func (pg *PostGIS) createTable(spec TableSpec) error {
 	var sql string
 	var err error
@@ -207,7 +216,7 @@ func (pg *PostGIS) InsertWays(ways []element.Way, spec TableSpec) error {
 	for _, w := range ways {
 		_, err := stmt.Exec(spec.WayValues(w)...)
 		if err != nil {
-			return &SQLError{sql, err}
+			return &SQLInsertError{SQLError{sql, err}, w}
 		}
 	}
 

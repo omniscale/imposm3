@@ -265,7 +265,7 @@ func main() {
 					{"name", "VARCHAR"},
 					{"highway", "VARCHAR"},
 				},
-				"LINESTRING",
+				"GEOMETRY",
 				config.Srid,
 			},
 		}
@@ -289,7 +289,8 @@ func main() {
 		for i := 0; i < runtime.NumCPU(); i++ {
 			waitFill.Add(1)
 			go func() {
-				// m := mapping.WayTagFilter()
+				lineStringTables := mapping.LineStringTables()
+				polygonTables := mapping.PolygonTables()
 				var err error
 				geos := geos.NewGEOS()
 				defer geos.Finish()
@@ -302,18 +303,41 @@ func main() {
 						continue
 					}
 					proj.NodesToMerc(w.Nodes)
-					w.Wkb, err = geom.LineStringWKB(geos, w.Nodes)
-					if err != nil {
-						if err, ok := err.(ErrorLevel); ok {
-							if err.Level() <= 0 {
+					if tables := lineStringTables.Tables(w.Tags); len(tables) > 0 {
+						way := element.Way{}
+						way.Id = w.Id
+						way.Tags = w.Tags
+						way.Wkb, err = geom.LineStringWKB(geos, w.Nodes)
+						if err != nil {
+							if err, ok := err.(ErrorLevel); ok {
+								if err.Level() <= 0 {
+									continue
+								}
+							}
+							log.Println(err)
+							continue
+						}
+						batch = append(batch, way)
+					}
+					if w.IsClosed() {
+						if tables := polygonTables.Tables(w.Tags); len(tables) > 0 {
+							way := element.Way{}
+							way.Id = w.Id
+							way.Tags = w.Tags
+							way.Wkb, err = geom.PolygonWKB(geos, w.Nodes)
+							if err != nil {
+								if err, ok := err.(ErrorLevel); ok {
+									if err.Level() <= 0 {
+										continue
+									}
+								}
+								log.Println(err)
 								continue
 							}
+							batch = append(batch, way)
 						}
-						log.Println(err)
-						continue
 					}
 					// log.Println(w.Id, w.Tags, m.Tables(w.Tags))
-					batch = append(batch, *w)
 
 					if len(batch) >= int(dbImportBatchSize) {
 						wayChan <- batch

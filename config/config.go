@@ -108,6 +108,30 @@ func (m *Mapping) RelationTagFilter() *TagFilter {
 	return &TagFilter{mappings, tags}
 }
 
+func (m *Mapping) PointTables() *TagFilter {
+	mappings := make(map[string]map[string][]string)
+	m.mappings("point", mappings)
+	tags := make(map[string]bool)
+	m.extraTags("point", tags)
+	return &TagFilter{mappings, tags}
+}
+
+func (m *Mapping) LineStringTables() *TagFilter {
+	mappings := make(map[string]map[string][]string)
+	m.mappings("linestring", mappings)
+	tags := make(map[string]bool)
+	m.extraTags("linestring", tags)
+	return &TagFilter{mappings, tags}
+}
+
+func (m *Mapping) PolygonTables() *TagFilter {
+	mappings := make(map[string]map[string][]string)
+	m.mappings("polygon", mappings)
+	tags := make(map[string]bool)
+	m.extraTags("polygon", tags)
+	return &TagFilter{mappings, tags}
+}
+
 type TagFilter struct {
 	mappings  map[string]map[string][]string
 	extraTags map[string]bool
