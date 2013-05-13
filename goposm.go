@@ -3,11 +3,11 @@ package main
 import (
 	"flag"
 	"goposm/cache"
+	"goposm/config"
 	"goposm/db"
 	"goposm/element"
 	"goposm/geom"
 	"goposm/geom/geos"
-	"goposm/mapping"
 	"goposm/parser"
 	"goposm/proj"
 	"goposm/stats"
@@ -47,7 +47,7 @@ type ErrorLevel interface {
 	Level() int
 }
 
-func parse(cache *cache.OSMCache, progress *stats.Statistics, filename string) {
+func parse(cache *cache.OSMCache, progress *stats.Statistics, mapping *config.Mapping, filename string) {
 	nodes := make(chan []element.Node)
 	coords := make(chan []element.Node)
 	ways := make(chan []element.Way)
@@ -78,12 +78,13 @@ func parse(cache *cache.OSMCache, progress *stats.Statistics, filename string) {
 	for i := 0; i < runtime.NumCPU(); i++ {
 		waitCounter.Add(1)
 		go func() {
+			m := mapping.WayTagFilter()
 			for ws := range ways {
 				if skipWays {
 					continue
 				}
 				for _, w := range ws {
-					mapping.WayTags.Filter(w.Tags)
+					m.Filter(w.Tags)
 				}
 				cache.Ways.PutWays(ws)
 				progress.AddWays(len(ws))
@@ -94,9 +95,10 @@ func parse(cache *cache.OSMCache, progress *stats.Statistics, filename string) {
 	for i := 0; i < runtime.NumCPU(); i++ {
 		waitCounter.Add(1)
 		go func() {
+			m := mapping.RelationTagFilter()
 			for rels := range relations {
 				for _, r := range rels {
-					mapping.RelationTags.Filter(r.Tags)
+					m.Filter(r.Tags)
 				}
 				cache.Relations.PutRelations(rels)
 				progress.AddRelations(len(rels))
@@ -120,12 +122,13 @@ func parse(cache *cache.OSMCache, progress *stats.Statistics, filename string) {
 	for i := 0; i < 2; i++ {
 		waitCounter.Add(1)
 		go func() {
+			m := mapping.NodeTagFilter()
 			for nds := range nodes {
 				if skipNodes {
 					continue
 				}
 				for _, nd := range nds {
-					ok := mapping.PointTags.Filter(nd.Tags)
+					ok := m.Filter(nd.Tags)
 					if !ok {
 						nd.Tags = nil
 					}
@@ -155,6 +158,7 @@ var (
 	write          = flag.Bool("write", false, "write")
 	connection     = flag.String("connection", "", "connection parameters")
 	diff           = flag.Bool("diff", false, "enable diff support")
+	mappingFile    = flag.String("mapping", "", "mapping file")
 )
 
 func main() {
@@ -210,9 +214,14 @@ func main() {
 
 	progress := stats.StatsReporter()
 
+	mapping, err := config.NewMapping(*mappingFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	if *read != "" {
 		osmCache.Coords.SetLinearImport(true)
-		parse(osmCache, progress, *read)
+		parse(osmCache, progress, mapping, *read)
 		osmCache.Coords.SetLinearImport(false)
 		progress.Reset()
 	}
@@ -280,6 +289,7 @@ func main() {
 		for i := 0; i < runtime.NumCPU(); i++ {
 			waitFill.Add(1)
 			go func() {
+				m := mapping.WayTagFilter()
 				var err error
 				geos := geos.NewGEOS()
 				defer geos.Finish()
@@ -302,6 +312,7 @@ func main() {
 						log.Println(err)
 						continue
 					}
+					// log.Println(w.Id, w.Tags, m.Tables(w.Tags))
 					batch = append(batch, *w)
 
 					if len(batch) >= int(dbImportBatchSize) {

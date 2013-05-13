@@ -1,0 +1,518 @@
+{
+    "tables": {
+        "landusages": {
+            "fields": {
+                "z_order": {
+                    "type": "zorder", 
+                    "order": {
+                        "industrial": 2, 
+                        "meadow": 28, 
+                        "cinema": 11, 
+                        "pitch": 22, 
+                        "allotments": 20, 
+                        "library": 15, 
+                        "village_green": 26, 
+                        "college": 16, 
+                        "parking": 13, 
+                        "recreation_ground": 25, 
+                        "nature_reserve": 12, 
+                        "quarry": 6, 
+                        "residential": 5, 
+                        "hospital": 8, 
+                        "cemetery": 33, 
+                        "wood": 29, 
+                        "forest": 34, 
+                        "fuel": 14, 
+                        "playground": 36, 
+                        "scrub": 7, 
+                        "garden": 24, 
+                        "theatre": 10, 
+                        "farm": 31, 
+                        "park": 35, 
+                        "golf_course": 19, 
+                        "commercial": 3, 
+                        "sports_centre": 23, 
+                        "farmland": 30, 
+                        "farmyard": 32, 
+                        "place_of_worship": 9, 
+                        "school": 17, 
+                        "land": 0, 
+                        "footway": 37, 
+                        "pedestrian": 38, 
+                        "university": 18, 
+                        "grass": 27, 
+                        "common": 21, 
+                        "railway": 1, 
+                        "retail": 4
+                    }
+                }, 
+                "area": {
+                    "type": "pseudoarea"
+                }, 
+                "type": {
+                    "type": "mapping_value"
+                }, 
+                "name": {
+                    "type": "string"
+                }, 
+                "osm_id": {
+                    "type": "id"
+                }
+            }, 
+            "type": "polygon", 
+            "mapping": {
+                "amenity": [
+                    "university", 
+                    "school", 
+                    "college", 
+                    "library", 
+                    "fuel", 
+                    "parking", 
+                    "cinema", 
+                    "theatre", 
+                    "place_of_worship", 
+                    "hospital"
+                ], 
+                "landuse": [
+                    "park", 
+                    "forest", 
+                    "residential", 
+                    "retail", 
+                    "commercial", 
+                    "industrial", 
+                    "railway", 
+                    "cemetery", 
+                    "grass", 
+                    "farmyard", 
+                    "farm", 
+                    "farmland", 
+                    "wood", 
+                    "meadow", 
+                    "village_green", 
+                    "recreation_ground", 
+                    "allotments", 
+                    "quarry"
+                ], 
+                "natural": [
+                    "wood", 
+                    "land", 
+                    "scrub"
+                ], 
+                "highway": [
+                    "pedestrian", 
+                    "footway"
+                ], 
+                "leisure": [
+                    "park", 
+                    "garden", 
+                    "playground", 
+                    "golf_course", 
+                    "sports_centre", 
+                    "pitch", 
+                    "stadium", 
+                    "common", 
+                    "nature_reserve"
+                ]
+            }
+        }, 
+        "buildings": {
+            "fields": {
+                "type": {
+                    "type": "mapping_value"
+                }, 
+                "name": {
+                    "type": "string"
+                }, 
+                "osm_id": {
+                    "type": "id"
+                }
+            }, 
+            "type": "polygon", 
+            "mapping": {
+                "building": [
+                    "__any__"
+                ]
+            }
+        }, 
+        "places": {
+            "fields": {
+                "z_order": {
+                    "type": "zorder", 
+                    "order": {
+                        "town": 4, 
+                        "city": 5, 
+                        "locality": 0, 
+                        "country": 9, 
+                        "region": 7, 
+                        "hamlet": 2, 
+                        "county": 6, 
+                        "suburb": 1, 
+                        "state": 8, 
+                        "village": 3
+                    }
+                }, 
+                "population": {
+                    "type": "integer"
+                }, 
+                "type": {
+                    "type": "mapping_value"
+                }, 
+                "name": {
+                    "type": "string"
+                }, 
+                "osm_id": {
+                    "type": "id"
+                }
+            }, 
+            "type": "point", 
+            "mapping": {
+                "place": [
+                    "country", 
+                    "state", 
+                    "region", 
+                    "county", 
+                    "city", 
+                    "town", 
+                    "village", 
+                    "hamlet", 
+                    "suburb", 
+                    "locality"
+                ]
+            }
+        }, 
+        "aeroways": {
+            "fields": {
+                "type": {
+                    "type": "mapping_value"
+                }, 
+                "name": {
+                    "type": "string"
+                }, 
+                "osm_id": {
+                    "type": "id"
+                }
+            }, 
+            "type": "linestring", 
+            "mapping": {
+                "aeroway": [
+                    "runway", 
+                    "taxiway"
+                ]
+            }
+        }, 
+        "admin": {
+            "fields": {
+                "admin_level": {
+                    "type": "integer"
+                }, 
+                "type": {
+                    "type": "mapping_value"
+                }, 
+                "name": {
+                    "type": "string"
+                }, 
+                "osm_id": {
+                    "type": "id"
+                }
+            }, 
+            "type": "polygon", 
+            "mapping": {
+                "boundary": [
+                    "administrative"
+                ]
+            }
+        }, 
+        "mainroads": {
+            "fields": {
+                "z_order": {
+                    "type": "wayzorder"
+                }, 
+                "bridge": {
+                    "type": "bool"
+                }, 
+                "name": {
+                    "type": "string"
+                }, 
+                "tunnel": {
+                    "type": "bool"
+                }, 
+                "ref": {
+                    "type": "string"
+                }, 
+                "osm_id": {
+                    "type": "id"
+                }, 
+                "oneway": {
+                    "type": "direction"
+                }, 
+                "type": {
+                    "type": "mapping_value"
+                }
+            }, 
+            "type": "linestring", 
+            "mapping": {
+                "highway": [
+                    "primary", 
+                    "primary_link", 
+                    "secondary", 
+                    "secondary_link", 
+                    "tertiary"
+                ]
+            }
+        }, 
+        "transport_areas": {
+            "fields": {
+                "type": {
+                    "type": "mapping_value"
+                }, 
+                "name": {
+                    "type": "string"
+                }, 
+                "osm_id": {
+                    "type": "id"
+                }
+            }, 
+            "type": "polygon", 
+            "mapping": {
+                "railway": [
+                    "station"
+                ], 
+                "aeroway": [
+                    "aerodrome", 
+                    "terminal", 
+                    "helipad", 
+                    "apron"
+                ]
+            }
+        }, 
+        "waterways": {
+            "fields": {
+                "type": {
+                    "type": "mapping_value"
+                }, 
+                "name": {
+                    "type": "string"
+                }, 
+                "osm_id": {
+                    "type": "id"
+                }
+            }, 
+            "type": "linestring", 
+            "mapping": {
+                "waterway": [
+                    "stream", 
+                    "river", 
+                    "canal", 
+                    "drain"
+                ]
+            }
+        }, 
+        "minorroads": {
+            "fields": {
+                "z_order": {
+                    "type": "wayzorder"
+                }, 
+                "bridge": {
+                    "type": "bool"
+                }, 
+                "name": {
+                    "type": "string"
+                }, 
+                "tunnel": {
+                    "type": "bool"
+                }, 
+                "ref": {
+                    "type": "string"
+                }, 
+                "osm_id": {
+                    "type": "id"
+                }, 
+                "oneway": {
+                    "type": "direction"
+                }, 
+                "type": {
+                    "type": "mapping_value"
+                }
+            }, 
+            "type": "linestring", 
+            "mapping": {
+                "highway": [
+                    "road", 
+                    "path", 
+                    "track", 
+                    "service", 
+                    "footway", 
+                    "bridleway", 
+                    "cycleway", 
+                    "steps", 
+                    "pedestrian", 
+                    "living_street", 
+                    "unclassified", 
+                    "residential"
+                ]
+            }
+        }, 
+        "railways": {
+            "fields": {
+                "z_order": {
+                    "type": "wayzorder"
+                }, 
+                "bridge": {
+                    "type": "bool"
+                }, 
+                "name": {
+                    "type": "string"
+                }, 
+                "tunnel": {
+                    "type": "bool"
+                }, 
+                "osm_id": {
+                    "type": "id"
+                }, 
+                "type": {
+                    "type": "mapping_value"
+                }
+            }, 
+            "type": "linestring", 
+            "mapping": {
+                "railway": [
+                    "rail", 
+                    "tram", 
+                    "light_rail", 
+                    "subway", 
+                    "narrow_gauge", 
+                    "preserved", 
+                    "funicular", 
+                    "monorail"
+                ]
+            }
+        }, 
+        "motorways": {
+            "fields": {
+                "z_order": {
+                    "type": "wayzorder"
+                }, 
+                "bridge": {
+                    "type": "bool"
+                }, 
+                "name": {
+                    "type": "string"
+                }, 
+                "tunnel": {
+                    "type": "bool"
+                }, 
+                "ref": {
+                    "type": "string"
+                }, 
+                "osm_id": {
+                    "type": "id"
+                }, 
+                "oneway": {
+                    "type": "direction"
+                }, 
+                "type": {
+                    "type": "mapping_value"
+                }
+            }, 
+            "type": "linestring", 
+            "mapping": {
+                "highway": [
+                    "motorway", 
+                    "motorway_link", 
+                    "trunk", 
+                    "trunk_link"
+                ]
+            }
+        }, 
+        "transport_points": {
+            "fields": {
+                "ref": {
+                    "type": "string"
+                }, 
+                "type": {
+                    "type": "mapping_value"
+                }, 
+                "name": {
+                    "type": "string"
+                }, 
+                "osm_id": {
+                    "type": "id"
+                }
+            }, 
+            "type": "point", 
+            "mapping": {
+                "railway": [
+                    "station", 
+                    "halt", 
+                    "tram_stop", 
+                    "crossing", 
+                    "level_crossing", 
+                    "subway_entrance"
+                ], 
+                "aeroway": [
+                    "aerodome", 
+                    "terminal", 
+                    "helipad", 
+                    "gate"
+                ], 
+                "highway": [
+                    "motorway_junction", 
+                    "turning_circle", 
+                    "bus_stop"
+                ]
+            }
+        }, 
+        "amenities": {
+            "fields": {
+                "type": {
+                    "type": "mapping_value"
+                }, 
+                "name": {
+                    "type": "string"
+                }, 
+                "osm_id": {
+                    "type": "id"
+                }
+            }, 
+            "type": "point", 
+            "mapping": {
+                "amenity": [
+                    "university", 
+                    "school", 
+                    "library", 
+                    "fuel", 
+                    "hospital", 
+                    "fire_station", 
+                    "police", 
+                    "townhall"
+                ]
+            }
+        }, 
+        "waterareas": {
+            "fields": {
+                "type": {
+                    "type": "mapping_value"
+                }, 
+                "name": {
+                    "type": "string"
+                }, 
+                "osm_id": {
+                    "type": "id"
+                }
+            }, 
+            "type": "polygon", 
+            "mapping": {
+                "waterway": [
+                    "riverbank"
+                ], 
+                "landuse": [
+                    "basin", 
+                    "reservoir"
+                ], 
+                "natural": [
+                    "water"
+                ]
+            }
+        }
+    }
+}
