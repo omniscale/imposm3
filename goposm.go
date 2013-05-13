@@ -216,9 +216,7 @@ func main() {
 		}
 
 		waitFill := sync.WaitGroup{}
-		waitDiff := sync.WaitGroup{}
 		wayChan := make(chan []element.Way)
-		diffChan := make(chan *element.Way, 1024)
 		waitDb := &sync.WaitGroup{}
 		config := db.Config{"postgres", *connection, 3857, "public"}
 		pg, err := db.Open(config)
@@ -255,18 +253,6 @@ func main() {
 		}
 
 		for i := 0; i < runtime.NumCPU(); i++ {
-			waitDiff.Add(1)
-			go func() {
-				for way := range diffChan {
-					for _, node := range way.Nodes {
-						diffCache.Coords.Add(node.Id, way.Id)
-					}
-				}
-				waitDiff.Done()
-			}()
-		}
-
-		for i := 0; i < runtime.NumCPU(); i++ {
 			waitFill.Add(1)
 			go func() {
 				var err error
@@ -299,7 +285,7 @@ func main() {
 					}
 
 					if *diff {
-						diffChan <- w
+						diffCache.Coords.AddFromWay(w)
 					}
 				}
 				wayChan <- batch
@@ -308,9 +294,8 @@ func main() {
 		}
 		waitFill.Wait()
 		close(wayChan)
-		close(diffChan)
-		waitDiff.Wait()
 		waitDb.Wait()
+		diffCache.Coords.Close()
 	}
 	progress.Stop()
 
