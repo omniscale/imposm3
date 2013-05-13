@@ -159,6 +159,7 @@ func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) {
 			} else {
 				bunch := self.getBunch(currentBunchId)
 				bunch.coords = append(bunch.coords, nodes[start:i]...)
+				sort.Sort(Nodes(bunch.coords))
 				bunch.needsWrite = true
 				bunch.Unlock()
 			}
@@ -168,6 +169,7 @@ func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) {
 	}
 	bunch := self.getBunch(currentBunchId)
 	bunch.coords = append(bunch.coords, nodes[start:]...)
+	sort.Sort(Nodes(bunch.coords))
 	bunch.needsWrite = true
 	bunch.Unlock()
 }
