@@ -114,7 +114,7 @@ func NewRefIndex(path string) (*RefIndex, error) {
 	if err != nil {
 		return nil, err
 	}
-	index.write = make(chan map[int64][]int64, 8)
+	index.write = make(chan map[int64][]int64)
 	index.cache = make(map[int64][]int64, cacheSize)
 	index.add = make(chan idRef)
 
@@ -153,6 +153,7 @@ func (index *RefIndex) Close() {
 	index.waitAdd.Wait()
 	close(index.write)
 	index.waitWrite.Wait()
+	index.Cache.Close()
 }
 
 func (index *RefIndex) dispatch() {
@@ -163,9 +164,9 @@ func (index *RefIndex) dispatch() {
 			index.cache = make(map[int64][]int64, cacheSize)
 		}
 	}
-	if len(index.cache) >= cacheSize {
+	if len(index.cache) > 0 {
 		index.write <- index.cache
-		index.cache = make(map[int64][]int64)
+		index.cache = nil
 	}
 	index.waitAdd.Done()
 }
@@ -239,6 +240,9 @@ func insertRefs(refs []int64, ref int64) []int64 {
 func (index *RefIndex) Get(id int64) []int64 {
 	keyBuf := idToKeyBuf(id)
 	data, err := index.db.Get(index.ro, keyBuf)
+	if err != nil {
+		panic(err)
+	}
 	var refs []int64
 	if data != nil {
 		refs = UnmarshalRefs(data)

@@ -72,13 +72,19 @@ func TestWriteDiff(t *testing.T) {
 	if err != nil {
 		t.Fatal()
 	}
-	defer cache.Close()
 
 	for w := 0; w < 5; w++ {
 		for n := 0; n < 200; n++ {
-			cache.Add(int64(n), int64(w))
+			cache.addToCache(int64(n), int64(w))
 		}
 	}
+	cache.Close()
+
+	cache, err = NewRefIndex(cache_dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cache.Close()
 
 	for n := 0; n < 200; n++ {
 		refs := cache.Get(int64(n))
@@ -104,7 +110,7 @@ func BenchmarkWriteDiff(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		for w := 0; w < 5; w++ {
 			for n := 0; n < 200; n++ {
-				cache.Add(int64(n), int64(w))
+				cache.addToCache(int64(n), int64(w))
 			}
 		}
 	}
