@@ -1,43 +1,10 @@
 package mapping
 
-import (
-	"goposm/element"
-)
-
 type TagMap map[string]map[string]bool
 
 var PointTags TagMap
 var WayTags TagMap
 var RelationTags TagMap
-
-type TagFilter interface {
-	Filter(element.Tags) bool
-}
-
-func (m TagMap) Filter(tags element.Tags) bool {
-	for k, v := range tags {
-		values, ok := m[k]
-		if !ok {
-			delete(tags, k)
-		} else {
-			if _, ok := values["__any__"]; ok {
-				continue
-			} else if _, ok := values[v]; ok {
-				continue
-			} else {
-				delete(tags, k)
-			}
-		}
-	}
-	if _, ok := tags["name"]; ok && len(tags) == 1 {
-		delete(tags, "name")
-	}
-	if len(tags) > 0 {
-		return true
-	} else {
-		return false
-	}
-}
 
 // default mapping created from imposm defaultmapping.py
 // TODO make configurable

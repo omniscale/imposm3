@@ -3,11 +3,11 @@ package main
 import (
 	"flag"
 	"goposm/cache"
-	"goposm/config"
 	"goposm/db"
 	"goposm/element"
 	"goposm/geom"
 	"goposm/geom/geos"
+	"goposm/mapping"
 	"goposm/parser"
 	"goposm/proj"
 	"goposm/stats"
@@ -47,7 +47,7 @@ type ErrorLevel interface {
 	Level() int
 }
 
-func parse(cache *cache.OSMCache, progress *stats.Statistics, mapping *config.Mapping, filename string) {
+func parse(cache *cache.OSMCache, progress *stats.Statistics, tagmapping *mapping.Mapping, filename string) {
 	nodes := make(chan []element.Node)
 	coords := make(chan []element.Node)
 	ways := make(chan []element.Way)
@@ -78,7 +78,7 @@ func parse(cache *cache.OSMCache, progress *stats.Statistics, mapping *config.Ma
 	for i := 0; i < runtime.NumCPU(); i++ {
 		waitCounter.Add(1)
 		go func() {
-			m := mapping.WayTagFilter()
+			m := tagmapping.WayTagFilter()
 			for ws := range ways {
 				if skipWays {
 					continue
@@ -95,7 +95,7 @@ func parse(cache *cache.OSMCache, progress *stats.Statistics, mapping *config.Ma
 	for i := 0; i < runtime.NumCPU(); i++ {
 		waitCounter.Add(1)
 		go func() {
-			m := mapping.RelationTagFilter()
+			m := tagmapping.RelationTagFilter()
 			for rels := range relations {
 				for _, r := range rels {
 					m.Filter(r.Tags)
@@ -122,7 +122,7 @@ func parse(cache *cache.OSMCache, progress *stats.Statistics, mapping *config.Ma
 	for i := 0; i < 2; i++ {
 		waitCounter.Add(1)
 		go func() {
-			m := mapping.NodeTagFilter()
+			m := tagmapping.NodeTagFilter()
 			for nds := range nodes {
 				if skipNodes {
 					continue
@@ -214,14 +214,14 @@ func main() {
 
 	progress := stats.StatsReporter()
 
-	mapping, err := config.NewMapping(*mappingFile)
+	tagmapping, err := mapping.NewMapping(*mappingFile)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	if *read != "" {
 		osmCache.Coords.SetLinearImport(true)
-		parse(osmCache, progress, mapping, *read)
+		parse(osmCache, progress, tagmapping, *read)
 		osmCache.Coords.SetLinearImport(false)
 		progress.Reset()
 		osmCache.Coords.Flush()
@@ -265,7 +265,7 @@ func main() {
 				[]db.ColumnSpec{
 					{"name", "VARCHAR", nil},
 					{"highway", "VARCHAR", nil},
-					{"oneway", "SMALLINT", config.Direction},
+					{"oneway", "SMALLINT", mapping.Direction},
 				},
 				"GEOMETRY",
 				conf.Srid,
@@ -291,8 +291,8 @@ func main() {
 		for i := 0; i < runtime.NumCPU(); i++ {
 			waitFill.Add(1)
 			go func() {
-				lineStringTables := mapping.LineStringTables()
-				polygonTables := mapping.PolygonTables()
+				lineStringTables := tagmapping.LineStringTables()
+				polygonTables := tagmapping.PolygonTables()
 				var err error
 				geos := geos.NewGEOS()
 				defer geos.Finish()
