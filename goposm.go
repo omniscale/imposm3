@@ -11,6 +11,7 @@ import (
 	"goposm/parser"
 	"goposm/proj"
 	"goposm/stats"
+	"goposm/writer"
 	"log"
 	"os"
 	"runtime"
@@ -258,46 +259,38 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		specs := []db.TableSpec{
-			{
-				"goposm_test",
-				conf.Schema,
-				[]db.ColumnSpec{
-					{"name", "VARCHAR", nil},
-					{"highway", "VARCHAR", nil},
-					{"oneway", "SMALLINT", mapping.Direction},
-				},
-				"GEOMETRY",
-				conf.Srid,
-			},
-		}
-		err = pg.Init(specs)
+
+		err = pg.Init(tagmapping)
 		if err != nil {
 			log.Fatal(err)
 		}
+		writeDBChan := make(chan writer.InsertBatch)
+		writeChan := make(chan writer.InsertElement)
+		waitBuffer := sync.WaitGroup{}
+
 		for i := 0; i < runtime.NumCPU(); i++ {
 			waitDb.Add(1)
 			go func() {
-				for ways := range wayChan {
-					err := pg.InsertWays(ways, specs[0])
-					if err != nil {
-						log.Fatal(err)
-					}
-				}
+				writer.DBWriter(pg, writeDBChan)
 				waitDb.Done()
 			}()
 		}
 
+		waitBuffer.Add(1)
+		go func() {
+			writer.BufferInsertElements(writeChan, writeDBChan)
+			waitBuffer.Done()
+		}()
+
 		for i := 0; i < runtime.NumCPU(); i++ {
 			waitFill.Add(1)
 			go func() {
-				lineStringTables := tagmapping.LineStringTables()
-				polygonTables := tagmapping.PolygonTables()
+				lineStrings := tagmapping.LineStringMatcher()
+				polygons := tagmapping.PolygonMatcher()
 				var err error
 				geos := geos.NewGEOS()
 				defer geos.Finish()
 
-				batch := make([]element.Way, 0, dbImportBatchSize)
 				for w := range way {
 					progress.AddWays(1)
 					ok := osmCache.Coords.FillWay(w)
@@ -305,7 +298,7 @@ func main() {
 						continue
 					}
 					proj.NodesToMerc(w.Nodes)
-					if tables := lineStringTables.Tables(w.Tags); len(tables) > 0 {
+					if matches := lineStrings.Match(w.OSMElem); len(matches) > 0 {
 						way := element.Way{}
 						way.Id = w.Id
 						way.Tags = w.Tags
@@ -319,10 +312,14 @@ func main() {
 							log.Println(err)
 							continue
 						}
-						batch = append(batch, way)
+						for _, match := range matches {
+							row := match.Row(&way.OSMElem)
+							writeChan <- writer.InsertElement{match.Table, row}
+						}
+
 					}
 					if w.IsClosed() {
-						if tables := polygonTables.Tables(w.Tags); len(tables) > 0 {
+						if matches := polygons.Match(w.OSMElem); len(matches) > 0 {
 							way := element.Way{}
 							way.Id = w.Id
 							way.Tags = w.Tags
@@ -336,26 +333,25 @@ func main() {
 								log.Println(err)
 								continue
 							}
-							batch = append(batch, way)
+							for _, match := range matches {
+								row := match.Row(&way.OSMElem)
+								writeChan <- writer.InsertElement{match.Table, row}
+							}
 						}
-					}
-					// log.Println(w.Id, w.Tags, m.Tables(w.Tags))
-
-					if len(batch) >= int(dbImportBatchSize) {
-						wayChan <- batch
-						batch = make([]element.Way, 0, dbImportBatchSize)
 					}
 
 					if *diff {
 						diffCache.Coords.AddFromWay(w)
 					}
 				}
-				wayChan <- batch
 				waitFill.Done()
 			}()
 		}
 		waitFill.Wait()
 		close(wayChan)
+		close(writeChan)
+		waitBuffer.Wait()
+		close(writeDBChan)
 		waitDb.Wait()
 		diffCache.Coords.Close()
 	}

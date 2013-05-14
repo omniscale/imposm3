@@ -3,6 +3,7 @@ package mapping
 import (
 	"encoding/json"
 	"flag"
+	"goposm/element"
 	"log"
 	"os"
 )
@@ -13,12 +14,13 @@ type Field struct {
 }
 
 type Table struct {
+	Name    string
 	Type    string              `json:"type"`
 	Mapping map[string][]string `json:"mapping"`
 	Fields  map[string]*Field   `json:"fields"`
 }
 
-type Tables map[string]Table
+type Tables map[string]*Table
 
 type Mapping struct {
 	Tables Tables `json:"tables"`
@@ -44,9 +46,10 @@ func (t *Table) ExtraTags() map[string]bool {
 	return tags
 }
 
-func (m *Mapping) FillFieldKeys() {
-	for _, t := range m.Tables {
+func (m *Mapping) prepare() {
+	for name, t := range m.Tables {
 		t.FillFieldKeys()
+		t.Name = name
 	}
 }
 
@@ -67,6 +70,16 @@ func (m *Mapping) mappings(tableType string, mappings map[string]map[string][]st
 			}
 		}
 	}
+}
+
+func (m *Mapping) tables(tableType string) map[string]*TableFields {
+	result := make(map[string]*TableFields)
+	for name, t := range m.Tables {
+		if t.Type == tableType {
+			result[name] = t.TableFields()
+		}
+	}
+	return result
 }
 
 func (m *Mapping) extraTags(tableType string, tags map[string]bool) {
@@ -108,28 +121,22 @@ func (m *Mapping) RelationTagFilter() *TagFilter {
 	return &TagFilter{mappings, tags}
 }
 
-func (m *Mapping) PointTables() *TagFilter {
+func (m *Mapping) PointMatcher() *TagMatcher {
 	mappings := make(map[string]map[string][]string)
 	m.mappings("point", mappings)
-	tags := make(map[string]bool)
-	m.extraTags("point", tags)
-	return &TagFilter{mappings, tags}
+	return &TagMatcher{mappings, m.tables("point")}
 }
 
-func (m *Mapping) LineStringTables() *TagFilter {
+func (m *Mapping) LineStringMatcher() *TagMatcher {
 	mappings := make(map[string]map[string][]string)
 	m.mappings("linestring", mappings)
-	tags := make(map[string]bool)
-	m.extraTags("linestring", tags)
-	return &TagFilter{mappings, tags}
+	return &TagMatcher{mappings, m.tables("linestring")}
 }
 
-func (m *Mapping) PolygonTables() *TagFilter {
+func (m *Mapping) PolygonMatcher() *TagMatcher {
 	mappings := make(map[string]map[string][]string)
 	m.mappings("polygon", mappings)
-	tags := make(map[string]bool)
-	m.extraTags("polygon", tags)
-	return &TagFilter{mappings, tags}
+	return &TagMatcher{mappings, m.tables("polygon")}
 }
 
 type TagFilter struct {
@@ -177,30 +184,46 @@ func (f *RelationTagFilter) Filter(tags map[string]string) bool {
 	return f.TagFilter.Filter(tags)
 }
 
-func (f *TagFilter) Tables(tags map[string]string) []string {
-	tables := make(map[string]bool)
+type TagMatcher struct {
+	mappings map[string]map[string][]string
+	tables   map[string]*TableFields
+}
 
-	for k, v := range tags {
-		values, ok := f.mappings[k]
+type Match struct {
+	Key         string
+	Value       string
+	Table       string
+	tableFields *TableFields
+}
+
+func (m *Match) Row(elem *element.OSMElem) []interface{} {
+	return m.tableFields.MakeRow(elem, *m)
+}
+
+func (tagMatcher *TagMatcher) Match(elem element.OSMElem) []Match {
+	tables := make(map[string]Match)
+
+	for k, v := range elem.Tags {
+		values, ok := tagMatcher.mappings[k]
 		if ok {
 			if tbls, ok := values["__any__"]; ok {
 				for _, t := range tbls {
-					tables[t] = true
+					tables[t] = Match{k, v, t, tagMatcher.tables[t]}
 				}
 				continue
 			} else if tbls, ok := values[v]; ok {
 				for _, t := range tbls {
-					tables[t] = true
+					tables[t] = Match{k, v, t, tagMatcher.tables[t]}
 				}
 				continue
 			}
 		}
 	}
-	var tableNames []string
-	for name, _ := range tables {
-		tableNames = append(tableNames, name)
+	var matches []Match
+	for _, match := range tables {
+		matches = append(matches, match)
 	}
-	return tableNames
+	return matches
 }
 
 func NewMapping(filename string) (*Mapping, error) {
@@ -216,25 +239,8 @@ func NewMapping(filename string) (*Mapping, error) {
 		return nil, err
 	}
 
-	mapping.FillFieldKeys()
+	mapping.prepare()
 	return &mapping, nil
-}
-
-func Bool(val string, tags map[string]string, elem interface{}) interface{} {
-	if val == "" || val == "0" || val == "false" || val == "no" {
-		return false
-	}
-	return true
-}
-
-func Direction(val string, tags map[string]string, elem interface{}) interface{} {
-	if val == "1" || val == "yes" || val == "true" {
-		return 1
-	} else if val == "-1" {
-		return -1
-	} else {
-		return 0
-	}
 }
 
 func main() {

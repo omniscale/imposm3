@@ -2,9 +2,10 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	_ "github.com/bmizerany/pq"
-	"goposm/element"
+	"goposm/mapping"
 	"log"
 	"strings"
 )
@@ -17,14 +18,13 @@ type Config struct {
 }
 
 type DB interface {
-	InsertWays([]element.Way, TableSpec) error
-	Init(specs []TableSpec) error
+	Init(*mapping.Mapping) error
+	InsertBatch(string, [][]interface{}) error
 }
 
 type ColumnSpec struct {
-	Name  string
-	Type  string
-	Value func(string, map[string]string, interface{}) interface{}
+	Name string
+	Type string
 }
 type TableSpec struct {
 	Name         string
@@ -41,7 +41,7 @@ func (col *ColumnSpec) AsSQL() string {
 func (spec *TableSpec) CreateTableSQL() string {
 	cols := []string{
 		"id SERIAL PRIMARY KEY",
-		"osm_id BIGINT",
+		// "osm_id BIGINT",
 	}
 	for _, col := range spec.Columns {
 		cols = append(cols, col.AsSQL())
@@ -57,34 +57,18 @@ func (spec *TableSpec) CreateTableSQL() string {
 	)
 }
 
-func (spec *TableSpec) WayValues(way element.Way) []interface{} {
-	values := make([]interface{}, 0, len(spec.Columns)+2)
-	values = append(values, way.Id)
-	values = append(values, way.Wkb)
-	for _, col := range spec.Columns {
-		v, ok := way.Tags[col.Name]
-		if !ok {
-			values = append(values, nil)
-		} else {
-			if col.Value != nil {
-				values = append(values, col.Value(v, way.Tags, way))
-			} else {
-				values = append(values, v)
-			}
-		}
-	}
-	return values
-}
-
 func (spec *TableSpec) InsertSQL() string {
-	cols := []string{"osm_id", "geometry"}
-	vars := []string{
-		"$1",
-		fmt.Sprintf("ST_GeomFromWKB($2, %d)", spec.Srid),
+	cols := []string{
+	// "osm_id",
+	// "geometry",
 	}
-	for i, col := range spec.Columns {
+	vars := []string{
+	// "$1",
+	// fmt.Sprintf("ST_GeomFromWKB($2, %d)", spec.Srid),
+	}
+	for _, col := range spec.Columns {
 		cols = append(cols, col.Name)
-		vars = append(vars, fmt.Sprintf("$%d", i+3))
+		vars = append(vars, fmt.Sprintf("$%d", len(vars)+1))
 	}
 	columns := strings.Join(cols, ", ")
 	placeholders := strings.Join(vars, ", ")
@@ -95,6 +79,20 @@ func (spec *TableSpec) InsertSQL() string {
 		columns,
 		placeholders,
 	)
+}
+
+func NewTableSpec(conf *Config, t *mapping.Table) *TableSpec {
+	spec := TableSpec{
+		Name:         t.Name,
+		Schema:       conf.Schema,
+		GeometryType: t.Type,
+		Srid:         conf.Srid,
+	}
+	for _, field := range t.Fields {
+		col := ColumnSpec{field.Key, "VARCHAR"}
+		spec.Columns = append(spec.Columns, col)
+	}
+	return &spec
 }
 
 type SQLError struct {
@@ -132,7 +130,9 @@ func (pg *PostGIS) createTable(spec TableSpec) error {
 	}
 	sql = fmt.Sprintf("SELECT AddGeometryColumn('%s', '%s', 'geometry', %d, '%s', 2);",
 		spec.Schema, spec.Name, spec.Srid, spec.GeometryType)
-	_, err = pg.Db.Query(sql)
+	row := pg.Db.QueryRow(sql)
+	var void interface{}
+	err = row.Scan(&void)
 	if err != nil {
 		return &SQLError{sql, err}
 	}
@@ -170,6 +170,7 @@ func (pg *PostGIS) createSchema() error {
 type PostGIS struct {
 	Db     *sql.DB
 	Config Config
+	Tables map[string]*TableSpec
 }
 
 func (pg *PostGIS) Open() error {
@@ -189,17 +190,12 @@ func (pg *PostGIS) Open() error {
 	return nil
 }
 
-func (pg *PostGIS) WayInserter(spec TableSpec, ways chan []element.Way) error {
-	for ws := range ways {
-		err := pg.InsertWays(ws, spec)
-		if err != nil {
-			return err
-		}
+func (pg *PostGIS) InsertBatch(table string, rows [][]interface{}) error {
+	spec, ok := pg.Tables[table]
+	if !ok {
+		return errors.New("unkown table: " + table)
 	}
-	return nil
-}
 
-func (pg *PostGIS) InsertWays(ways []element.Way, spec TableSpec) error {
 	tx, err := pg.Db.Begin()
 	if err != nil {
 		return err
@@ -217,11 +213,12 @@ func (pg *PostGIS) InsertWays(ways []element.Way, spec TableSpec) error {
 	if err != nil {
 		return &SQLError{sql, err}
 	}
+	defer stmt.Close()
 
-	for _, w := range ways {
-		_, err := stmt.Exec(spec.WayValues(w)...)
+	for _, row := range rows {
+		_, err := stmt.Exec(row...)
 		if err != nil {
-			return &SQLInsertError{SQLError{sql, err}, spec.WayValues(w)}
+			return &SQLInsertError{SQLError{sql, err}, row}
 		}
 	}
 
@@ -231,14 +228,19 @@ func (pg *PostGIS) InsertWays(ways []element.Way, spec TableSpec) error {
 	}
 	tx = nil
 	return nil
+
 }
 
-func (pg *PostGIS) Init(specs []TableSpec) error {
+func (pg *PostGIS) Init(m *mapping.Mapping) error {
 	if err := pg.createSchema(); err != nil {
 		return err
 	}
-	for _, spec := range specs {
-		if err := pg.createTable(spec); err != nil {
+
+	for name, table := range m.Tables {
+		pg.Tables[name] = NewTableSpec(&pg.Config, table)
+	}
+	for _, spec := range pg.Tables {
+		if err := pg.createTable(*spec); err != nil {
 			return err
 		}
 	}
@@ -250,6 +252,7 @@ func Open(conf Config) (DB, error) {
 		panic("unsupported database type: " + conf.Type)
 	}
 	db := &PostGIS{}
+	db.Tables = make(map[string]*TableSpec)
 	db.Config = conf
 	err := db.Open()
 	if err != nil {
@@ -257,78 +260,3 @@ func Open(conf Config) (DB, error) {
 	}
 	return db, nil
 }
-
-// func InitDb() {
-// 	rawDb, err := sql.Open("postgres", "user=olt host=localhost dbname=olt sslmode=disable")
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	defer rawDb.Close()
-
-// 	pg := PostGIS{rawDb, "public"}
-// 	pg.createSchema()
-
-// 	spec := TableSpec{
-// 		"goposm_test",
-// 		pg.Schema,
-// 		[]ColumnSpec{
-// 			{"name", "VARCHAR"},
-// 			{"highway", "VARCHAR"},
-// 		},
-// 		"LINESTRING",
-// 		3857,
-// 	}
-// 	err = pg.createTable(spec)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// }
-
-// func InsertWays(ways chan []element.Way, wg *sync.WaitGroup) {
-// 	wg.Add(1)
-// 	defer wg.Done()
-
-// 	rawDb, err := sql.Open("postgres", "user=olt host=localhost dbname=olt sslmode=disable")
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	defer rawDb.Close()
-
-// 	pg := PostGIS{rawDb, "public"}
-
-// 	spec := TableSpec{
-// 		"goposm_test",
-// 		pg.Schema,
-// 		[]ColumnSpec{
-// 			{"name", "VARCHAR"},
-// 			{"highway", "VARCHAR"},
-// 		},
-// 		"LINESTRING",
-// 		3857,
-// 	}
-
-// 	for ws := range ways {
-// 		err = pg.insertWays(ws, spec)
-// 		if err != nil {
-// 			log.Fatal(err)
-// 		}
-// 	}
-// }
-
-// func main() {
-// 	wayChan := make(chan element.Way)
-// 	wg := &sync.WaitGroup{}
-
-// 	go InsertWays(wayChan, wg)
-
-// 	ways := []element.Way{
-// 		{OSMElem: element.OSMElem{1234, element.Tags{"name": "Foo"}}, Wkb: []byte{0x0, 0x0, 0x0, 0x0, 0x2, 0x0, 0x0, 0x0, 0x0}},
-// 		// {OSMElem: element.OSMElem{6666, element.Tags{"name": "Baz", "type": "motorway"}}},
-// 		// {OSMElem: element.OSMElem{9999, element.Tags{"name": "Bar", "type": "bar"}}},
-// 	}
-// 	for _, w := range ways {
-// 		wayChan <- w
-// 	}
-// 	close(wayChan)
-// 	wg.Wait()
-// }
