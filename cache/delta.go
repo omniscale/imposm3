@@ -103,12 +103,15 @@ func (self *DeltaCoordsCache) SetLinearImport(v bool) {
 	self.linearImport = v
 }
 
-func (self *DeltaCoordsCache) Close() {
+func (self *DeltaCoordsCache) Flush() {
 	for bunchId, bunch := range self.table {
 		if bunch.needsWrite {
 			self.putCoordsPacked(bunchId, bunch.coords)
 		}
 	}
+}
+func (self *DeltaCoordsCache) Close() {
+	self.Flush()
 	self.Cache.Close()
 }
 

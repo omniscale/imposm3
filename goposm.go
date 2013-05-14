@@ -224,6 +224,7 @@ func main() {
 		parse(osmCache, progress, mapping, *read)
 		osmCache.Coords.SetLinearImport(false)
 		progress.Reset()
+		osmCache.Coords.Flush()
 	}
 
 	if *write {
