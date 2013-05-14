@@ -22,8 +22,9 @@ type DB interface {
 }
 
 type ColumnSpec struct {
-	Name string
-	Type string
+	Name  string
+	Type  string
+	Value func(string, map[string]string, interface{}) interface{}
 }
 type TableSpec struct {
 	Name         string
@@ -65,7 +66,11 @@ func (spec *TableSpec) WayValues(way element.Way) []interface{} {
 		if !ok {
 			values = append(values, nil)
 		} else {
-			values = append(values, v)
+			if col.Value != nil {
+				values = append(values, col.Value(v, way.Tags, way))
+			} else {
+				values = append(values, v)
+			}
 		}
 	}
 	return values
@@ -216,7 +221,7 @@ func (pg *PostGIS) InsertWays(ways []element.Way, spec TableSpec) error {
 	for _, w := range ways {
 		_, err := stmt.Exec(spec.WayValues(w)...)
 		if err != nil {
-			return &SQLInsertError{SQLError{sql, err}, w}
+			return &SQLInsertError{SQLError{sql, err}, spec.WayValues(w)}
 		}
 	}
 

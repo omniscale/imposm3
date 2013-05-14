@@ -220,6 +220,23 @@ func NewMapping(filename string) (*Mapping, error) {
 	return &mapping, nil
 }
 
+func Bool(val string, tags map[string]string, elem interface{}) interface{} {
+	if val == "" || val == "0" || val == "false" || val == "no" {
+		return false
+	}
+	return true
+}
+
+func Direction(val string, tags map[string]string, elem interface{}) interface{} {
+	if val == "1" || val == "yes" || val == "true" {
+		return 1
+	} else if val == "-1" {
+		return -1
+	} else {
+		return 0
+	}
+}
+
 func main() {
 	// 	data := `
 	// {

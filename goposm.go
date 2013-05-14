@@ -248,26 +248,27 @@ func main() {
 		waitFill := sync.WaitGroup{}
 		wayChan := make(chan []element.Way)
 		waitDb := &sync.WaitGroup{}
-		config := db.Config{
+		conf := db.Config{
 			Type:             "postgres",
 			ConnectionParams: *connection,
 			Srid:             3857,
 			Schema:           "public",
 		}
-		pg, err := db.Open(config)
+		pg, err := db.Open(conf)
 		if err != nil {
 			log.Fatal(err)
 		}
 		specs := []db.TableSpec{
 			{
 				"goposm_test",
-				config.Schema,
+				conf.Schema,
 				[]db.ColumnSpec{
-					{"name", "VARCHAR"},
-					{"highway", "VARCHAR"},
+					{"name", "VARCHAR", nil},
+					{"highway", "VARCHAR", nil},
+					{"oneway", "SMALLINT", config.Direction},
 				},
 				"GEOMETRY",
-				config.Srid,
+				conf.Srid,
 			},
 		}
 		err = pg.Init(specs)
