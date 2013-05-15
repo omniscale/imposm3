@@ -181,11 +181,8 @@ func (pg *PostGIS) Open() error {
 	if err != nil {
 		return err
 	}
-	// sql.Open is lazy, make a query to check that the
-	// connection actually works
-	row := pg.Db.QueryRow("SELECT 1;")
-	var v string
-	err = row.Scan(&v)
+	// check that the connection actually works
+	err = pg.Db.Ping()
 	if err != nil {
 		return err
 	}
