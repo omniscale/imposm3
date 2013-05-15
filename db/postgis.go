@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	_ "github.com/bmizerany/pq"
+	"github.com/bmizerany/pq"
 	"goposm/mapping"
 	"log"
 	"strings"
@@ -78,10 +78,10 @@ func (spec *TableSpec) InsertSQL() string {
 	)
 }
 
-func NewTableSpec(conf *Config, t *mapping.Table) *TableSpec {
+func NewTableSpec(conf *Config, t *mapping.Table, schema string) *TableSpec {
 	spec := TableSpec{
 		Name:         t.Name,
-		Schema:       conf.Schema,
+		Schema:       schema,
 		GeometryType: t.Type,
 		Srid:         conf.Srid,
 	}
@@ -171,13 +171,38 @@ func (pg *PostGIS) createSchema() error {
 
 type PostGIS struct {
 	Db     *sql.DB
+	Schema string
 	Config Config
 	Tables map[string]*TableSpec
 }
 
+func schemaFromConnectionParams(params string) string {
+	parts := strings.Fields(params)
+	for _, p := range parts {
+		if strings.HasPrefix(p, "schema=") {
+			return strings.Replace(p, "schema=", "", 1)
+		}
+	}
+	return "public"
+}
+
 func (pg *PostGIS) Open() error {
 	var err error
-	pg.Db, err = sql.Open("postgres", pg.Config.ConnectionParams)
+
+	if strings.HasPrefix(pg.Config.ConnectionParams, "postgis://") {
+		pg.Config.ConnectionParams = strings.Replace(
+			pg.Config.ConnectionParams,
+			"postgis", "postgres", 1,
+		)
+	}
+
+	params, err := pq.ParseURL(pg.Config.ConnectionParams)
+	pg.Schema = schemaFromConnectionParams(params)
+
+	if err != nil {
+		return err
+	}
+	pg.Db, err = sql.Open("postgres", params)
 	if err != nil {
 		return err
 	}
@@ -236,7 +261,7 @@ func (pg *PostGIS) Init(m *mapping.Mapping) error {
 	}
 
 	for name, table := range m.Tables {
-		pg.Tables[name] = NewTableSpec(&pg.Config, table)
+		pg.Tables[name] = NewTableSpec(&pg.Config, table, pg.Schema)
 	}
 	for _, spec := range pg.Tables {
 		if err := pg.createTable(*spec); err != nil {
