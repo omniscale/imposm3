@@ -238,8 +238,6 @@ func main() {
 		}
 
 		way := osmCache.Ways.Iter()
-		way = make(chan *element.Way)
-		close(way)
 
 		diffCache := cache.NewDiffCache(*cachedir)
 		if err = diffCache.Remove(); err != nil {
@@ -301,10 +299,9 @@ func main() {
 					}
 					proj.NodesToMerc(w.Nodes)
 					if matches := lineStrings.Match(w.OSMElem); len(matches) > 0 {
-						way := element.Way{}
-						way.Id = w.Id
-						way.Tags = w.Tags
-						way.Geom, err = geom.LineStringWKB(geos, w.Nodes)
+						// make copy to avoid interference with polygon matches
+						way := element.Way(*w)
+						way.Geom, err = geom.LineStringWKB(geos, way.Nodes)
 						if err != nil {
 							if err, ok := err.(ErrorLevel); ok {
 								if err.Level() <= 0 {
@@ -322,10 +319,8 @@ func main() {
 					}
 					if w.IsClosed() {
 						if matches := polygons.Match(w.OSMElem); len(matches) > 0 {
-							way := element.Way{}
-							way.Id = w.Id
-							way.Tags = w.Tags
-							way.Geom, err = geom.PolygonWKB(geos, w.Nodes)
+							way := element.Way(*w)
+							way.Geom, err = geom.PolygonWKB(geos, way.Nodes)
 							if err != nil {
 								if err, ok := err.(ErrorLevel); ok {
 									if err.Level() <= 0 {
@@ -361,10 +356,7 @@ func main() {
 			progress.AddNodes(1)
 			if matches := points.Match(n.OSMElem); len(matches) > 0 {
 				proj.NodeToMerc(n)
-				node := element.Node{}
-				node.Id = n.Id
-				node.Tags = n.Tags
-				node.Geom, err = geom.PointWKB(geos, *n)
+				n.Geom, err = geom.PointWKB(geos, *n)
 				if err != nil {
 					if err, ok := err.(ErrorLevel); ok {
 						if err.Level() <= 0 {
@@ -375,7 +367,7 @@ func main() {
 					continue
 				}
 				for _, match := range matches {
-					row := match.Row(&node.OSMElem)
+					row := match.Row(&n.OSMElem)
 					writeChan <- writer.InsertElement{match.Table, row}
 				}
 
