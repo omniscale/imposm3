@@ -3,7 +3,8 @@ package main
 import (
 	"flag"
 	"goposm/cache"
-	"goposm/db"
+	"goposm/database"
+	_ "goposm/database/postgis"
 	"goposm/element"
 	"goposm/geom"
 	"goposm/geom/geos"
@@ -249,13 +250,12 @@ func main() {
 		waitFill := sync.WaitGroup{}
 		wayChan := make(chan []element.Way)
 		waitDb := &sync.WaitGroup{}
-		conf := db.Config{
-			Type:             "postgres",
+		conf := database.Config{
+			Type:             "postgis",
 			ConnectionParams: *connection,
 			Srid:             3857,
-			Schema:           "public",
 		}
-		pg, err := db.Open(conf)
+		pg, err := database.Open(conf)
 		if err != nil {
 			log.Fatal(err)
 		}

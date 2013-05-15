@@ -1,13 +1,13 @@
 package writer
 
 import (
-	"goposm/db"
+	"goposm/database"
 	"log"
 )
 
 const batchSize = 1024
 
-func DBWriter(db db.DB, in chan InsertBatch) {
+func DBWriter(db database.DB, in chan InsertBatch) {
 	for batch := range in {
 		err := db.InsertBatch(batch.Table, batch.Rows)
 		if err != nil {

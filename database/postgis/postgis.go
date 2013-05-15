@@ -1,26 +1,15 @@
-package db
+package postgis
 
 import (
 	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/bmizerany/pq"
+	"goposm/database"
 	"goposm/mapping"
 	"log"
 	"strings"
 )
-
-type Config struct {
-	Type             string
-	ConnectionParams string
-	Srid             int
-	Schema           string
-}
-
-type DB interface {
-	Init(*mapping.Mapping) error
-	InsertBatch(string, [][]interface{}) error
-}
 
 type ColumnSpec struct {
 	Name string
@@ -78,7 +67,7 @@ func (spec *TableSpec) InsertSQL() string {
 	)
 }
 
-func NewTableSpec(conf *Config, t *mapping.Table, schema string) *TableSpec {
+func NewTableSpec(conf *database.Config, t *mapping.Table, schema string) *TableSpec {
 	spec := TableSpec{
 		Name:         t.Name,
 		Schema:       schema,
@@ -145,12 +134,12 @@ func (pg *PostGIS) createSchema() error {
 	var sql string
 	var err error
 
-	if pg.Config.Schema == "public" {
+	if pg.Schema == "public" {
 		return nil
 	}
 
 	sql = fmt.Sprintf("SELECT EXISTS(SELECT schema_name FROM information_schema.schemata WHERE schema_name = '%s');",
-		pg.Config.Schema)
+		pg.Schema)
 	row := pg.Db.QueryRow(sql)
 	var exists bool
 	err = row.Scan(&exists)
@@ -161,7 +150,7 @@ func (pg *PostGIS) createSchema() error {
 		return nil
 	}
 
-	sql = fmt.Sprintf("CREATE SCHEMA \"%s\"", pg.Config.Schema)
+	sql = fmt.Sprintf("CREATE SCHEMA \"%s\"", pg.Schema)
 	_, err = pg.Db.Exec(sql)
 	if err != nil {
 		return &SQLError{sql, err}
@@ -172,7 +161,7 @@ func (pg *PostGIS) createSchema() error {
 type PostGIS struct {
 	Db     *sql.DB
 	Schema string
-	Config Config
+	Config database.Config
 	Tables map[string]*TableSpec
 }
 
@@ -271,10 +260,7 @@ func (pg *PostGIS) Init(m *mapping.Mapping) error {
 	return nil
 }
 
-func Open(conf Config) (DB, error) {
-	if conf.Type != "postgres" {
-		panic("unsupported database type: " + conf.Type)
-	}
+func New(conf database.Config) (database.DB, error) {
 	db := &PostGIS{}
 	db.Tables = make(map[string]*TableSpec)
 	db.Config = conf
@@ -283,4 +269,9 @@ func Open(conf Config) (DB, error) {
 		return nil, err
 	}
 	return db, nil
+}
+
+func init() {
+	database.Register("postgres", New)
+	database.Register("postgis", New)
 }
