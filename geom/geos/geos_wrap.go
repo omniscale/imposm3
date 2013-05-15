@@ -22,5 +22,9 @@ void debug_wrap(const char *fmt, ...) {
 GEOSContextHandle_t initGEOS_r_debug() {
 	return initGEOS_r(debug_wrap, debug_wrap);
 }
+
+void initGEOS_debug() {
+    return initGEOS(debug_wrap, debug_wrap);
+}
 */
 import "C"

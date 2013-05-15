@@ -57,6 +57,8 @@ func (t *Table) TableFields() *TableFields {
 			field.ValueFunc = Value
 		case "geometry":
 			field.ValueFunc = Geometry
+		case "pseudoarea":
+			field.ValueFunc = PseudoArea
 		default:
 			log.Println("unhandled type:", mappingField.Type)
 		}
@@ -107,7 +109,15 @@ func Direction(val string, elem *element.OSMElem, match Match) interface{} {
 }
 
 func Geometry(val string, elem *element.OSMElem, match Match) interface{} {
-	return []byte{0x0, 0x0, 0x0, 0x0, 0x2, 0x0, 0x0, 0x0, 0x0}
+	return elem.Geom.Wkb
+}
+
+func PseudoArea(val string, elem *element.OSMElem, match Match) interface{} {
+	area := elem.Geom.Geom.Area()
+	if area == 0.0 {
+		return nil
+	}
+	return area
 }
 
 var wayRanks map[string]int
@@ -156,33 +166,3 @@ func WayZOrder(val string, elem *element.OSMElem, match Match) interface{} {
 
 	return z
 }
-
-// brunnel_bool = Bool()
-
-// def extra_fields(self):
-//     return []
-
-// def value(self, val, osm_elem):
-//     tags = osm_elem.tags
-//     z_order = 0
-//     l = self.layer(tags)
-//     z_order += l * 10
-//     r = self.rank.get(osm_elem.type, 0)
-//     if not r:
-//         r = 7 if 'railway' in tags else 0
-//     z_order += r
-
-//     if self.brunnel_bool.value(tags.get('tunnel'), {}):
-//         z_order -= 10
-
-//     if self.brunnel_bool.value(tags.get('bridge'), {}):
-//         z_order += 10
-
-//     return z_order
-
-// def layer(self, tags):
-//     l = tags.get('layer', 0)
-//     try:
-//         return int(l)
-//     except ValueError:
-//         return 0

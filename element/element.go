@@ -1,10 +1,15 @@
 package element
 
+import (
+	"goposm/geom/geos"
+)
+
 type Tags map[string]string
 
 type OSMElem struct {
 	Id   int64
 	Tags Tags
+	Geom *Geometry
 }
 
 type Node struct {
@@ -17,7 +22,11 @@ type Way struct {
 	OSMElem
 	Refs  []int64
 	Nodes []Node
-	Wkb   []byte
+}
+
+type Geometry struct {
+	Geom *geos.Geom
+	Wkb  []byte
 }
 
 func (w *Way) IsClosed() bool {

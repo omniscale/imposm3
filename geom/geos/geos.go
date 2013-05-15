@@ -8,12 +8,13 @@ package geos
 extern void goDebug(char *msg);
 extern void debug_wrap(const char *fmt, ...);
 extern GEOSContextHandle_t initGEOS_r_debug();
-
+extern void initGEOS_debug();
 */
 import "C"
 
 import (
 	"fmt"
+	"runtime"
 	"unsafe"
 )
 
@@ -52,6 +53,18 @@ func (this *GEOS) Finish() {
 		C.finishGEOS_r(this.v)
 		this.v = nil
 	}
+}
+
+func init() {
+	/*
+		Init global GEOS handle for non _r calls.
+		In theory we need to always call the _r functions
+		with a thread/goroutine-local GEOS instance to get thread
+		safe behaviour. Some functions don't need a GEOS instance though
+		and we can make use of that e.g. to call GEOSGeom_destroy in
+		finalizer.
+	*/
+	C.initGEOS_debug()
 }
 
 type CoordSeq struct {
@@ -140,10 +153,59 @@ func (this *GEOS) IsValid(geom *Geom) bool {
 	return false
 }
 
-func (this *GEOS) Area(geom *Geom) float64 {
+func (this *Geom) Area() float64 {
 	var area C.double
-	C.GEOSArea_r(this.v, geom.v, &area)
-	return float64(area)
+	if ret := C.GEOSArea(this.v, &area); ret == 0 {
+		return float64(area)
+	} else {
+		return 0
+	}
+}
+
+func (this *Geom) Bounds() *Bounds {
+	geom := C.GEOSEnvelope(this.v)
+	if geom == nil {
+		return nil
+	}
+	extRing := C.GEOSGetExteriorRing(geom)
+	if extRing == nil {
+		return nil
+	}
+	cs := C.GEOSGeom_getCoordSeq(extRing)
+	var csLen C.uint
+	C.GEOSCoordSeq_getSize(cs, &csLen)
+	minx := 1.e+20
+	maxx := -1e+20
+	miny := 1.e+20
+	maxy := -1e+20
+	var temp C.double
+	for i := 0; i < int(csLen); i++ {
+		C.GEOSCoordSeq_getX(cs, C.uint(i), &temp)
+		x := float64(temp)
+		if x < minx {
+			minx = x
+		}
+		if x > maxx {
+			maxx = x
+		}
+		C.GEOSCoordSeq_getY(cs, C.uint(i), &temp)
+		y := float64(temp)
+		if y < miny {
+			miny = y
+		}
+		if y > maxy {
+			maxy = y
+		}
+	}
+
+	return &Bounds{minx, miny, maxx, maxy}
+}
+
+type Bounds struct {
+	MinX float64
+	MinY float64
+	MaxX float64
+	MaxY float64
 }
 
 func (this *GEOS) Destroy(geom *Geom) {
@@ -154,6 +216,15 @@ func (this *GEOS) Destroy(geom *Geom) {
 		panic("double free?")
 	}
 }
+
+func destroyGeom(geom *Geom) {
+	C.GEOSGeom_destroy(geom.v)
+}
+
+func (this *GEOS) DestroyLater(geom *Geom) {
+	runtime.SetFinalizer(geom, destroyGeom)
+}
+
 func (this *GEOS) DestroyCoordSeq(coordSeq *CoordSeq) {
 	if coordSeq.v != nil {
 		C.GEOSCoordSeq_destroy_r(this.v, coordSeq.v)

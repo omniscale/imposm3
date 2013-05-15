@@ -302,7 +302,7 @@ func main() {
 						way := element.Way{}
 						way.Id = w.Id
 						way.Tags = w.Tags
-						way.Wkb, err = geom.LineStringWKB(geos, w.Nodes)
+						way.Geom, err = geom.LineStringWKB(geos, w.Nodes)
 						if err != nil {
 							if err, ok := err.(ErrorLevel); ok {
 								if err.Level() <= 0 {
@@ -323,7 +323,7 @@ func main() {
 							way := element.Way{}
 							way.Id = w.Id
 							way.Tags = w.Tags
-							way.Wkb, err = geom.PolygonWKB(geos, w.Nodes)
+							way.Geom, err = geom.PolygonWKB(geos, w.Nodes)
 							if err != nil {
 								if err, ok := err.(ErrorLevel); ok {
 									if err.Level() <= 0 {

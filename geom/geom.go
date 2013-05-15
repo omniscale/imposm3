@@ -26,7 +26,7 @@ var (
 	ErrorOneNodeWay = NewGeomError("need at least two separate nodes for way", 0)
 )
 
-func PointWKB(g *geos.GEOS, node element.Node) ([]byte, error) {
+func PointWKB(g *geos.GEOS, node element.Node) (*element.Geometry, error) {
 	coordSeq, err := g.CreateCoordSeq(1, 2)
 	if err != nil {
 		return nil, err
@@ -37,11 +37,19 @@ func PointWKB(g *geos.GEOS, node element.Node) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer g.Destroy(geom)
-	return g.AsWKB(geom)
+	wkb, err := g.AsWKB(geom)
+	if err != nil {
+		g.Destroy(geom)
+		return nil, err
+	}
+	g.DestroyLater(geom)
+	return &element.Geometry{
+		Wkb:  wkb,
+		Geom: geom,
+	}, nil
 }
 
-func LineStringWKB(g *geos.GEOS, nodes []element.Node) ([]byte, error) {
+func LineStringWKB(g *geos.GEOS, nodes []element.Node) (*element.Geometry, error) {
 	if len(nodes) < 2 {
 		return nil, ErrorOneNodeWay
 	}
@@ -55,14 +63,19 @@ func LineStringWKB(g *geos.GEOS, nodes []element.Node) ([]byte, error) {
 		coordSeq.SetXY(g, uint32(i), nd.Long, nd.Lat)
 	}
 	geom, err := coordSeq.AsLineString(g)
+	wkb, err := g.AsWKB(geom)
 	if err != nil {
+		g.Destroy(geom)
 		return nil, err
 	}
-	defer g.Destroy(geom)
-	return g.AsWKB(geom)
+	g.DestroyLater(geom)
+	return &element.Geometry{
+		Wkb:  wkb,
+		Geom: geom,
+	}, nil
 }
 
-func PolygonWKB(g *geos.GEOS, nodes []element.Node) ([]byte, error) {
+func PolygonWKB(g *geos.GEOS, nodes []element.Node) (*element.Geometry, error) {
 	coordSeq, err := g.CreateCoordSeq(uint32(len(nodes)), 2)
 	if err != nil {
 		return nil, err
@@ -83,7 +96,14 @@ func PolygonWKB(g *geos.GEOS, nodes []element.Node) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer g.Destroy(geom)
-
-	return g.AsWKB(geom)
+	wkb, err := g.AsWKB(geom)
+	if err != nil {
+		g.Destroy(geom)
+		return nil, err
+	}
+	g.DestroyLater(geom)
+	return &element.Geometry{
+		Wkb:  wkb,
+		Geom: geom,
+	}, nil
 }
