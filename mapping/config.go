@@ -9,6 +9,7 @@ import (
 )
 
 type Field struct {
+	Name string `json:"name"`
 	Key  string `json:"key"`
 	Type string `json:"type"`
 }
@@ -17,21 +18,13 @@ type Table struct {
 	Name    string
 	Type    string              `json:"type"`
 	Mapping map[string][]string `json:"mapping"`
-	Fields  map[string]*Field   `json:"fields"`
+	Fields  []*Field            `json:"fields"`
 }
 
 type Tables map[string]*Table
 
 type Mapping struct {
 	Tables Tables `json:"tables"`
-}
-
-func (t *Table) FillFieldKeys() {
-	for key, field := range t.Fields {
-		if field.Key == "" {
-			field.Key = key
-		}
-	}
 }
 
 func (t *Table) Mappings() map[string][]string {
@@ -41,14 +34,15 @@ func (t *Table) Mappings() map[string][]string {
 func (t *Table) ExtraTags() map[string]bool {
 	tags := make(map[string]bool)
 	for _, field := range t.Fields {
-		tags[field.Key] = true
+		if field.Key != "" {
+			tags[field.Key] = true
+		}
 	}
 	return tags
 }
 
 func (m *Mapping) prepare() {
 	for name, t := range m.Tables {
-		t.FillFieldKeys()
 		t.Name = name
 	}
 }

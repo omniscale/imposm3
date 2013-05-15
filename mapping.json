@@ -1,9 +1,36 @@
 {
     "tables": {
         "landusages": {
-            "fields": {
-                "z_order": {
+            "fields": [
+                {
+                    "type": "id", 
+                    "name": "osm_id", 
+                    "key": null
+                }, 
+                {
+                    "type": "geometry", 
+                    "name": "geometry", 
+                    "key": null
+                }, 
+                {
+                    "type": "string", 
+                    "name": "name", 
+                    "key": "name"
+                }, 
+                {
+                    "type": "mapping_value", 
+                    "name": "type", 
+                    "key": null
+                }, 
+                {
+                    "type": "pseudoarea", 
+                    "name": "area", 
+                    "key": null
+                }, 
+                {
                     "type": "zorder", 
+                    "name": "z_order", 
+                    "key": "z_order", 
                     "order": {
                         "industrial": 2, 
                         "meadow": 28, 
@@ -45,20 +72,8 @@
                         "railway": 1, 
                         "retail": 4
                     }
-                }, 
-                "area": {
-                    "type": "pseudoarea"
-                }, 
-                "type": {
-                    "type": "mapping_value"
-                }, 
-                "name": {
-                    "type": "string"
-                }, 
-                "osm_id": {
-                    "type": "id"
                 }
-            }, 
+            ], 
             "type": "polygon", 
             "mapping": {
                 "amenity": [
@@ -116,17 +131,28 @@
             }
         }, 
         "buildings": {
-            "fields": {
-                "type": {
-                    "type": "mapping_value"
+            "fields": [
+                {
+                    "type": "id", 
+                    "name": "osm_id", 
+                    "key": null
                 }, 
-                "name": {
-                    "type": "string"
+                {
+                    "type": "geometry", 
+                    "name": "geometry", 
+                    "key": null
                 }, 
-                "osm_id": {
-                    "type": "id"
+                {
+                    "type": "string", 
+                    "name": "name", 
+                    "key": "name"
+                }, 
+                {
+                    "type": "mapping_value", 
+                    "name": "type", 
+                    "key": null
                 }
-            }, 
+            ], 
             "type": "polygon", 
             "mapping": {
                 "building": [
@@ -135,9 +161,31 @@
             }
         }, 
         "places": {
-            "fields": {
-                "z_order": {
+            "fields": [
+                {
+                    "type": "id", 
+                    "name": "osm_id", 
+                    "key": null
+                }, 
+                {
+                    "type": "geometry", 
+                    "name": "geometry", 
+                    "key": null
+                }, 
+                {
+                    "type": "string", 
+                    "name": "name", 
+                    "key": "name"
+                }, 
+                {
+                    "type": "mapping_value", 
+                    "name": "type", 
+                    "key": null
+                }, 
+                {
                     "type": "zorder", 
+                    "name": "z_order", 
+                    "key": "z_order", 
                     "order": {
                         "town": 4, 
                         "city": 5, 
@@ -151,19 +199,12 @@
                         "village": 3
                     }
                 }, 
-                "population": {
-                    "type": "integer"
-                }, 
-                "type": {
-                    "type": "mapping_value"
-                }, 
-                "name": {
-                    "type": "string"
-                }, 
-                "osm_id": {
-                    "type": "id"
+                {
+                    "type": "integer", 
+                    "name": "population", 
+                    "key": "population"
                 }
-            }, 
+            ], 
             "type": "point", 
             "mapping": {
                 "place": [
@@ -181,17 +222,28 @@
             }
         }, 
         "aeroways": {
-            "fields": {
-                "type": {
-                    "type": "mapping_value"
+            "fields": [
+                {
+                    "type": "id", 
+                    "name": "osm_id", 
+                    "key": null
                 }, 
-                "name": {
-                    "type": "string"
+                {
+                    "type": "geometry", 
+                    "name": "geometry", 
+                    "key": null
                 }, 
-                "osm_id": {
-                    "type": "id"
+                {
+                    "type": "string", 
+                    "name": "name", 
+                    "key": "name"
+                }, 
+                {
+                    "type": "mapping_value", 
+                    "name": "type", 
+                    "key": null
                 }
-            }, 
+            ], 
             "type": "linestring", 
             "mapping": {
                 "aeroway": [
@@ -201,20 +253,33 @@
             }
         }, 
         "admin": {
-            "fields": {
-                "admin_level": {
-                    "type": "integer"
+            "fields": [
+                {
+                    "type": "id", 
+                    "name": "osm_id", 
+                    "key": null
                 }, 
-                "type": {
-                    "type": "mapping_value"
+                {
+                    "type": "geometry", 
+                    "name": "geometry", 
+                    "key": null
                 }, 
-                "name": {
-                    "type": "string"
+                {
+                    "type": "string", 
+                    "name": "name", 
+                    "key": "name"
                 }, 
-                "osm_id": {
-                    "type": "id"
+                {
+                    "type": "mapping_value", 
+                    "name": "type", 
+                    "key": null
+                }, 
+                {
+                    "type": "integer", 
+                    "name": "admin_level", 
+                    "key": "admin_level"
                 }
-            }, 
+            ], 
             "type": "polygon", 
             "mapping": {
                 "boundary": [
@@ -223,32 +288,53 @@
             }
         }, 
         "mainroads": {
-            "fields": {
-                "z_order": {
-                    "type": "wayzorder"
+            "fields": [
+                {
+                    "type": "id", 
+                    "name": "osm_id", 
+                    "key": null
                 }, 
-                "bridge": {
-                    "type": "bool"
+                {
+                    "type": "geometry", 
+                    "name": "geometry", 
+                    "key": null
                 }, 
-                "name": {
-                    "type": "string"
+                {
+                    "type": "string", 
+                    "name": "name", 
+                    "key": "name"
                 }, 
-                "tunnel": {
-                    "type": "bool"
+                {
+                    "type": "mapping_value", 
+                    "name": "type", 
+                    "key": null
                 }, 
-                "ref": {
-                    "type": "string"
+                {
+                    "type": "bool", 
+                    "name": "tunnel", 
+                    "key": "tunnel"
                 }, 
-                "osm_id": {
-                    "type": "id"
+                {
+                    "type": "bool", 
+                    "name": "bridge", 
+                    "key": "bridge"
                 }, 
-                "oneway": {
-                    "type": "direction"
+                {
+                    "type": "direction", 
+                    "name": "oneway", 
+                    "key": null
                 }, 
-                "type": {
-                    "type": "mapping_value"
+                {
+                    "type": "string", 
+                    "name": "ref", 
+                    "key": "ref"
+                }, 
+                {
+                    "type": "wayzorder", 
+                    "name": "z_order", 
+                    "key": "layer"
                 }
-            }, 
+            ], 
             "type": "linestring", 
             "mapping": {
                 "highway": [
@@ -261,17 +347,28 @@
             }
         }, 
         "transport_areas": {
-            "fields": {
-                "type": {
-                    "type": "mapping_value"
+            "fields": [
+                {
+                    "type": "id", 
+                    "name": "osm_id", 
+                    "key": null
                 }, 
-                "name": {
-                    "type": "string"
+                {
+                    "type": "geometry", 
+                    "name": "geometry", 
+                    "key": null
                 }, 
-                "osm_id": {
-                    "type": "id"
+                {
+                    "type": "string", 
+                    "name": "name", 
+                    "key": "name"
+                }, 
+                {
+                    "type": "mapping_value", 
+                    "name": "type", 
+                    "key": null
                 }
-            }, 
+            ], 
             "type": "polygon", 
             "mapping": {
                 "railway": [
@@ -286,17 +383,28 @@
             }
         }, 
         "waterways": {
-            "fields": {
-                "type": {
-                    "type": "mapping_value"
+            "fields": [
+                {
+                    "type": "id", 
+                    "name": "osm_id", 
+                    "key": null
                 }, 
-                "name": {
-                    "type": "string"
+                {
+                    "type": "geometry", 
+                    "name": "geometry", 
+                    "key": null
                 }, 
-                "osm_id": {
-                    "type": "id"
+                {
+                    "type": "string", 
+                    "name": "name", 
+                    "key": "name"
+                }, 
+                {
+                    "type": "mapping_value", 
+                    "name": "type", 
+                    "key": null
                 }
-            }, 
+            ], 
             "type": "linestring", 
             "mapping": {
                 "waterway": [
@@ -308,32 +416,53 @@
             }
         }, 
         "minorroads": {
-            "fields": {
-                "z_order": {
-                    "type": "wayzorder"
+            "fields": [
+                {
+                    "type": "id", 
+                    "name": "osm_id", 
+                    "key": null
                 }, 
-                "bridge": {
-                    "type": "bool"
+                {
+                    "type": "geometry", 
+                    "name": "geometry", 
+                    "key": null
                 }, 
-                "name": {
-                    "type": "string"
+                {
+                    "type": "string", 
+                    "name": "name", 
+                    "key": "name"
                 }, 
-                "tunnel": {
-                    "type": "bool"
+                {
+                    "type": "mapping_value", 
+                    "name": "type", 
+                    "key": null
                 }, 
-                "ref": {
-                    "type": "string"
+                {
+                    "type": "bool", 
+                    "name": "tunnel", 
+                    "key": "tunnel"
                 }, 
-                "osm_id": {
-                    "type": "id"
+                {
+                    "type": "bool", 
+                    "name": "bridge", 
+                    "key": "bridge"
                 }, 
-                "oneway": {
-                    "type": "direction"
+                {
+                    "type": "direction", 
+                    "name": "oneway", 
+                    "key": null
                 }, 
-                "type": {
-                    "type": "mapping_value"
+                {
+                    "type": "string", 
+                    "name": "ref", 
+                    "key": "ref"
+                }, 
+                {
+                    "type": "wayzorder", 
+                    "name": "z_order", 
+                    "key": "layer"
                 }
-            }, 
+            ], 
             "type": "linestring", 
             "mapping": {
                 "highway": [
@@ -353,26 +482,43 @@
             }
         }, 
         "railways": {
-            "fields": {
-                "z_order": {
-                    "type": "wayzorder"
+            "fields": [
+                {
+                    "type": "id", 
+                    "name": "osm_id", 
+                    "key": null
                 }, 
-                "bridge": {
-                    "type": "bool"
+                {
+                    "type": "geometry", 
+                    "name": "geometry", 
+                    "key": null
                 }, 
-                "name": {
-                    "type": "string"
+                {
+                    "type": "string", 
+                    "name": "name", 
+                    "key": "name"
                 }, 
-                "tunnel": {
-                    "type": "bool"
+                {
+                    "type": "mapping_value", 
+                    "name": "type", 
+                    "key": null
                 }, 
-                "osm_id": {
-                    "type": "id"
+                {
+                    "type": "bool", 
+                    "name": "tunnel", 
+                    "key": "tunnel"
                 }, 
-                "type": {
-                    "type": "mapping_value"
+                {
+                    "type": "bool", 
+                    "name": "bridge", 
+                    "key": "bridge"
+                }, 
+                {
+                    "type": "wayzorder", 
+                    "name": "z_order", 
+                    "key": "layer"
                 }
-            }, 
+            ], 
             "type": "linestring", 
             "mapping": {
                 "railway": [
@@ -388,32 +534,53 @@
             }
         }, 
         "motorways": {
-            "fields": {
-                "z_order": {
-                    "type": "wayzorder"
+            "fields": [
+                {
+                    "type": "id", 
+                    "name": "osm_id", 
+                    "key": null
                 }, 
-                "bridge": {
-                    "type": "bool"
+                {
+                    "type": "geometry", 
+                    "name": "geometry", 
+                    "key": null
                 }, 
-                "name": {
-                    "type": "string"
+                {
+                    "type": "string", 
+                    "name": "name", 
+                    "key": "name"
                 }, 
-                "tunnel": {
-                    "type": "bool"
+                {
+                    "type": "mapping_value", 
+                    "name": "type", 
+                    "key": null
                 }, 
-                "ref": {
-                    "type": "string"
+                {
+                    "type": "bool", 
+                    "name": "tunnel", 
+                    "key": "tunnel"
                 }, 
-                "osm_id": {
-                    "type": "id"
+                {
+                    "type": "bool", 
+                    "name": "bridge", 
+                    "key": "bridge"
                 }, 
-                "oneway": {
-                    "type": "direction"
+                {
+                    "type": "direction", 
+                    "name": "oneway", 
+                    "key": null
                 }, 
-                "type": {
-                    "type": "mapping_value"
+                {
+                    "type": "string", 
+                    "name": "ref", 
+                    "key": "ref"
+                }, 
+                {
+                    "type": "wayzorder", 
+                    "name": "z_order", 
+                    "key": "layer"
                 }
-            }, 
+            ], 
             "type": "linestring", 
             "mapping": {
                 "highway": [
@@ -425,20 +592,33 @@
             }
         }, 
         "transport_points": {
-            "fields": {
-                "ref": {
-                    "type": "string"
+            "fields": [
+                {
+                    "type": "id", 
+                    "name": "osm_id", 
+                    "key": null
                 }, 
-                "type": {
-                    "type": "mapping_value"
+                {
+                    "type": "geometry", 
+                    "name": "geometry", 
+                    "key": null
                 }, 
-                "name": {
-                    "type": "string"
+                {
+                    "type": "string", 
+                    "name": "name", 
+                    "key": "name"
                 }, 
-                "osm_id": {
-                    "type": "id"
+                {
+                    "type": "mapping_value", 
+                    "name": "type", 
+                    "key": null
+                }, 
+                {
+                    "type": "string", 
+                    "name": "ref", 
+                    "key": "ref"
                 }
-            }, 
+            ], 
             "type": "point", 
             "mapping": {
                 "railway": [
@@ -463,17 +643,28 @@
             }
         }, 
         "amenities": {
-            "fields": {
-                "type": {
-                    "type": "mapping_value"
+            "fields": [
+                {
+                    "type": "id", 
+                    "name": "osm_id", 
+                    "key": null
                 }, 
-                "name": {
-                    "type": "string"
+                {
+                    "type": "geometry", 
+                    "name": "geometry", 
+                    "key": null
                 }, 
-                "osm_id": {
-                    "type": "id"
+                {
+                    "type": "string", 
+                    "name": "name", 
+                    "key": "name"
+                }, 
+                {
+                    "type": "mapping_value", 
+                    "name": "type", 
+                    "key": null
                 }
-            }, 
+            ], 
             "type": "point", 
             "mapping": {
                 "amenity": [
@@ -489,17 +680,28 @@
             }
         }, 
         "waterareas": {
-            "fields": {
-                "type": {
-                    "type": "mapping_value"
+            "fields": [
+                {
+                    "type": "id", 
+                    "name": "osm_id", 
+                    "key": null
                 }, 
-                "name": {
-                    "type": "string"
+                {
+                    "type": "geometry", 
+                    "name": "geometry", 
+                    "key": null
                 }, 
-                "osm_id": {
-                    "type": "id"
+                {
+                    "type": "string", 
+                    "name": "name", 
+                    "key": "name"
+                }, 
+                {
+                    "type": "mapping_value", 
+                    "name": "type", 
+                    "key": null
                 }
-            }, 
+            ], 
             "type": "polygon", 
             "mapping": {
                 "waterway": [

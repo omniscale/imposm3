@@ -24,7 +24,7 @@ type DB interface {
 
 type ColumnSpec struct {
 	Name string
-	Type string
+	Type ColumnType
 }
 type TableSpec struct {
 	Name         string
@@ -35,7 +35,7 @@ type TableSpec struct {
 }
 
 func (col *ColumnSpec) AsSQL() string {
-	return fmt.Sprintf("\"%s\" %s", col.Name, col.Type)
+	return fmt.Sprintf("\"%s\" %s", col.Name, col.Type.Name)
 }
 
 func (spec *TableSpec) CreateTableSQL() string {
@@ -44,6 +44,9 @@ func (spec *TableSpec) CreateTableSQL() string {
 		// "osm_id BIGINT",
 	}
 	for _, col := range spec.Columns {
+		if col.Type.Name == "GEOMETRY" {
+			continue
+		}
 		cols = append(cols, col.AsSQL())
 	}
 	columnSQL := strings.Join(cols, ",\n")
@@ -68,7 +71,13 @@ func (spec *TableSpec) InsertSQL() string {
 	}
 	for _, col := range spec.Columns {
 		cols = append(cols, col.Name)
-		vars = append(vars, fmt.Sprintf("$%d", len(vars)+1))
+		if col.Type.ValueTemplate != "" {
+			vars = append(vars, fmt.Sprintf(
+				col.Type.ValueTemplate,
+				len(vars)+1))
+		} else {
+			vars = append(vars, fmt.Sprintf("$%d", len(vars)+1))
+		}
 	}
 	columns := strings.Join(cols, ", ")
 	placeholders := strings.Join(vars, ", ")
@@ -89,7 +98,11 @@ func NewTableSpec(conf *Config, t *mapping.Table) *TableSpec {
 		Srid:         conf.Srid,
 	}
 	for _, field := range t.Fields {
-		col := ColumnSpec{field.Key, "VARCHAR"}
+		col := ColumnSpec{field.Name, pgTypes[field.Type]}
+		if col.Type.Name == "" {
+			log.Println("unhandled", field)
+			col.Type.Name = "VARCHAR"
+		}
 		spec.Columns = append(spec.Columns, col)
 	}
 	return &spec
@@ -129,7 +142,7 @@ func (pg *PostGIS) createTable(spec TableSpec) error {
 		return &SQLError{sql, err}
 	}
 	sql = fmt.Sprintf("SELECT AddGeometryColumn('%s', '%s', 'geometry', %d, '%s', 2);",
-		spec.Schema, spec.Name, spec.Srid, spec.GeometryType)
+		spec.Schema, spec.Name, spec.Srid, strings.ToUpper(spec.GeometryType))
 	row := pg.Db.QueryRow(sql)
 	var void interface{}
 	err = row.Scan(&void)

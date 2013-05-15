@@ -55,6 +55,8 @@ func (t *Table) TableFields() *TableFields {
 			field.ValueFunc = Key
 		case "mapping_value":
 			field.ValueFunc = Value
+		case "geometry":
+			field.ValueFunc = Geometry
 		default:
 			log.Println("unhandled type:", mappingField.Type)
 		}
@@ -62,18 +64,6 @@ func (t *Table) TableFields() *TableFields {
 	}
 	return &result
 }
-
-// type RowBuilder struct {
-// 	tables map[string]*TableFields
-// }
-
-// func NewRowBuilder(m *Mapping) *RowBuilder {
-// 	rb := RowBuilder{make(map[string]*TableFields)}
-// 	for name, t := range m.Tables {
-// 		rb.tables[name] = t.TableFields()
-// 	}
-// 	return &rb
-// }
 
 func Bool(val string, elem *element.OSMElem, match Match) interface{} {
 	if val == "" || val == "0" || val == "false" || val == "no" {
@@ -114,6 +104,10 @@ func Direction(val string, elem *element.OSMElem, match Match) interface{} {
 	} else {
 		return 0
 	}
+}
+
+func Geometry(val string, elem *element.OSMElem, match Match) interface{} {
+	return []byte{0x0, 0x0, 0x0, 0x0, 0x2, 0x0, 0x0, 0x0, 0x0}
 }
 
 var wayRanks map[string]int
