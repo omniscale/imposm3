@@ -1,6 +1,7 @@
 package geom
 
 import (
+	"errors"
 	"goposm/element"
 	"goposm/geom/geos"
 )
@@ -37,10 +38,10 @@ func PointWKB(g *geos.GEOS, node element.Node) (*element.Geometry, error) {
 	if err != nil {
 		return nil, err
 	}
-	wkb, err := g.AsWKB(geom)
-	if err != nil {
+	wkb := g.AsWKB(geom)
+	if wkb == nil {
 		g.Destroy(geom)
-		return nil, err
+		return nil, errors.New("could not create wkb")
 	}
 	g.DestroyLater(geom)
 	return &element.Geometry{
@@ -63,10 +64,10 @@ func LineStringWKB(g *geos.GEOS, nodes []element.Node) (*element.Geometry, error
 		coordSeq.SetXY(g, uint32(i), nd.Long, nd.Lat)
 	}
 	geom, err := coordSeq.AsLineString(g)
-	wkb, err := g.AsWKB(geom)
-	if err != nil {
+	wkb := g.AsWKB(geom)
+	if wkb == nil {
 		g.Destroy(geom)
-		return nil, err
+		return nil, errors.New("could not create wkb")
 	}
 	g.DestroyLater(geom)
 	return &element.Geometry{
@@ -96,10 +97,10 @@ func PolygonWKB(g *geos.GEOS, nodes []element.Node) (*element.Geometry, error) {
 	if err != nil {
 		return nil, err
 	}
-	wkb, err := g.AsWKB(geom)
-	if err != nil {
+	wkb := g.AsWKB(geom)
+	if wkb == nil {
 		g.Destroy(geom)
-		return nil, err
+		return nil, errors.New("could not create wkb")
 	}
 	g.DestroyLater(geom)
 	return &element.Geometry{

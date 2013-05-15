@@ -135,15 +135,20 @@ func (this *GEOS) Buffer(geom *Geom, size float64) *Geom {
 }
 
 func (this *GEOS) AsWKT(geom *Geom) string {
-	return C.GoString(C.GEOSGeomToWKT_r(this.v, geom.v))
+	str := C.GEOSGeomToWKT_r(this.v, geom.v)
+	result := C.GoString(str)
+	C.free(unsafe.Pointer(str))
+	return result
 }
-func (this *GEOS) AsWKB(geom *Geom) ([]byte, error) {
+func (this *GEOS) AsWKB(geom *Geom) []byte {
 	var size C.size_t
-	buf, err := C.GEOSGeomToWKB_buf_r(this.v, geom.v, &size)
-	if err != nil {
-		return nil, err
+	buf := C.GEOSGeomToWKB_buf_r(this.v, geom.v, &size)
+	if buf == nil {
+		return nil
 	}
-	return C.GoBytes(unsafe.Pointer(buf), C.int(size)), nil
+	result := C.GoBytes(unsafe.Pointer(buf), C.int(size))
+	C.free(unsafe.Pointer(buf))
+	return result
 }
 
 func (this *GEOS) IsValid(geom *Geom) bool {
