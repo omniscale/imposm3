@@ -314,6 +314,27 @@ func (p *NodesCache) GetNode(id int64) (*element.Node, error) {
 	return node, nil
 }
 
+func (p *NodesCache) Iter() chan *element.Node {
+    node := make(chan *element.Node)
+    go func() {
+        ro := levigo.NewReadOptions()
+        ro.SetFillCache(false)
+        it := p.db.NewIterator(ro)
+        defer it.Close()
+        it.SeekToFirst()
+        for ; it.Valid(); it.Next() {
+            nodes, err := binary.UnmarshalNode(it.Value())
+            if err != nil {
+                panic(err)
+            }
+            node <- nodes
+        }
+        close(node)
+    }()
+    return node
+}
+
+
 func (p *WaysCache) PutWay(way *element.Way) error {
 	keyBuf := idToKeyBuf(way.Id)
 	data, err := binary.MarshalWay(way)

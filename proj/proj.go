@@ -24,3 +24,7 @@ func NodesToMerc(nodes []element.Node) {
 		nodes[i].Long, nodes[i].Lat = wgsToMerc(nd.Long, nd.Lat)
 	}
 }
+
+func NodeToMerc(node *element.Node) {
+	node.Long, node.Lat = wgsToMerc(node.Long, node.Lat)
+}

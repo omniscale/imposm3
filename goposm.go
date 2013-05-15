@@ -238,6 +238,8 @@ func main() {
 		}
 
 		way := osmCache.Ways.Iter()
+		way = make(chan *element.Way)
+		close(way)
 
 		diffCache := cache.NewDiffCache(*cachedir)
 		if err = diffCache.Remove(); err != nil {
@@ -349,11 +351,42 @@ func main() {
 		}
 		waitFill.Wait()
 		close(wayChan)
+		diffCache.Coords.Close()
+
+		nodes := osmCache.Nodes.Iter()
+		points := tagmapping.PointMatcher()
+		geos := geos.NewGEOS()
+		defer geos.Finish()
+		for n := range nodes {
+			progress.AddNodes(1)
+			if matches := points.Match(n.OSMElem); len(matches) > 0 {
+				proj.NodeToMerc(n)
+				node := element.Node{}
+				node.Id = n.Id
+				node.Tags = n.Tags
+				node.Geom, err = geom.PointWKB(geos, *n)
+				if err != nil {
+					if err, ok := err.(ErrorLevel); ok {
+						if err.Level() <= 0 {
+							continue
+						}
+					}
+					log.Println(err)
+					continue
+				}
+				for _, match := range matches {
+					row := match.Row(&node.OSMElem)
+					writeChan <- writer.InsertElement{match.Table, row}
+				}
+
+			}
+			// fmt.Println(r)
+		}
 		close(writeChan)
 		waitBuffer.Wait()
 		close(writeDBChan)
 		waitDb.Wait()
-		diffCache.Coords.Close()
+
 	}
 	progress.Stop()
 
