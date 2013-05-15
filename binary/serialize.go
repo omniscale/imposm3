@@ -131,7 +131,14 @@ func MarshalRelation(relation *element.Relation) ([]byte, error) {
 	pbfRelation := &Relation{}
 	pbfRelation.Id = &relation.Id
 	// TODO store members
-	//pbfRelation.Members = relation.Members
+	pbfRelation.MemberIds = make([]int64, len(relation.Members))
+	pbfRelation.MemberTypes = make([]Relation_MemberType, len(relation.Members))
+	pbfRelation.MemberRoles = make([]string, len(relation.Members))
+	for i, m := range relation.Members {
+		pbfRelation.MemberIds[i] = m.Id
+		pbfRelation.MemberTypes[i] = Relation_MemberType(m.Type)
+		pbfRelation.MemberRoles[i] = m.Role
+	}
 	pbfRelation.Tags = relation.TagsAsArray()
 	return proto.Marshal(pbfRelation)
 }
@@ -145,6 +152,12 @@ func UnmarshalRelation(data []byte) (relation *element.Relation, err error) {
 
 	relation = &element.Relation{}
 	relation.Id = *pbfRelation.Id
+	relation.Members = make([]element.Member, len(pbfRelation.MemberIds))
+	for i, _ := range pbfRelation.MemberIds {
+		relation.Members[i].Id = pbfRelation.MemberIds[i]
+		relation.Members[i].Type = element.MemberType(pbfRelation.MemberTypes[i])
+		relation.Members[i].Role = pbfRelation.MemberRoles[i]
+	}
 	//relation.Nodes = pbfRelation.Node
 	relation.TagsFromArray(pbfRelation.Tags)
 	return relation, nil

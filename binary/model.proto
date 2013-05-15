@@ -18,16 +18,12 @@ message Relation {
     required int64 id = 1;
 
     repeated string tags = 2;
-    repeated RelationMember members = 3;
-}
-
-message RelationMember {
-    required int64 member_ids = 1;
+    repeated int64 member_ids = 3;
     enum MemberType {
         NODE = 0;
         WAY = 1;
         RELATION = 2;
     }
-    required MemberType member_types = 2;
-    required string member_roles = 3;
+    repeated MemberType member_types = 4;
+    repeated string member_roles = 5;
 }

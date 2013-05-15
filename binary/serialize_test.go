@@ -74,6 +74,45 @@ func TestMarshalWay(t *testing.T) {
 
 }
 
+func TestMarshalRelation(t *testing.T) {
+	rel := &element.Relation{}
+	rel.Id = 12345
+	rel.Tags = make(element.Tags)
+	rel.Tags["name"] = "test"
+	rel.Tags["landusage"] = "forest"
+	rel.Members = append(rel.Members, element.Member{123, element.WAY, "outer"})
+	rel.Members = append(rel.Members, element.Member{124, element.WAY, "inner"})
+
+	data, _ := MarshalRelation(rel)
+	rel, _ = UnmarshalRelation(data)
+	if rel.Id != 12345 {
+		t.Error("id does not match")
+	}
+
+	if rel.Tags["name"] != "test" {
+		t.Error("name tag does not match")
+	}
+	if rel.Tags["landusage"] != "forest" {
+		t.Error("landusage tag does not match")
+	}
+
+	if len(rel.Tags) != 2 {
+		t.Error("tags len does not match")
+	}
+
+	if len(rel.Members) != 2 {
+		t.Error("members len does not match")
+	}
+
+	if rel.Members[0].Id != 123 || rel.Members[0].Type != element.WAY || rel.Members[0].Role != "outer" {
+		t.Error("members do not match", rel.Members[0])
+	}
+
+	if rel.Members[1].Id != 124 || rel.Members[1].Type != element.WAY || rel.Members[1].Role != "inner" {
+		t.Error("members do not match", rel.Members[1])
+	}
+}
+
 func TestDeltaPack(t *testing.T) {
 	ids := []int64{1000, 999, 1001, -8, 1234}
 	deltaPack(ids)
