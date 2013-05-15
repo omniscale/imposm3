@@ -35,16 +35,15 @@ type TableSpec struct {
 }
 
 func (col *ColumnSpec) AsSQL() string {
-	return fmt.Sprintf("\"%s\" %s", col.Name, col.Type.Name)
+	return fmt.Sprintf("\"%s\" %s", col.Name, col.Type.Name())
 }
 
 func (spec *TableSpec) CreateTableSQL() string {
 	cols := []string{
 		"id SERIAL PRIMARY KEY",
-		// "osm_id BIGINT",
 	}
 	for _, col := range spec.Columns {
-		if col.Type.Name == "GEOMETRY" {
+		if col.Type.Name() == "GEOMETRY" {
 			continue
 		}
 		cols = append(cols, col.AsSQL())
@@ -61,23 +60,12 @@ func (spec *TableSpec) CreateTableSQL() string {
 }
 
 func (spec *TableSpec) InsertSQL() string {
-	cols := []string{
-	// "osm_id",
-	// "geometry",
-	}
-	vars := []string{
-	// "$1",
-	// fmt.Sprintf("ST_GeomFromWKB($2, %d)", spec.Srid),
-	}
+	var cols []string
+	var vars []string
 	for _, col := range spec.Columns {
 		cols = append(cols, col.Name)
-		if col.Type.ValueTemplate != "" {
-			vars = append(vars, fmt.Sprintf(
-				col.Type.ValueTemplate,
-				len(vars)+1))
-		} else {
-			vars = append(vars, fmt.Sprintf("$%d", len(vars)+1))
-		}
+		vars = append(vars,
+			col.Type.PrepareInsertSql(len(vars)+1, spec))
 	}
 	columns := strings.Join(cols, ", ")
 	placeholders := strings.Join(vars, ", ")
@@ -98,11 +86,12 @@ func NewTableSpec(conf *Config, t *mapping.Table) *TableSpec {
 		Srid:         conf.Srid,
 	}
 	for _, field := range t.Fields {
-		col := ColumnSpec{field.Name, pgTypes[field.Type]}
-		if col.Type.Name == "" {
+		pgType, ok := pgTypes[field.Type]
+		if !ok {
 			log.Println("unhandled", field)
-			col.Type.Name = "VARCHAR"
+			pgType = pgTypes["string"]
 		}
+		col := ColumnSpec{field.Name, pgType}
 		spec.Columns = append(spec.Columns, col)
 	}
 	return &spec

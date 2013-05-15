@@ -6,15 +6,16 @@ import (
 	"strconv"
 )
 
+type MakeValue func(string, *element.OSMElem, Match) interface{}
+
 type FieldSpec struct {
-	Name      string
-	Type      string
-	ValueFunc func(string, *element.OSMElem, Match) interface{}
+	Name string
+	Type FieldType
 }
 
 func (f *FieldSpec) Value(elem *element.OSMElem, match Match) interface{} {
-	if f.ValueFunc != nil {
-		return f.ValueFunc(elem.Tags[f.Name], elem, match)
+	if f.Type.Func != nil {
+		return f.Type.Func(elem.Tags[f.Name], elem, match)
 	}
 	return nil
 }
@@ -36,35 +37,40 @@ func (t *Table) TableFields() *TableFields {
 
 	for _, mappingField := range t.Fields {
 		field := FieldSpec{}
-		field.Name = mappingField.Key
+		field.Name = mappingField.Name
 
-		switch mappingField.Type {
-		case "id":
-			field.ValueFunc = Id
-		case "string":
-			field.ValueFunc = String
-		case "direction":
-			field.ValueFunc = Direction
-		case "bool":
-			field.ValueFunc = Bool
-		case "integer":
-			field.ValueFunc = Integer
-		case "wayzorder":
-			field.ValueFunc = WayZOrder
-		case "mapping_key":
-			field.ValueFunc = Key
-		case "mapping_value":
-			field.ValueFunc = Value
-		case "geometry":
-			field.ValueFunc = Geometry
-		case "pseudoarea":
-			field.ValueFunc = PseudoArea
-		default:
+		fieldType, ok := FieldTypes[mappingField.Type]
+		if !ok {
 			log.Println("unhandled type:", mappingField.Type)
+		} else {
+			field.Type = fieldType
 		}
 		result.fields = append(result.fields, field)
 	}
 	return &result
+}
+
+type FieldType struct {
+	Name   string
+	GoType string
+	Func   MakeValue
+}
+
+var FieldTypes map[string]FieldType
+
+func init() {
+	FieldTypes = map[string]FieldType{
+		"bool":          {"bool", "bool", Bool},
+		"id":            {"id", "int64", Id},
+		"string":        {"string", "string", String},
+		"direction":     {"direction", "int8", Direction},
+		"integer":       {"integer", "int32", Integer},
+		"mapping_key":   {"mapping_key", "string", Key},
+		"mapping_value": {"mapping_value", "string", Value},
+		"geometry":      {"geometry", "geometry", Geometry},
+		"wayzorder":     {"wayzorder", "int32", WayZOrder},
+		"pseudoarea":    {"pseudoarea", "float32", PseudoArea},
+	}
 }
 
 func Bool(val string, elem *element.OSMElem, match Match) interface{} {
@@ -117,7 +123,7 @@ func PseudoArea(val string, elem *element.OSMElem, match Match) interface{} {
 	if area == 0.0 {
 		return nil
 	}
-	return area
+	return float32(area)
 }
 
 var wayRanks map[string]int
