@@ -13,7 +13,7 @@ func BuildRelation(rel *element.Relation) error {
 	if err != nil {
 		return err
 	}
-	geom, err := BuildGeometry(rings)
+	geom, err := BuildRelGeometry(rel, rings)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func (r SortableRingsDesc) Len() int           { return len(r) }
 func (r SortableRingsDesc) Less(i, j int) bool { return r[i].area > r[j].area }
 func (r SortableRingsDesc) Swap(i, j int)      { r[i], r[j] = r[j], r[i] }
 
-func BuildGeometry(rings []*Ring) (*geos.Geom, error) {
+func BuildRelGeometry(rel *element.Relation, rings []*Ring) (*geos.Geom, error) {
 	g := geos.NewGEOS()
 	defer g.Finish()
 
@@ -118,16 +118,20 @@ func BuildGeometry(rings []*Ring) (*geos.Geom, error) {
 		}
 	}
 
+	relTags := relationTags(rel.Tags, rings[0].ways[0].Tags)
+
 	var polygons []*geos.Geom
 	for shell, _ := range shells {
 		var interiors []*geos.Geom
 		for hole, _ := range shell.holes {
+			hole.MarkInserted(relTags)
 			ring := g.ExteriorRing(hole.geom)
 			if ring == nil {
 				return nil, errors.New("Error while getting exterior ring.")
 			}
 			interiors = append(interiors, ring)
 		}
+		shell.MarkInserted(relTags)
 		exterior := g.ExteriorRing(shell.geom)
 		if exterior == nil {
 			return nil, errors.New("Error while getting exterior ring.")
@@ -149,7 +153,49 @@ func BuildGeometry(rings []*Ring) (*geos.Geom, error) {
 		}
 	}
 
+	insertedWays := make(map[int64]bool)
+	for _, r := range rings {
+		fmt.Println(r, r.inserted)
+		for id, _ := range r.inserted {
+			insertedWays[id] = true
+		}
+	}
+
+	var relMembers []element.Member
+	for _, m := range rel.Members {
+		if _, ok := insertedWays[m.Id]; ok {
+			relMembers = append(relMembers, m)
+		}
+	}
+
+	rel.Members = relMembers
+	rel.Geom = &element.Geometry{Geom: result}
+	rel.Tags = relTags
+
 	return result, nil
+}
+
+func relationTags(relTags, wayTags element.Tags) element.Tags {
+	result := make(element.Tags)
+	for k, v := range relTags {
+		if k == "name" || k == "type" {
+			continue
+		}
+		result[k] = v
+	}
+
+	if len(result) == 0 {
+		// relation does not have tags? use way tags
+		for k, v := range wayTags {
+			result[k] = v
+		}
+	} else {
+		// add back name (if present)
+		if name, ok := relTags["name"]; ok {
+			result["name"] = name
+		}
+	}
+	return result
 }
 
 // ringIsHole returns true if rings[idx] is a hole, False if it is a

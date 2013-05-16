@@ -1,6 +1,7 @@
 package geom
 
 import (
+	"fmt"
 	"goposm/element"
 	"goposm/geom/geos"
 )
@@ -13,10 +14,40 @@ type Ring struct {
 	holes       map[*Ring]bool
 	containedBy int
 	area        float64
+	inserted    map[int64]bool
 }
 
 func (r *Ring) IsClosed() bool {
 	return len(r.refs) >= 4 && r.refs[0] == r.refs[len(r.refs)-1]
+}
+
+func (r *Ring) MarkInserted(tags element.Tags) {
+	if r.inserted == nil {
+		r.inserted = make(map[int64]bool)
+	}
+	for _, w := range r.ways {
+		if tagsSameOrEmpty(tags, w.Tags) {
+			fmt.Println("true")
+			r.inserted[w.Id] = true
+		}
+	}
+}
+
+func tagsSameOrEmpty(a, b element.Tags) bool {
+	if len(b) == 0 {
+		return true
+	}
+	for k, v := range a {
+		if cmp, ok := b[k]; !ok || v != cmp {
+			return false
+		}
+	}
+	for k, v := range b {
+		if cmp, ok := a[k]; !ok || v != cmp {
+			return false
+		}
+	}
+	return true
 }
 
 func NewRing(way *element.Way) *Ring {
