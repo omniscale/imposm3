@@ -10,23 +10,23 @@ func TestRingMerge(t *testing.T) {
 	w1 := element.Way{}
 	w1.Id = 1
 	w1.Refs = []int64{1, 2, 3}
-	nodes := []element.Node{
+	w1.Nodes = []element.Node{
 		element.Node{},
 		element.Node{},
 		element.Node{},
 	}
-	r1 := Ring{[]*element.Way{&w1}, w1.Refs, nodes}
+	r1 := NewRing(&w1)
 
 	w2 := element.Way{}
 	w2.Id = 2
 	w2.Refs = []int64{3, 4, 1}
-	nodes = []element.Node{
+	w2.Nodes = []element.Node{
 		element.Node{},
 		element.Node{},
 		element.Node{},
 	}
-	r2 := Ring{[]*element.Way{&w2}, w2.Refs, nodes}
-	rings := []*Ring{&r1, &r2}
+	r2 := NewRing(&w2)
+	rings := []*Ring{r1, r2}
 
 	result := mergeRings(rings)
 	if len(result) != 1 {
@@ -45,35 +45,35 @@ func TestRingMergeReverseEndpoints(t *testing.T) {
 	w1 := element.Way{}
 	w1.Id = 1
 	w1.Refs = []int64{1, 2, 3, 4}
-	nodes := []element.Node{
+	w1.Nodes = []element.Node{
 		element.Node{},
 		element.Node{},
 		element.Node{},
 		element.Node{},
 	}
-	r1 := Ring{[]*element.Way{&w1}, w1.Refs, nodes}
+	r1 := NewRing(&w1)
 
 	w2 := element.Way{}
 	w2.Id = 2
 	w2.Refs = []int64{6, 5, 4}
-	nodes = []element.Node{
+	w2.Nodes = []element.Node{
 		element.Node{},
 		element.Node{},
 		element.Node{},
 	}
-	r2 := Ring{[]*element.Way{&w2}, w2.Refs, nodes}
+	r2 := NewRing(&w2)
 
 	w3 := element.Way{}
 	w3.Id = 3
 	w3.Refs = []int64{1, 7, 6}
-	nodes = []element.Node{
+	w3.Nodes = []element.Node{
 		element.Node{},
 		element.Node{},
 		element.Node{},
 	}
-	r3 := Ring{[]*element.Way{&w3}, w3.Refs, nodes}
+	r3 := NewRing(&w3)
 
-	rings := []*Ring{&r1, &r2, &r3}
+	rings := []*Ring{r1, r2, r3}
 
 	result := mergeRings(rings)
 	if len(result) != 1 {
@@ -140,10 +140,10 @@ func TestRingMergePermutations(t *testing.T) {
 			w4.Nodes = []element.Node{element.Node{}, element.Node{}, element.Node{}, element.Node{}}
 
 			rings := []*Ring{
-				&Ring{[]*element.Way{&w1}, w1.Refs, w1.Nodes},
-				&Ring{[]*element.Way{&w2}, w2.Refs, w2.Nodes},
-				&Ring{[]*element.Way{&w3}, w3.Refs, w3.Nodes},
-				&Ring{[]*element.Way{&w4}, w4.Refs, w4.Nodes},
+				&Ring{ways: []*element.Way{&w1}, refs: w1.Refs, nodes: w1.Nodes},
+				&Ring{ways: []*element.Way{&w2}, refs: w2.Refs, nodes: w2.Nodes},
+				&Ring{ways: []*element.Way{&w3}, refs: w3.Refs, nodes: w3.Nodes},
+				&Ring{ways: []*element.Way{&w4}, refs: w4.Refs, nodes: w4.Nodes},
 			}
 			result := mergeRings(rings)
 			if len(result) != 1 {

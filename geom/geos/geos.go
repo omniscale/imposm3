@@ -134,6 +134,55 @@ func (this *GEOS) Buffer(geom *Geom, size float64) *Geom {
 	return &Geom{C.GEOSBuffer_r(this.v, geom.v, C.double(size), 50)}
 }
 
+func (this *GEOS) Contains(a, b *Geom) bool {
+	result := C.GEOSContains_r(this.v, a.v, b.v)
+	if result == 1 {
+		return true
+	}
+	// result == 2 -> exception (already logged to console)
+	return false
+}
+
+func (this *GEOS) ExteriorRing(geom *Geom) *Geom {
+	ring := C.GEOSGetExteriorRing_r(this.v, geom.v)
+	if ring == nil {
+		return nil
+	}
+	return &Geom{ring}
+}
+
+func (this *GEOS) Polygon(exterior *Geom, interiors []*Geom) *Geom {
+	if len(interiors) == 0 {
+		geom := C.GEOSGeom_createPolygon_r(this.v, exterior.v, nil, C.uint(0))
+		if geom == nil {
+			return nil
+		}
+		return &Geom{geom}
+	}
+
+	interiorPtr := make([]*C.GEOSGeometry, len(interiors))
+	for i, geom := range interiors {
+		interiorPtr[i] = geom.v
+	}
+	geom := C.GEOSGeom_createPolygon_r(this.v, exterior.v, &interiorPtr[0], C.uint(len(interiors)))
+	if geom == nil {
+		return nil
+	}
+	return &Geom{geom}
+}
+
+func (this *GEOS) MultiPolygon(polygons []*Geom) *Geom {
+	polygonPtr := make([]*C.GEOSGeometry, len(polygons))
+	for i, geom := range polygons {
+		polygonPtr[i] = geom.v
+	}
+	geom := C.GEOSGeom_createCollection_r(this.v, C.GEOS_MULTIPOLYGON, &polygonPtr[0], C.uint(len(polygons)))
+	if geom == nil {
+		return nil
+	}
+	return &Geom{geom}
+}
+
 func (this *GEOS) AsWKT(geom *Geom) string {
 	str := C.GEOSGeomToWKT_r(this.v, geom.v)
 	result := C.GoString(str)
@@ -160,7 +209,7 @@ func (this *GEOS) IsValid(geom *Geom) bool {
 
 func (this *Geom) Area() float64 {
 	var area C.double
-	if ret := C.GEOSArea(this.v, &area); ret == 0 {
+	if ret := C.GEOSArea(this.v, &area); ret == 1 {
 		return float64(area)
 	} else {
 		return 0

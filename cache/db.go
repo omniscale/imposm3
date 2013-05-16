@@ -315,25 +315,24 @@ func (p *NodesCache) GetNode(id int64) (*element.Node, error) {
 }
 
 func (p *NodesCache) Iter() chan *element.Node {
-    node := make(chan *element.Node)
-    go func() {
-        ro := levigo.NewReadOptions()
-        ro.SetFillCache(false)
-        it := p.db.NewIterator(ro)
-        defer it.Close()
-        it.SeekToFirst()
-        for ; it.Valid(); it.Next() {
-            nodes, err := binary.UnmarshalNode(it.Value())
-            if err != nil {
-                panic(err)
-            }
-            node <- nodes
-        }
-        close(node)
-    }()
-    return node
+	node := make(chan *element.Node)
+	go func() {
+		ro := levigo.NewReadOptions()
+		ro.SetFillCache(false)
+		it := p.db.NewIterator(ro)
+		defer it.Close()
+		it.SeekToFirst()
+		for ; it.Valid(); it.Next() {
+			nodes, err := binary.UnmarshalNode(it.Value())
+			if err != nil {
+				panic(err)
+			}
+			node <- nodes
+		}
+		close(node)
+	}()
+	return node
 }
-
 
 func (p *WaysCache) PutWay(way *element.Way) error {
 	keyBuf := idToKeyBuf(way.Id)
@@ -414,6 +413,23 @@ func (p *WaysCache) Iter() chan *element.Way {
 		close(way)
 	}()
 	return way
+}
+
+func (self *WaysCache) FillMembers(members []element.Member) bool {
+	if members == nil || len(members) == 0 {
+		return false
+	}
+	for i, member := range members {
+		if member.Type != element.WAY {
+			continue
+		}
+		way, err := self.GetWay(member.Id)
+		if err != nil || way == nil {
+			return false
+		}
+		members[i].Way = way
+	}
+	return true
 }
 
 func (p *RelationsCache) PutRelation(relation *element.Relation) error {

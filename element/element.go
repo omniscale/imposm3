@@ -45,6 +45,7 @@ type Member struct {
 	Id   int64
 	Type MemberType
 	Role string
+	Way  *Way
 }
 
 type Relation struct {

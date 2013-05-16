@@ -13,12 +13,12 @@ func TestLineString(t *testing.T) {
 	nodes[1] = element.Node{Lat: 0, Long: 10}
 	g := geos.NewGEOS()
 	defer g.Finish()
-	wkt, err := LineStringWKB(g, nodes)
+	geom, err := LineStringWKB(g, nodes)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if bytes.Compare(wkt[0:2], []byte{0x1, 0x2}) != 0 {
-		t.Errorf("%#v", wkt)
+	if bytes.Compare(geom.Wkb[0:2], []byte{0x1, 0x2}) != 0 {
+		t.Errorf("%#v", geom.Wkb)
 	}
 }
 
@@ -31,13 +31,13 @@ func TestPolygon(t *testing.T) {
 	}
 	g := geos.NewGEOS()
 	defer g.Finish()
-	wkt, err := PolygonWKB(g, nodes)
+	geom, err := PolygonWKB(g, nodes)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if bytes.Compare(wkt[0:2], []byte{0x1, 0x3}) != 0 {
-		t.Errorf("%#v", wkt)
+	if bytes.Compare(geom.Wkb[0:2], []byte{0x1, 0x3}) != 0 {
+		t.Errorf("%#v", geom.Wkb)
 	}
 }
 

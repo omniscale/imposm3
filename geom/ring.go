@@ -2,12 +2,33 @@ package geom
 
 import (
 	"goposm/element"
+	"goposm/geom/geos"
 )
 
 type Ring struct {
-	ways  []*element.Way
-	refs  []int64
-	nodes []element.Node
+	ways        []*element.Way
+	refs        []int64
+	nodes       []element.Node
+	geom        *geos.Geom
+	holes       map[*Ring]bool
+	containedBy int
+	area        float64
+}
+
+func (r *Ring) IsClosed() bool {
+	return len(r.refs) >= 4 && r.refs[0] == r.refs[len(r.refs)-1]
+}
+
+func NewRing(way *element.Way) *Ring {
+	ring := Ring{}
+	ring.ways = []*element.Way{way}
+	ring.refs = make([]int64, len(way.Refs))
+	ring.nodes = make([]element.Node, len(way.Nodes))
+	ring.containedBy = -1
+	ring.holes = make(map[*Ring]bool)
+	copy(ring.refs, way.Refs)
+	copy(ring.nodes, way.Nodes)
+	return &ring
 }
 
 func reverseRefs(refs []int64) {

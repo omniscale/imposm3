@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"goposm/cache"
 	"goposm/database"
 	_ "goposm/database/postgis"
@@ -232,8 +233,19 @@ func main() {
 	if *write {
 		progress.Reset()
 		rel := osmCache.Relations.Iter()
-		for _ = range rel {
+		for r := range rel {
 			progress.AddRelations(1)
+			if !osmCache.Ways.FillMembers(r.Members) {
+				fmt.Println("missing ways")
+			}
+			for _, m := range r.Members {
+				if m.Way == nil {
+					continue
+				}
+				if !osmCache.Coords.FillWay(m.Way) {
+					fmt.Println("missing nodes", m.Way)
+				}
+			}
 			// fmt.Println(r)
 		}
 

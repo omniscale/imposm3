@@ -77,6 +77,21 @@ func LineStringWKB(g *geos.GEOS, nodes []element.Node) (*element.Geometry, error
 }
 
 func PolygonWKB(g *geos.GEOS, nodes []element.Node) (*element.Geometry, error) {
+	geom, err := Polygon(g, nodes)
+	if err != nil {
+		return nil, err
+	}
+	wkb := g.AsWKB(geom)
+	if wkb == nil {
+		return nil, errors.New("could not create wkb")
+	}
+	return &element.Geometry{
+		Wkb:  wkb,
+		Geom: geom,
+	}, nil
+}
+
+func Polygon(g *geos.GEOS, nodes []element.Node) (*geos.Geom, error) {
 	coordSeq, err := g.CreateCoordSeq(uint32(len(nodes)), 2)
 	if err != nil {
 		return nil, err
@@ -93,18 +108,11 @@ func PolygonWKB(g *geos.GEOS, nodes []element.Node) (*element.Geometry, error) {
 		return nil, err
 	}
 	// geom inherited by Polygon, no destroy
+
 	geom = g.CreatePolygon(geom, nil)
 	if err != nil {
 		return nil, err
 	}
-	wkb := g.AsWKB(geom)
-	if wkb == nil {
-		g.Destroy(geom)
-		return nil, errors.New("could not create wkb")
-	}
 	g.DestroyLater(geom)
-	return &element.Geometry{
-		Wkb:  wkb,
-		Geom: geom,
-	}, nil
+	return geom, nil
 }
