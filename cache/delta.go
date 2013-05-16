@@ -115,37 +115,40 @@ func (self *DeltaCoordsCache) Close() {
 	self.Cache.Close()
 }
 
-func (self *DeltaCoordsCache) GetCoord(id int64) (element.Node, bool) {
+func (self *DeltaCoordsCache) GetCoord(id int64) (*element.Node, error) {
 	bunchId := getBunchId(id)
-	bunch := self.getBunch(bunchId)
+	bunch, err := self.getBunch(bunchId)
+	if err != nil {
+		return nil, err
+	}
 	defer bunch.Unlock()
 	idx := sort.Search(len(bunch.coords), func(i int) bool {
 		return bunch.coords[i].Id >= id
 	})
 	if idx < len(bunch.coords) && bunch.coords[idx].Id == id {
-		return bunch.coords[idx], true
+		return &bunch.coords[idx], nil
 	}
-	return element.Node{}, false
+	return nil, NotFound
 }
 
-func (self *DeltaCoordsCache) FillWay(way *element.Way) bool {
+func (self *DeltaCoordsCache) FillWay(way *element.Way) error {
 	if way == nil {
-		return false
+		return nil
 	}
 	way.Nodes = make([]element.Node, len(way.Refs))
-	var ok bool
 	for i, id := range way.Refs {
-		way.Nodes[i], ok = self.GetCoord(id)
-		if !ok {
-			return false
+		nd, err := self.GetCoord(id)
+		if err != nil {
+			return err
 		}
+		way.Nodes[i] = *nd
 	}
-	return true
+	return nil
 }
 
 // PutCoords puts nodes into cache.
 // nodes need to be sorted by Id.
-func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) {
+func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) error {
 	var start, currentBunchId int64
 	currentBunchId = getBunchId(nodes[0].Id)
 	start = 0
@@ -158,7 +161,10 @@ func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) {
 				// bunch if we are not at the boundary of a deltaCacheBunchSize
 				self.putCoordsPacked(currentBunchId, nodes[start:i])
 			} else {
-				bunch := self.getBunch(currentBunchId)
+				bunch, err := self.getBunch(currentBunchId)
+				if err != nil {
+					return err
+				}
 				bunch.coords = append(bunch.coords, nodes[start:i]...)
 				sort.Sort(Nodes(bunch.coords))
 				bunch.needsWrite = true
@@ -168,56 +174,61 @@ func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) {
 			start = int64(i)
 		}
 	}
-	bunch := self.getBunch(currentBunchId)
+	bunch, err := self.getBunch(currentBunchId)
+	if err != nil {
+		return err
+	}
 	bunch.coords = append(bunch.coords, nodes[start:]...)
 	sort.Sort(Nodes(bunch.coords))
 	bunch.needsWrite = true
 	bunch.Unlock()
+	return nil
 }
 
-func (p *DeltaCoordsCache) putCoordsPacked(bunchId int64, nodes []element.Node) {
+func (p *DeltaCoordsCache) putCoordsPacked(bunchId int64, nodes []element.Node) error {
 	if len(nodes) == 0 {
-		return
+		return nil
 	}
 	keyBuf := idToKeyBuf(bunchId)
 
 	deltaCoords := packNodes(nodes)
 	data, err := proto.Marshal(deltaCoords)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	err = p.db.Put(p.wo, keyBuf, data)
 	if err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }
 
-func (p *DeltaCoordsCache) getCoordsPacked(bunchId int64, nodes []element.Node) []element.Node {
+func (p *DeltaCoordsCache) getCoordsPacked(bunchId int64, nodes []element.Node) ([]element.Node, error) {
 	keyBuf := idToKeyBuf(bunchId)
 
 	data, err := p.db.Get(p.ro, keyBuf)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	if data == nil {
 		// clear before returning
-		return nodes[:0]
+		return nodes[:0], nil
 	}
 	deltaCoords := &DeltaCoords{}
 	err = proto.Unmarshal(data, deltaCoords)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	nodes = unpackNodes(deltaCoords, nodes)
-	return nodes
+	return nodes, nil
 }
 
 func getBunchId(nodeId int64) int64 {
 	return nodeId / deltaCacheBunchSize
 }
 
-func (self *DeltaCoordsCache) getBunch(bunchId int64) *CoordsBunch {
+func (self *DeltaCoordsCache) getBunch(bunchId int64) (*CoordsBunch, error) {
 	self.mu.Lock()
 	defer self.mu.Unlock()
 	bunch, ok := self.table[bunchId]
@@ -230,7 +241,10 @@ func (self *DeltaCoordsCache) getBunch(bunchId int64) *CoordsBunch {
 		} else {
 			nodes = make([]element.Node, 0, deltaCacheBunchSize)
 		}
-		nodes = self.getCoordsPacked(bunchId, nodes)
+		nodes, err := self.getCoordsPacked(bunchId, nodes)
+		if err != nil {
+			return nil, err
+		}
 		bunch = &CoordsBunch{id: bunchId, coords: nodes, elem: elem}
 		self.table[bunchId] = bunch
 	} else {
@@ -238,7 +252,7 @@ func (self *DeltaCoordsCache) getBunch(bunchId int64) *CoordsBunch {
 	}
 	bunch.Lock()
 	self.CheckCapacity()
-	return bunch
+	return bunch, nil
 }
 
 func (self *DeltaCoordsCache) CheckCapacity() {

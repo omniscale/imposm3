@@ -235,15 +235,23 @@ func main() {
 		rel := osmCache.Relations.Iter()
 		for r := range rel {
 			progress.AddRelations(1)
-			if !osmCache.Ways.FillMembers(r.Members) {
-				fmt.Println("missing ways")
+			err := osmCache.Ways.FillMembers(r.Members)
+			if err == cache.NotFound {
+				fmt.Println("missing ways for relation", r.Id)
+			} else if err != nil {
+				fmt.Println(err)
+				continue
 			}
 			for _, m := range r.Members {
 				if m.Way == nil {
 					continue
 				}
-				if !osmCache.Coords.FillWay(m.Way) {
-					fmt.Println("missing nodes", m.Way)
+				err := osmCache.Coords.FillWay(m.Way)
+				if err == cache.NotFound {
+					fmt.Println("missing nodes for way", m.Way.Id, "in relation", r.Id)
+				} else if err != nil {
+					fmt.Println(err)
+					continue
 				}
 			}
 			// fmt.Println(r)
@@ -299,14 +307,13 @@ func main() {
 			go func() {
 				lineStrings := tagmapping.LineStringMatcher()
 				polygons := tagmapping.PolygonMatcher()
-				var err error
 				geos := geos.NewGEOS()
 				defer geos.Finish()
 
 				for w := range way {
 					progress.AddWays(1)
-					ok := osmCache.Coords.FillWay(w)
-					if !ok {
+					err := osmCache.Coords.FillWay(w)
+					if err != nil {
 						continue
 					}
 					proj.NodesToMerc(w.Nodes)

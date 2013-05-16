@@ -3,6 +3,7 @@ package cache
 import (
 	"bytes"
 	bin "encoding/binary"
+	"errors"
 	"github.com/jmhodges/levigo"
 	"goposm/binary"
 	"goposm/element"
@@ -33,6 +34,10 @@ func init() {
 		deltaCacheBunchSize = 128
 	}
 }
+
+var (
+	NotFound = errors.New("not found")
+)
 
 type OSMCache struct {
 	Dir       string
@@ -229,7 +234,7 @@ func (p *CoordsCache) PutCoord(node *element.Node) error {
 	keyBuf := idToKeyBuf(node.Id)
 	data, err := binary.MarshalCoord(node)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	return p.db.Put(p.wo, keyBuf, data)
 }
@@ -242,7 +247,7 @@ func (p *CoordsCache) PutCoords(nodes []element.Node) error {
 		keyBuf := idToKeyBuf(node.Id)
 		data, err := binary.MarshalCoord(&node)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		batch.Put(keyBuf, data)
 	}
@@ -256,12 +261,12 @@ func (p *CoordsCache) GetCoord(id int64) (*element.Node, error) {
 		return nil, err
 	}
 	if data == nil {
-		return nil, nil
+		return nil, NotFound
 	}
 
 	node, err := binary.UnmarshalCoord(id, data)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	return node, nil
 }
@@ -273,7 +278,7 @@ func (p *NodesCache) PutNode(node *element.Node) error {
 	keyBuf := idToKeyBuf(node.Id)
 	data, err := binary.MarshalNode(node)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	return p.db.Put(p.wo, keyBuf, data)
 }
@@ -290,7 +295,7 @@ func (p *NodesCache) PutNodes(nodes []element.Node) (int, error) {
 		keyBuf := idToKeyBuf(node.Id)
 		data, err := binary.MarshalNode(&node)
 		if err != nil {
-			panic(err)
+			return 0, err
 		}
 		batch.Put(keyBuf, data)
 		n += 1
@@ -305,11 +310,11 @@ func (p *NodesCache) GetNode(id int64) (*element.Node, error) {
 		return nil, err
 	}
 	if data == nil {
-		return nil, nil
+		return nil, NotFound
 	}
 	node, err := binary.UnmarshalNode(data)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	return node, nil
 }
@@ -338,7 +343,7 @@ func (p *WaysCache) PutWay(way *element.Way) error {
 	keyBuf := idToKeyBuf(way.Id)
 	data, err := binary.MarshalWay(way)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	return p.db.Put(p.wo, keyBuf, data)
 }
@@ -351,7 +356,7 @@ func (p *WaysCache) PutWays(ways []element.Way) error {
 		keyBuf := idToKeyBuf(way.Id)
 		data, err := binary.MarshalWay(&way)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		batch.Put(keyBuf, data)
 	}
@@ -386,11 +391,11 @@ func (p *WaysCache) GetWay(id int64) (*element.Way, error) {
 		return nil, err
 	}
 	if data == nil {
-		return nil, nil
+		return nil, NotFound
 	}
 	way, err := binary.UnmarshalWay(data)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	return way, nil
 }
@@ -415,28 +420,28 @@ func (p *WaysCache) Iter() chan *element.Way {
 	return way
 }
 
-func (self *WaysCache) FillMembers(members []element.Member) bool {
+func (self *WaysCache) FillMembers(members []element.Member) error {
 	if members == nil || len(members) == 0 {
-		return false
+		return nil
 	}
 	for i, member := range members {
 		if member.Type != element.WAY {
 			continue
 		}
 		way, err := self.GetWay(member.Id)
-		if err != nil || way == nil {
-			return false
+		if err != nil {
+			return err
 		}
 		members[i].Way = way
 	}
-	return true
+	return nil
 }
 
 func (p *RelationsCache) PutRelation(relation *element.Relation) error {
 	keyBuf := idToKeyBuf(relation.Id)
 	data, err := binary.MarshalRelation(relation)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	return p.db.Put(p.wo, keyBuf, data)
 }
@@ -449,7 +454,7 @@ func (p *RelationsCache) PutRelations(rels []element.Relation) error {
 		keyBuf := idToKeyBuf(rel.Id)
 		data, err := binary.MarshalRelation(&rel)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		batch.Put(keyBuf, data)
 	}
@@ -483,11 +488,11 @@ func (p *RelationsCache) GetRelation(id int64) (*element.Relation, error) {
 		return nil, err
 	}
 	if data == nil {
-		return nil, nil
+		return nil, NotFound
 	}
 	relation, err := binary.UnmarshalRelation(data)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	return relation, err
 }
