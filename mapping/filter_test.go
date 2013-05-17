@@ -5,13 +5,25 @@ import (
 	"testing"
 )
 
+var mapping *Mapping
+
+func init() {
+	var err error
+	mapping, err = NewMapping("../mapping.json")
+	if err != nil {
+		panic(err)
+	}
+}
+
 func TestFilterNodes(t *testing.T) {
 	var tags element.Tags
 
 	// test name only
 	tags = make(element.Tags)
 	tags["name"] = "foo"
-	if PointTags.Filter(tags) != false {
+
+	points := mapping.NodeTagFilter()
+	if points.Filter(tags) != false {
 		t.Fatal("Filter result not false")
 	}
 	if len(tags) != 0 {
@@ -23,7 +35,7 @@ func TestFilterNodes(t *testing.T) {
 	tags["name"] = "foo"
 	tags["boring"] = "true"
 
-	if PointTags.Filter(tags) != false {
+	if points.Filter(tags) != false {
 		t.Fatal("Filter result not false")
 	}
 	if len(tags) != 0 {
@@ -36,7 +48,7 @@ func TestFilterNodes(t *testing.T) {
 	tags["name"] = "foo"
 	tags["boring"] = "true"
 
-	if PointTags.Filter(tags) != true {
+	if points.Filter(tags) != true {
 		t.Fatal("Filter result true", tags)
 	}
 	if len(tags) != 2 && tags["population"] == "0" && tags["name"] == "foo" {
@@ -55,7 +67,8 @@ func BenchmarkFilterNodes(b *testing.B) {
 		tags["name"] = "foo"
 		tags["boring"] = "true"
 
-		if PointTags.Filter(tags) != true {
+		points := mapping.NodeTagFilter()
+		if points.Filter(tags) != true {
 			b.Fatal("Filter result true", tags)
 		}
 		if len(tags) != 2 && tags["population"] == "0" && tags["name"] == "foo" {
