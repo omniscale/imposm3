@@ -6,6 +6,23 @@ import (
 	"strconv"
 )
 
+var AvailableFieldTypes map[string]FieldType
+
+func init() {
+	AvailableFieldTypes = map[string]FieldType{
+		"bool":          {"bool", "bool", Bool},
+		"id":            {"id", "int64", Id},
+		"string":        {"string", "string", String},
+		"direction":     {"direction", "int8", Direction},
+		"integer":       {"integer", "int32", Integer},
+		"mapping_key":   {"mapping_key", "string", Key},
+		"mapping_value": {"mapping_value", "string", Value},
+		"geometry":      {"geometry", "geometry", Geometry},
+		"wayzorder":     {"wayzorder", "int32", WayZOrder},
+		"pseudoarea":    {"pseudoarea", "float32", PseudoArea},
+	}
+}
+
 type MakeValue func(string, *element.OSMElem, Match) interface{}
 
 type FieldSpec struct {
@@ -39,7 +56,7 @@ func (t *Table) TableFields() *TableFields {
 		field := FieldSpec{}
 		field.Name = mappingField.Name
 
-		fieldType, ok := FieldTypes[mappingField.Type]
+		fieldType, ok := AvailableFieldTypes[mappingField.Type]
 		if !ok {
 			log.Println("unhandled type:", mappingField.Type)
 		} else {
@@ -54,23 +71,6 @@ type FieldType struct {
 	Name   string
 	GoType string
 	Func   MakeValue
-}
-
-var FieldTypes map[string]FieldType
-
-func init() {
-	FieldTypes = map[string]FieldType{
-		"bool":          {"bool", "bool", Bool},
-		"id":            {"id", "int64", Id},
-		"string":        {"string", "string", String},
-		"direction":     {"direction", "int8", Direction},
-		"integer":       {"integer", "int32", Integer},
-		"mapping_key":   {"mapping_key", "string", Key},
-		"mapping_value": {"mapping_value", "string", Value},
-		"geometry":      {"geometry", "geometry", Geometry},
-		"wayzorder":     {"wayzorder", "int32", WayZOrder},
-		"pseudoarea":    {"pseudoarea", "float32", PseudoArea},
-	}
 }
 
 func Bool(val string, elem *element.OSMElem, match Match) interface{} {
