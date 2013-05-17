@@ -80,8 +80,8 @@ func TestMarshalRelation(t *testing.T) {
 	rel.Tags = make(element.Tags)
 	rel.Tags["name"] = "test"
 	rel.Tags["landusage"] = "forest"
-	rel.Members = append(rel.Members, element.Member{123, element.WAY, "outer"})
-	rel.Members = append(rel.Members, element.Member{124, element.WAY, "inner"})
+	rel.Members = append(rel.Members, element.Member{123, element.WAY, "outer", nil})
+	rel.Members = append(rel.Members, element.Member{124, element.WAY, "inner", nil})
 
 	data, _ := MarshalRelation(rel)
 	rel, _ = UnmarshalRelation(data)
