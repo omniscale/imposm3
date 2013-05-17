@@ -15,7 +15,7 @@ func (s Nodes) Len() int           { return len(s) }
 func (s Nodes) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 func (s Nodes) Less(i, j int) bool { return s[i].Id < s[j].Id }
 
-func packNodes(nodes []element.Node) *DeltaCoords {
+func packNodes(nodes []element.Node) *binary.DeltaCoords {
 	var lastLon, lastLat int64
 	var lon, lat int64
 	var lastId int64
@@ -36,10 +36,10 @@ func packNodes(nodes []element.Node) *DeltaCoords {
 		lastLat = lat
 		i++
 	}
-	return &DeltaCoords{Ids: ids, Lats: lats, Lons: lons}
+	return &binary.DeltaCoords{Ids: ids, Lats: lats, Lons: lons}
 }
 
-func unpackNodes(deltaCoords *DeltaCoords, nodes []element.Node) []element.Node {
+func unpackNodes(deltaCoords *binary.DeltaCoords, nodes []element.Node) []element.Node {
 	if len(deltaCoords.Ids) > cap(nodes) {
 		nodes = make([]element.Node, len(deltaCoords.Ids))
 	} else {
@@ -214,7 +214,7 @@ func (p *DeltaCoordsCache) getCoordsPacked(bunchId int64, nodes []element.Node) 
 		// clear before returning
 		return nodes[:0], nil
 	}
-	deltaCoords := &DeltaCoords{}
+	deltaCoords := &binary.DeltaCoords{}
 	err = proto.Unmarshal(data, deltaCoords)
 	if err != nil {
 		return nil, err
