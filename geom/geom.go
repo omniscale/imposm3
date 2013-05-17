@@ -25,6 +25,7 @@ func NewGeomError(message string, level int) *GeomError {
 
 var (
 	ErrorOneNodeWay = NewGeomError("need at least two separate nodes for way", 0)
+	ErrorNoRing     = NewGeomError("linestrings do not form ring", 0)
 )
 
 func PointWKB(g *geos.GEOS, node element.Node) (*element.Geometry, error) {

@@ -59,9 +59,7 @@ func BuildRings(rel *element.Relation) ([]*Ring, error) {
 	// create geometries for merged rings
 	for _, ring := range mergedRings {
 		if !ring.IsClosed() {
-			return nil, errors.New(
-				fmt.Sprintf("linestrings from relation %d do not form a ring", rel.Id),
-			)
+			return nil, ErrorNoRing
 		}
 		ring.geom, err = Polygon(g, ring.nodes)
 		if err != nil {

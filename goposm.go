@@ -310,7 +310,12 @@ func main() {
 
 			err = geom.BuildRelation(r)
 			if err != nil {
-				fmt.Println(err)
+				if err, ok := err.(ErrorLevel); ok {
+					if err.Level() <= 0 {
+						continue
+					}
+				}
+				log.Println(err)
 				continue
 			}
 			if matches := polygons.Match(r.OSMElem); len(matches) > 0 {
