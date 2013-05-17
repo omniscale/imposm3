@@ -28,11 +28,11 @@ type DiffCache struct {
 
 func (c *DiffCache) Close() {
 	if c.Coords != nil {
-		c.Coords.close()
+		c.Coords.Close()
 		c.Coords = nil
 	}
 	if c.Ways != nil {
-		c.Ways.close()
+		c.Ways.Close()
 		c.Ways = nil
 	}
 }
