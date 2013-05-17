@@ -51,10 +51,10 @@ type ErrorLevel interface {
 }
 
 func parse(cache *cache.OSMCache, progress *stats.Statistics, tagmapping *mapping.Mapping, filename string) {
-	nodes := make(chan []element.Node)
-	coords := make(chan []element.Node)
-	ways := make(chan []element.Way)
-	relations := make(chan []element.Relation)
+	nodes := make(chan []element.Node, 16)
+	coords := make(chan []element.Node, 16)
+	ways := make(chan []element.Way, 16)
+	relations := make(chan []element.Relation, 16)
 
 	positions := parser.PBFBlockPositions(filename)
 
@@ -71,7 +71,6 @@ func parse(cache *cache.OSMCache, progress *stats.Statistics, tagmapping *mappin
 					relations,
 				)
 			}
-			//runtime.GC()
 			waitParser.Done()
 		}()
 	}

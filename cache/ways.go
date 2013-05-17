@@ -84,7 +84,7 @@ func (p *WaysCache) GetWay(id int64) (*element.Way, error) {
 }
 
 func (p *WaysCache) Iter() chan *element.Way {
-	way := make(chan *element.Way)
+	way := make(chan *element.Way, 1024)
 	go func() {
 		ro := levigo.NewReadOptions()
 		ro.SetFillCache(false)
