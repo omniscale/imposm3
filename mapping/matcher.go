@@ -42,7 +42,7 @@ func (m *Match) Row(elem *element.OSMElem) []interface{} {
 	return m.tableFields.MakeRow(elem, *m)
 }
 
-func (tagMatcher *TagMatcher) Match(elem element.OSMElem) []Match {
+func (tagMatcher *TagMatcher) Match(elem *element.OSMElem) []Match {
 	tables := make(map[string]Match)
 
 	for k, v := range elem.Tags {

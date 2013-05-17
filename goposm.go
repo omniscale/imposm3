@@ -86,11 +86,8 @@ func parse(cache *cache.OSMCache, progress *stats.Statistics, tagmapping *mappin
 				if skipWays {
 					continue
 				}
-				for i, w := range ws {
-					ok := m.Filter(w.Tags)
-					if !ok {
-						ws[i].Tags = nil
-					}
+				for i, _ := range ws {
+					m.Filter(&ws[i].Tags)
 				}
 				cache.Ways.PutWays(ws)
 				progress.AddWays(len(ws))
@@ -103,11 +100,8 @@ func parse(cache *cache.OSMCache, progress *stats.Statistics, tagmapping *mappin
 		go func() {
 			m := tagmapping.RelationTagFilter()
 			for rels := range relations {
-				for i, r := range rels {
-					ok := m.Filter(r.Tags)
-					if !ok {
-						rels[i].Tags = nil
-					}
+				for i, _ := range rels {
+					m.Filter(&rels[i].Tags)
 				}
 				cache.Relations.PutRelations(rels)
 				progress.AddRelations(len(rels))
@@ -136,11 +130,8 @@ func parse(cache *cache.OSMCache, progress *stats.Statistics, tagmapping *mappin
 				if skipNodes {
 					continue
 				}
-				for _, nd := range nds {
-					ok := m.Filter(nd.Tags)
-					if !ok {
-						nd.Tags = nil
-					}
+				for i, _ := range nds {
+					m.Filter(&nds[i].Tags)
 				}
 				n, _ := cache.Nodes.PutNodes(nds)
 				progress.AddNodes(n)
@@ -318,7 +309,7 @@ func main() {
 				log.Println(err)
 				continue
 			}
-			if matches := polygons.Match(r.OSMElem); len(matches) > 0 {
+			if matches := polygons.Match(&r.OSMElem); len(matches) > 0 {
 				for _, match := range matches {
 					row := match.Row(&r.OSMElem)
 					writeChan <- writer.InsertElement{match.Table, row}
@@ -355,7 +346,7 @@ func main() {
 						continue
 					}
 					proj.NodesToMerc(w.Nodes)
-					if matches := lineStrings.Match(w.OSMElem); len(matches) > 0 {
+					if matches := lineStrings.Match(&w.OSMElem); len(matches) > 0 {
 						// make copy to avoid interference with polygon matches
 						way := element.Way(*w)
 						way.Geom, err = geom.LineStringWKB(geos, way.Nodes)
@@ -375,7 +366,7 @@ func main() {
 
 					}
 					if w.IsClosed() {
-						if matches := polygons.Match(w.OSMElem); len(matches) > 0 {
+						if matches := polygons.Match(&w.OSMElem); len(matches) > 0 {
 							way := element.Way(*w)
 							way.Geom, err = geom.PolygonWKB(geos, way.Nodes)
 							if err != nil {
@@ -411,7 +402,7 @@ func main() {
 		defer geos.Finish()
 		for n := range nodes {
 			progress.AddNodes(1)
-			if matches := points.Match(n.OSMElem); len(matches) > 0 {
+			if matches := points.Match(&n.OSMElem); len(matches) > 0 {
 				proj.NodeToMerc(n)
 				n.Geom, err = geom.PointWKB(geos, *n)
 				if err != nil {

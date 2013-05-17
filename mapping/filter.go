@@ -1,5 +1,9 @@
 package mapping
 
+import (
+	"goposm/element"
+)
+
 func (m *Mapping) NodeTagFilter() *TagFilter {
 	mappings := make(map[string]map[string][]string)
 	m.mappings("point", mappings)
@@ -38,9 +42,12 @@ type RelationTagFilter struct {
 	TagFilter
 }
 
-func (f *TagFilter) Filter(tags map[string]string) bool {
+func (f *TagFilter) Filter(tags *element.Tags) bool {
+	if tags == nil {
+		return false
+	}
 	foundMapping := false
-	for k, v := range tags {
+	for k, v := range *tags {
 		values, ok := f.mappings[k]
 		if ok {
 			if _, ok := values["__any__"]; ok {
@@ -50,25 +57,31 @@ func (f *TagFilter) Filter(tags map[string]string) bool {
 				foundMapping = true
 				continue
 			} else if _, ok := f.extraTags[k]; !ok {
-				delete(tags, k)
+				delete(*tags, k)
 			}
 		} else if _, ok := f.extraTags[k]; !ok {
-			delete(tags, k)
+			delete(*tags, k)
 		}
 	}
 	if foundMapping {
 		return true
 	} else {
+		*tags = nil
 		return false
 	}
 }
 
-func (f *RelationTagFilter) Filter(tags map[string]string) bool {
-	if t, ok := tags["type"]; ok {
+func (f *RelationTagFilter) Filter(tags *element.Tags) bool {
+	if tags == nil {
+		return false
+	}
+	if t, ok := (*tags)["type"]; ok {
 		if t != "multipolygon" && t != "boundary" && t != "land_area" {
+			*tags = nil
 			return false
 		}
 	} else {
+		*tags = nil
 		return false
 	}
 	f.TagFilter.Filter(tags)
