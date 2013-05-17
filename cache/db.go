@@ -5,7 +5,7 @@ import (
 	bin "encoding/binary"
 	"errors"
 	"github.com/jmhodges/levigo"
-	"goposm/binary"
+	"goposm/cache/binary"
 	"goposm/element"
 	"os"
 	"path/filepath"

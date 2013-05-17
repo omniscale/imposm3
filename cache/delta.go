@@ -3,7 +3,7 @@ package cache
 import (
 	"code.google.com/p/goprotobuf/proto"
 	"container/list"
-	"goposm/binary"
+	"goposm/cache/binary"
 	"goposm/element"
 	"sort"
 	"sync"
