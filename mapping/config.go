@@ -19,6 +19,11 @@ type Table struct {
 	Type    string              `json:"type"`
 	Mapping map[string][]string `json:"mapping"`
 	Fields  []*Field            `json:"fields"`
+	Filters *Filters            `json:"filters"`
+}
+
+type Filters struct {
+	ExcludeTags *map[string]string `json:"exclude_tags"`
 }
 
 type Tables map[string]*Table
@@ -84,7 +89,35 @@ func (m *Mapping) extraTags(tableType string, tags map[string]bool) {
 		for key, _ := range t.ExtraTags() {
 			tags[key] = true
 		}
+		if t.Filters != nil && t.Filters.ExcludeTags != nil {
+			for key, _ := range *t.Filters.ExcludeTags {
+				tags[key] = true
+			}
+		}
 	}
+}
+
+func (m *Mapping) elemFilters() map[string][]elemFilter {
+	result := make(map[string][]elemFilter)
+	for name, t := range m.Tables {
+		if t.Filters == nil {
+			continue
+		}
+		if t.Filters.ExcludeTags != nil {
+			for filterKey, filterVal := range *t.Filters.ExcludeTags {
+				f := func(elem element.OSMElem) bool {
+					if v, ok := elem.Tags[filterKey]; ok {
+						if filterVal == "__any__" || v == filterVal {
+							return false
+						}
+					}
+					return true
+				}
+				result[name] = append(result[name], f)
+			}
+		}
+	}
+	return result
 }
 
 func (m *Mapping) NodeTagFilter() *TagFilter {
@@ -119,19 +152,22 @@ func (m *Mapping) RelationTagFilter() *RelationTagFilter {
 func (m *Mapping) PointMatcher() *TagMatcher {
 	mappings := make(map[string]map[string][]string)
 	m.mappings("point", mappings)
-	return &TagMatcher{mappings, m.tables("point")}
+	filters := m.elemFilters()
+	return &TagMatcher{mappings, m.tables("point"), filters}
 }
 
 func (m *Mapping) LineStringMatcher() *TagMatcher {
 	mappings := make(map[string]map[string][]string)
 	m.mappings("linestring", mappings)
-	return &TagMatcher{mappings, m.tables("linestring")}
+	filters := m.elemFilters()
+	return &TagMatcher{mappings, m.tables("linestring"), filters}
 }
 
 func (m *Mapping) PolygonMatcher() *TagMatcher {
 	mappings := make(map[string]map[string][]string)
 	m.mappings("polygon", mappings)
-	return &TagMatcher{mappings, m.tables("polygon")}
+	filters := m.elemFilters()
+	return &TagMatcher{mappings, m.tables("polygon"), filters}
 }
 
 type TagFilter struct {
@@ -181,9 +217,12 @@ func (f *RelationTagFilter) Filter(tags map[string]string) bool {
 	return true
 }
 
+type elemFilter func(elem element.OSMElem) bool
+
 type TagMatcher struct {
 	mappings map[string]map[string][]string
 	tables   map[string]*TableFields
+	filters  map[string][]elemFilter
 }
 
 type Match struct {
@@ -217,8 +256,20 @@ func (tagMatcher *TagMatcher) Match(elem element.OSMElem) []Match {
 		}
 	}
 	var matches []Match
-	for _, match := range tables {
-		matches = append(matches, match)
+	for t, match := range tables {
+		filters, ok := tagMatcher.filters[t]
+		filteredOut := false
+		if ok {
+			for _, filter := range filters {
+				if !filter(elem) {
+					filteredOut = true
+					break
+				}
+			}
+		}
+		if !filteredOut {
+			matches = append(matches, match)
+		}
 	}
 	return matches
 }
