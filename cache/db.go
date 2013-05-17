@@ -73,7 +73,10 @@ func NewOSMCache(dir string) *OSMCache {
 }
 
 func (c *OSMCache) Open() error {
-	var err error
+	err := os.MkdirAll(c.Dir, 0755)
+	if err != nil {
+		return err
+	}
 	c.Coords, err = NewDeltaCoordsCache(filepath.Join(c.Dir, "coords"))
 	if err != nil {
 		return err
