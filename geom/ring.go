@@ -1,7 +1,6 @@
 package geom
 
 import (
-	"fmt"
 	"goposm/element"
 	"goposm/geom/geos"
 )
@@ -27,7 +26,6 @@ func (r *Ring) MarkInserted(tags element.Tags) {
 	}
 	for _, w := range r.ways {
 		if tagsSameOrEmpty(tags, w.Tags) {
-			fmt.Println("true")
 			r.inserted[w.Id] = true
 		}
 	}

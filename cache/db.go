@@ -454,6 +454,9 @@ func (p *RelationsCache) PutRelations(rels []element.Relation) error {
 	defer batch.Close()
 
 	for _, rel := range rels {
+		if len(rel.Tags) == 0 {
+			continue
+		}
 		keyBuf := idToKeyBuf(rel.Id)
 		data, err := binary.MarshalRelation(&rel)
 		if err != nil {

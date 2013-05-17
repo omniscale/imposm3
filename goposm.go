@@ -86,8 +86,11 @@ func parse(cache *cache.OSMCache, progress *stats.Statistics, tagmapping *mappin
 				if skipWays {
 					continue
 				}
-				for _, w := range ws {
-					m.Filter(w.Tags)
+				for i, w := range ws {
+					ok := m.Filter(w.Tags)
+					if !ok {
+						ws[i].Tags = nil
+					}
 				}
 				cache.Ways.PutWays(ws)
 				progress.AddWays(len(ws))
@@ -100,8 +103,11 @@ func parse(cache *cache.OSMCache, progress *stats.Statistics, tagmapping *mappin
 		go func() {
 			m := tagmapping.RelationTagFilter()
 			for rels := range relations {
-				for _, r := range rels {
-					m.Filter(r.Tags)
+				for i, r := range rels {
+					ok := m.Filter(r.Tags)
+					if !ok {
+						rels[i].Tags = nil
+					}
 				}
 				cache.Relations.PutRelations(rels)
 				progress.AddRelations(len(rels))
@@ -232,32 +238,6 @@ func main() {
 
 	if *write {
 		progress.Reset()
-		rel := osmCache.Relations.Iter()
-		for r := range rel {
-			progress.AddRelations(1)
-			err := osmCache.Ways.FillMembers(r.Members)
-			if err == cache.NotFound {
-				fmt.Println("missing ways for relation", r.Id)
-			} else if err != nil {
-				fmt.Println(err)
-				continue
-			}
-			for _, m := range r.Members {
-				if m.Way == nil {
-					continue
-				}
-				err := osmCache.Coords.FillWay(m.Way)
-				if err == cache.NotFound {
-					fmt.Println("missing nodes for way", m.Way.Id, "in relation", r.Id)
-				} else if err != nil {
-					fmt.Println(err)
-					continue
-				}
-			}
-			// fmt.Println(r)
-		}
-
-		way := osmCache.Ways.Iter()
 
 		diffCache := cache.NewDiffCache(*cachedir)
 		if err = diffCache.Remove(); err != nil {
@@ -302,6 +282,46 @@ func main() {
 			waitBuffer.Done()
 		}()
 
+		rel := osmCache.Relations.Iter()
+		polygons := tagmapping.PolygonMatcher()
+
+		for r := range rel {
+			progress.AddRelations(1)
+			err := osmCache.Ways.FillMembers(r.Members)
+			if err == cache.NotFound {
+				fmt.Println("missing ways for relation", r.Id)
+			} else if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			for _, m := range r.Members {
+				if m.Way == nil {
+					continue
+				}
+				err := osmCache.Coords.FillWay(m.Way)
+				if err == cache.NotFound {
+					fmt.Println("missing nodes for way", m.Way.Id, "in relation", r.Id)
+				} else if err != nil {
+					fmt.Println(err)
+					continue
+				}
+			}
+
+			err = geom.BuildRelation(r)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			if matches := polygons.Match(r.OSMElem); len(matches) > 0 {
+				for _, match := range matches {
+					row := match.Row(&r.OSMElem)
+					writeChan <- writer.InsertElement{match.Table, row}
+				}
+			}
+		}
+		// way := osmCache.Ways.Iter()
+		way := make(chan *element.Way)
+		close(way)
 		for i := 0; i < runtime.NumCPU(); i++ {
 			waitFill.Add(1)
 			go func() {

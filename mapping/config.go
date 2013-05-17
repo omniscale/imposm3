@@ -105,14 +105,15 @@ func (m *Mapping) WayTagFilter() *TagFilter {
 	return &TagFilter{mappings, tags}
 }
 
-func (m *Mapping) RelationTagFilter() *TagFilter {
+func (m *Mapping) RelationTagFilter() *RelationTagFilter {
 	mappings := make(map[string]map[string][]string)
 	m.mappings("linestring", mappings)
 	m.mappings("polygon", mappings)
 	tags := make(map[string]bool)
 	m.extraTags("linestring", tags)
 	m.extraTags("polygon", tags)
-	return &TagFilter{mappings, tags}
+	tags["type"] = true // do not filter out type tag
+	return &RelationTagFilter{TagFilter{mappings, tags}}
 }
 
 func (m *Mapping) PointMatcher() *TagMatcher {
@@ -153,7 +154,7 @@ func (f *TagFilter) Filter(tags map[string]string) bool {
 			} else if _, ok := values[v]; ok {
 				foundMapping = true
 				continue
-			} else {
+			} else if _, ok := f.extraTags[k]; !ok {
 				delete(tags, k)
 			}
 		} else if _, ok := f.extraTags[k]; !ok {
@@ -169,13 +170,15 @@ func (f *TagFilter) Filter(tags map[string]string) bool {
 
 func (f *RelationTagFilter) Filter(tags map[string]string) bool {
 	if t, ok := tags["type"]; ok {
-		if t != "multipolygon" || t != "boundary" || t != "land_area" {
+		if t != "multipolygon" && t != "boundary" && t != "land_area" {
 			return false
 		}
 	} else {
 		return false
 	}
-	return f.TagFilter.Filter(tags)
+	f.TagFilter.Filter(tags)
+	// always return true here since we found a matching type
+	return true
 }
 
 type TagMatcher struct {

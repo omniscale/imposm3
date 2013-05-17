@@ -119,8 +119,12 @@ func (pg *PostGIS) createTable(spec TableSpec) error {
 	if err != nil {
 		return &SQLError{sql, err}
 	}
+	geomType := strings.ToUpper(spec.GeometryType)
+	if geomType == "POLYGON" {
+		geomType = "GEOMETRY" // for multipolygon support
+	}
 	sql = fmt.Sprintf("SELECT AddGeometryColumn('%s', '%s', 'geometry', %d, '%s', 2);",
-		spec.Schema, spec.Name, spec.Srid, strings.ToUpper(spec.GeometryType))
+		spec.Schema, spec.Name, spec.Srid, geomType)
 	row := pg.Db.QueryRow(sql)
 	var void interface{}
 	err = row.Scan(&void)

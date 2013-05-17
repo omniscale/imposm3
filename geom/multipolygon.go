@@ -13,11 +13,10 @@ func BuildRelation(rel *element.Relation) error {
 	if err != nil {
 		return err
 	}
-	geom, err := BuildRelGeometry(rel, rings)
+	_, err = BuildRelGeometry(rel, rings)
 	if err != nil {
 		return err
 	}
-	rel.Geom = &element.Geometry{Geom: geom}
 	return nil
 }
 
@@ -155,7 +154,6 @@ func BuildRelGeometry(rel *element.Relation, rings []*Ring) (*geos.Geom, error) 
 
 	insertedWays := make(map[int64]bool)
 	for _, r := range rings {
-		fmt.Println(r, r.inserted)
 		for id, _ := range r.inserted {
 			insertedWays[id] = true
 		}
@@ -169,7 +167,11 @@ func BuildRelGeometry(rel *element.Relation, rings []*Ring) (*geos.Geom, error) 
 	}
 
 	rel.Members = relMembers
-	rel.Geom = &element.Geometry{Geom: result}
+	wkb := g.AsWKB(result)
+	if wkb == nil {
+		return nil, errors.New("unable to create WKB for relation")
+	}
+	rel.Geom = &element.Geometry{Geom: result, Wkb: wkb}
 	rel.Tags = relTags
 
 	return result, nil
