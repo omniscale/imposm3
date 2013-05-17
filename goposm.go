@@ -305,6 +305,7 @@ func main() {
 					fmt.Println(err)
 					continue
 				}
+				proj.NodesToMerc(m.Way.Nodes)
 			}
 
 			err = geom.BuildRelation(r)
@@ -317,11 +318,14 @@ func main() {
 					row := match.Row(&r.OSMElem)
 					writeChan <- writer.InsertElement{match.Table, row}
 				}
+				err := osmCache.InsertedWays.PutMembers(r.Members)
+				if err != nil {
+					fmt.Println(err)
+				}
 			}
 		}
-		// way := osmCache.Ways.Iter()
-		way := make(chan *element.Way)
-		close(way)
+		way := osmCache.Ways.Iter()
+
 		for i := 0; i < runtime.NumCPU(); i++ {
 			waitFill.Add(1)
 			go func() {
@@ -332,7 +336,16 @@ func main() {
 
 				for w := range way {
 					progress.AddWays(1)
-					err := osmCache.Coords.FillWay(w)
+					inserted, err := osmCache.InsertedWays.IsInserted(w.Id)
+					if err != nil {
+						log.Println(err)
+						continue
+					}
+					if inserted {
+						continue
+					}
+
+					err = osmCache.Coords.FillWay(w)
 					if err != nil {
 						continue
 					}

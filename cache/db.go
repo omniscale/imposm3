@@ -40,12 +40,13 @@ var (
 )
 
 type OSMCache struct {
-	Dir       string
-	Coords    *DeltaCoordsCache
-	Ways      *WaysCache
-	Nodes     *NodesCache
-	Relations *RelationsCache
-	opened    bool
+	Dir          string
+	Coords       *DeltaCoordsCache
+	Ways         *WaysCache
+	Nodes        *NodesCache
+	Relations    *RelationsCache
+	InsertedWays *InsertedWaysCache
+	opened       bool
 }
 
 func (c *OSMCache) Close() {
@@ -96,6 +97,11 @@ func (c *OSMCache) Open() error {
 		c.Close()
 		return err
 	}
+	c.InsertedWays, err = NewInsertedWaysCache(filepath.Join(c.Dir, "inserted_ways"))
+	if err != nil {
+		c.Close()
+		return err
+	}
 	c.opened = true
 	return nil
 }
@@ -116,6 +122,9 @@ func (c *OSMCache) Exists() bool {
 	if _, err := os.Stat(filepath.Join(c.Dir, "relations")); !os.IsNotExist(err) {
 		return true
 	}
+	if _, err := os.Stat(filepath.Join(c.Dir, "inserted_ways")); !os.IsNotExist(err) {
+		return true
+	}
 	return false
 }
 
@@ -133,6 +142,9 @@ func (c *OSMCache) Remove() error {
 		return err
 	}
 	if err := os.RemoveAll(filepath.Join(c.Dir, "relations")); err != nil {
+		return err
+	}
+	if err := os.RemoveAll(filepath.Join(c.Dir, "inserted_ways")); err != nil {
 		return err
 	}
 	return nil
@@ -213,6 +225,19 @@ func NewWaysCache(path string) (*WaysCache, error) {
 	cache := WaysCache{}
 	cache.toWrite = make(chan []element.Way)
 	go cache.wayWriter()
+	err := cache.open(path)
+	if err != nil {
+		return nil, err
+	}
+	return &cache, err
+}
+
+type InsertedWaysCache struct {
+	Cache
+}
+
+func NewInsertedWaysCache(path string) (*InsertedWaysCache, error) {
+	cache := InsertedWaysCache{}
 	err := cache.open(path)
 	if err != nil {
 		return nil, err
@@ -505,4 +530,30 @@ func (p *RelationsCache) GetRelation(id int64) (*element.Relation, error) {
 
 func (p *Cache) Close() {
 	p.db.Close()
+}
+
+func (p *InsertedWaysCache) PutMembers(members []element.Member) error {
+	batch := levigo.NewWriteBatch()
+	defer batch.Close()
+
+	for _, m := range members {
+		if m.Type != element.WAY {
+			continue
+		}
+		keyBuf := idToKeyBuf(m.Id)
+		batch.Put(keyBuf, []byte{})
+	}
+	return p.db.Write(p.wo, batch)
+}
+
+func (p *InsertedWaysCache) IsInserted(id int64) (bool, error) {
+	keyBuf := idToKeyBuf(id)
+	data, err := p.db.Get(p.ro, keyBuf)
+	if err != nil {
+		return false, err
+	}
+	if data == nil {
+		return false, nil
+	}
+	return true, nil
 }
