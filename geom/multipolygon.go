@@ -2,7 +2,6 @@ package geom
 
 import (
 	"errors"
-	"fmt"
 	"goposm/element"
 	"goposm/geom/geos"
 	"sort"
@@ -52,9 +51,7 @@ func BuildRings(rel *element.Relation) ([]*Ring, error) {
 	// merge incomplete rings
 	mergedRings := mergeRings(incompleteRings)
 	if len(completeRings)+len(mergedRings) == 0 {
-		return nil, errors.New(
-			fmt.Sprintf("linestring from relation %d has no rings", rel.Id),
-		)
+		return nil, ErrorNoRing
 	}
 	// create geometries for merged rings
 	for _, ring := range mergedRings {

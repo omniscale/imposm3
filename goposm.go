@@ -280,7 +280,7 @@ func main() {
 			progress.AddRelations(1)
 			err := osmCache.Ways.FillMembers(r.Members)
 			if err == cache.NotFound {
-				fmt.Println("missing ways for relation", r.Id)
+				// fmt.Println("missing ways for relation", r.Id)
 			} else if err != nil {
 				fmt.Println(err)
 				continue
@@ -291,7 +291,7 @@ func main() {
 				}
 				err := osmCache.Coords.FillWay(m.Way)
 				if err == cache.NotFound {
-					fmt.Println("missing nodes for way", m.Way.Id, "in relation", r.Id)
+					// fmt.Println("missing nodes for way", m.Way.Id, "in relation", r.Id)
 				} else if err != nil {
 					fmt.Println(err)
 					continue
