@@ -51,18 +51,20 @@ func TestReadWriteDeltaCoords(t *testing.T) {
 	defer cache.Close()
 
 	for i := 0; i < len(nodes); i++ {
-		data, ok := cache.GetCoord(int64(i))
-		if !ok {
+		data, err := cache.GetCoord(int64(i))
+		if err == NotFound {
 			t.Fatal("missing coord:", i)
+		} else if err != nil {
+			t.Fatal(err)
 		}
 		if data.Id != int64(i) {
 			t.Errorf("unexpected result of GetNode: %v", data)
 		}
 	}
 
-	_, ok := cache.GetCoord(999999)
-	if ok {
-		t.Error("missing node not nil")
+	_, err = cache.GetCoord(999999)
+	if err != NotFound {
+		t.Error("missing node returned not NotFound")
 	}
 
 }
