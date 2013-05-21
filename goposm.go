@@ -124,18 +124,18 @@ func main() {
 			ConnectionParams: *connection,
 			Srid:             3857,
 		}
-		pg, err := database.Open(conf)
+		db, err := database.Open(conf)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		err = pg.Init(tagmapping)
+		err = db.Init(tagmapping)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		insertBuffer := writer.NewInsertBuffer()
-		dbWriter := writer.NewDbWriter(pg, insertBuffer.Out)
+		dbWriter := writer.NewDbWriter(db, insertBuffer.Out)
 
 		pointsTagMatcher := tagmapping.PointMatcher()
 		lineStringsTagMatcher := tagmapping.LineStringMatcher()
