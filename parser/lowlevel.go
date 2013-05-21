@@ -46,7 +46,7 @@ func ReadPrimitiveBlock(pos BlockPosition) *osmpbf.PrimitiveBlock {
 }
 
 func (pbf *PBF) BlockPositions() (positions chan BlockPosition) {
-	positions = make(chan BlockPosition, 16)
+	positions = make(chan BlockPosition, 8)
 	go func() {
 		for {
 			offset, size := pbf.NextDataPosition()
