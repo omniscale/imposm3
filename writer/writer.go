@@ -7,6 +7,10 @@ import (
 	"sync"
 )
 
+type ErrorLevel interface {
+	Level() int
+}
+
 type DbWriter struct {
 	Db database.DB
 	In chan InsertBatch
