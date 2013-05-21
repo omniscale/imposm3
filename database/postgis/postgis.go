@@ -52,7 +52,7 @@ func (spec *TableSpec) InsertSQL() string {
 	var cols []string
 	var vars []string
 	for _, col := range spec.Columns {
-		cols = append(cols, col.Name)
+		cols = append(cols, "\""+col.Name+"\"")
 		vars = append(vars,
 			col.Type.PrepareInsertSql(len(vars)+1, spec))
 	}
