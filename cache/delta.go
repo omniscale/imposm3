@@ -88,7 +88,6 @@ type DeltaCoordsCache struct {
 	Cache
 	lruList      *list.List
 	table        map[int64]*CoordsBunch
-	freeNodes    [][]element.Node
 	capacity     int64
 	linearImport bool
 	mu           sync.Mutex
@@ -104,7 +103,6 @@ func NewDeltaCoordsCache(path string) (*DeltaCoordsCache, error) {
 	coordsCache.table = make(map[int64]*CoordsBunch)
 	// mem req for cache approx. capacity*deltaCacheBunchSize*30
 	coordsCache.capacity = 1024 * 8
-	coordsCache.freeNodes = make([][]element.Node, 0)
 	return &coordsCache, nil
 }
 
@@ -249,6 +247,10 @@ func getBunchId(nodeId int64) int64 {
 	return nodeId / deltaCacheBunchSize
 }
 
+var (
+	freeNodes = make(chan []element.Node, 4)
+)
+
 func (self *DeltaCoordsCache) getBunch(bunchId int64) (*CoordsBunch, error) {
 	self.mu.Lock()
 	defer self.mu.Unlock()
@@ -256,10 +258,9 @@ func (self *DeltaCoordsCache) getBunch(bunchId int64) (*CoordsBunch, error) {
 	var nodes []element.Node
 	if !ok {
 		elem := self.lruList.PushFront(bunchId)
-		if len(self.freeNodes) > 0 {
-			nodes = self.freeNodes[len(self.freeNodes)-1]
-			self.freeNodes = self.freeNodes[:len(self.freeNodes)-1]
-		} else {
+		select {
+		case nodes = <-freeNodes:
+		default:
 			nodes = make([]element.Node, 0, deltaCacheBunchSize)
 		}
 		nodes, err := self.getCoordsPacked(bunchId, nodes)
@@ -285,7 +286,10 @@ func (self *DeltaCoordsCache) CheckCapacity() {
 		if bunch.needsWrite {
 			self.putCoordsPacked(bunchId, bunch.coords)
 		}
-		self.freeNodes = append(self.freeNodes, bunch.coords)
+		select {
+		case freeNodes <- bunch.coords:
+		default:
+		}
 		delete(self.table, bunchId)
 	}
 }
