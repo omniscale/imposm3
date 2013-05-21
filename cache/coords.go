@@ -284,7 +284,8 @@ func MarshalRefs(refs []int64) []byte {
 	for _, ref := range refs {
 		if len(buf)-nextPos < binary.MaxVarintLen64 {
 			tmp := make([]byte, len(buf)*2)
-			buf = append(tmp, buf...)
+			copy(tmp, buf)
+			buf = tmp
 		}
 		nextPos += binary.PutVarint(buf[nextPos:], ref-lastRef)
 		lastRef = ref

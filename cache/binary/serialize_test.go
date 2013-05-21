@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func compareNodes(a []int64, b []int64) bool {
+func compareRefs(a []int64, b []int64) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -68,7 +68,7 @@ func TestMarshalWay(t *testing.T) {
 		t.Error("tags len does not match")
 	}
 
-	if !compareNodes(way.Refs, []int64{1, 2, 3, 4}) {
+	if !compareRefs(way.Refs, []int64{1, 2, 3, 4}) {
 		t.Error("nodes do not match")
 	}
 
