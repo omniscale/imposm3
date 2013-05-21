@@ -74,6 +74,16 @@ type CoordsBunch struct {
 	needsWrite bool
 }
 
+func (b *CoordsBunch) GetCoord(id int64) (*element.Node, error) {
+	idx := sort.Search(len(b.coords), func(i int) bool {
+		return b.coords[i].Id >= id
+	})
+	if idx < len(b.coords) && b.coords[idx].Id == id {
+		return &b.coords[idx], nil
+	}
+	return nil, NotFound
+}
+
 type DeltaCoordsCache struct {
 	Cache
 	lruList      *list.List
@@ -121,13 +131,7 @@ func (self *DeltaCoordsCache) GetCoord(id int64) (*element.Node, error) {
 		return nil, err
 	}
 	defer bunch.Unlock()
-	idx := sort.Search(len(bunch.coords), func(i int) bool {
-		return bunch.coords[i].Id >= id
-	})
-	if idx < len(bunch.coords) && bunch.coords[idx].Id == id {
-		return &bunch.coords[idx], nil
-	}
-	return nil, NotFound
+	return bunch.GetCoord(id)
 }
 
 func (self *DeltaCoordsCache) FillWay(way *element.Way) error {
@@ -135,12 +139,35 @@ func (self *DeltaCoordsCache) FillWay(way *element.Way) error {
 		return nil
 	}
 	way.Nodes = make([]element.Node, len(way.Refs))
+
+	var err error
+	var bunch *CoordsBunch
+	var bunchId, lastBunchId int64
+	lastBunchId = -1
+
 	for i, id := range way.Refs {
-		nd, err := self.GetCoord(id)
+		bunchId = getBunchId(id)
+		// re-use bunches
+		if bunchId != lastBunchId {
+			if bunch != nil {
+				bunch.Unlock()
+			}
+			bunch, err = self.getBunch(bunchId)
+			if err != nil {
+				return err
+			}
+		}
+		lastBunchId = bunchId
+
+		nd, err := bunch.GetCoord(id)
 		if err != nil {
+			bunch.Unlock()
 			return err
 		}
 		way.Nodes[i] = *nd
+	}
+	if bunch != nil {
+		bunch.Unlock()
 	}
 	return nil
 }
