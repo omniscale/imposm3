@@ -23,7 +23,7 @@ func TestFilterNodes(t *testing.T) {
 	tags["name"] = "foo"
 
 	points := mapping.NodeTagFilter()
-	if points.Filter(tags) != false {
+	if points.Filter(&tags) != false {
 		t.Fatal("Filter result not false")
 	}
 	if len(tags) != 0 {
@@ -35,23 +35,37 @@ func TestFilterNodes(t *testing.T) {
 	tags["name"] = "foo"
 	tags["boring"] = "true"
 
-	if points.Filter(tags) != false {
+	if points.Filter(&tags) != false {
 		t.Fatal("Filter result not false")
 	}
 	if len(tags) != 0 {
 		t.Fatal("Filter result not empty")
 	}
 
-	// test __any__
+	// test fields only, but no mapping
 	tags = make(element.Tags)
 	tags["population"] = "0"
 	tags["name"] = "foo"
 	tags["boring"] = "true"
 
-	if points.Filter(tags) != true {
+	if points.Filter(&tags) != false {
 		t.Fatal("Filter result true", tags)
 	}
-	if len(tags) != 2 && tags["population"] == "0" && tags["name"] == "foo" {
+	if len(tags) != 0 {
+		t.Fatal("Filter result not empty", tags)
+	}
+
+	// ... not with mapped tag (place)
+	tags = make(element.Tags)
+	tags["population"] = "0"
+	tags["name"] = "foo"
+	tags["boring"] = "true"
+	tags["place"] = "village"
+
+	if points.Filter(&tags) != true {
+		t.Fatal("Filter result true", tags)
+	}
+	if len(tags) != 3 && tags["population"] == "0" && tags["name"] == "foo" && tags["place"] == "village" {
 		t.Fatal("Filter result not expected", tags)
 	}
 
@@ -68,7 +82,7 @@ func BenchmarkFilterNodes(b *testing.B) {
 		tags["boring"] = "true"
 
 		points := mapping.NodeTagFilter()
-		if points.Filter(tags) != true {
+		if points.Filter(&tags) != true {
 			b.Fatal("Filter result true", tags)
 		}
 		if len(tags) != 2 && tags["population"] == "0" && tags["name"] == "foo" {
