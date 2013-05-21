@@ -60,33 +60,44 @@ func intToCoord(coord uint32) float64 {
 func ReadDenseNodes(
 	dense *osmpbf.DenseNodes,
 	block *osmpbf.PrimitiveBlock,
-	stringtable StringTable) (nodes []element.Node) {
+	stringtable StringTable) (coords []element.Node, nodes []element.Node) {
 
 	var lastId int64
 	var lastLon, lastLat int64
-	nodes = make([]element.Node, len(dense.Id))
+	coords = make([]element.Node, len(dense.Id))
+	nodes = make([]element.Node, 0, len(dense.Id)/8)
 	granularity := int64(block.GetGranularity())
 	latOffset := block.GetLatOffset()
 	lonOffset := block.GetLonOffset()
 	coordScale := 0.000000001
 	lastKeyValPos := 0
 
-	for i := range nodes {
+	for i := range coords {
 		lastId += dense.Id[i]
 		lastLon += dense.Lon[i]
 		lastLat += dense.Lat[i]
-		nodes[i].Id = lastId
-		nodes[i].Long = (coordScale * float64(lonOffset+(granularity*lastLon)))
-		nodes[i].Lat = (coordScale * float64(latOffset+(granularity*lastLat)))
+		coords[i].Id = lastId
+		coords[i].Long = (coordScale * float64(lonOffset+(granularity*lastLon)))
+		coords[i].Lat = (coordScale * float64(latOffset+(granularity*lastLat)))
 		if stringtable != nil && len(dense.KeysVals) > 0 {
 			if dense.KeysVals[lastKeyValPos] != 0 {
-				nodes[i].Tags = ParseDenseNodeTags(stringtable, &dense.KeysVals, &lastKeyValPos)
+				tags := ParseDenseNodeTags(stringtable, &dense.KeysVals, &lastKeyValPos)
+				if tags != nil {
+					if _, ok := tags["created_by"]; ok && len(tags) == 1 {
+						// don't add nodes with only created_by tag to nodes cache
+					} else {
+						nd := coords[i]
+						nd.Tags = tags
+						nodes = append(nodes, nd)
+					}
+				}
 			} else {
 				lastKeyValPos += 1
 			}
 		}
 	}
-	return nodes
+
+	return coords, nodes
 }
 
 func ParseDenseNodeTags(stringtable StringTable, keysVals *[]int32, pos *int) map[string]string {
@@ -119,9 +130,10 @@ func ParseTags(stringtable StringTable, keys []uint32, vals []uint32) map[string
 func ReadNodes(
 	nodes []*osmpbf.Node,
 	block *osmpbf.PrimitiveBlock,
-	stringtable StringTable) []element.Node {
+	stringtable StringTable) ([]element.Node, []element.Node) {
 
-	result := make([]element.Node, len(nodes))
+	coords := make([]element.Node, len(nodes))
+	nds := make([]element.Node, 0, len(nodes)/8)
 	granularity := int64(block.GetGranularity())
 	latOffset := block.GetLatOffset()
 	lonOffset := block.GetLonOffset()
@@ -131,14 +143,23 @@ func ReadNodes(
 		id := *nodes[i].Id
 		lon := *nodes[i].Lon
 		lat := *nodes[i].Lat
-		result[i].Id = id
-		result[i].Long = (coordScale * float64(lonOffset+(granularity*lon)))
-		result[i].Lat = (coordScale * float64(latOffset+(granularity*lat)))
+		coords[i].Id = id
+		coords[i].Long = (coordScale * float64(lonOffset+(granularity*lon)))
+		coords[i].Lat = (coordScale * float64(latOffset+(granularity*lat)))
 		if stringtable != nil {
-			result[i].Tags = ParseTags(stringtable, nodes[i].Keys, nodes[i].Vals)
+			tags := ParseTags(stringtable, nodes[i].Keys, nodes[i].Vals)
+			if tags != nil {
+				if _, ok := tags["created_by"]; ok && len(tags) == 1 {
+					// don't add nodes with only created_by tag to nodes cache
+				} else {
+					nd := coords[i]
+					nd.Tags = tags
+					nds = append(nds, nd)
+				}
+			}
 		}
 	}
-	return result
+	return coords, nds
 }
 
 func ParseDeltaRefs(refs []int64) []int64 {
@@ -223,16 +244,20 @@ func ParseBlock(pos BlockPosition, coords chan []element.Node, nodes chan []elem
 	for _, group := range block.Primitivegroup {
 		dense := group.GetDense()
 		if dense != nil {
-			parsedNodes := ReadDenseNodes(dense, block, stringtable)
+			parsedCoords, parsedNodes := ReadDenseNodes(dense, block, stringtable)
+			if len(parsedCoords) > 0 {
+				coords <- parsedCoords
+			}
 			if len(parsedNodes) > 0 {
 				nodes <- parsedNodes
-				coords <- parsedNodes
 			}
 		}
-		parsedNodes := ReadNodes(group.Nodes, block, stringtable)
+		parsedCoords, parsedNodes := ReadNodes(group.Nodes, block, stringtable)
+		if len(parsedCoords) > 0 {
+			coords <- parsedCoords
+		}
 		if len(parsedNodes) > 0 {
 			nodes <- parsedNodes
-			coords <- parsedNodes
 		}
 		parsedWays := ReadWays(group.Ways, block, stringtable)
 		if len(parsedWays) > 0 {
@@ -261,10 +286,10 @@ func PBFStats(filename string) {
 		for _, group := range block.Primitivegroup {
 			dense := group.GetDense()
 			if dense != nil {
-				_ = ReadDenseNodes(dense, block, stringtable)
+				_, _ = ReadDenseNodes(dense, block, stringtable)
 				nodesCounter += len(dense.Id)
 			}
-			_ = ReadNodes(group.Nodes, block, stringtable)
+			_, _ = ReadNodes(group.Nodes, block, stringtable)
 			nodesCounter += len(group.Nodes)
 			waysCounter += len(group.Ways)
 			_ = ReadWays(group.Ways, block, stringtable)
