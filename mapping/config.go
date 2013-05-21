@@ -7,9 +7,10 @@ import (
 )
 
 type Field struct {
-	Name string `json:"name"`
-	Key  string `json:"key"`
-	Type string `json:"type"`
+	Name string                 `json:"name"`
+	Key  string                 `json:"key"`
+	Type string                 `json:"type"`
+	Args map[string]interface{} `json:"args"`
 }
 
 type Table struct {

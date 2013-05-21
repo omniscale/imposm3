@@ -48,6 +48,7 @@ func init() {
 		"direction":     &simpleColumnType{"SMALLINT"},
 		"integer":       &simpleColumnType{"INTEGER"},
 		"wayzorder":     &simpleColumnType{"INTEGER"},
+		"zorder":        &simpleColumnType{"INTEGER"},
 		"pseudoarea":    &simpleColumnType{"REAL"},
 		"mapping_key":   &simpleColumnType{"VARCHAR"},
 		"mapping_value": &simpleColumnType{"VARCHAR"},

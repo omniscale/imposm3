@@ -1,6 +1,7 @@
 package mapping
 
 import (
+	"errors"
 	"goposm/element"
 	"log"
 	"strconv"
@@ -10,20 +11,23 @@ var AvailableFieldTypes map[string]FieldType
 
 func init() {
 	AvailableFieldTypes = map[string]FieldType{
-		"bool":          {"bool", "bool", Bool},
-		"id":            {"id", "int64", Id},
-		"string":        {"string", "string", String},
-		"direction":     {"direction", "int8", Direction},
-		"integer":       {"integer", "int32", Integer},
-		"mapping_key":   {"mapping_key", "string", Key},
-		"mapping_value": {"mapping_value", "string", Value},
-		"geometry":      {"geometry", "geometry", Geometry},
-		"wayzorder":     {"wayzorder", "int32", WayZOrder},
-		"pseudoarea":    {"pseudoarea", "float32", PseudoArea},
+		"bool":          {"bool", "bool", Bool, nil},
+		"id":            {"id", "int64", Id, nil},
+		"string":        {"string", "string", String, nil},
+		"direction":     {"direction", "int8", Direction, nil},
+		"integer":       {"integer", "int32", Integer, nil},
+		"mapping_key":   {"mapping_key", "string", Key, nil},
+		"mapping_value": {"mapping_value", "string", Value, nil},
+		"geometry":      {"geometry", "geometry", Geometry, nil},
+		"wayzorder":     {"wayzorder", "int32", WayZOrder, nil},
+		"pseudoarea":    {"pseudoarea", "float32", PseudoArea, nil},
+		"zorder":        {"zorder", "int32", nil, MakeZOrder},
 	}
 }
 
 type MakeValue func(string, *element.OSMElem, Match) interface{}
+
+type MakeMakeValue func(string, FieldType, Field) (MakeValue, error)
 
 type FieldSpec struct {
 	Name string
@@ -60,6 +64,13 @@ func (t *Table) TableFields() *TableFields {
 		if !ok {
 			log.Println("unhandled type:", mappingField.Type)
 		} else {
+			if fieldType.MakeFunc != nil {
+				makeValue, err := fieldType.MakeFunc(mappingField.Name, fieldType, *mappingField)
+				if err != nil {
+					log.Println(err)
+				}
+				fieldType = FieldType{fieldType.Name, fieldType.GoType, makeValue, nil}
+			}
 			field.Type = fieldType
 		}
 		result.fields = append(result.fields, field)
@@ -68,9 +79,10 @@ func (t *Table) TableFields() *TableFields {
 }
 
 type FieldType struct {
-	Name   string
-	GoType string
-	Func   MakeValue
+	Name     string
+	GoType   string
+	Func     MakeValue
+	MakeFunc MakeMakeValue
 }
 
 func Bool(val string, elem *element.OSMElem, match Match) interface{} {
@@ -171,4 +183,34 @@ func WayZOrder(val string, elem *element.OSMElem, match Match) interface{} {
 	}
 
 	return z
+}
+
+func MakeZOrder(fieldName string, fieldType FieldType, field Field) (MakeValue, error) {
+	ranks := make(map[string]int)
+	_rankList, ok := field.Args["ranks"]
+	if !ok {
+		return nil, errors.New("missing ranks in args for zorder")
+	}
+
+	rankList, ok := _rankList.([]interface{})
+	if !ok {
+		return nil, errors.New("ranks in args for zorder not a list")
+	}
+
+	for i, rank := range rankList {
+		rankName, ok := rank.(string)
+		if !ok {
+			return nil, errors.New("rank in ranks not a string")
+		}
+
+		ranks[rankName] = len(rankList) - i
+	}
+	zOrder := func(val string, elem *element.OSMElem, match Match) interface{} {
+		if r, ok := ranks[match.Value]; ok {
+			return r
+		}
+		return nil
+	}
+
+	return zOrder, nil
 }
