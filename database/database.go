@@ -2,6 +2,7 @@ package database
 
 import (
 	"goposm/mapping"
+	"strings"
 )
 
 type Config struct {
@@ -35,4 +36,22 @@ func Open(conf Config) (DB, error) {
 		return nil, err
 	}
 	return db, nil
+}
+
+func ConnectionType(param string) string {
+	parts := strings.SplitN(param, ":", 2)
+	return parts[0]
+}
+
+type NullDb struct{}
+
+func (n *NullDb) Init(*mapping.Mapping) error               { return nil }
+func (n *NullDb) InsertBatch(string, [][]interface{}) error { return nil }
+
+func NewNullDb(conf Config) (DB, error) {
+	return &NullDb{}, nil
+}
+
+func init() {
+	Register("null", NewNullDb)
 }

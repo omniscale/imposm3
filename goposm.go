@@ -119,8 +119,9 @@ func main() {
 			log.Fatal(err)
 		}
 
+		connType := database.ConnectionType(*connection)
 		conf := database.Config{
-			Type:             "postgis",
+			Type:             connType,
 			ConnectionParams: *connection,
 			Srid:             3857,
 		}
@@ -165,5 +166,4 @@ func main() {
 	}
 	progress.Stop()
 
-	//parser.PBFStats(os.Args[1])
 }
