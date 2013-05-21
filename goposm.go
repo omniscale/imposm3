@@ -239,7 +239,6 @@ func main() {
 
 		waitFill := sync.WaitGroup{}
 		wayChan := make(chan []element.Way)
-		waitDb := &sync.WaitGroup{}
 		conf := database.Config{
 			Type:             "postgis",
 			ConnectionParams: *connection,
@@ -254,23 +253,9 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		writeDBChan := make(chan writer.InsertBatch)
-		writeChan := make(chan writer.InsertElement)
-		waitBuffer := sync.WaitGroup{}
 
-		for i := 0; i < runtime.NumCPU(); i++ {
-			waitDb.Add(1)
-			go func() {
-				writer.DBWriter(pg, writeDBChan)
-				waitDb.Done()
-			}()
-		}
-
-		waitBuffer.Add(1)
-		go func() {
-			writer.BufferInsertElements(writeChan, writeDBChan)
-			waitBuffer.Done()
-		}()
+		insertBuffer := writer.NewInsertBuffer()
+		dbWriter := writer.NewDbWriter(pg, insertBuffer.Out)
 
 		rel := osmCache.Relations.Iter()
 		polygons := tagmapping.PolygonMatcher()
@@ -311,7 +296,7 @@ func main() {
 			if matches := polygons.Match(&r.OSMElem); len(matches) > 0 {
 				for _, match := range matches {
 					row := match.Row(&r.OSMElem)
-					writeChan <- writer.InsertElement{match.Table, row}
+					insertBuffer.Insert(match.Table, row)
 				}
 				err := osmCache.InsertedWays.PutMembers(r.Members)
 				if err != nil {
@@ -319,6 +304,7 @@ func main() {
 				}
 			}
 		}
+
 		way := osmCache.Ways.Iter()
 
 		for i := 0; i < runtime.NumCPU(); i++ {
@@ -360,7 +346,7 @@ func main() {
 						}
 						for _, match := range matches {
 							row := match.Row(&way.OSMElem)
-							writeChan <- writer.InsertElement{match.Table, row}
+							insertBuffer.Insert(match.Table, row)
 						}
 
 					}
@@ -379,7 +365,7 @@ func main() {
 							}
 							for _, match := range matches {
 								row := match.Row(&way.OSMElem)
-								writeChan <- writer.InsertElement{match.Table, row}
+								insertBuffer.Insert(match.Table, row)
 							}
 						}
 					}
@@ -415,16 +401,14 @@ func main() {
 				}
 				for _, match := range matches {
 					row := match.Row(&n.OSMElem)
-					writeChan <- writer.InsertElement{match.Table, row}
+					insertBuffer.Insert(match.Table, row)
 				}
 
 			}
 			// fmt.Println(r)
 		}
-		close(writeChan)
-		waitBuffer.Wait()
-		close(writeDBChan)
-		waitDb.Wait()
+		insertBuffer.Close()
+		dbWriter.Close()
 
 	}
 	progress.Stop()
