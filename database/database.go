@@ -12,26 +12,32 @@ type Config struct {
 }
 
 type DB interface {
-	Init(*mapping.Mapping) error
+	Init() error
 	InsertBatch(string, [][]interface{}) error
 }
 
-var databases map[string]func(Config) (DB, error)
+type Deployer interface {
+	DeployProduction() error
+	RevertDeploy() error
+}
 
-func Register(name string, f func(Config) (DB, error)) {
-	if databases == nil {
-		databases = make(map[string]func(Config) (DB, error))
-	}
+var databases map[string]func(Config, *mapping.Mapping) (DB, error)
+
+func init() {
+	databases = make(map[string]func(Config, *mapping.Mapping) (DB, error))
+}
+
+func Register(name string, f func(Config, *mapping.Mapping) (DB, error)) {
 	databases[name] = f
 }
 
-func Open(conf Config) (DB, error) {
+func Open(conf Config, m *mapping.Mapping) (DB, error) {
 	newFunc, ok := databases[conf.Type]
 	if !ok {
 		panic("unsupported database type: " + conf.Type)
 	}
 
-	db, err := newFunc(conf)
+	db, err := newFunc(conf, m)
 	if err != nil {
 		return nil, err
 	}
@@ -45,10 +51,10 @@ func ConnectionType(param string) string {
 
 type NullDb struct{}
 
-func (n *NullDb) Init(*mapping.Mapping) error               { return nil }
+func (n *NullDb) Init() error                               { return nil }
 func (n *NullDb) InsertBatch(string, [][]interface{}) error { return nil }
 
-func NewNullDb(conf Config) (DB, error) {
+func NewNullDb(conf Config, m *mapping.Mapping) (DB, error) {
 	return &NullDb{}, nil
 }
 

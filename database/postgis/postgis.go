@@ -67,12 +67,12 @@ func (spec *TableSpec) InsertSQL() string {
 	)
 }
 
-func NewTableSpec(conf *database.Config, t *mapping.Table, schema string) *TableSpec {
+func NewTableSpec(pg *PostGIS, t *mapping.Table) *TableSpec {
 	spec := TableSpec{
-		Name:         t.Name,
-		Schema:       schema,
+		Name:         pg.Prefix + t.Name,
+		Schema:       pg.Schema,
 		GeometryType: t.Type,
-		Srid:         conf.Srid,
+		Srid:         pg.Config.Srid,
 	}
 	for _, field := range t.Fields {
 		pgType, ok := pgTypes[field.Type]
@@ -107,7 +107,6 @@ func (e *SQLInsertError) Error() string {
 func (pg *PostGIS) createTable(spec TableSpec) error {
 	var sql string
 	var err error
-
 	sql = fmt.Sprintf(`DROP TABLE IF EXISTS "%s"."%s"`, spec.Schema, spec.Name)
 	_, err = pg.Db.Exec(sql)
 	if err != nil {
@@ -134,16 +133,16 @@ func (pg *PostGIS) createTable(spec TableSpec) error {
 	return nil
 }
 
-func (pg *PostGIS) createSchema() error {
+func (pg *PostGIS) createSchema(schema string) error {
 	var sql string
 	var err error
 
-	if pg.Schema == "public" {
+	if schema == "public" {
 		return nil
 	}
 
 	sql = fmt.Sprintf("SELECT EXISTS(SELECT schema_name FROM information_schema.schemata WHERE schema_name = '%s');",
-		pg.Schema)
+		schema)
 	row := pg.Db.QueryRow(sql)
 	var exists bool
 	err = row.Scan(&exists)
@@ -154,7 +153,7 @@ func (pg *PostGIS) createSchema() error {
 		return nil
 	}
 
-	sql = fmt.Sprintf("CREATE SCHEMA \"%s\"", pg.Schema)
+	sql = fmt.Sprintf("CREATE SCHEMA \"%s\"", schema)
 	_, err = pg.Db.Exec(sql)
 	if err != nil {
 		return &SQLError{sql, err}
@@ -163,35 +162,55 @@ func (pg *PostGIS) createSchema() error {
 }
 
 type PostGIS struct {
-	Db     *sql.DB
-	Schema string
-	Config database.Config
-	Tables map[string]*TableSpec
+	Db           *sql.DB
+	Schema       string
+	BackupSchema string
+	Config       database.Config
+	Tables       map[string]*TableSpec
+	Prefix       string
 }
 
-func schemaFromConnectionParams(params string) string {
+func schemasFromConnectionParams(params string) (string, string) {
 	parts := strings.Fields(params)
+	var schema, backupSchema string
 	for _, p := range parts {
 		if strings.HasPrefix(p, "schema=") {
-			return strings.Replace(p, "schema=", "", 1)
+			schema = strings.Replace(p, "schema=", "", 1)
+		} else if strings.HasPrefix(p, "backupschema=") {
+			backupSchema = strings.Replace(p, "backupschema=", "", 1)
 		}
 	}
-	return "public"
+	if schema == "" {
+		schema = "import"
+	}
+	if backupSchema == "" {
+		backupSchema = "backup"
+	}
+	return schema, backupSchema
+}
+
+func prefixFromConnectionParams(params string) string {
+	parts := strings.Fields(params)
+	var prefix string
+	for _, p := range parts {
+		if strings.HasPrefix(p, "prefix=") {
+			prefix = strings.Replace(p, "prefix=", "", 1)
+			break
+		}
+	}
+	if prefix == "" {
+		prefix = "osm_"
+	}
+	if prefix[len(prefix)-1] != '_' {
+		prefix = prefix + "_"
+	}
+	return prefix
 }
 
 func (pg *PostGIS) Open() error {
 	var err error
 
-	if strings.HasPrefix(pg.Config.ConnectionParams, "postgis://") {
-		pg.Config.ConnectionParams = strings.Replace(
-			pg.Config.ConnectionParams,
-			"postgis", "postgres", 1,
-		)
-	}
-
 	params, err := pq.ParseURL(pg.Config.ConnectionParams)
-	pg.Schema = schemaFromConnectionParams(params)
-
 	if err != nil {
 		return err
 	}
@@ -248,14 +267,11 @@ func (pg *PostGIS) InsertBatch(table string, rows [][]interface{}) error {
 
 }
 
-func (pg *PostGIS) Init(m *mapping.Mapping) error {
-	if err := pg.createSchema(); err != nil {
+func (pg *PostGIS) Init() error {
+	if err := pg.createSchema(pg.Schema); err != nil {
 		return err
 	}
 
-	for name, table := range m.Tables {
-		pg.Tables[name] = NewTableSpec(&pg.Config, table, pg.Schema)
-	}
 	for _, spec := range pg.Tables {
 		if err := pg.createTable(*spec); err != nil {
 			return err
@@ -264,11 +280,126 @@ func (pg *PostGIS) Init(m *mapping.Mapping) error {
 	return nil
 }
 
-func New(conf database.Config) (database.DB, error) {
+func tableExists(tx *sql.Tx, schema, table string) (bool, error) {
+	var exists bool
+	sql := fmt.Sprintf(`SELECT EXISTS(SELECT * FROM information_schema.tables WHERE table_name='%s' AND table_schema='%s')`,
+		table, schema)
+	row := tx.QueryRow(sql)
+	err := row.Scan(&exists)
+	// fmt.Println(exists, err, sql)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
+}
+
+func dropTableIfExists(tx *sql.Tx, schema, table string) error {
+	sql := fmt.Sprintf(`DROP TABLE IF EXISTS "%s"."%s"`, schema, table)
+	_, err := tx.Exec(sql)
+	return err
+}
+
+func (pg *PostGIS) rotate(source, dest, backup string) error {
+	if err := pg.createSchema(backup); err != nil {
+		return err
+	}
+
+	tx, err := pg.Db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if tx != nil {
+			if err := tx.Rollback(); err != nil {
+				log.Println("rollback failed", err)
+			}
+		}
+	}()
+
+	for tableName, _ := range pg.Tables {
+		tableName = pg.Prefix + tableName
+
+		log.Printf("rotating %s from %s -> %s -> %s\n", tableName, source, dest, backup)
+
+		backupExists, err := tableExists(tx, backup, tableName)
+		if err != nil {
+			return err
+		}
+		sourceExists, err := tableExists(tx, source, tableName)
+		if err != nil {
+			return err
+		}
+		destExists, err := tableExists(tx, dest, tableName)
+		if err != nil {
+			return err
+		}
+
+		if !sourceExists {
+			log.Printf("skipping rotate of %s, table does not exists in %s", tableName, source)
+			continue
+		}
+
+		if destExists {
+			log.Printf("backup of %s, to %s", tableName, backup)
+			if backupExists {
+				err = dropTableIfExists(tx, backup, tableName)
+				if err != nil {
+					return err
+				}
+			}
+			sql := fmt.Sprintf(`ALTER TABLE "%s"."%s" SET SCHEMA "%s"`, dest, tableName, backup)
+			_, err = tx.Exec(sql)
+			if err != nil {
+				return err
+			}
+		}
+
+		sql := fmt.Sprintf(`ALTER TABLE "%s"."%s" SET SCHEMA "%s"`, source, tableName, dest)
+		_, err = tx.Exec(sql)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	tx = nil
+	return nil
+}
+
+func (pg *PostGIS) DeployProduction() error {
+	return pg.rotate(pg.Schema, "public", pg.BackupSchema)
+}
+
+func (pg *PostGIS) RevertDeploy() error {
+	return pg.rotate(pg.BackupSchema, "public", pg.Schema)
+}
+
+func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	db := &PostGIS{}
 	db.Tables = make(map[string]*TableSpec)
 	db.Config = conf
-	err := db.Open()
+
+	if strings.HasPrefix(db.Config.ConnectionParams, "postgis://") {
+		db.Config.ConnectionParams = strings.Replace(
+			db.Config.ConnectionParams,
+			"postgis", "postgres", 1,
+		)
+	}
+
+	params, err := pq.ParseURL(db.Config.ConnectionParams)
+	if err != nil {
+		return nil, err
+	}
+	db.Schema, db.BackupSchema = schemasFromConnectionParams(params)
+	db.Prefix = prefixFromConnectionParams(params)
+
+	for name, table := range m.Tables {
+		db.Tables[name] = NewTableSpec(db, table)
+	}
+	err = db.Open()
 	if err != nil {
 		return nil, err
 	}

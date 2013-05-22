@@ -30,16 +30,18 @@ func init() {
 }
 
 var (
-	cpuprofile     = flag.String("cpuprofile", "", "filename of cpu profile output")
-	memprofile     = flag.String("memprofile", "", "dir name of mem profile output and interval (fname:interval)")
-	cachedir       = flag.String("cachedir", "/tmp/goposm", "cache directory")
-	overwritecache = flag.Bool("overwritecache", false, "overwritecache")
-	appendcache    = flag.Bool("appendcache", false, "append cache")
-	read           = flag.String("read", "", "read")
-	write          = flag.Bool("write", false, "write")
-	connection     = flag.String("connection", "", "connection parameters")
-	diff           = flag.Bool("diff", false, "enable diff support")
-	mappingFile    = flag.String("mapping", "", "mapping file")
+	cpuprofile       = flag.String("cpuprofile", "", "filename of cpu profile output")
+	memprofile       = flag.String("memprofile", "", "dir name of mem profile output and interval (fname:interval)")
+	cachedir         = flag.String("cachedir", "/tmp/goposm", "cache directory")
+	overwritecache   = flag.Bool("overwritecache", false, "overwritecache")
+	appendcache      = flag.Bool("appendcache", false, "append cache")
+	read             = flag.String("read", "", "read")
+	write            = flag.Bool("write", false, "write")
+	connection       = flag.String("connection", "", "connection parameters")
+	diff             = flag.Bool("diff", false, "enable diff support")
+	mappingFile      = flag.String("mapping", "", "mapping file")
+	deployProduction = flag.Bool("deployproduction", false, "deploy production")
+	revertDeploy     = flag.Bool("revertdeploy", false, "revert deploy to production")
 )
 
 func main() {
@@ -100,6 +102,21 @@ func main() {
 		log.Fatal(err)
 	}
 
+	var db database.DB
+
+	if *write || *deployProduction || *revertDeploy {
+		connType := database.ConnectionType(*connection)
+		conf := database.Config{
+			Type:             connType,
+			ConnectionParams: *connection,
+			Srid:             3857,
+		}
+		db, err = database.Open(conf, tagmapping)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	if *read != "" {
 		osmCache.Coords.SetLinearImport(true)
 		reader.ReadPbf(osmCache, progress, tagmapping, *read)
@@ -110,28 +127,16 @@ func main() {
 
 	if *write {
 		progress.Reset()
+		err = db.Init()
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		diffCache := cache.NewDiffCache(*cachedir)
 		if err = diffCache.Remove(); err != nil {
 			log.Fatal(err)
 		}
 		if err = diffCache.Open(); err != nil {
-			log.Fatal(err)
-		}
-
-		connType := database.ConnectionType(*connection)
-		conf := database.Config{
-			Type:             connType,
-			ConnectionParams: *connection,
-			Srid:             3857,
-		}
-		db, err := database.Open(conf)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		err = db.Init(tagmapping)
-		if err != nil {
 			log.Fatal(err)
 		}
 
@@ -162,7 +167,22 @@ func main() {
 		nodeWriter.Close()
 		insertBuffer.Close()
 		dbWriter.Close()
+	}
 
+	if *deployProduction {
+		if db, ok := db.(database.Deployer); ok {
+			db.DeployProduction()
+		} else {
+			log.Fatal("database not deployable")
+		}
+	}
+
+	if *revertDeploy {
+		if db, ok := db.(database.Deployer); ok {
+			db.RevertDeploy()
+		} else {
+			log.Fatal("database not deployable")
+		}
 	}
 	progress.Stop()
 
