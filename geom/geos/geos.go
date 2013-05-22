@@ -157,6 +157,11 @@ func (this *GEOS) Polygon(exterior *Geom, interiors []*Geom) *Geom {
 		if geom == nil {
 			return nil
 		}
+		err := C.GEOSNormalize_r(this.v, geom)
+		if err != 0 {
+			C.GEOSGeom_destroy(geom)
+			return nil
+		}
 		return &Geom{geom}
 	}
 
@@ -166,6 +171,11 @@ func (this *GEOS) Polygon(exterior *Geom, interiors []*Geom) *Geom {
 	}
 	geom := C.GEOSGeom_createPolygon_r(this.v, exterior.v, &interiorPtr[0], C.uint(len(interiors)))
 	if geom == nil {
+		return nil
+	}
+	err := C.GEOSNormalize_r(this.v, geom)
+	if err != 0 {
+		C.GEOSGeom_destroy(geom)
 		return nil
 	}
 	return &Geom{geom}
