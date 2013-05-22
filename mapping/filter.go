@@ -29,7 +29,12 @@ func (m *Mapping) RelationTagFilter() *RelationTagFilter {
 	tags := make(map[string]bool)
 	m.extraTags("linestring", tags)
 	m.extraTags("polygon", tags)
-	tags["type"] = true // do not filter out type tag
+	// do not filter out type tag
+	mappings["type"] = map[string][]string{
+		"multipolygon": []string{},
+		"boundary":     []string{},
+		"land_area":    []string{},
+	}
 	return &RelationTagFilter{TagFilter{mappings, tags}}
 }
 
