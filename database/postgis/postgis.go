@@ -369,12 +369,52 @@ func (pg *PostGIS) rotate(source, dest, backup string) error {
 	return nil
 }
 
-func (pg *PostGIS) DeployProduction() error {
+func (pg *PostGIS) Deploy() error {
 	return pg.rotate(pg.Schema, "public", pg.BackupSchema)
 }
 
 func (pg *PostGIS) RevertDeploy() error {
 	return pg.rotate(pg.BackupSchema, "public", pg.Schema)
+}
+
+func (pg *PostGIS) RemoveBackup() error {
+	tx, err := pg.Db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if tx != nil {
+			if err := tx.Rollback(); err != nil {
+				log.Println("rollback failed", err)
+			}
+		}
+	}()
+
+	backup := pg.BackupSchema
+
+	for tableName, _ := range pg.Tables {
+		tableName = pg.Prefix + tableName
+
+		backupExists, err := tableExists(tx, backup, tableName)
+		if err != nil {
+			return err
+		}
+		if backupExists {
+			log.Printf("removing backup of %s from %s", tableName, backup)
+			err = dropTableIfExists(tx, backup, tableName)
+			if err != nil {
+				return err
+			}
+
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	tx = nil
+	return nil
 }
 
 func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {

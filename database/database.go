@@ -17,8 +17,9 @@ type DB interface {
 }
 
 type Deployer interface {
-	DeployProduction() error
+	Deploy() error
 	RevertDeploy() error
+	RemoveBackup() error
 }
 
 var databases map[string]func(Config, *mapping.Mapping) (DB, error)

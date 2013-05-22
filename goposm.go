@@ -42,6 +42,7 @@ var (
 	mappingFile      = flag.String("mapping", "", "mapping file")
 	deployProduction = flag.Bool("deployproduction", false, "deploy production")
 	revertDeploy     = flag.Bool("revertdeploy", false, "revert deploy to production")
+	removeBackup     = flag.Bool("removebackup", false, "remove backups from deploy")
 )
 
 func main() {
@@ -104,7 +105,7 @@ func main() {
 
 	var db database.DB
 
-	if *write || *deployProduction || *revertDeploy {
+	if *write || *deployProduction || *revertDeploy || *removeBackup {
 		connType := database.ConnectionType(*connection)
 		conf := database.Config{
 			Type:             connType,
@@ -171,7 +172,7 @@ func main() {
 
 	if *deployProduction {
 		if db, ok := db.(database.Deployer); ok {
-			db.DeployProduction()
+			db.Deploy()
 		} else {
 			log.Fatal("database not deployable")
 		}
@@ -180,6 +181,14 @@ func main() {
 	if *revertDeploy {
 		if db, ok := db.(database.Deployer); ok {
 			db.RevertDeploy()
+		} else {
+			log.Fatal("database not deployable")
+		}
+	}
+
+	if *removeBackup {
+		if db, ok := db.(database.Deployer); ok {
+			db.RemoveBackup()
 		} else {
 			log.Fatal("database not deployable")
 		}
