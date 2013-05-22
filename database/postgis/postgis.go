@@ -295,6 +295,17 @@ func (pg *PostGIS) Init() error {
 	return nil
 }
 
+func (pg *PostGIS) TableNames() []string {
+	var names []string
+	for name, _ := range pg.Tables {
+		names = append(names, name)
+	}
+	for name, _ := range pg.GeneralizedTables {
+		names = append(names, name)
+	}
+	return names
+}
+
 func tableExists(tx *sql.Tx, schema, table string) (bool, error) {
 	var exists bool
 	sql := fmt.Sprintf(`SELECT EXISTS(SELECT * FROM information_schema.tables WHERE table_name='%s' AND table_schema='%s')`,
@@ -324,7 +335,7 @@ func (pg *PostGIS) rotate(source, dest, backup string) error {
 	}
 	defer rollbackIfTx(&tx)
 
-	for tableName, _ := range pg.Tables {
+	for _, tableName := range pg.TableNames() {
 		tableName = pg.Prefix + tableName
 
 		log.Printf("rotating %s from %s -> %s -> %s\n", tableName, source, dest, backup)
@@ -402,7 +413,7 @@ func (pg *PostGIS) RemoveBackup() error {
 
 	backup := pg.BackupSchema
 
-	for tableName, _ := range pg.Tables {
+	for _, tableName := range pg.TableNames() {
 		tableName = pg.Prefix + tableName
 
 		backupExists, err := tableExists(tx, backup, tableName)
@@ -438,6 +449,19 @@ func (pg *PostGIS) Finish() error {
 	for tableName, table := range pg.Tables {
 		tableName := pg.Prefix + tableName
 		for _, col := range table.Columns {
+			if col.Type.Name() == "GEOMETRY" {
+				sql := fmt.Sprintf(`CREATE INDEX "%s_geom" ON "%s"."%s" USING GIST ("%s")`,
+					tableName, pg.Schema, tableName, col.Name)
+				_, err := tx.Exec(sql)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	for tableName, table := range pg.GeneralizedTables {
+		tableName := pg.Prefix + tableName
+		for _, col := range table.Source.Columns {
 			if col.Type.Name() == "GEOMETRY" {
 				sql := fmt.Sprintf(`CREATE INDEX "%s_geom" ON "%s"."%s" USING GIST ("%s")`,
 					tableName, pg.Schema, tableName, col.Name)
