@@ -1,4 +1,46 @@
 {
+    "generalized_tables": {
+        "waterareas_gen1": {
+            "source": "waterareas", 
+            "sql_filter": "ST_Area(geometry)>50000.000000", 
+            "tolerance": 50.0
+        }, 
+        "waterareas_gen0": {
+            "source": "waterareas_gen1", 
+            "sql_filter": "ST_Area(geometry)>500000.000000", 
+            "tolerance": 200.0
+        }, 
+        "roads_gen0": {
+            "source": "roads_gen1", 
+            "sql_filter": null, 
+            "tolerance": 200.0
+        }, 
+        "roads_gen1": {
+            "source": "roads", 
+            "sql_filter": "type IN ('motorway', 'motorway_link', 'trunk', 'trunk_link', 'primary', 'primary_link', 'secondary', 'secondary_link', 'tertiary', 'tertiary_link') OR class IN('railway')", 
+            "tolerance": 50.0
+        }, 
+        "waterways_gen0": {
+            "source": "waterways_gen1", 
+            "sql_filter": null, 
+            "tolerance": 200
+        }, 
+        "waterways_gen1": {
+            "source": "waterways", 
+            "sql_filter": null, 
+            "tolerance": 50.0
+        }, 
+        "landusages_gen1": {
+            "source": "landusages", 
+            "sql_filter": "ST_Area(geometry)>50000.000000", 
+            "tolerance": 50.0
+        }, 
+        "landusages_gen0": {
+            "source": "landusages_gen1", 
+            "sql_filter": "ST_Area(geometry)>500000.000000", 
+            "tolerance": 200.0
+        }
+    }, 
     "tables": {
         "landusages": {
             "fields": [
@@ -643,12 +685,12 @@
                     "key": "name"
                 }, 
                 {
-                    "type": "bool", 
+                    "type": "boolint", 
                     "name": "tunnel", 
                     "key": "tunnel"
                 }, 
                 {
-                    "type": "bool", 
+                    "type": "boolint", 
                     "name": "bridge", 
                     "key": "bridge"
                 }, 
@@ -676,6 +718,11 @@
                     "type": "string", 
                     "name": "service", 
                     "key": "service"
+                }, 
+                {
+                    "type": "mapping_key", 
+                    "name": "class", 
+                    "key": null
                 }
             ], 
             "type": "linestring", 

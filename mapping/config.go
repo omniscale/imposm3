@@ -21,14 +21,24 @@ type Table struct {
 	Filters *Filters            `json:"filters"`
 }
 
+type GeneralizedTable struct {
+	Name            string
+	SourceTableName string  `json:"source"`
+	Tolerance       float64 `json:"tolerance"`
+	SqlFilter       string  `json:"sql_filter"`
+}
+
 type Filters struct {
 	ExcludeTags *map[string]string `json:"exclude_tags"`
 }
 
 type Tables map[string]*Table
 
+type GeneralizedTables map[string]*GeneralizedTable
+
 type Mapping struct {
-	Tables Tables `json:"tables"`
+	Tables            Tables            `json:"tables"`
+	GeneralizedTables GeneralizedTables `json:"generalized_tables"`
 }
 
 type ElementFilter func(elem *element.OSMElem) bool
@@ -64,6 +74,9 @@ func (t *Table) ExtraTags() map[string]bool {
 
 func (m *Mapping) prepare() {
 	for name, t := range m.Tables {
+		t.Name = name
+	}
+	for name, t := range m.GeneralizedTables {
 		t.Name = name
 	}
 }

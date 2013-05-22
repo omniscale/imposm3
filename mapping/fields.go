@@ -12,6 +12,7 @@ var AvailableFieldTypes map[string]FieldType
 func init() {
 	AvailableFieldTypes = map[string]FieldType{
 		"bool":          {"bool", "bool", Bool, nil},
+		"boolint":       {"boolint", "int8", BoolInt, nil},
 		"id":            {"id", "int64", Id, nil},
 		"string":        {"string", "string", String, nil},
 		"direction":     {"direction", "int8", Direction, nil},
@@ -90,6 +91,13 @@ func Bool(val string, elem *element.OSMElem, match Match) interface{} {
 		return false
 	}
 	return true
+}
+
+func BoolInt(val string, elem *element.OSMElem, match Match) interface{} {
+	if val == "" || val == "0" || val == "false" || val == "no" {
+		return 0
+	}
+	return 1
 }
 
 func String(val string, elem *element.OSMElem, match Match) interface{} {

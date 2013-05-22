@@ -22,6 +22,10 @@ type Deployer interface {
 	RemoveBackup() error
 }
 
+type Generalizer interface {
+	Generalize() error
+}
+
 type Finisher interface {
 	Finish() error
 }

@@ -8,6 +8,7 @@ type ColumnType interface {
 	Name() string
 	PrepareInsertSql(i int,
 		spec *TableSpec) string
+	GeneralizeSql(colSpec *ColumnSpec, spec *GeneralizedTableSpec) string
 }
 
 type simpleColumnType struct {
@@ -20,6 +21,10 @@ func (t *simpleColumnType) Name() string {
 
 func (t *simpleColumnType) PrepareInsertSql(i int, spec *TableSpec) string {
 	return fmt.Sprintf("$%d", i)
+}
+
+func (t *simpleColumnType) GeneralizeSql(colSpec *ColumnSpec, spec *GeneralizedTableSpec) string {
+	return colSpec.Name
 }
 
 type geometryType struct {
@@ -36,6 +41,12 @@ func (t *geometryType) PrepareInsertSql(i int, spec *TableSpec) string {
 	)
 }
 
+func (t *geometryType) GeneralizeSql(colSpec *ColumnSpec, spec *GeneralizedTableSpec) string {
+	return fmt.Sprintf(`ST_SimplifyPreserveTopology("%s", %f) as "%s"`,
+		colSpec.Name, spec.Tolerance, colSpec.Name,
+	)
+}
+
 var pgTypes map[string]ColumnType
 
 func init() {
@@ -43,6 +54,7 @@ func init() {
 		"id":            &simpleColumnType{"BIGINT"},
 		"geometry":      &geometryType{"GEOMETRY"},
 		"bool":          &simpleColumnType{"BOOL"},
+		"boolint":       &simpleColumnType{"SMALLINT"},
 		"string":        &simpleColumnType{"VARCHAR"},
 		"name":          &simpleColumnType{"VARCHAR"},
 		"direction":     &simpleColumnType{"SMALLINT"},

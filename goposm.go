@@ -135,47 +135,57 @@ func main() {
 	}
 
 	if *write {
-		progress.Reset()
-		err = db.Init()
-		if err != nil {
-			log.Fatal(err)
+		if true {
+			progress.Reset()
+			err = db.Init()
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			diffCache := cache.NewDiffCache(*cachedir)
+			if err = diffCache.Remove(); err != nil {
+				log.Fatal(err)
+			}
+			if err = diffCache.Open(); err != nil {
+				log.Fatal(err)
+			}
+
+			insertBuffer := writer.NewInsertBuffer()
+			dbWriter := writer.NewDbWriter(db, insertBuffer.Out)
+
+			pointsTagMatcher := tagmapping.PointMatcher()
+			lineStringsTagMatcher := tagmapping.LineStringMatcher()
+			polygonsTagMatcher := tagmapping.PolygonMatcher()
+
+			relations := osmCache.Relations.Iter()
+			relWriter := writer.NewRelationWriter(osmCache, relations,
+				insertBuffer, polygonsTagMatcher, progress)
+			// blocks till the Relations.Iter() finishes
+			relWriter.Close()
+
+			ways := osmCache.Ways.Iter()
+			wayWriter := writer.NewWayWriter(osmCache, ways, insertBuffer,
+				lineStringsTagMatcher, polygonsTagMatcher, progress)
+
+			nodes := osmCache.Nodes.Iter()
+			nodeWriter := writer.NewNodeWriter(osmCache, nodes, insertBuffer,
+				pointsTagMatcher, progress)
+
+			diffCache.Coords.Close()
+
+			wayWriter.Close()
+			nodeWriter.Close()
+			insertBuffer.Close()
+			dbWriter.Close()
 		}
 
-		diffCache := cache.NewDiffCache(*cachedir)
-		if err = diffCache.Remove(); err != nil {
-			log.Fatal(err)
+		if db, ok := db.(database.Generalizer); ok {
+			if err := db.Generalize(); err != nil {
+				log.Fatal(err)
+			}
+		} else {
+			log.Fatal("database not generalizeable")
 		}
-		if err = diffCache.Open(); err != nil {
-			log.Fatal(err)
-		}
-
-		insertBuffer := writer.NewInsertBuffer()
-		dbWriter := writer.NewDbWriter(db, insertBuffer.Out)
-
-		pointsTagMatcher := tagmapping.PointMatcher()
-		lineStringsTagMatcher := tagmapping.LineStringMatcher()
-		polygonsTagMatcher := tagmapping.PolygonMatcher()
-
-		relations := osmCache.Relations.Iter()
-		relWriter := writer.NewRelationWriter(osmCache, relations,
-			insertBuffer, polygonsTagMatcher, progress)
-		// blocks till the Relations.Iter() finishes
-		relWriter.Close()
-
-		ways := osmCache.Ways.Iter()
-		wayWriter := writer.NewWayWriter(osmCache, ways, insertBuffer,
-			lineStringsTagMatcher, polygonsTagMatcher, progress)
-
-		nodes := osmCache.Nodes.Iter()
-		nodeWriter := writer.NewNodeWriter(osmCache, nodes, insertBuffer,
-			pointsTagMatcher, progress)
-
-		diffCache.Coords.Close()
-
-		wayWriter.Close()
-		nodeWriter.Close()
-		insertBuffer.Close()
-		dbWriter.Close()
 
 		if db, ok := db.(database.Finisher); ok {
 			if err := db.Finish(); err != nil {

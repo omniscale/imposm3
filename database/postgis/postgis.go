@@ -23,6 +23,16 @@ type TableSpec struct {
 	Srid         int
 }
 
+type GeneralizedTableSpec struct {
+	Name              string
+	SourceName        string
+	Source            *TableSpec
+	SourceGeneralized *GeneralizedTableSpec
+	Tolerance         float64
+	Where             string
+	created           bool
+}
+
 func (col *ColumnSpec) AsSQL() string {
 	return fmt.Sprintf("\"%s\" %s", col.Name, col.Type.Name())
 }
@@ -82,6 +92,16 @@ func NewTableSpec(pg *PostGIS, t *mapping.Table) *TableSpec {
 		}
 		col := ColumnSpec{field.Name, pgType}
 		spec.Columns = append(spec.Columns, col)
+	}
+	return &spec
+}
+
+func NewGeneralizedTableSpec(pg *PostGIS, t *mapping.GeneralizedTable) *GeneralizedTableSpec {
+	spec := GeneralizedTableSpec{
+		Name:       pg.Prefix + t.Name,
+		Tolerance:  t.Tolerance,
+		Where:      t.SqlFilter,
+		SourceName: t.SourceTableName,
 	}
 	return &spec
 }
@@ -162,12 +182,13 @@ func (pg *PostGIS) createSchema(schema string) error {
 }
 
 type PostGIS struct {
-	Db           *sql.DB
-	Schema       string
-	BackupSchema string
-	Config       database.Config
-	Tables       map[string]*TableSpec
-	Prefix       string
+	Db                *sql.DB
+	Schema            string
+	BackupSchema      string
+	Config            database.Config
+	Tables            map[string]*TableSpec
+	GeneralizedTables map[string]*GeneralizedTableSpec
+	Prefix            string
 }
 
 func schemasFromConnectionParams(params string) (string, string) {
@@ -435,9 +456,105 @@ func (pg *PostGIS) Finish() error {
 	return nil
 }
 
+func (pg *PostGIS) checkGeneralizedTableSources() {
+	for name, table := range pg.GeneralizedTables {
+		if source, ok := pg.Tables[table.SourceName]; ok {
+			table.Source = source
+		} else if source, ok := pg.GeneralizedTables[table.SourceName]; ok {
+			table.SourceGeneralized = source
+		} else {
+			log.Printf("missing source '%s' for generalized table '%s'\n",
+				table.SourceName, name)
+		}
+	}
+
+	filled := true
+	for filled {
+		filled = false
+		for _, table := range pg.GeneralizedTables {
+			if table.Source == nil {
+				if source, ok := pg.GeneralizedTables[table.SourceName]; ok && source.Source != nil {
+					table.Source = source.Source
+				}
+				filled = true
+			}
+		}
+	}
+}
+
+func (pg *PostGIS) Generalize() error {
+	fmt.Println("generalizing")
+	// generalized tables can depend on other generalized tables
+	// create tables with non-generalized sources first
+	for _, table := range pg.GeneralizedTables {
+		if table.SourceGeneralized == nil {
+			if err := pg.generalizeTable(table); err != nil {
+				return err
+			}
+			table.created = true
+		}
+	}
+	// next create tables with created generalized sources until
+	// no new source is created
+	created := true
+	for created {
+		created = false
+		for _, table := range pg.GeneralizedTables {
+			if !table.created && table.SourceGeneralized.created {
+				if err := pg.generalizeTable(table); err != nil {
+					return err
+				}
+				table.created = true
+				created = true
+			}
+		}
+	}
+	return nil
+}
+
+func (pg *PostGIS) generalizeTable(table *GeneralizedTableSpec) error {
+	tx, err := pg.Db.Begin()
+	if err != nil {
+		return err
+	}
+	defer rollbackIfTx(&tx)
+
+	var where string
+	if table.Where != "" {
+		where = " WHERE " + table.Where
+	}
+	var cols []string
+
+	for _, col := range table.Source.Columns {
+		cols = append(cols, col.Type.GeneralizeSql(&col, table))
+	}
+
+	if err := dropTableIfExists(tx, pg.Schema, table.Name); err != nil {
+		return err
+	}
+
+	columnSQL := strings.Join(cols, ",\n")
+	sql := fmt.Sprintf(`CREATE TABLE "%s"."%s" AS (SELECT %s FROM "%s"."%s"%s)`,
+		pg.Schema, table.Name, columnSQL, pg.Schema,
+		pg.Prefix+table.SourceName, where)
+	fmt.Println(sql)
+	_, err = tx.Exec(sql)
+	if err != nil {
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	tx = nil // set nil to prevent rollback
+	return nil
+}
+
 func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	db := &PostGIS{}
 	db.Tables = make(map[string]*TableSpec)
+	db.GeneralizedTables = make(map[string]*GeneralizedTableSpec)
+
 	db.Config = conf
 
 	if strings.HasPrefix(db.Config.ConnectionParams, "postgis://") {
@@ -457,6 +574,11 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	for name, table := range m.Tables {
 		db.Tables[name] = NewTableSpec(db, table)
 	}
+	for name, table := range m.GeneralizedTables {
+		db.GeneralizedTables[name] = NewGeneralizedTableSpec(db, table)
+	}
+	db.checkGeneralizedTableSources()
+
 	err = db.Open()
 	if err != nil {
 		return nil, err
