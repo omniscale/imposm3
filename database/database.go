@@ -22,6 +22,10 @@ type Deployer interface {
 	RemoveBackup() error
 }
 
+type Finisher interface {
+	Finish() error
+}
+
 var databases map[string]func(Config, *mapping.Mapping) (DB, error)
 
 func init() {

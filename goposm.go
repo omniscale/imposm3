@@ -76,6 +76,14 @@ func main() {
 		go stats.MemProfiler(parts[0], interval)
 	}
 
+	if (*write || *read != "") && (*revertDeploy || *removeBackup) {
+		log.Fatal("-revertdeploy and -removebackup not compatible with -read/-write")
+	}
+
+	if *revertDeploy && (*removeBackup || *deployProduction) {
+		log.Fatal("-revertdeploy not compatible with -deployproduction/-removebackup")
+	}
+
 	osmCache := cache.NewOSMCache(*cachedir)
 
 	if *read != "" && osmCache.Exists() {
@@ -168,11 +176,21 @@ func main() {
 		nodeWriter.Close()
 		insertBuffer.Close()
 		dbWriter.Close()
+
+		if db, ok := db.(database.Finisher); ok {
+			if err := db.Finish(); err != nil {
+				log.Fatal(err)
+			}
+		} else {
+			log.Fatal("database not finishable")
+		}
 	}
 
 	if *deployProduction {
 		if db, ok := db.(database.Deployer); ok {
-			db.Deploy()
+			if err := db.Deploy(); err != nil {
+				log.Fatal(err)
+			}
 		} else {
 			log.Fatal("database not deployable")
 		}
@@ -180,7 +198,9 @@ func main() {
 
 	if *revertDeploy {
 		if db, ok := db.(database.Deployer); ok {
-			db.RevertDeploy()
+			if err := db.RevertDeploy(); err != nil {
+				log.Fatal(err)
+			}
 		} else {
 			log.Fatal("database not deployable")
 		}
@@ -188,7 +208,9 @@ func main() {
 
 	if *removeBackup {
 		if db, ok := db.(database.Deployer); ok {
-			db.RemoveBackup()
+			if err := db.RemoveBackup(); err != nil {
+				log.Fatal(err)
+			}
 		} else {
 			log.Fatal("database not deployable")
 		}

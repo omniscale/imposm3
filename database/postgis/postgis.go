@@ -236,13 +236,7 @@ func (pg *PostGIS) InsertBatch(table string, rows [][]interface{}) error {
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if tx != nil {
-			if err := tx.Rollback(); err != nil {
-				log.Println("rollback failed", err)
-			}
-		}
-	}()
+	defer rollbackIfTx(&tx)
 
 	sql := spec.InsertSQL()
 	stmt, err := tx.Prepare(sql)
@@ -262,7 +256,7 @@ func (pg *PostGIS) InsertBatch(table string, rows [][]interface{}) error {
 	if err != nil {
 		return err
 	}
-	tx = nil
+	tx = nil // set nil to prevent rollback
 	return nil
 
 }
@@ -286,7 +280,6 @@ func tableExists(tx *sql.Tx, schema, table string) (bool, error) {
 		table, schema)
 	row := tx.QueryRow(sql)
 	err := row.Scan(&exists)
-	// fmt.Println(exists, err, sql)
 	if err != nil {
 		return false, err
 	}
@@ -308,13 +301,7 @@ func (pg *PostGIS) rotate(source, dest, backup string) error {
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if tx != nil {
-			if err := tx.Rollback(); err != nil {
-				log.Println("rollback failed", err)
-			}
-		}
-	}()
+	defer rollbackIfTx(&tx)
 
 	for tableName, _ := range pg.Tables {
 		tableName = pg.Prefix + tableName
@@ -365,7 +352,7 @@ func (pg *PostGIS) rotate(source, dest, backup string) error {
 	if err != nil {
 		return err
 	}
-	tx = nil
+	tx = nil // set nil to prevent rollback
 	return nil
 }
 
@@ -377,18 +364,20 @@ func (pg *PostGIS) RevertDeploy() error {
 	return pg.rotate(pg.BackupSchema, "public", pg.Schema)
 }
 
+func rollbackIfTx(tx **sql.Tx) {
+	if *tx != nil {
+		if err := tx.Rollback(); err != nil {
+			log.Println("rollback failed", err)
+		}
+	}
+}
+
 func (pg *PostGIS) RemoveBackup() error {
 	tx, err := pg.Db.Begin()
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if tx != nil {
-			if err := tx.Rollback(); err != nil {
-				log.Println("rollback failed", err)
-			}
-		}
-	}()
+	defer rollbackIfTx(&tx)
 
 	backup := pg.BackupSchema
 
@@ -413,7 +402,36 @@ func (pg *PostGIS) RemoveBackup() error {
 	if err != nil {
 		return err
 	}
-	tx = nil
+	tx = nil // set nil to prevent rollback
+	return nil
+}
+
+// Finish creates spatial indices on all tables.
+func (pg *PostGIS) Finish() error {
+	tx, err := pg.Db.Begin()
+	if err != nil {
+		return err
+	}
+	defer rollbackIfTx(&tx)
+
+	for tableName, table := range pg.Tables {
+		tableName := pg.Prefix + tableName
+		for _, col := range table.Columns {
+			if col.Type.Name() == "GEOMETRY" {
+				sql := fmt.Sprintf(`CREATE INDEX "%s_geom" ON "%s"."%s" USING GIST ("%s")`,
+					tableName, pg.Schema, tableName, col.Name)
+				_, err := tx.Exec(sql)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	tx = nil // set nil to prevent rollback
 	return nil
 }
 
