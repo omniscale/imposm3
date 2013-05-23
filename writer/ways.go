@@ -66,7 +66,7 @@ func (ww *WayWriter) loop() {
 			continue
 		}
 		proj.NodesToMerc(w.Nodes)
-		if matches := ww.lineStringTagMatcher.Match(&w.OSMElem); len(matches) > 0 {
+		if matches := ww.lineStringTagMatcher.Match(&w.Tags); len(matches) > 0 {
 			// make copy to avoid interference with polygon matches
 			way := element.Way(*w)
 			way.Geom, err = geom.LineStringWKB(geos, way.Nodes)
@@ -86,7 +86,7 @@ func (ww *WayWriter) loop() {
 
 		}
 		if w.IsClosed() {
-			if matches := ww.polygonTagMatcher.Match(&w.OSMElem); len(matches) > 0 {
+			if matches := ww.polygonTagMatcher.Match(&w.Tags); len(matches) > 0 {
 				way := element.Way(*w)
 				way.Geom, err = geom.PolygonWKB(geos, way.Nodes)
 				if err != nil {

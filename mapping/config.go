@@ -41,7 +41,7 @@ type Mapping struct {
 	GeneralizedTables GeneralizedTables `json:"generalized_tables"`
 }
 
-type ElementFilter func(elem *element.OSMElem) bool
+type ElementFilter func(tags *element.Tags) bool
 
 type TagTables map[string]map[string][]string
 
@@ -134,8 +134,8 @@ func (m *Mapping) ElementFilters() map[string][]ElementFilter {
 		}
 		if t.Filters.ExcludeTags != nil {
 			for filterKey, filterVal := range *t.Filters.ExcludeTags {
-				f := func(elem *element.OSMElem) bool {
-					if v, ok := elem.Tags[filterKey]; ok {
+				f := func(tags *element.Tags) bool {
+					if v, ok := (*tags)[filterKey]; ok {
 						if filterVal == "__any__" || v == filterVal {
 							return false
 						}

@@ -42,10 +42,10 @@ func (m *Match) Row(elem *element.OSMElem) []interface{} {
 	return m.tableFields.MakeRow(elem, *m)
 }
 
-func (tagMatcher *TagMatcher) Match(elem *element.OSMElem) []Match {
+func (tagMatcher *TagMatcher) Match(tags *element.Tags) []Match {
 	tables := make(map[string]Match)
 
-	for k, v := range elem.Tags {
+	for k, v := range *tags {
 		values, ok := tagMatcher.mappings[k]
 		if ok {
 			if tbls, ok := values["__any__"]; ok {
@@ -67,7 +67,7 @@ func (tagMatcher *TagMatcher) Match(elem *element.OSMElem) []Match {
 		filteredOut := false
 		if ok {
 			for _, filter := range filters {
-				if !filter(elem) {
+				if !filter(tags) {
 					filteredOut = true
 					break
 				}

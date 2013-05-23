@@ -79,7 +79,7 @@ func (rw *RelationWriter) loop() {
 			log.Println(err)
 			continue
 		}
-		if matches := rw.tagMatcher.Match(&r.OSMElem); len(matches) > 0 {
+		if matches := rw.tagMatcher.Match(&r.Tags); len(matches) > 0 {
 			for _, match := range matches {
 				row := match.Row(&r.OSMElem)
 				rw.insertBuffer.Insert(match.Table, row)

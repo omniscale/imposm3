@@ -51,7 +51,7 @@ func (nw *NodeWriter) loop() {
 
 	for n := range nw.nodes {
 		nw.progress.AddNodes(1)
-		if matches := nw.tagMatcher.Match(&n.OSMElem); len(matches) > 0 {
+		if matches := nw.tagMatcher.Match(&n.Tags); len(matches) > 0 {
 			proj.NodeToMerc(n)
 			n.Geom, err = geom.PointWKB(geos, *n)
 			if err != nil {
