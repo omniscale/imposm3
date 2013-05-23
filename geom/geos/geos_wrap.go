@@ -7,7 +7,7 @@ package geos
 #include <stdarg.h>
 #include <stdio.h>
 
-extern void goDebug(char *msg);
+extern void goLogString(char *msg);
 
 void debug_wrap(const char *fmt, ...) {
 	va_list a_list;
@@ -16,7 +16,7 @@ void debug_wrap(const char *fmt, ...) {
 	char buf[100];
 	vsnprintf(buf, sizeof(buf), fmt, a_list);
 	va_end(a_list);
-	goDebug((char *)&buf);
+	goLogString((char *)&buf);
 }
 
 GEOSContextHandle_t initGEOS_r_debug() {

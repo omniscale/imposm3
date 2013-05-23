@@ -2,6 +2,7 @@ package stats
 
 import (
 	"fmt"
+	"goposm/logging"
 	"time"
 )
 
@@ -96,7 +97,7 @@ func StatsReporter() *Statistics {
 	s.messages = make(chan string)
 
 	go func() {
-		tick := time.Tick(time.Second)
+		tick := time.Tick(500 * time.Millisecond)
 		tock := time.Tick(time.Minute)
 		for {
 			select {
@@ -133,27 +134,26 @@ func StatsReporter() *Statistics {
 }
 
 func (c *counter) PrintTick() {
-	fmt.Printf("\x1b[2K\r[%s] [%6s] C: %7d/s %7d/s (%10d) N: %7d/s %7d/s (%9d) W: %7d/s %7d/s (%8d) R: %6d/s %6d/s (%7d)",
-		c.start.Format(time.Stamp),
-		c.Duration(),
-		c.coords.Rps(1000),
-		c.coords.LastRps(1000),
-		c.coords.Value(),
-		c.nodes.Rps(100),
-		c.nodes.LastRps(100),
-		c.nodes.Value(),
-		c.ways.Rps(100),
-		c.ways.LastRps(100),
-		c.ways.Value(),
-		c.relations.Rps(10),
-		c.relations.LastRps(10),
-		c.relations.Value(),
-	)
+	logging.Progress(
+		fmt.Sprintf("[%6s] C: %7d/s %7d/s (%10d) N: %7d/s %7d/s (%9d) W: %7d/s %7d/s (%8d) R: %6d/s %6d/s (%7d)\r",
+			c.Duration(),
+			c.coords.Rps(1000),
+			c.coords.LastRps(1000),
+			c.coords.Value(),
+			c.nodes.Rps(100),
+			c.nodes.LastRps(100),
+			c.nodes.Value(),
+			c.ways.Rps(100),
+			c.ways.LastRps(100),
+			c.ways.Value(),
+			c.relations.Rps(10),
+			c.relations.LastRps(10),
+			c.relations.Value(),
+		))
 }
 
 func (c *counter) PrintStats() {
-	fmt.Printf("\x1b[2K\r[%s] [%6s] C: %7d/s (%10d) N: %7d/s (%9d) W: %7d/s (%8d) R: %6d/s (%7d)\n",
-		c.start.Format(time.Stamp),
+	logging.Infof("[%6s] C: %7d/s (%10d) N: %7d/s (%9d) W: %7d/s (%8d) R: %6d/s (%7d)",
 		c.Duration(),
 		c.coords.Rps(1000),
 		c.coords.Value(),

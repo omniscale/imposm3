@@ -5,11 +5,12 @@ import (
 	"goposm/cache"
 	"goposm/database"
 	_ "goposm/database/postgis"
+	"goposm/logging"
 	"goposm/mapping"
 	"goposm/reader"
 	"goposm/stats"
 	"goposm/writer"
-	"log"
+	golog "log"
 	"os"
 	"runtime"
 	"runtime/pprof"
@@ -19,6 +20,8 @@ import (
 )
 
 var dbImportBatchSize int64
+
+var log = logging.NewLogger("")
 
 func init() {
 	dbImportBatchSize, _ = strconv.ParseInt(
@@ -45,15 +48,27 @@ var (
 	removeBackup     = flag.Bool("removebackup", false, "remove backups from deploy")
 )
 
+func die(args ...interface{}) {
+	log.Fatal(args...)
+	logging.Shutdown()
+	os.Exit(1)
+}
+
+func dief(msg string, args ...interface{}) {
+	log.Fatalf(msg, args...)
+	logging.Shutdown()
+	os.Exit(1)
+}
+
 func main() {
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	golog.SetFlags(golog.LstdFlags | golog.Lshortfile)
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	flag.Parse()
 
 	if *cpuprofile != "" {
 		f, err := os.Create(*cpuprofile)
 		if err != nil {
-			log.Fatal(err)
+			golog.Fatal(err)
 		}
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()
@@ -69,7 +84,7 @@ func main() {
 			var err error
 			interval, err = time.ParseDuration(parts[1])
 			if err != nil {
-				log.Fatal(err)
+				golog.Fatal(err)
 			}
 		}
 
@@ -77,30 +92,30 @@ func main() {
 	}
 
 	if (*write || *read != "") && (*revertDeploy || *removeBackup) {
-		log.Fatal("-revertdeploy and -removebackup not compatible with -read/-write")
+		die("-revertdeploy and -removebackup not compatible with -read/-write")
 	}
 
 	if *revertDeploy && (*removeBackup || *deployProduction) {
-		log.Fatal("-revertdeploy not compatible with -deployproduction/-removebackup")
+		die("-revertdeploy not compatible with -deployproduction/-removebackup")
 	}
 
 	osmCache := cache.NewOSMCache(*cachedir)
 
 	if *read != "" && osmCache.Exists() {
 		if *overwritecache {
-			log.Println("removing existing cache", *cachedir)
+			log.Printf("removing existing cache %s", *cachedir)
 			err := osmCache.Remove()
 			if err != nil {
-				log.Fatal("unable to remove cache:", err)
+				die("unable to remove cache:", err)
 			}
 		} else if !*appendcache {
-			log.Fatal("cache already exists use -appendcache or -overwritecache")
+			die("cache already exists use -appendcache or -overwritecache")
 		}
 	}
 
 	err := osmCache.Open()
 	if err != nil {
-		log.Fatal(err)
+		die(err)
 	}
 	defer osmCache.Close()
 
@@ -108,7 +123,7 @@ func main() {
 
 	tagmapping, err := mapping.NewMapping(*mappingFile)
 	if err != nil {
-		log.Fatal(err)
+		die(err)
 	}
 
 	var db database.DB
@@ -122,7 +137,7 @@ func main() {
 		}
 		db, err = database.Open(conf, tagmapping)
 		if err != nil {
-			log.Fatal(err)
+			die(err)
 		}
 	}
 
@@ -139,15 +154,15 @@ func main() {
 			progress.Reset()
 			err = db.Init()
 			if err != nil {
-				log.Fatal(err)
+				die(err)
 			}
 
 			diffCache := cache.NewDiffCache(*cachedir)
 			if err = diffCache.Remove(); err != nil {
-				log.Fatal(err)
+				die(err)
 			}
 			if err = diffCache.Open(); err != nil {
-				log.Fatal(err)
+				die(err)
 			}
 
 			insertBuffer := writer.NewInsertBuffer()
@@ -181,48 +196,48 @@ func main() {
 
 		if db, ok := db.(database.Generalizer); ok {
 			if err := db.Generalize(); err != nil {
-				log.Fatal(err)
+				die(err)
 			}
 		} else {
-			log.Fatal("database not generalizeable")
+			die("database not generalizeable")
 		}
 
 		if db, ok := db.(database.Finisher); ok {
 			if err := db.Finish(); err != nil {
-				log.Fatal(err)
+				die(err)
 			}
 		} else {
-			log.Fatal("database not finishable")
+			die("database not finishable")
 		}
 	}
 
 	if *deployProduction {
 		if db, ok := db.(database.Deployer); ok {
 			if err := db.Deploy(); err != nil {
-				log.Fatal(err)
+				die(err)
 			}
 		} else {
-			log.Fatal("database not deployable")
+			die("database not deployable")
 		}
 	}
 
 	if *revertDeploy {
 		if db, ok := db.(database.Deployer); ok {
 			if err := db.RevertDeploy(); err != nil {
-				log.Fatal(err)
+				die(err)
 			}
 		} else {
-			log.Fatal("database not deployable")
+			die("database not deployable")
 		}
 	}
 
 	if *removeBackup {
 		if db, ok := db.(database.Deployer); ok {
 			if err := db.RemoveBackup(); err != nil {
-				log.Fatal(err)
+				die(err)
 			}
 		} else {
-			log.Fatal("database not deployable")
+			die("database not deployable")
 		}
 	}
 	progress.Stop()

@@ -5,7 +5,7 @@ package geos
 #include "geos_c.h"
 #include <stdlib.h>
 
-extern void goDebug(char *msg);
+extern void goLogString(char *msg);
 extern void debug_wrap(const char *fmt, ...);
 extern GEOSContextHandle_t initGEOS_r_debug();
 extern void initGEOS_debug();
@@ -13,14 +13,16 @@ extern void initGEOS_debug();
 import "C"
 
 import (
-	"fmt"
+	"goposm/logging"
 	"runtime"
 	"unsafe"
 )
 
-//export goDebug
-func goDebug(msg *C.char) {
-	fmt.Println(C.GoString(msg))
+var log = logging.NewLogger("GEOS")
+
+//export goLogString
+func goLogString(msg *C.char) {
+	log.Printf(C.GoString(msg))
 }
 
 type GEOS struct {
