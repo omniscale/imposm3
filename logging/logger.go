@@ -2,7 +2,6 @@ package logging
 
 import (
 	"fmt"
-	"math/rand"
 	"sync"
 	"time"
 )
