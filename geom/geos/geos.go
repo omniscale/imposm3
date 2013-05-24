@@ -9,6 +9,11 @@ extern void goLogString(char *msg);
 extern void debug_wrap(const char *fmt, ...);
 extern GEOSContextHandle_t initGEOS_r_debug();
 extern void initGEOS_debug();
+extern void IndexQuerySendCallback(void *, void *);
+extern void goIndexSendQueryResult(size_t, void *);
+extern void IndexQuery(GEOSContextHandle_t, GEOSSTRtree *, const GEOSGeometry *, void *);
+extern void IndexAdd(GEOSContextHandle_t, GEOSSTRtree *, const GEOSGeometry *, size_t);
+
 */
 import "C"
 
@@ -306,4 +311,42 @@ func (this *Geos) DestroyCoordSeq(coordSeq *CoordSeq) {
 	} else {
 		panic("double free?")
 	}
+}
+
+type Index struct {
+	v *C.GEOSSTRtree
+}
+
+func (this *Geos) CreateIndex() *Index {
+	tree := C.GEOSSTRtree_create_r(this.v, 10)
+	if tree == nil {
+		panic("unable to create tree")
+	}
+	return &Index{tree}
+}
+
+// IndexQuery adds a geom to the index with the id.
+func (this *Geos) IndexAdd(index *Index, id int, geom *Geom) {
+	C.IndexAdd(this.v, index.v, geom.v, C.size_t(id))
+}
+
+// IndexQuery queries the index for intersections with geom and
+// returns a channel with ids of each intersected geometries.
+func (this *Geos) IndexQuery(index *Index, geom *Geom) <-chan int {
+	hits := make(chan int)
+	go func() {
+		//
+		// using a pointer to our hits chan to pass it through
+		// C.IndexQuerySendCallback (in C.IndexQuery) back
+		// to goIndexSendQueryResult
+		C.IndexQuery(this.v, index.v, geom.v, unsafe.Pointer(&hits))
+		close(hits)
+	}()
+	return hits
+}
+
+//export goIndexSendQueryResult
+func goIndexSendQueryResult(id C.size_t, ptr unsafe.Pointer) {
+	results := *(*chan int)(ptr)
+	results <- int(id)
 }

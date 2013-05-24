@@ -1,4 +1,4 @@
-package main
+package ogr
 
 /*
 #cgo LDFLAGS: -lgdal
@@ -8,10 +8,8 @@ package main
 */
 import "C"
 import (
-	"flag"
 	"fmt"
 	"goposm/geom/geos"
-	"log"
 	"strings"
 	"unsafe"
 )
@@ -148,24 +146,4 @@ func (layer *Layer) Geoms() chan *geos.Geom {
 		}
 	}()
 	return geoms
-}
-
-func main() {
-	flag.Parse()
-	ds, err := Open(flag.Arg(0))
-	if err != nil {
-		log.Fatal(err)
-	}
-	layer, err := ds.Query(flag.Arg(1))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	g := geos.NewGeos()
-	defer g.Finish()
-	for geom := range layer.Geoms() {
-		fmt.Println(g.AsWkt(geom))
-	}
-
-	fmt.Println(layer)
 }
