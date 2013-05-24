@@ -212,6 +212,14 @@ func (this *GEOS) AsWKB(geom *Geom) []byte {
 	return result
 }
 
+func (this *GEOS) FromWkb(wkb []byte) *Geom {
+	geom := C.GEOSGeomFromWKB_buf((*C.uchar)(&wkb[0]), C.size_t(len(wkb)))
+	if geom == nil {
+		return nil
+	}
+	return &Geom{geom}
+}
+
 func (this *GEOS) IsValid(geom *Geom) bool {
 	if C.GEOSisValid_r(this.v, geom.v) == 1 {
 		return true
