@@ -75,13 +75,35 @@ func TestTagFilterNodes(t *testing.T) {
 	}
 	stringMapEquals(t, element.Tags{}, tags)
 
+	tags = element.Tags{"name": "foo", "place": "unknown"}
+	if nodes.Filter(&tags) != false {
+		t.Fatal("unexpected filter response for", tags)
+	}
+	stringMapEquals(t, element.Tags{}, tags)
+
 	tags = element.Tags{"name": "foo", "place": "village"}
 	if nodes.Filter(&tags) != true {
 		t.Fatal("unexpected filter response for", tags)
 	}
 	stringMapEquals(t, element.Tags{"name": "foo", "place": "village"}, tags)
 
-	// TODO
+	tags = element.Tags{"name": "foo", "place": "village", "population": "1000"}
+	if nodes.Filter(&tags) != true {
+		t.Fatal("unexpected filter response for", tags)
+	}
+	stringMapEquals(t, element.Tags{"name": "foo", "place": "village", "population": "1000"}, tags)
+
+	tags = element.Tags{"name": "foo", "place": "village", "highway": "unknown"}
+	if nodes.Filter(&tags) != true {
+		t.Fatal("unexpected filter response for", tags)
+	}
+	stringMapEquals(t, element.Tags{"name": "foo", "place": "village"}, tags)
+
+	tags = element.Tags{"name": "foo", "place": "village", "highway": "bus_stop"}
+	if nodes.Filter(&tags) != true {
+		t.Fatal("unexpected filter response for", tags)
+	}
+	stringMapEquals(t, element.Tags{"name": "foo", "place": "village", "highway": "bus_stop"}, tags)
 }
 
 func TestTagFilterWays(t *testing.T) {
@@ -106,7 +128,42 @@ func TestTagFilterWays(t *testing.T) {
 	}
 	stringMapEquals(t, element.Tags{}, tags)
 
-	// TODO
+	tags = element.Tags{"name": "foo", "highway": "track"}
+	if ways.Filter(&tags) != true {
+		t.Fatal("unexpected filter response for", tags)
+	}
+	stringMapEquals(t, element.Tags{"name": "foo", "highway": "track"}, tags)
+
+	tags = element.Tags{"name": "foo", "highway": "track", "oneway": "yes", "tunnel": "1"}
+	if ways.Filter(&tags) != true {
+		t.Fatal("unexpected filter response for", tags)
+	}
+	stringMapEquals(t, element.Tags{"name": "foo", "highway": "track", "oneway": "yes", "tunnel": "1"}, tags)
+
+	tags = element.Tags{"name": "foo", "place": "village", "highway": "track"}
+	if ways.Filter(&tags) != true {
+		t.Fatal("unexpected filter response for", tags)
+	}
+	stringMapEquals(t, element.Tags{"name": "foo", "highway": "track"}, tags)
+
+	tags = element.Tags{"name": "foo", "railway": "tram", "highway": "secondary"}
+	if ways.Filter(&tags) != true {
+		t.Fatal("unexpected filter response for", tags)
+	}
+	stringMapEquals(t, element.Tags{"name": "foo", "railway": "tram", "highway": "secondary"}, tags)
+
+	// with __any__ value
+	tags = element.Tags{"name": "foo", "building": "yes"}
+	if ways.Filter(&tags) != true {
+		t.Fatal("unexpected filter response for", tags)
+	}
+	stringMapEquals(t, element.Tags{"name": "foo", "building": "yes"}, tags)
+
+	tags = element.Tags{"name": "foo", "building": "whatever"}
+	if ways.Filter(&tags) != true {
+		t.Fatal("unexpected filter response for", tags)
+	}
+	stringMapEquals(t, element.Tags{"name": "foo", "building": "whatever"}, tags)
 }
 
 func TestTagFilterRelations(t *testing.T) {
@@ -118,7 +175,79 @@ func TestTagFilterRelations(t *testing.T) {
 		t.Fatal("unexpected filter response for", tags)
 	}
 	stringMapEquals(t, element.Tags{}, tags)
-	// TODO
+	
+	tags = element.Tags{"name": "foo", "unknown": "baz"}
+	if relations.Filter(&tags) != false {
+		t.Fatal("unexpected filter response for", tags)
+	}
+	stringMapEquals(t, element.Tags{}, tags)
+
+	tags = element.Tags{"name": "foo", "landuse": "unknown"}
+	if relations.Filter(&tags) != false {
+		t.Fatal("unexpected filter response for", tags)
+	}
+	stringMapEquals(t, element.Tags{}, tags)
+
+	tags = element.Tags{"name": "foo", "landuse": "farm"}
+	if relations.Filter(&tags) != false {
+		t.Fatal("unexpected filter response for", tags)
+	}
+	stringMapEquals(t, element.Tags{}, tags)
+
+	tags = element.Tags{"name": "foo", "landuse": "farm", "type": "multipolygon"}
+	if relations.Filter(&tags) != true {
+		t.Fatal("unexpected filter response for", tags)
+	}
+	stringMapEquals(t, element.Tags{"name": "foo", "landuse": "farm", "type": "multipolygon"}, tags)
+
+	/* skip multipolygon with filtered tags, otherwise tags from 
+	longest way would be used */
+	tags = element.Tags{"name": "foo", "landuse": "unknown", "type": "multipolygon"}
+	if relations.Filter(&tags) != false {
+		t.Fatal("unexpected filter response for", tags)
+	}
+	stringMapEquals(t, element.Tags{}, tags)
+
+	tags = element.Tags{"name": "foo", "landuse": "park", "type": "multipolygon"}
+	if relations.Filter(&tags) != true {
+		t.Fatal("unexpected filter response for", tags)
+	}
+	stringMapEquals(t, element.Tags{"name": "foo", "type": "multipolygon", "landuse": "park"}, tags)
+
+	tags = element.Tags{"name": "foo", "landuse": "farm", "boundary": "administrative", "type": "multipolygon"}
+	if relations.Filter(&tags) != true {
+		t.Fatal("unexpected filter response for", tags)
+	}
+	stringMapEquals(t, element.Tags{"name": "foo", "landuse": "farm", "boundary": "administrative", "type": "multipolygon"}, tags)
+
+	// boundary relation for boundary
+	tags = element.Tags{"name": "foo", "landuse": "farm", "boundary": "administrative", "type": "boundary"}
+	if relations.Filter(&tags) != true {
+		t.Fatal("unexpected filter response for", tags)
+	}
+	stringMapEquals(t, element.Tags{"name": "foo", "landuse": "farm", "boundary": "administrative", "type": "boundary"}, tags)
+
+	// boundary relation for non boundary
+	tags = element.Tags{"name": "foo", "landuse": "farm", "type": "boundary"}
+	if relations.Filter(&tags) != false {
+		t.Fatal("unexpected filter response for", tags)
+	}
+	stringMapEquals(t, element.Tags{}, tags)
+
+	/* skip boundary with filtered tags, otherwise tags from longest way would
+	be used */
+	tags = element.Tags{"name": "foo", "boundary": "unknown", "type": "boundary"}
+	if relations.Filter(&tags) != false {
+		t.Fatal("unexpected filter response for", tags)
+	}
+	stringMapEquals(t, element.Tags{}, tags)
+
+	tags = element.Tags{"name": "foo", "boundary": "administrative", "type": "boundary"}
+	if relations.Filter(&tags) != true {
+		t.Fatal("unexpected filter response for", tags)
+	}
+	stringMapEquals(t, element.Tags{"name": "foo", "boundary": "administrative", "type": "boundary"}, tags)
+
 }
 
 func TestPointMatcher(t *testing.T) {
@@ -134,7 +263,11 @@ func TestPointMatcher(t *testing.T) {
 	tags = element.Tags{"place": "city"}
 	matchesEqual(t, []Match{{"place", "city", "places", nil}}, points.Match(&tags))
 
-	// TODO
+	tags = element.Tags{"place": "city", "highway": "unknown"}
+	matchesEqual(t, []Match{{"place", "city", "places", nil}}, points.Match(&tags))
+
+	tags = element.Tags{"place": "city", "highway": "bus_stop"}
+	matchesEqual(t, []Match{{"place", "city", "places", nil}, {"highway", "bus_stop", "transport_points", nil}}, points.Match(&tags))
 }
 
 func TestLineStringMatcher(t *testing.T) {
@@ -144,7 +277,20 @@ func TestLineStringMatcher(t *testing.T) {
 	tags = element.Tags{"unknown": "baz"}
 	matchesEqual(t, []Match{}, ls.Match(&tags))
 
-	// TODO
+	tags = element.Tags{"highway": "unknown"}
+	matchesEqual(t, []Match{}, ls.Match(&tags))
+
+	tags = element.Tags{"highway": "track"}
+	matchesEqual(t, []Match{{"highway", "track", "minorroads", nil}}, ls.Match(&tags))
+
+	tags = element.Tags{"highway": "secondary", "railway": "tram"}
+	matchesEqual(t, []Match{{"highway", "secondary", "mainroads", nil}, {"railway", "tram", "railways", nil}}, ls.Match(&tags))
+
+	tags = element.Tags{"highway": "footway"}
+	matchesEqual(t, []Match{{"highway", "footway", "minorroads", nil}, {"highway", "footway", "landusages", nil}}, ls.Match(&tags))
+
+	tags = element.Tags{"highway": "footway", "landuse": "park"}
+	matchesEqual(t, []Match{{"highway", "footway", "minorroads", nil}, {"landuse", "park", "landusages", nil}}, ls.Match(&tags))
 }
 
 func TestPolygonMatcher(t *testing.T) {
@@ -154,7 +300,20 @@ func TestPolygonMatcher(t *testing.T) {
 	tags = element.Tags{"unknown": "baz"}
 	matchesEqual(t, []Match{}, polys.Match(&tags))
 
-	// TODO
+	tags = element.Tags{"landuse": "unknowns"}
+	matchesEqual(t, []Match{}, polys.Match(&tags))
+
+	tags = element.Tags{"landuse": "farm"}
+	matchesEqual(t, []Match{{"landuse", "farm", "landusages", nil}}, polys.Match(&tags))
+
+	tags = element.Tags{"landuse": "farm", "highway": "secondary"}
+	matchesEqual(t, []Match{{"landuse", "farm", "landusages", nil}}, polys.Match(&tags))
+
+	tags = element.Tags{"landuse": "farm", "aeroway": "apron"}
+	matchesEqual(t, []Match{{"aeroway", "apron", "transport_areas", nil},{"landuse", "farm", "landusages", nil}}, polys.Match(&tags))
+
+	tags = element.Tags{"boundary": "administrative", "admin_level": "8"}
+	matchesEqual(t, []Match{{"boundary", "administrative", "admin", nil}}, polys.Match(&tags))
 }
 
 func TestFilterNodes(t *testing.T) {
