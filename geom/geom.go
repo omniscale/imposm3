@@ -28,7 +28,7 @@ var (
 	ErrorNoRing     = NewGeomError("linestrings do not form ring", 0)
 )
 
-func PointWKB(g *geos.GEOS, node element.Node) (*element.Geometry, error) {
+func PointWkb(g *geos.Geos, node element.Node) (*element.Geometry, error) {
 	coordSeq, err := g.CreateCoordSeq(1, 2)
 	if err != nil {
 		return nil, err
@@ -39,7 +39,7 @@ func PointWKB(g *geos.GEOS, node element.Node) (*element.Geometry, error) {
 	if err != nil {
 		return nil, err
 	}
-	wkb := g.AsWKB(geom)
+	wkb := g.AsWkb(geom)
 	if wkb == nil {
 		g.Destroy(geom)
 		return nil, errors.New("could not create wkb")
@@ -51,7 +51,7 @@ func PointWKB(g *geos.GEOS, node element.Node) (*element.Geometry, error) {
 	}, nil
 }
 
-func LineStringWKB(g *geos.GEOS, nodes []element.Node) (*element.Geometry, error) {
+func LineStringWkb(g *geos.Geos, nodes []element.Node) (*element.Geometry, error) {
 	if len(nodes) < 2 {
 		return nil, ErrorOneNodeWay
 	}
@@ -65,7 +65,7 @@ func LineStringWKB(g *geos.GEOS, nodes []element.Node) (*element.Geometry, error
 		coordSeq.SetXY(g, uint32(i), nd.Long, nd.Lat)
 	}
 	geom, err := coordSeq.AsLineString(g)
-	wkb := g.AsWKB(geom)
+	wkb := g.AsWkb(geom)
 	if wkb == nil {
 		g.Destroy(geom)
 		return nil, errors.New("could not create wkb")
@@ -77,12 +77,12 @@ func LineStringWKB(g *geos.GEOS, nodes []element.Node) (*element.Geometry, error
 	}, nil
 }
 
-func PolygonWKB(g *geos.GEOS, nodes []element.Node) (*element.Geometry, error) {
+func PolygonWkb(g *geos.Geos, nodes []element.Node) (*element.Geometry, error) {
 	geom, err := Polygon(g, nodes)
 	if err != nil {
 		return nil, err
 	}
-	wkb := g.AsWKB(geom)
+	wkb := g.AsWkb(geom)
 	if wkb == nil {
 		return nil, errors.New("could not create wkb")
 	}
@@ -92,7 +92,7 @@ func PolygonWKB(g *geos.GEOS, nodes []element.Node) (*element.Geometry, error) {
 	}, nil
 }
 
-func Polygon(g *geos.GEOS, nodes []element.Node) (*geos.Geom, error) {
+func Polygon(g *geos.Geos, nodes []element.Node) (*geos.Geom, error) {
 	coordSeq, err := g.CreateCoordSeq(uint32(len(nodes)), 2)
 	if err != nil {
 		return nil, err

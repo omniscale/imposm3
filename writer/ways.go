@@ -48,7 +48,7 @@ func (ww *WayWriter) Close() {
 }
 
 func (ww *WayWriter) loop() {
-	geos := geos.NewGEOS()
+	geos := geos.NewGeos()
 	defer geos.Finish()
 	for w := range ww.ways {
 		ww.progress.AddWays(1)
@@ -69,7 +69,7 @@ func (ww *WayWriter) loop() {
 		if matches := ww.lineStringTagMatcher.Match(&w.Tags); len(matches) > 0 {
 			// make copy to avoid interference with polygon matches
 			way := element.Way(*w)
-			way.Geom, err = geom.LineStringWKB(geos, way.Nodes)
+			way.Geom, err = geom.LineStringWkb(geos, way.Nodes)
 			if err != nil {
 				if err, ok := err.(ErrorLevel); ok {
 					if err.Level() <= 0 {
@@ -88,7 +88,7 @@ func (ww *WayWriter) loop() {
 		if w.IsClosed() {
 			if matches := ww.polygonTagMatcher.Match(&w.Tags); len(matches) > 0 {
 				way := element.Way(*w)
-				way.Geom, err = geom.PolygonWKB(geos, way.Nodes)
+				way.Geom, err = geom.PolygonWkb(geos, way.Nodes)
 				if err != nil {
 					if err, ok := err.(ErrorLevel); ok {
 						if err.Level() <= 0 {

@@ -45,7 +45,7 @@ func (nw *NodeWriter) Close() {
 }
 
 func (nw *NodeWriter) loop() {
-	geos := geos.NewGEOS()
+	geos := geos.NewGeos()
 	defer geos.Finish()
 	var err error
 
@@ -53,7 +53,7 @@ func (nw *NodeWriter) loop() {
 		nw.progress.AddNodes(1)
 		if matches := nw.tagMatcher.Match(&n.Tags); len(matches) > 0 {
 			proj.NodeToMerc(n)
-			n.Geom, err = geom.PointWKB(geos, *n)
+			n.Geom, err = geom.PointWkb(geos, *n)
 			if err != nil {
 				if err, ok := err.(ErrorLevel); ok {
 					if err.Level() <= 0 {

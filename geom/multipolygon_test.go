@@ -63,11 +63,11 @@ func TestMultiPolygonWithHole(t *testing.T) {
 		t.Fatal("wrong rel tags", rel.Tags)
 	}
 
-	g := geos.NewGEOS()
+	g := geos.NewGeos()
 	defer g.Finish()
 
 	if !g.IsValid(rel.Geom.Geom) {
-		t.Fatal("geometry not valid", g.AsWKT(rel.Geom.Geom))
+		t.Fatal("geometry not valid", g.AsWkt(rel.Geom.Geom))
 	}
 
 	if area := rel.Geom.Geom.Area(); area != 64 {
@@ -107,7 +107,7 @@ func TestMultiPolygonWithMultipleHoles(t *testing.T) {
 	}
 
 	BuildRelation(&rel)
-	g := geos.NewGEOS()
+	g := geos.NewGeos()
 	defer g.Finish()
 
 	if len(rel.Members) != 1 {
@@ -125,7 +125,7 @@ func TestMultiPolygonWithMultipleHoles(t *testing.T) {
 	}
 
 	if !g.IsValid(rel.Geom.Geom) {
-		t.Fatal("geometry not valid", g.AsWKT(rel.Geom.Geom))
+		t.Fatal("geometry not valid", g.AsWkt(rel.Geom.Geom))
 	}
 
 	if area := rel.Geom.Geom.Area(); area != 100-1-1 {
@@ -180,7 +180,7 @@ func TestMultiPolygonWithNeastedHoles(t *testing.T) {
 	}
 
 	BuildRelation(&rel)
-	g := geos.NewGEOS()
+	g := geos.NewGeos()
 	defer g.Finish()
 
 	if len(rel.Members) != 3 {
@@ -198,7 +198,7 @@ func TestMultiPolygonWithNeastedHoles(t *testing.T) {
 	}
 
 	if !g.IsValid(rel.Geom.Geom) {
-		t.Fatal("geometry not valid", g.AsWKT(rel.Geom.Geom))
+		t.Fatal("geometry not valid", g.AsWkt(rel.Geom.Geom))
 	}
 
 	if area := rel.Geom.Geom.Area(); area != 100-64+36-16+4 {
@@ -229,7 +229,7 @@ func TestPolygonFromThreeWays(t *testing.T) {
 	}
 
 	BuildRelation(&rel)
-	g := geos.NewGEOS()
+	g := geos.NewGeos()
 	defer g.Finish()
 
 	if len(rel.Members) != 2 {
@@ -247,7 +247,7 @@ func TestPolygonFromThreeWays(t *testing.T) {
 	}
 
 	if !g.IsValid(rel.Geom.Geom) {
-		t.Fatal("geometry not valid", g.AsWKT(rel.Geom.Geom))
+		t.Fatal("geometry not valid", g.AsWkt(rel.Geom.Geom))
 	}
 
 	if area := rel.Geom.Geom.Area(); area != 100 {

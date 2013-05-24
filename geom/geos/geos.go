@@ -25,7 +25,7 @@ func goLogString(msg *C.char) {
 	log.Printf(C.GoString(msg))
 }
 
-type GEOS struct {
+type Geos struct {
 	v C.GEOSContextHandle_t
 }
 
@@ -44,13 +44,13 @@ func (e CreateError) Error() string {
 	return string(e)
 }
 
-func NewGEOS() *GEOS {
-	geos := &GEOS{}
+func NewGeos() *Geos {
+	geos := &Geos{}
 	geos.v = C.initGEOS_r_debug()
 	return geos
 }
 
-func (this *GEOS) Finish() {
+func (this *Geos) Finish() {
 	if this.v != nil {
 		C.finishGEOS_r(this.v)
 		this.v = nil
@@ -73,7 +73,7 @@ type CoordSeq struct {
 	v *C.GEOSCoordSequence
 }
 
-func (this *GEOS) CreateCoordSeq(size, dim uint32) (*CoordSeq, error) {
+func (this *Geos) CreateCoordSeq(size, dim uint32) (*CoordSeq, error) {
 	result := C.GEOSCoordSeq_create_r(this.v, C.uint(size), C.uint(dim))
 	if result == nil {
 		return nil, CreateError("could not create CoordSeq")
@@ -81,7 +81,7 @@ func (this *GEOS) CreateCoordSeq(size, dim uint32) (*CoordSeq, error) {
 	return &CoordSeq{result}, nil
 }
 
-func (this *CoordSeq) SetXY(handle *GEOS, i uint32, x, y float64) error {
+func (this *CoordSeq) SetXY(handle *Geos, i uint32, x, y float64) error {
 	if C.GEOSCoordSeq_setX_r(handle.v, this.v, C.uint(i), C.double(x)) == 0 {
 		return Error("unable to SetY")
 	}
@@ -91,7 +91,7 @@ func (this *CoordSeq) SetXY(handle *GEOS, i uint32, x, y float64) error {
 	return nil
 }
 
-func (this *CoordSeq) AsPoint(handle *GEOS) (*Geom, error) {
+func (this *CoordSeq) AsPoint(handle *Geos) (*Geom, error) {
 	geom := C.GEOSGeom_createPoint_r(handle.v, this.v)
 	if geom == nil {
 		return nil, CreateError("unable to create Point")
@@ -99,7 +99,7 @@ func (this *CoordSeq) AsPoint(handle *GEOS) (*Geom, error) {
 	return &Geom{geom}, nil
 }
 
-func (this *CoordSeq) AsLineString(handle *GEOS) (*Geom, error) {
+func (this *CoordSeq) AsLineString(handle *Geos) (*Geom, error) {
 	geom := C.GEOSGeom_createLineString_r(handle.v, this.v)
 	if geom == nil {
 		return nil, CreateError("unable to create LineString")
@@ -107,7 +107,7 @@ func (this *CoordSeq) AsLineString(handle *GEOS) (*Geom, error) {
 	return &Geom{geom}, nil
 }
 
-func (this *CoordSeq) AsLinearRing(handle *GEOS) (*Geom, error) {
+func (this *CoordSeq) AsLinearRing(handle *Geos) (*Geom, error) {
 	ring := C.GEOSGeom_createLinearRing_r(handle.v, this.v)
 	if ring == nil {
 		return nil, CreateError("unable to create LinearRing")
@@ -115,7 +115,7 @@ func (this *CoordSeq) AsLinearRing(handle *GEOS) (*Geom, error) {
 	return &Geom{ring}, nil
 }
 
-func (this *GEOS) CreatePolygon(shell *Geom, holes []*Geom) *Geom {
+func (this *Geos) CreatePolygon(shell *Geom, holes []*Geom) *Geom {
 	if len(holes) > 0 {
 		panic("holes not implemented")
 	}
@@ -126,17 +126,17 @@ func (this *GEOS) CreatePolygon(shell *Geom, holes []*Geom) *Geom {
 	return &Geom{polygon}
 }
 
-func (this *GEOS) GeomFromWKT(wkt string) (geom *Geom) {
+func (this *Geos) FromWkt(wkt string) (geom *Geom) {
 	wktC := C.CString(wkt)
 	defer C.free(unsafe.Pointer(wktC))
 	return &Geom{C.GEOSGeomFromWKT_r(this.v, wktC)}
 }
 
-func (this *GEOS) Buffer(geom *Geom, size float64) *Geom {
+func (this *Geos) Buffer(geom *Geom, size float64) *Geom {
 	return &Geom{C.GEOSBuffer_r(this.v, geom.v, C.double(size), 50)}
 }
 
-func (this *GEOS) Contains(a, b *Geom) bool {
+func (this *Geos) Contains(a, b *Geom) bool {
 	result := C.GEOSContains_r(this.v, a.v, b.v)
 	if result == 1 {
 		return true
@@ -145,7 +145,7 @@ func (this *GEOS) Contains(a, b *Geom) bool {
 	return false
 }
 
-func (this *GEOS) ExteriorRing(geom *Geom) *Geom {
+func (this *Geos) ExteriorRing(geom *Geom) *Geom {
 	ring := C.GEOSGetExteriorRing_r(this.v, geom.v)
 	if ring == nil {
 		return nil
@@ -153,7 +153,7 @@ func (this *GEOS) ExteriorRing(geom *Geom) *Geom {
 	return &Geom{ring}
 }
 
-func (this *GEOS) Polygon(exterior *Geom, interiors []*Geom) *Geom {
+func (this *Geos) Polygon(exterior *Geom, interiors []*Geom) *Geom {
 	if len(interiors) == 0 {
 		geom := C.GEOSGeom_createPolygon_r(this.v, exterior.v, nil, C.uint(0))
 		if geom == nil {
@@ -183,7 +183,7 @@ func (this *GEOS) Polygon(exterior *Geom, interiors []*Geom) *Geom {
 	return &Geom{geom}
 }
 
-func (this *GEOS) MultiPolygon(polygons []*Geom) *Geom {
+func (this *Geos) MultiPolygon(polygons []*Geom) *Geom {
 	polygonPtr := make([]*C.GEOSGeometry, len(polygons))
 	for i, geom := range polygons {
 		polygonPtr[i] = geom.v
@@ -195,13 +195,13 @@ func (this *GEOS) MultiPolygon(polygons []*Geom) *Geom {
 	return &Geom{geom}
 }
 
-func (this *GEOS) AsWKT(geom *Geom) string {
+func (this *Geos) AsWkt(geom *Geom) string {
 	str := C.GEOSGeomToWKT_r(this.v, geom.v)
 	result := C.GoString(str)
 	C.free(unsafe.Pointer(str))
 	return result
 }
-func (this *GEOS) AsWKB(geom *Geom) []byte {
+func (this *Geos) AsWkb(geom *Geom) []byte {
 	var size C.size_t
 	buf := C.GEOSGeomToWKB_buf_r(this.v, geom.v, &size)
 	if buf == nil {
@@ -212,7 +212,7 @@ func (this *GEOS) AsWKB(geom *Geom) []byte {
 	return result
 }
 
-func (this *GEOS) FromWkb(wkb []byte) *Geom {
+func (this *Geos) FromWkb(wkb []byte) *Geom {
 	geom := C.GEOSGeomFromWKB_buf((*C.uchar)(&wkb[0]), C.size_t(len(wkb)))
 	if geom == nil {
 		return nil
@@ -220,7 +220,7 @@ func (this *GEOS) FromWkb(wkb []byte) *Geom {
 	return &Geom{geom}
 }
 
-func (this *GEOS) IsValid(geom *Geom) bool {
+func (this *Geos) IsValid(geom *Geom) bool {
 	if C.GEOSisValid_r(this.v, geom.v) == 1 {
 		return true
 	}
@@ -282,7 +282,7 @@ type Bounds struct {
 	MaxY float64
 }
 
-func (this *GEOS) Destroy(geom *Geom) {
+func (this *Geos) Destroy(geom *Geom) {
 	if geom.v != nil {
 		C.GEOSGeom_destroy_r(this.v, geom.v)
 		geom.v = nil
@@ -295,11 +295,11 @@ func destroyGeom(geom *Geom) {
 	C.GEOSGeom_destroy(geom.v)
 }
 
-func (this *GEOS) DestroyLater(geom *Geom) {
+func (this *Geos) DestroyLater(geom *Geom) {
 	runtime.SetFinalizer(geom, destroyGeom)
 }
 
-func (this *GEOS) DestroyCoordSeq(coordSeq *CoordSeq) {
+func (this *Geos) DestroyCoordSeq(coordSeq *CoordSeq) {
 	if coordSeq.v != nil {
 		C.GEOSCoordSeq_destroy_r(this.v, coordSeq.v)
 		coordSeq.v = nil

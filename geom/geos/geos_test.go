@@ -3,11 +3,11 @@ package geos
 import "testing"
 
 func TestFoo(t *testing.T) {
-	_ = NewGEOS()
+	_ = NewGeos()
 }
 
 func BenchmarkWKB(b *testing.B) {
-	g := NewGEOS()
+	g := NewGeos()
 	defer g.Finish()
 
 	for i := 0; i < b.N; i++ {
@@ -19,7 +19,7 @@ func BenchmarkWKB(b *testing.B) {
 		if g.IsValid(geom) == false {
 			b.Fail()
 		}
-		g.AsWKB(geom)
+		g.AsWkb(geom)
 		g.Destroy(geom)
 	}
 }

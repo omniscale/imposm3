@@ -33,7 +33,7 @@ func BuildRings(rel *element.Relation) ([]*Ring, error) {
 		rings = append(rings, NewRing(member.Way))
 	}
 
-	g := geos.NewGEOS()
+	g := geos.NewGeos()
 	defer g.Finish()
 
 	// create geometries for closed rings, collect incomplete rings
@@ -75,7 +75,7 @@ func (r SortableRingsDesc) Less(i, j int) bool { return r[i].area > r[j].area }
 func (r SortableRingsDesc) Swap(i, j int)      { r[i], r[j] = r[j], r[i] }
 
 func BuildRelGeometry(rel *element.Relation, rings []*Ring) (*geos.Geom, error) {
-	g := geos.NewGEOS()
+	g := geos.NewGeos()
 	defer g.Finish()
 
 	// sort by area (large to small)
@@ -162,7 +162,7 @@ func BuildRelGeometry(rel *element.Relation, rings []*Ring) (*geos.Geom, error) 
 	}
 
 	rel.Members = relMembers
-	wkb := g.AsWKB(result)
+	wkb := g.AsWkb(result)
 	if wkb == nil {
 		return nil, errors.New("unable to create WKB for relation")
 	}

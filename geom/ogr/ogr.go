@@ -138,7 +138,7 @@ func (layer *Layer) Geoms() chan *geos.Geom {
 
 	go func() {
 		defer close(geoms)
-		g := geos.NewGEOS()
+		g := geos.NewGeos()
 		defer g.Finish()
 
 		wkbs := layer.Wkbs()
@@ -161,10 +161,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	g := geos.NewGEOS()
+	g := geos.NewGeos()
 	defer g.Finish()
 	for geom := range layer.Geoms() {
-		fmt.Println(g.AsWKT(geom))
+		fmt.Println(g.AsWkt(geom))
 	}
 
 	fmt.Println(layer)
