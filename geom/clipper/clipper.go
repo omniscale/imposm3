@@ -104,7 +104,7 @@ func NewFromOgrSource(source string) (*Clipper, error) {
 	index := g.CreateIndex()
 
 	for geom := range layer.Geoms() {
-		parts, err := SplitPolygonAtGrid(g, geom, 10000, 10000*100)
+		parts, err := SplitPolygonAtGrid(g, geom, 20000, 20000*100)
 		if err != nil {
 			return nil, err
 		}
@@ -164,47 +164,19 @@ func (clipper *Clipper) clip(geom *geos.Geom) ([]*geos.Geom, error) {
 	var intersections []*geos.Geom
 
 	for _, hit := range hits {
-		if g.Contains(hit, geom) {
+		if g.PreparedContains(hit.Prepared, geom) {
 			return []*geos.Geom{geom}, nil
 		}
 
-		if g.Intersects(hit, geom) {
-			newPart := g.Intersection(hit, geom)
+		if g.PreparedIntersects(hit.Prepared, geom) {
+			newPart := g.Intersection(hit.Geom, geom)
 			newParts := filterGeometryByType(g, newPart, geomType)
 			for _, p := range newParts {
 				intersections = append(intersections, p)
 			}
 		}
 	}
-
 	return mergeGeometries(g, intersections, geomType), nil
-	// if not intersections:
-	//     raise EmtpyGeometryError('No intersection or empty geometry')
-
-	// # intersections from multiple sub-polygons
-	// # try to merge them back to a single geometry
-	// try:
-	//     if geom.type.endswith('Polygon'):
-	//         union = cascaded_union(list(flatten_polygons(intersections)))
-	//     elif geom.type.endswith('LineString'):
-	//         linestrings = flatten_linestrings(intersections)
-	//         linestrings = list(filter_invalid_linestrings(linestrings))
-	//         if not linestrings:
-	//             raise EmtpyGeometryError()
-	//         union = linemerge(linestrings)
-	//         if union.type == 'MultiLineString':
-	//             union = list(union.geoms)
-	//     elif geom.type == 'Point':
-	//         union = intersections[0]
-	//     else:
-	//         log.warn('unexpexted geometry type %s', geom.type)
-	//         raise EmtpyGeometryError()
-	// except ValueError, ex:
-	//     # likely an 'No Shapely geometry can be created from null value' error
-	//     log.warn('could not create union: %s', ex)
-	//     raise EmtpyGeometryError()
-	// return union
-
 }
 
 func flattenPolygons(g *geos.Geos, geoms []*geos.Geom) []*geos.Geom {

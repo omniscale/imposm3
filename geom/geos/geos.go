@@ -38,6 +38,10 @@ type Geom struct {
 	v *C.GEOSGeometry
 }
 
+type PreparedGeom struct {
+	v *C.GEOSPreparedGeometry
+}
+
 type CreateError string
 type Error string
 
@@ -170,6 +174,32 @@ func (this *Geos) Contains(a, b *Geom) bool {
 
 func (this *Geos) Intersects(a, b *Geom) bool {
 	result := C.GEOSIntersects_r(this.v, a.v, b.v)
+	if result == 1 {
+		return true
+	}
+	// result == 2 -> exception (already logged to console)
+	return false
+}
+
+func (this *Geos) Prepare(geom *Geom) *PreparedGeom {
+	prep := C.GEOSPrepare_r(this.v, geom.v)
+	if prep == nil {
+		return nil
+	}
+	return &PreparedGeom{prep}
+}
+
+func (this *Geos) PreparedContains(a *PreparedGeom, b *Geom) bool {
+	result := C.GEOSPreparedContains_r(this.v, a.v, b.v)
+	if result == 1 {
+		return true
+	}
+	// result == 2 -> exception (already logged to console)
+	return false
+}
+
+func (this *Geos) PreparedIntersects(a *PreparedGeom, b *Geom) bool {
+	result := C.GEOSPreparedIntersects_r(this.v, a.v, b.v)
 	if result == 1 {
 		return true
 	}
@@ -445,9 +475,13 @@ func (this *Geos) DestroyCoordSeq(coordSeq *CoordSeq) {
 	}
 }
 
+type indexGeom struct {
+	Geom     *Geom
+	Prepared *PreparedGeom
+}
 type Index struct {
 	v     *C.GEOSSTRtree
-	geoms []*Geom
+	geoms []indexGeom
 }
 
 func (this *Geos) CreateIndex() *Index {
@@ -455,18 +489,19 @@ func (this *Geos) CreateIndex() *Index {
 	if tree == nil {
 		panic("unable to create tree")
 	}
-	return &Index{tree, []*Geom{}}
+	return &Index{tree, []indexGeom{}}
 }
 
 // IndexQuery adds a geom to the index with the id.
 func (this *Geos) IndexAdd(index *Index, geom *Geom) {
 	id := len(index.geoms)
 	C.IndexAdd(this.v, index.v, geom.v, C.size_t(id))
-	index.geoms = append(index.geoms, geom)
+	prep := this.Prepare(geom)
+	index.geoms = append(index.geoms, indexGeom{geom, prep})
 }
 
 // IndexQuery queries the index for intersections with geom.
-func (this *Geos) IndexQuery(index *Index, geom *Geom) []*Geom {
+func (this *Geos) IndexQuery(index *Index, geom *Geom) []indexGeom {
 	hits := make(chan int)
 	go func() {
 		//
@@ -476,7 +511,7 @@ func (this *Geos) IndexQuery(index *Index, geom *Geom) []*Geom {
 		C.IndexQuery(this.v, index.v, geom.v, unsafe.Pointer(&hits))
 		close(hits)
 	}()
-	var geoms []*Geom
+	var geoms []indexGeom
 	for idx := range hits {
 		geoms = append(geoms, index.geoms[idx])
 	}

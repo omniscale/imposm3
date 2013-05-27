@@ -297,5 +297,24 @@ func TestClipper(t *testing.T) {
 	if geom.Area() <= result[0].Area() {
 		t.Fatalf("%f <= %f", geom.Area(), result[0].Area())
 	}
+}
 
+func BenchmarkClipper(b *testing.B) {
+	g := geos.NewGeos()
+	defer g.Finish()
+	clipper, err := NewFromOgrSource("./hamburg_clip.geojson")
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	geom := g.FromWkt("LINESTRING(1106543 7082055, 1107105.2 7087540.0)")
+	for i := 0; i < b.N; i++ {
+		result, err := clipper.clip(geom)
+		if err != nil {
+			b.Fatal(err)
+		}
+		if len(result) != 2 {
+			b.Fatal()
+		}
+	}
 }
