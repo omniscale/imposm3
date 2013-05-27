@@ -85,11 +85,38 @@ func (f *RelationTagFilter) Filter(tags *element.Tags) bool {
 			*tags = nil
 			return false
 		}
+		if t == "boundary" {
+			if _, ok := (*tags)["boundary"]; !ok {
+				// a lot of the boundary relations are not multipolygon
+				// only import with boundary tags (e.g. boundary=administrative)
+				*tags = nil
+				return false
+			}
+		}
 	} else {
 		*tags = nil
 		return false
 	}
+	tagCount := len(*tags)
 	f.TagFilter.Filter(tags)
+
+	// we removed tags...
+	if len(*tags) < tagCount {
+		expectedTags := 0
+		if _, ok := (*tags)["name"]; ok {
+			expectedTags += 1
+		}
+		if _, ok := (*tags)["type"]; ok {
+			expectedTags += 1
+		}
+		if len(*tags) == expectedTags {
+			// but no tags except name and type are left
+			// remove all, otherwise tags from longest
+			// way/ring would be used during MP building
+			*tags = nil
+			return false
+		}
+	}
 	// always return true here since we found a matching type
 	return true
 }

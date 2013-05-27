@@ -175,7 +175,7 @@ func TestTagFilterRelations(t *testing.T) {
 		t.Fatal("unexpected filter response for", tags)
 	}
 	stringMapEquals(t, element.Tags{}, tags)
-	
+
 	tags = element.Tags{"name": "foo", "unknown": "baz"}
 	if relations.Filter(&tags) != false {
 		t.Fatal("unexpected filter response for", tags)
@@ -200,8 +200,8 @@ func TestTagFilterRelations(t *testing.T) {
 	}
 	stringMapEquals(t, element.Tags{"name": "foo", "landuse": "farm", "type": "multipolygon"}, tags)
 
-	/* skip multipolygon with filtered tags, otherwise tags from 
-	longest way would be used */
+	// skip multipolygon with filtered tags, otherwise tags from
+	// longest way would be used
 	tags = element.Tags{"name": "foo", "landuse": "unknown", "type": "multipolygon"}
 	if relations.Filter(&tags) != false {
 		t.Fatal("unexpected filter response for", tags)
@@ -281,16 +281,16 @@ func TestLineStringMatcher(t *testing.T) {
 	matchesEqual(t, []Match{}, ls.Match(&tags))
 
 	tags = element.Tags{"highway": "track"}
-	matchesEqual(t, []Match{{"highway", "track", "minorroads", nil}}, ls.Match(&tags))
+	matchesEqual(t, []Match{{"highway", "track", "roads", nil}}, ls.Match(&tags))
 
 	tags = element.Tags{"highway": "secondary", "railway": "tram"}
-	matchesEqual(t, []Match{{"highway", "secondary", "mainroads", nil}, {"railway", "tram", "railways", nil}}, ls.Match(&tags))
+	matchesEqual(t, []Match{{"highway", "secondary", "roads", nil}, {"railway", "tram", "roads", nil}}, ls.Match(&tags))
 
 	tags = element.Tags{"highway": "footway"}
-	matchesEqual(t, []Match{{"highway", "footway", "minorroads", nil}, {"highway", "footway", "landusages", nil}}, ls.Match(&tags))
+	matchesEqual(t, []Match{{"highway", "footway", "roads", nil}, {"highway", "footway", "landusages", nil}}, ls.Match(&tags))
 
 	tags = element.Tags{"highway": "footway", "landuse": "park"}
-	matchesEqual(t, []Match{{"highway", "footway", "minorroads", nil}, {"landuse", "park", "landusages", nil}}, ls.Match(&tags))
+	matchesEqual(t, []Match{{"highway", "footway", "roads", nil}, {"landuse", "park", "landusages", nil}}, ls.Match(&tags))
 }
 
 func TestPolygonMatcher(t *testing.T) {
@@ -310,7 +310,7 @@ func TestPolygonMatcher(t *testing.T) {
 	matchesEqual(t, []Match{{"landuse", "farm", "landusages", nil}}, polys.Match(&tags))
 
 	tags = element.Tags{"landuse": "farm", "aeroway": "apron"}
-	matchesEqual(t, []Match{{"aeroway", "apron", "transport_areas", nil},{"landuse", "farm", "landusages", nil}}, polys.Match(&tags))
+	matchesEqual(t, []Match{{"aeroway", "apron", "transport_areas", nil}, {"landuse", "farm", "landusages", nil}}, polys.Match(&tags))
 
 	tags = element.Tags{"boundary": "administrative", "admin_level": "8"}
 	matchesEqual(t, []Match{{"boundary", "administrative", "admin", nil}}, polys.Match(&tags))

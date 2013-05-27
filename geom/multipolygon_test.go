@@ -3,8 +3,8 @@ package geom
 import (
 	"goposm/element"
 	"goposm/geom/geos"
-	"testing"
 	"math"
+	"testing"
 )
 
 type coord struct {
@@ -64,13 +64,13 @@ func TestSimplePolygonWithHole(t *testing.T) {
 	}
 
 	BuildRelation(&rel)
-	g := geos.NewGEOS()
+	g := geos.NewGeos()
 	defer g.Finish()
 
 	if len(rel.Members) != 2 {
 		t.Fatal("wrong rel members", rel.Members)
 	}
-	if rel.Members[0].Id != 1 || rel.Members[0].ID != 2 {
+	if rel.Members[0].Id != 1 || rel.Members[0].Id != 2 {
 		t.Fatal("wrong rel members", rel.Members)
 	}
 
@@ -79,7 +79,7 @@ func TestSimplePolygonWithHole(t *testing.T) {
 	}
 
 	if !g.IsValid(rel.Geom.Geom) {
-		t.Fatal("geometry not valid", g.AsWKT(rel.Geom.Geom))
+		t.Fatal("geometry not valid", g.AsWkt(rel.Geom.Geom))
 	}
 
 	if area := rel.Geom.Geom.Area(); area != 100-36 {
@@ -111,7 +111,7 @@ func TestMultiPolygonWithHoleAndRelName(t *testing.T) {
 	}
 
 	BuildRelation(&rel)
-	g := geos.NewGEOS()
+	g := geos.NewGeos()
 	defer g.Finish()
 
 	if len(rel.Members) != 1 {
@@ -347,7 +347,7 @@ func TestTouchingPolygonsWithHole(t *testing.T) {
 		{3, element.WAY, "inner", &w3},
 	}
 	BuildRelation(&rel)
-	g := geos.NewGEOS()
+	g := geos.NewGeos()
 	defer g.Finish()
 
 	if len(rel.Members) != 2 {
@@ -367,7 +367,7 @@ func TestTouchingPolygonsWithHole(t *testing.T) {
 	}
 
 	if !g.IsValid(rel.Geom.Geom) {
-		t.Fatal("geometry not valid", g.AsWKT(rel.Geom.Geom))
+		t.Fatal("geometry not valid", g.AsWkt(rel.Geom.Geom))
 	}
 
 	if area := rel.Geom.Geom.Area(); area != 100+200-36 {
@@ -394,7 +394,7 @@ func TestInsertedWaysDifferentTags(t *testing.T) {
 	}
 
 	BuildRelation(&rel)
-	g := geos.NewGEOS()
+	g := geos.NewGeos()
 	defer g.Finish()
 
 	if len(rel.Members) != 1 {
@@ -414,7 +414,7 @@ func TestInsertedWaysDifferentTags(t *testing.T) {
 	}
 
 	if !g.IsValid(rel.Geom.Geom) {
-		t.Fatal("geometry not valid", g.AsWKT(rel.Geom.Geom))
+		t.Fatal("geometry not valid", g.AsWkt(rel.Geom.Geom))
 	}
 
 	if area := rel.Geom.Geom.Area(); area != 100 {
@@ -423,7 +423,7 @@ func TestInsertedWaysDifferentTags(t *testing.T) {
 }
 
 func TestInsertMultipleTags(t *testing.T) {
-	w1 := makeWay(1, element.Tags{"landusage": "forest", "highway", "secondary"}, []coord{
+	w1 := makeWay(1, element.Tags{"landusage": "forest", "highway": "secondary"}, []coord{
 		{1, 0, 0},
 		{2, 10, 0},
 		{3, 10, 10},
@@ -441,7 +441,7 @@ func TestInsertMultipleTags(t *testing.T) {
 	}
 
 	BuildRelation(&rel)
-	g := geos.NewGEOS()
+	g := geos.NewGeos()
 	defer g.Finish()
 
 	if len(rel.Members) != 0 {
@@ -457,7 +457,7 @@ func TestInsertMultipleTags(t *testing.T) {
 	}
 
 	if !g.IsValid(rel.Geom.Geom) {
-		t.Fatal("geometry not valid", g.AsWKT(rel.Geom.Geom))
+		t.Fatal("geometry not valid", g.AsWkt(rel.Geom.Geom))
 	}
 
 	if area := rel.Geom.Geom.Area(); area != 100 {
@@ -467,8 +467,8 @@ func TestInsertMultipleTags(t *testing.T) {
 
 func TestBrokenPolygonSelfIntersect(t *testing.T) {
 	//  2##3    6##7
-    //  #  #    ####
-    //  1##4____5##8
+	//  #  #    ####
+	//  1##4____5##8
 	w1 := makeWay(1, element.Tags{}, []coord{
 		{1, 0, 0},
 		{2, 0, 10},
@@ -478,7 +478,7 @@ func TestBrokenPolygonSelfIntersect(t *testing.T) {
 		{6, 20, 10},
 		{7, 30, 10},
 		{8, 30, 0},
-		{1, 0, 0}
+		{1, 0, 0},
 	})
 	w2 := makeWay(2, element.Tags{}, []coord{
 		{15, 2, 2},
@@ -494,29 +494,29 @@ func TestBrokenPolygonSelfIntersect(t *testing.T) {
 		{2, element.WAY, "inner", &w2},
 	}
 
-	BuildRelation(&rel)
-	g := geos.NewGEOS()
+	BuildRelation(&rel1)
+	g := geos.NewGeos()
 	defer g.Finish()
 
 	if len(rel1.Members) != 2 {
-		t.Fatal("wrong rel members", rel.Members)
+		t.Fatal("wrong rel members", rel1.Members)
 	}
 
 	if len(rel1.Tags) != 0 {
-		t.Fatal("wrong rel tags", rel.Tags)
+		t.Fatal("wrong rel tags", rel1.Tags)
 	}
 
 	if !g.IsValid(rel1.Geom.Geom) {
-		t.Fatal("geometry not valid", g.AsWKT(rel.Geom.Geom))
+		t.Fatal("geometry not valid", g.AsWkt(rel1.Geom.Geom))
 	}
 
-	if area := rel1.Geom.Geom.Area(); area != 200 - 36 {
+	if area := rel1.Geom.Geom.Area(); area != 200-36 {
 		t.Fatal("area invalid", area)
 	}
 
 	//  2##3    6##7
-    //  #  #    ####
-    //  1##4____5##8
+	//  #  #    ####
+	//  1##4____5##8
 	w3 := makeWay(1, element.Tags{}, []coord{
 		{4, 10, 0},
 		{1, 0, 0},
@@ -536,23 +536,23 @@ func TestBrokenPolygonSelfIntersect(t *testing.T) {
 		{2, element.WAY, "inner", &w2},
 	}
 
-	BuildRelation(&rel)
-	g := geos.NewGEOS()
+	BuildRelation(&rel2)
+	g = geos.NewGeos()
 	defer g.Finish()
 
 	if len(rel2.Members) != 2 {
-		t.Fatal("wrong rel members", rel.Members)
+		t.Fatal("wrong rel members", rel2.Members)
 	}
 
 	if len(rel2.Tags) != 0 {
-		t.Fatal("wrong rel tags", rel.Tags)
+		t.Fatal("wrong rel tags", rel2.Tags)
 	}
 
 	if !g.IsValid(rel2.Geom.Geom) {
-		t.Fatal("geometry not valid", g.AsWKT(rel.Geom.Geom))
+		t.Fatal("geometry not valid", g.AsWkt(rel2.Geom.Geom))
 	}
 
-	if area := rel2.Geom.Geom.Area(); area != 200 - 36 {
+	if area := rel2.Geom.Geom.Area(); area != 200-36 {
 		t.Fatal("area invalid", area)
 	}
 }
@@ -569,7 +569,7 @@ func TestBrokenPolygonSelfIntersectTriangle(t *testing.T) {
 		{2, 0, 100},
 		{3, 100, 50 - 0.00001},
 		{4, 100, 50 + 0.00001},
-		{1, 0, 0}
+		{1, 0, 0},
 	})
 	w2 := makeWay(2, element.Tags{}, []coord{
 		{15, 10, 45},
@@ -586,16 +586,16 @@ func TestBrokenPolygonSelfIntersectTriangle(t *testing.T) {
 	}
 
 	BuildRelation(&rel)
-	g := geos.NewGEOS()
+	g := geos.NewGeos()
 	defer g.Finish()
 
 	if !g.IsValid(rel.Geom.Geom) {
-		t.Fatal("geometry not valid", g.AsWKT(rel.Geom.Geom))
+		t.Fatal("geometry not valid", g.AsWkt(rel.Geom.Geom))
 	}
 
-	area := rel.Geom.Geom.Area();
+	area := rel.Geom.Geom.Area()
 	// as for python assertAlmostEqual(a, b)	round(a-b, 7) == 0
-	if Round((area - (100 * 100 / 2 - 100), 0) != 2 {
+	if Round((area-(100*100/2-100)), 0) != 2 {
 		t.Fatal("area invalid", area)
 	}
 
@@ -605,7 +605,7 @@ func TestBrokenPolygonSelfIntersectTriangle(t *testing.T) {
 		{2, 0, 100},
 		{3, 100, 50 - 1},
 		{4, 100, 50 + 1},
-		{1, 0, 0}
+		{1, 0, 0},
 	})
 	w4 := makeWay(2, element.Tags{}, []coord{
 		{15, 10, 45},
@@ -615,7 +615,7 @@ func TestBrokenPolygonSelfIntersectTriangle(t *testing.T) {
 		{15, 10, 45},
 	})
 
-	rel := element.Relation{OSMElem: element.OSMElem{Id: 1}}
+	rel = element.Relation{OSMElem: element.OSMElem{Id: 1}}
 	rel.Members = []element.Member{
 		{1, element.WAY, "outer", &w3},
 		{2, element.WAY, "inner", &w4},
@@ -623,13 +623,13 @@ func TestBrokenPolygonSelfIntersectTriangle(t *testing.T) {
 
 	BuildRelation(&rel)
 
-	f !g.IsValid(rel.Geom.Geom) {
-		t.Fatal("geometry not valid", g.AsWKT(rel.Geom.Geom))
+	if !g.IsValid(rel.Geom.Geom) {
+		t.Fatal("geometry not valid", g.AsWkt(rel.Geom.Geom))
 	}
 
-	area := rel.Geom.Geom.Area();
+	area = rel.Geom.Geom.Area()
 	// as for python assertAlmostEqual(a, b)	round(a-b, 7) == 0
-	if Round((area - (100 * 100 / 2 - 100), 0) != -3 {
+	if Round((area-(100*100/2-100)), 0) != -3 {
 		t.Fatal("area invalid", area)
 	}
 }
