@@ -141,6 +141,24 @@ func (this *Geos) Buffer(geom *Geom, size float64) *Geom {
 	return &Geom{C.GEOSBuffer_r(this.v, geom.v, C.double(size), 50)}
 }
 
+func (this *Geos) NumGeoms(geom *Geom) int32 {
+	count := int32(C.GEOSGetNumGeometries_r(this.v, geom.v))
+	return count
+}
+
+func (this *Geos) Geoms(geom *Geom) []*Geom {
+	count := this.NumGeoms(geom)
+	var result []*Geom
+	for i := 0; int32(i) < count; i++ {
+		part := C.GEOSGetGeometryN_r(this.v, geom.v, C.int(i))
+		if part == nil {
+			return nil
+		}
+		result = append(result, &Geom{part})
+	}
+	return result
+}
+
 func (this *Geos) Contains(a, b *Geom) bool {
 	result := C.GEOSContains_r(this.v, a.v, b.v)
 	if result == 1 {
@@ -150,12 +168,88 @@ func (this *Geos) Contains(a, b *Geom) bool {
 	return false
 }
 
+func (this *Geos) Intersects(a, b *Geom) bool {
+	result := C.GEOSIntersects_r(this.v, a.v, b.v)
+	if result == 1 {
+		return true
+	}
+	// result == 2 -> exception (already logged to console)
+	return false
+}
+
+func (this *Geos) Intersection(a, b *Geom) *Geom {
+	result := C.GEOSIntersection_r(this.v, a.v, b.v)
+	if result == nil {
+		return nil
+	}
+	geom := &Geom{result}
+	this.DestroyLater(geom)
+	return geom
+}
+
+func (this *Geos) UnionPolygons(polygons []*Geom) *Geom {
+	multiPolygon := this.MultiPolygon(polygons)
+	result := C.GEOSUnaryUnion_r(this.v, multiPolygon.v)
+	if result == nil {
+		return nil
+	}
+	return &Geom{result}
+}
+
+func (this *Geos) LineMerge(lines []*Geom) []*Geom {
+	multiLineString := this.MultiLineString(lines)
+	result := C.GEOSLineMerge_r(this.v, multiLineString.v)
+	if result == nil {
+		return nil
+	}
+	geom := &Geom{result}
+	if this.Type(geom) == "LineString" {
+		return []*Geom{geom}
+	}
+	return this.Geoms(geom)
+}
+
 func (this *Geos) ExteriorRing(geom *Geom) *Geom {
 	ring := C.GEOSGetExteriorRing_r(this.v, geom.v)
 	if ring == nil {
 		return nil
 	}
 	return &Geom{ring}
+}
+
+func (this *Geos) BoundsPolygon(bounds Bounds) *Geom {
+	coordSeq, err := this.CreateCoordSeq(5, 2)
+	if err != nil {
+		return nil
+	}
+	// coordSeq inherited by LineString, no destroy
+
+	if err := coordSeq.SetXY(this, 0, bounds.MinX, bounds.MinY); err != nil {
+		return nil
+	}
+	if err := coordSeq.SetXY(this, 1, bounds.MaxX, bounds.MinY); err != nil {
+		return nil
+	}
+	if err := coordSeq.SetXY(this, 2, bounds.MaxX, bounds.MaxY); err != nil {
+		return nil
+	}
+	if err := coordSeq.SetXY(this, 3, bounds.MinX, bounds.MaxY); err != nil {
+		return nil
+	}
+	if err := coordSeq.SetXY(this, 4, bounds.MinX, bounds.MinY); err != nil {
+		return nil
+	}
+
+	geom, err := coordSeq.AsLinearRing(this)
+	if err != nil {
+		return nil
+	}
+	// geom inherited by Polygon, no destroy
+
+	geom = this.CreatePolygon(geom, nil)
+	this.DestroyLater(geom)
+	return geom
+
 }
 
 func (this *Geos) Polygon(exterior *Geom, interiors []*Geom) *Geom {
@@ -199,6 +293,17 @@ func (this *Geos) MultiPolygon(polygons []*Geom) *Geom {
 	}
 	return &Geom{geom}
 }
+func (this *Geos) MultiLineString(lines []*Geom) *Geom {
+	linePtr := make([]*C.GEOSGeometry, len(lines))
+	for i, geom := range lines {
+		linePtr[i] = geom.v
+	}
+	geom := C.GEOSGeom_createCollection_r(this.v, C.GEOS_MULTILINESTRING, &linePtr[0], C.uint(len(lines)))
+	if geom == nil {
+		return nil
+	}
+	return &Geom{geom}
+}
 
 func (this *Geos) AsWkt(geom *Geom) string {
 	str := C.GEOSGeomToWKT_r(this.v, geom.v)
@@ -232,6 +337,22 @@ func (this *Geos) IsValid(geom *Geom) bool {
 	return false
 }
 
+func (this *Geos) IsEmpty(geom *Geom) bool {
+	if C.GEOSisEmpty_r(this.v, geom.v) == 1 {
+		return true
+	}
+	return false
+}
+
+func (this *Geos) Type(geom *Geom) string {
+	geomType := C.GEOSGeomType_r(this.v, geom.v)
+	if geomType == nil {
+		return "Unknown"
+	}
+	defer C.free(unsafe.Pointer(geomType))
+	return C.GoString(geomType)
+}
+
 func (this *Geom) Area() float64 {
 	var area C.double
 	if ret := C.GEOSArea(this.v, &area); ret == 1 {
@@ -241,14 +362,25 @@ func (this *Geom) Area() float64 {
 	}
 }
 
-func (this *Geom) Bounds() *Bounds {
+func (this *Geom) Length() float64 {
+	var length C.double
+	if ret := C.GEOSLength(this.v, &length); ret == 1 {
+		return float64(length)
+	} else {
+		return 0
+	}
+}
+
+var NilBounds = Bounds{1e20, 1e20, -1e20, -1e20}
+
+func (this *Geom) Bounds() Bounds {
 	geom := C.GEOSEnvelope(this.v)
 	if geom == nil {
-		return nil
+		return NilBounds
 	}
 	extRing := C.GEOSGetExteriorRing(geom)
 	if extRing == nil {
-		return nil
+		return NilBounds
 	}
 	cs := C.GEOSGeom_getCoordSeq(extRing)
 	var csLen C.uint
@@ -277,7 +409,7 @@ func (this *Geom) Bounds() *Bounds {
 		}
 	}
 
-	return &Bounds{minx, miny, maxx, maxy}
+	return Bounds{minx, miny, maxx, maxy}
 }
 
 type Bounds struct {
@@ -314,7 +446,8 @@ func (this *Geos) DestroyCoordSeq(coordSeq *CoordSeq) {
 }
 
 type Index struct {
-	v *C.GEOSSTRtree
+	v     *C.GEOSSTRtree
+	geoms []*Geom
 }
 
 func (this *Geos) CreateIndex() *Index {
@@ -322,17 +455,18 @@ func (this *Geos) CreateIndex() *Index {
 	if tree == nil {
 		panic("unable to create tree")
 	}
-	return &Index{tree}
+	return &Index{tree, []*Geom{}}
 }
 
 // IndexQuery adds a geom to the index with the id.
-func (this *Geos) IndexAdd(index *Index, id int, geom *Geom) {
+func (this *Geos) IndexAdd(index *Index, geom *Geom) {
+	id := len(index.geoms)
 	C.IndexAdd(this.v, index.v, geom.v, C.size_t(id))
+	index.geoms = append(index.geoms, geom)
 }
 
-// IndexQuery queries the index for intersections with geom and
-// returns a channel with ids of each intersected geometries.
-func (this *Geos) IndexQuery(index *Index, geom *Geom) <-chan int {
+// IndexQuery queries the index for intersections with geom.
+func (this *Geos) IndexQuery(index *Index, geom *Geom) []*Geom {
 	hits := make(chan int)
 	go func() {
 		//
@@ -342,7 +476,11 @@ func (this *Geos) IndexQuery(index *Index, geom *Geom) <-chan int {
 		C.IndexQuery(this.v, index.v, geom.v, unsafe.Pointer(&hits))
 		close(hits)
 	}()
-	return hits
+	var geoms []*Geom
+	for idx := range hits {
+		geoms = append(geoms, index.geoms[idx])
+	}
+	return geoms
 }
 
 //export goIndexSendQueryResult
