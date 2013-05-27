@@ -65,7 +65,7 @@ func (nw *NodeWriter) loop() {
 			}
 			for _, match := range matches {
 				row := match.Row(&n.OSMElem)
-				nw.insertBuffer.Insert(match.Table, row)
+				nw.insertBuffer.Insert(match.Table.Name, row)
 			}
 
 		}

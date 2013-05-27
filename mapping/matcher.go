@@ -34,7 +34,7 @@ type TagMatcher struct {
 type Match struct {
 	Key         string
 	Value       string
-	Table       string
+	Table       DestTable
 	tableFields *TableFields
 }
 
@@ -43,19 +43,19 @@ func (m *Match) Row(elem *element.OSMElem) []interface{} {
 }
 
 func (tagMatcher *TagMatcher) Match(tags *element.Tags) []Match {
-	tables := make(map[string]Match)
+	tables := make(map[DestTable]Match)
 
 	for k, v := range *tags {
 		values, ok := tagMatcher.mappings[k]
 		if ok {
 			if tbls, ok := values["__any__"]; ok {
 				for _, t := range tbls {
-					tables[t] = Match{k, v, t, tagMatcher.tables[t]}
+					tables[t] = Match{k, v, t, tagMatcher.tables[t.Name]}
 				}
 				continue
 			} else if tbls, ok := values[v]; ok {
 				for _, t := range tbls {
-					tables[t] = Match{k, v, t, tagMatcher.tables[t]}
+					tables[t] = Match{k, v, t, tagMatcher.tables[t.Name]}
 				}
 				continue
 			}
@@ -63,7 +63,7 @@ func (tagMatcher *TagMatcher) Match(tags *element.Tags) []Match {
 	}
 	var matches []Match
 	for t, match := range tables {
-		filters, ok := tagMatcher.filters[t]
+		filters, ok := tagMatcher.filters[t.Name]
 		filteredOut := false
 		if ok {
 			for _, filter := range filters {

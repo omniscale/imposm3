@@ -82,7 +82,7 @@ func (rw *RelationWriter) loop() {
 		if matches := rw.tagMatcher.Match(&r.Tags); len(matches) > 0 {
 			for _, match := range matches {
 				row := match.Row(&r.OSMElem)
-				rw.insertBuffer.Insert(match.Table, row)
+				rw.insertBuffer.Insert(match.Table.Name, row)
 			}
 			err := rw.osmCache.InsertedWays.PutMembers(r.Members)
 			if err != nil {

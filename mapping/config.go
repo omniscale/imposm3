@@ -14,11 +14,16 @@ type Field struct {
 }
 
 type Table struct {
-	Name    string
-	Type    string              `json:"type"`
-	Mapping map[string][]string `json:"mapping"`
-	Fields  []*Field            `json:"fields"`
-	Filters *Filters            `json:"filters"`
+	Name     string
+	Type     string                `json:"type"`
+	Mapping  map[string][]string   `json:"mapping"`
+	Mappings map[string]SubMapping `json:"mappings"`
+	Fields   []*Field              `json:"fields"`
+	Filters  *Filters              `json:"filters"`
+}
+
+type SubMapping struct {
+	Mapping map[string][]string
 }
 
 type GeneralizedTable struct {
@@ -29,7 +34,7 @@ type GeneralizedTable struct {
 }
 
 type Filters struct {
-	ExcludeTags *map[string]string `json:"exclude_tags"`
+	ExcludeTags *[][2]string `json:"exclude_tags"`
 }
 
 type Tables map[string]*Table
@@ -43,7 +48,12 @@ type Mapping struct {
 
 type ElementFilter func(tags *element.Tags) bool
 
-type TagTables map[string]map[string][]string
+type TagTables map[string]map[string][]DestTable
+
+type DestTable struct {
+	Name       string
+	SubMapping string
+}
 
 func NewMapping(filename string) (*Mapping, error) {
 	f, err := os.Open(filename)
@@ -81,21 +91,30 @@ func (m *Mapping) prepare() {
 	}
 }
 
+func (tt TagTables) addFromMapping(mapping map[string][]string, table DestTable) {
+	for key, vals := range mapping {
+		for _, v := range vals {
+			vals, ok := tt[key]
+			if ok {
+				vals[v] = append(vals[v], table)
+			} else {
+				tt[key] = make(map[string][]DestTable)
+				tt[key][v] = append(tt[key][v], table)
+			}
+		}
+	}
+
+}
+
 func (m *Mapping) mappings(tableType string, mappings TagTables) {
 	for name, t := range m.Tables {
 		if t.Type != tableType {
 			continue
 		}
-		for key, vals := range t.Mapping {
-			for _, v := range vals {
-				vals, ok := mappings[key]
-				if ok {
-					vals[v] = append(vals[v], name)
-				} else {
-					mappings[key] = make(map[string][]string)
-					mappings[key][v] = append(mappings[key][v], name)
-				}
-			}
+		mappings.addFromMapping(t.Mapping, DestTable{name, ""})
+
+		for subMappingName, subMapping := range t.Mappings {
+			mappings.addFromMapping(subMapping.Mapping, DestTable{name, subMappingName})
 		}
 	}
 }
@@ -119,8 +138,8 @@ func (m *Mapping) extraTags(tableType string, tags map[string]bool) {
 			tags[key] = true
 		}
 		if t.Filters != nil && t.Filters.ExcludeTags != nil {
-			for key, _ := range *t.Filters.ExcludeTags {
-				tags[key] = true
+			for _, keyVal := range *t.Filters.ExcludeTags {
+				tags[keyVal[0]] = true
 			}
 		}
 	}
@@ -133,10 +152,10 @@ func (m *Mapping) ElementFilters() map[string][]ElementFilter {
 			continue
 		}
 		if t.Filters.ExcludeTags != nil {
-			for filterKey, filterVal := range *t.Filters.ExcludeTags {
+			for _, filterKeyVal := range *t.Filters.ExcludeTags {
 				f := func(tags *element.Tags) bool {
-					if v, ok := (*tags)[filterKey]; ok {
-						if filterVal == "__any__" || v == filterVal {
+					if v, ok := (*tags)[filterKeyVal[0]]; ok {
+						if filterKeyVal[1] == "__any__" || v == filterKeyVal[1] {
 							return false
 						}
 					}

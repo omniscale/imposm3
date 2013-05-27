@@ -726,47 +726,60 @@
                 }
             ],
             "type": "linestring",
-            "mapping": {
-                "railway": [
-                    "rail",
-                    "tram",
-                    "light_rail",
-                    "subway",
-                    "narrow_gauge",
-                    "preserved",
-                    "funicular",
-                    "monorail",
-                    "disused"
-                ],
-                "man_made": [
-                    "pier",
-                    "groyne"
-                ],
-                "highway": [
-                    "motorway",
-                    "motorway_link",
-                    "trunk",
-                    "trunk_link",
-                    "primary",
-                    "primary_link",
-                    "secondary",
-                    "secondary_link",
-                    "tertiary",
-                    "tertiary_link",
-                    "road",
-                    "path",
-                    "track",
-                    "service",
-                    "footway",
-                    "bridleway",
-                    "cycleway",
-                    "steps",
-                    "pedestrian",
-                    "living_street",
-                    "unclassified",
-                    "residential",
-                    "raceway"
+            "filters": {
+                "exclude_tags": [
+                    ["area", "yes"]
                 ]
+            },
+            "mappings": {
+                "railway": {
+                    "mapping": {
+                        "railway": [
+                            "rail",
+                            "tram",
+                            "light_rail",
+                            "subway",
+                            "narrow_gauge",
+                            "preserved",
+                            "funicular",
+                            "monorail",
+                            "disused"
+                        ]
+                    }
+                },
+                "roads": {
+                    "mapping": {
+                        "man_made": [
+                            "pier",
+                            "groyne"
+                        ],
+                        "highway": [
+                            "motorway",
+                            "motorway_link",
+                            "trunk",
+                            "trunk_link",
+                            "primary",
+                            "primary_link",
+                            "secondary",
+                            "secondary_link",
+                            "tertiary",
+                            "tertiary_link",
+                            "road",
+                            "path",
+                            "track",
+                            "service",
+                            "footway",
+                            "bridleway",
+                            "cycleway",
+                            "steps",
+                            "pedestrian",
+                            "living_street",
+                            "unclassified",
+                            "residential",
+                            "raceway"
+                        ]
+                    }
+                }
             }
         },
         "housenumbers": {

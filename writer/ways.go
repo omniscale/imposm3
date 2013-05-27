@@ -81,7 +81,7 @@ func (ww *WayWriter) loop() {
 			}
 			for _, match := range matches {
 				row := match.Row(&way.OSMElem)
-				ww.insertBuffer.Insert(match.Table, row)
+				ww.insertBuffer.Insert(match.Table.Name, row)
 			}
 
 		}
@@ -100,7 +100,7 @@ func (ww *WayWriter) loop() {
 				}
 				for _, match := range matches {
 					row := match.Row(&way.OSMElem)
-					ww.insertBuffer.Insert(match.Table, row)
+					ww.insertBuffer.Insert(match.Table.Name, row)
 				}
 			}
 		}

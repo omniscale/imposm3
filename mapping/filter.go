@@ -5,7 +5,7 @@ import (
 )
 
 func (m *Mapping) NodeTagFilter() *TagFilter {
-	mappings := make(map[string]map[string][]string)
+	mappings := make(map[string]map[string][]DestTable)
 	m.mappings("point", mappings)
 	tags := make(map[string]bool)
 	m.extraTags("point", tags)
@@ -13,7 +13,7 @@ func (m *Mapping) NodeTagFilter() *TagFilter {
 }
 
 func (m *Mapping) WayTagFilter() *TagFilter {
-	mappings := make(map[string]map[string][]string)
+	mappings := make(map[string]map[string][]DestTable)
 	m.mappings("linestring", mappings)
 	m.mappings("polygon", mappings)
 	tags := make(map[string]bool)
@@ -23,23 +23,23 @@ func (m *Mapping) WayTagFilter() *TagFilter {
 }
 
 func (m *Mapping) RelationTagFilter() *RelationTagFilter {
-	mappings := make(map[string]map[string][]string)
+	mappings := make(map[string]map[string][]DestTable)
 	m.mappings("linestring", mappings)
 	m.mappings("polygon", mappings)
 	tags := make(map[string]bool)
 	m.extraTags("linestring", tags)
 	m.extraTags("polygon", tags)
 	// do not filter out type tag
-	mappings["type"] = map[string][]string{
-		"multipolygon": []string{},
-		"boundary":     []string{},
-		"land_area":    []string{},
+	mappings["type"] = map[string][]DestTable{
+		"multipolygon": []DestTable{},
+		"boundary":     []DestTable{},
+		"land_area":    []DestTable{},
 	}
 	return &RelationTagFilter{TagFilter{mappings, tags}}
 }
 
 type TagFilter struct {
-	mappings  map[string]map[string][]string
+	mappings  map[string]map[string][]DestTable
 	extraTags map[string]bool
 }
 
