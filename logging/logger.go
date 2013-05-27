@@ -89,6 +89,7 @@ func (l *LogBroker) loop() {
 	l.wg.Add(1)
 	newline := true
 	lastProgress := ""
+For:
 	for {
 		select {
 		case record := <-l.Records:
@@ -106,7 +107,7 @@ func (l *LogBroker) loop() {
 			lastProgress = progress
 			newline = false
 		case <-l.quit:
-			break
+			break For
 		}
 	}
 	l.wg.Done()
