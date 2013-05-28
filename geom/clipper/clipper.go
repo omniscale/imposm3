@@ -150,7 +150,7 @@ func filterGeometryByType(g *geos.Geos, geom *geos.Geom, targetType string) []*g
 	return []*geos.Geom{}
 }
 
-func (clipper *Clipper) clip(geom *geos.Geom) ([]*geos.Geom, error) {
+func (clipper *Clipper) Clip(geom *geos.Geom) ([]*geos.Geom, error) {
 	g := geos.NewGeos()
 	defer g.Finish()
 
@@ -164,16 +164,21 @@ func (clipper *Clipper) clip(geom *geos.Geom) ([]*geos.Geom, error) {
 	var intersections []*geos.Geom
 
 	for _, hit := range hits {
+		hit.Lock.Lock()
 		if g.PreparedContains(hit.Prepared, geom) {
+			hit.Lock.Unlock()
 			return []*geos.Geom{geom}, nil
 		}
 
 		if g.PreparedIntersects(hit.Prepared, geom) {
+			hit.Lock.Unlock()
 			newPart := g.Intersection(hit.Geom, geom)
 			newParts := filterGeometryByType(g, newPart, geomType)
 			for _, p := range newParts {
 				intersections = append(intersections, p)
 			}
+		} else {
+			hit.Lock.Unlock()
 		}
 	}
 	return mergeGeometries(g, intersections, geomType), nil
@@ -220,6 +225,9 @@ func mergeGeometries(g *geos.Geos, geoms []*geos.Geom, geomType string) []*geos.
 	if strings.HasSuffix(geomType, "Polygon") {
 		polygons := flattenPolygons(g, geoms)
 		polygon := g.UnionPolygons(polygons)
+		if polygon == nil {
+			return nil
+		}
 		return []*geos.Geom{polygon}
 	} else if strings.HasSuffix(geomType, "LineString") {
 		linestrings := flattenLineStrings(g, geoms)
@@ -230,7 +238,10 @@ func mergeGeometries(g *geos.Geos, geoms []*geos.Geom, geomType string) []*geos.
 		union := g.LineMerge(linestrings)
 		return union
 	} else if geomType == "Point" {
-		return geoms[0:1]
+		if len(geoms) >= 1 {
+			return geoms[0:1]
+		}
+		return nil
 	} else {
 		panic("unexpected geometry type" + geomType)
 	}

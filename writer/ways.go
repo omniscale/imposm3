@@ -4,6 +4,7 @@ import (
 	"goposm/cache"
 	"goposm/element"
 	"goposm/geom"
+	"goposm/geom/clipper"
 	"goposm/geom/geos"
 	"goposm/mapping"
 	"goposm/proj"
@@ -21,6 +22,7 @@ type WayWriter struct {
 	progress             *stats.Statistics
 	insertBuffer         *InsertBuffer
 	wg                   *sync.WaitGroup
+	clipper              *clipper.Clipper
 }
 
 func NewWayWriter(osmCache *cache.OSMCache, ways chan *element.Way,
@@ -36,11 +38,18 @@ func NewWayWriter(osmCache *cache.OSMCache, ways chan *element.Way,
 		wg:                   &sync.WaitGroup{},
 	}
 
+	return &ww
+}
+
+func (ww *WayWriter) SetClipper(clipper *clipper.Clipper) {
+	ww.clipper = clipper
+}
+
+func (ww *WayWriter) Start() {
 	for i := 0; i < runtime.NumCPU(); i++ {
 		ww.wg.Add(1)
 		go ww.loop()
 	}
-	return &ww
 }
 
 func (ww *WayWriter) Close() {
@@ -79,9 +88,25 @@ func (ww *WayWriter) loop() {
 				log.Println(err)
 				continue
 			}
-			for _, match := range matches {
-				row := match.Row(&way.OSMElem)
-				ww.insertBuffer.Insert(match.Table.Name, row)
+			if ww.clipper != nil {
+				parts, err := ww.clipper.Clip(way.Geom.Geom)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				for _, g := range parts {
+					way := element.Way(*w)
+					way.Geom = &element.Geometry{g, geos.AsWkb(g)}
+					for _, match := range matches {
+						row := match.Row(&way.OSMElem)
+						ww.insertBuffer.Insert(match.Table.Name, row)
+					}
+				}
+			} else {
+				for _, match := range matches {
+					row := match.Row(&way.OSMElem)
+					ww.insertBuffer.Insert(match.Table.Name, row)
+				}
 			}
 
 		}
@@ -98,9 +123,25 @@ func (ww *WayWriter) loop() {
 					log.Println(err)
 					continue
 				}
-				for _, match := range matches {
-					row := match.Row(&way.OSMElem)
-					ww.insertBuffer.Insert(match.Table.Name, row)
+				if ww.clipper != nil {
+					parts, err := ww.clipper.Clip(way.Geom.Geom)
+					if err != nil {
+						log.Println(err)
+						continue
+					}
+					for _, g := range parts {
+						way := element.Way(*w)
+						way.Geom = &element.Geometry{g, geos.AsWkb(g)}
+						for _, match := range matches {
+							row := match.Row(&way.OSMElem)
+							ww.insertBuffer.Insert(match.Table.Name, row)
+						}
+					}
+				} else {
+					for _, match := range matches {
+						row := match.Row(&way.OSMElem)
+						ww.insertBuffer.Insert(match.Table.Name, row)
+					}
 				}
 			}
 		}

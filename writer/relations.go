@@ -5,6 +5,8 @@ import (
 	"goposm/cache"
 	"goposm/element"
 	"goposm/geom"
+	"goposm/geom/clipper"
+	"goposm/geom/geos"
 	"goposm/mapping"
 	"goposm/proj"
 	"goposm/stats"
@@ -20,6 +22,7 @@ type RelationWriter struct {
 	progress     *stats.Statistics
 	insertBuffer *InsertBuffer
 	wg           *sync.WaitGroup
+	clipper      *clipper.Clipper
 }
 
 func NewRelationWriter(osmCache *cache.OSMCache, rel chan *element.Relation,
@@ -33,11 +36,18 @@ func NewRelationWriter(osmCache *cache.OSMCache, rel chan *element.Relation,
 		wg:           &sync.WaitGroup{},
 	}
 
+	return &rw
+}
+
+func (rw *RelationWriter) SetClipper(clipper *clipper.Clipper) {
+	rw.clipper = clipper
+}
+
+func (rw *RelationWriter) Start() {
 	for i := 0; i < runtime.NumCPU(); i++ {
 		rw.wg.Add(1)
 		go rw.loop()
 	}
-	return &rw
 }
 
 func (rw *RelationWriter) Close() {
@@ -45,6 +55,9 @@ func (rw *RelationWriter) Close() {
 }
 
 func (rw *RelationWriter) loop() {
+	geos := geos.NewGeos()
+	defer geos.Finish()
+
 	for r := range rw.rel {
 		rw.progress.AddRelations(1)
 		err := rw.osmCache.Ways.FillMembers(r.Members)
@@ -80,9 +93,28 @@ func (rw *RelationWriter) loop() {
 			continue
 		}
 		if matches := rw.tagMatcher.Match(&r.Tags); len(matches) > 0 {
-			for _, match := range matches {
-				row := match.Row(&r.OSMElem)
-				rw.insertBuffer.Insert(match.Table.Name, row)
+			if rw.clipper != nil {
+				if r.Geom.Geom == nil {
+					panic("foo")
+				}
+				parts, err := rw.clipper.Clip(r.Geom.Geom)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				for _, g := range parts {
+					rel := element.Relation(*r)
+					rel.Geom = &element.Geometry{g, geos.AsWkb(g)}
+					for _, match := range matches {
+						row := match.Row(&rel.OSMElem)
+						rw.insertBuffer.Insert(match.Table.Name, row)
+					}
+				}
+			} else {
+				for _, match := range matches {
+					row := match.Row(&r.OSMElem)
+					rw.insertBuffer.Insert(match.Table.Name, row)
+				}
 			}
 			err := rw.osmCache.InsertedWays.PutMembers(r.Members)
 			if err != nil {

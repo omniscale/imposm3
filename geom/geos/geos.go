@@ -20,6 +20,7 @@ import "C"
 import (
 	"goposm/logging"
 	"runtime"
+	"sync"
 	"unsafe"
 )
 
@@ -199,6 +200,7 @@ func (this *Geos) PreparedContains(a *PreparedGeom, b *Geom) bool {
 }
 
 func (this *Geos) PreparedIntersects(a *PreparedGeom, b *Geom) bool {
+	// fmt.Println(this.Type(b))
 	result := C.GEOSPreparedIntersects_r(this.v, a.v, b.v)
 	if result == 1 {
 		return true
@@ -219,6 +221,9 @@ func (this *Geos) Intersection(a, b *Geom) *Geom {
 
 func (this *Geos) UnionPolygons(polygons []*Geom) *Geom {
 	multiPolygon := this.MultiPolygon(polygons)
+	if multiPolygon == nil {
+		return nil
+	}
 	result := C.GEOSUnaryUnion_r(this.v, multiPolygon.v)
 	if result == nil {
 		return nil
@@ -228,6 +233,9 @@ func (this *Geos) UnionPolygons(polygons []*Geom) *Geom {
 
 func (this *Geos) LineMerge(lines []*Geom) []*Geom {
 	multiLineString := this.MultiLineString(lines)
+	if multiLineString == nil {
+		return nil
+	}
 	result := C.GEOSLineMerge_r(this.v, multiLineString.v)
 	if result == nil {
 		return nil
@@ -313,6 +321,9 @@ func (this *Geos) Polygon(exterior *Geom, interiors []*Geom) *Geom {
 }
 
 func (this *Geos) MultiPolygon(polygons []*Geom) *Geom {
+	if len(polygons) == 0 {
+		return nil
+	}
 	polygonPtr := make([]*C.GEOSGeometry, len(polygons))
 	for i, geom := range polygons {
 		polygonPtr[i] = geom.v
@@ -324,6 +335,9 @@ func (this *Geos) MultiPolygon(polygons []*Geom) *Geom {
 	return &Geom{geom}
 }
 func (this *Geos) MultiLineString(lines []*Geom) *Geom {
+	if len(lines) == 0 {
+		return nil
+	}
 	linePtr := make([]*C.GEOSGeometry, len(lines))
 	for i, geom := range lines {
 		linePtr[i] = geom.v
@@ -477,6 +491,7 @@ func (this *Geos) DestroyCoordSeq(coordSeq *CoordSeq) {
 
 type indexGeom struct {
 	Geom     *Geom
+	Lock     *sync.Mutex
 	Prepared *PreparedGeom
 }
 type Index struct {
@@ -497,7 +512,7 @@ func (this *Geos) IndexAdd(index *Index, geom *Geom) {
 	id := len(index.geoms)
 	C.IndexAdd(this.v, index.v, geom.v, C.size_t(id))
 	prep := this.Prepare(geom)
-	index.geoms = append(index.geoms, indexGeom{geom, prep})
+	index.geoms = append(index.geoms, indexGeom{geom, &sync.Mutex{}, prep})
 }
 
 // IndexQuery queries the index for intersections with geom.

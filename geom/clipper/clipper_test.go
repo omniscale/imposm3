@@ -265,12 +265,12 @@ func TestClipper(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	result, err := clipper.clip(g.FromWkt("POINT(0 0)"))
+	result, err := clipper.Clip(g.FromWkt("POINT(0 0)"))
 	if err != nil || result != nil {
 		t.Fatal(err)
 	}
 
-	result, err = clipper.clip(g.FromWkt("POINT(1106543 7082055)"))
+	result, err = clipper.Clip(g.FromWkt("POINT(1106543 7082055)"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -278,7 +278,7 @@ func TestClipper(t *testing.T) {
 		t.Fatal()
 	}
 
-	result, err = clipper.clip(g.FromWkt("LINESTRING(1106543 7082055, 1107105.2 7087540.0)"))
+	result, err = clipper.Clip(g.FromWkt("LINESTRING(1106543 7082055, 1107105.2 7087540.0)"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -287,7 +287,7 @@ func TestClipper(t *testing.T) {
 	}
 
 	geom := g.FromWkt("POLYGON((1106543 7082055, 1107105.2 7087540.0, 1112184.9 7084424.5, 1106543 7082055))")
-	result, err = clipper.clip(geom)
+	result, err = clipper.Clip(geom)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -309,7 +309,7 @@ func BenchmarkClipper(b *testing.B) {
 
 	geom := g.FromWkt("LINESTRING(1106543 7082055, 1107105.2 7087540.0)")
 	for i := 0; i < b.N; i++ {
-		result, err := clipper.clip(geom)
+		result, err := clipper.Clip(geom)
 		if err != nil {
 			b.Fatal(err)
 		}

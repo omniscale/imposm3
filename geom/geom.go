@@ -86,6 +86,7 @@ func PolygonWkb(g *geos.Geos, nodes []element.Node) (*element.Geometry, error) {
 	if wkb == nil {
 		return nil, errors.New("could not create wkb")
 	}
+	g.DestroyLater(geom)
 	return &element.Geometry{
 		Wkb:  wkb,
 		Geom: geom,
@@ -114,6 +115,5 @@ func Polygon(g *geos.Geos, nodes []element.Node) (*geos.Geom, error) {
 	if err != nil {
 		return nil, err
 	}
-	g.DestroyLater(geom)
 	return geom, nil
 }

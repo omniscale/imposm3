@@ -4,6 +4,7 @@ import (
 	"goposm/cache"
 	"goposm/element"
 	"goposm/geom"
+	"goposm/geom/clipper"
 	"goposm/geom/geos"
 	"goposm/mapping"
 	"goposm/proj"
@@ -20,6 +21,7 @@ type NodeWriter struct {
 	progress     *stats.Statistics
 	insertBuffer *InsertBuffer
 	wg           *sync.WaitGroup
+	clipper      *clipper.Clipper
 }
 
 func NewNodeWriter(osmCache *cache.OSMCache, nodes chan *element.Node,
@@ -33,11 +35,18 @@ func NewNodeWriter(osmCache *cache.OSMCache, nodes chan *element.Node,
 		wg:           &sync.WaitGroup{},
 	}
 
+	return &nw
+}
+
+func (nw *NodeWriter) SetClipper(clipper *clipper.Clipper) {
+	nw.clipper = clipper
+}
+
+func (nw *NodeWriter) Start() {
 	for i := 0; i < runtime.NumCPU(); i++ {
 		nw.wg.Add(1)
 		go nw.loop()
 	}
-	return &nw
 }
 
 func (nw *NodeWriter) Close() {
@@ -63,9 +72,23 @@ func (nw *NodeWriter) loop() {
 				log.Println(err)
 				continue
 			}
-			for _, match := range matches {
-				row := match.Row(&n.OSMElem)
-				nw.insertBuffer.Insert(match.Table.Name, row)
+			if nw.clipper != nil {
+				parts, err := nw.clipper.Clip(n.Geom.Geom)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				if len(parts) >= 1 {
+					for _, match := range matches {
+						row := match.Row(&n.OSMElem)
+						nw.insertBuffer.Insert(match.Table.Name, row)
+					}
+				}
+			} else {
+				for _, match := range matches {
+					row := match.Row(&n.OSMElem)
+					nw.insertBuffer.Insert(match.Table.Name, row)
+				}
 			}
 
 		}

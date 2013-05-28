@@ -5,6 +5,7 @@ import (
 	"goposm/cache"
 	"goposm/database"
 	_ "goposm/database/postgis"
+	"goposm/geom/clipper"
 	"goposm/logging"
 	"goposm/mapping"
 	"goposm/reader"
@@ -46,6 +47,7 @@ var (
 	deployProduction = flag.Bool("deployproduction", false, "deploy production")
 	revertDeploy     = flag.Bool("revertdeploy", false, "revert deploy to production")
 	removeBackup     = flag.Bool("removebackup", false, "remove backups from deploy")
+	limitTo          = flag.String("limitto", "", "limit to geometries")
 )
 
 func die(args ...interface{}) {
@@ -97,6 +99,15 @@ func main() {
 
 	if *revertDeploy && (*removeBackup || *deployProduction) {
 		die("-revertdeploy not compatible with -deployproduction/-removebackup")
+	}
+
+	var geometryClipper *clipper.Clipper
+	if *write && *limitTo != "" {
+		var err error
+		geometryClipper, err = clipper.NewFromOgrSource(*limitTo)
+		if err != nil {
+			die(err)
+		}
 	}
 
 	osmCache := cache.NewOSMCache(*cachedir)
@@ -175,16 +186,23 @@ func main() {
 			relations := osmCache.Relations.Iter()
 			relWriter := writer.NewRelationWriter(osmCache, relations,
 				insertBuffer, polygonsTagMatcher, progress)
+			relWriter.SetClipper(geometryClipper)
+			relWriter.Start()
+
 			// blocks till the Relations.Iter() finishes
 			relWriter.Close()
 
 			ways := osmCache.Ways.Iter()
 			wayWriter := writer.NewWayWriter(osmCache, ways, insertBuffer,
 				lineStringsTagMatcher, polygonsTagMatcher, progress)
+			wayWriter.SetClipper(geometryClipper)
+			wayWriter.Start()
 
 			nodes := osmCache.Nodes.Iter()
 			nodeWriter := writer.NewNodeWriter(osmCache, nodes, insertBuffer,
 				pointsTagMatcher, progress)
+			nodeWriter.SetClipper(geometryClipper)
+			nodeWriter.Start()
 
 			diffCache.Coords.Close()
 
