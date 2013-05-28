@@ -5,53 +5,34 @@ import (
 	"goposm/cache"
 	"goposm/element"
 	"goposm/geom"
-	"goposm/geom/clipper"
 	"goposm/geom/geos"
 	"goposm/mapping"
 	"goposm/proj"
 	"goposm/stats"
 	"log"
-	"runtime"
 	"sync"
 )
 
 type RelationWriter struct {
-	osmCache     *cache.OSMCache
-	rel          chan *element.Relation
-	tagMatcher   *mapping.TagMatcher
-	progress     *stats.Statistics
-	insertBuffer *InsertBuffer
-	wg           *sync.WaitGroup
-	clipper      *clipper.Clipper
+	OsmElemWriter
+	rel        chan *element.Relation
+	tagMatcher *mapping.TagMatcher
 }
 
 func NewRelationWriter(osmCache *cache.OSMCache, rel chan *element.Relation,
-	insertBuffer *InsertBuffer, tagMatcher *mapping.TagMatcher, progress *stats.Statistics) *RelationWriter {
+	insertBuffer *InsertBuffer, tagMatcher *mapping.TagMatcher, progress *stats.Statistics) *OsmElemWriter {
 	rw := RelationWriter{
-		osmCache:     osmCache,
-		rel:          rel,
-		insertBuffer: insertBuffer,
-		tagMatcher:   tagMatcher,
-		progress:     progress,
-		wg:           &sync.WaitGroup{},
+		OsmElemWriter: OsmElemWriter{
+			osmCache:     osmCache,
+			progress:     progress,
+			wg:           &sync.WaitGroup{},
+			insertBuffer: insertBuffer,
+		},
+		rel:        rel,
+		tagMatcher: tagMatcher,
 	}
-
-	return &rw
-}
-
-func (rw *RelationWriter) SetClipper(clipper *clipper.Clipper) {
-	rw.clipper = clipper
-}
-
-func (rw *RelationWriter) Start() {
-	for i := 0; i < runtime.NumCPU(); i++ {
-		rw.wg.Add(1)
-		go rw.loop()
-	}
-}
-
-func (rw *RelationWriter) Close() {
-	rw.wg.Wait()
+	rw.OsmElemWriter.writer = &rw
+	return &rw.OsmElemWriter
 }
 
 func (rw *RelationWriter) loop() {
@@ -94,9 +75,6 @@ func (rw *RelationWriter) loop() {
 		}
 		if matches := rw.tagMatcher.Match(&r.Tags); len(matches) > 0 {
 			if rw.clipper != nil {
-				if r.Geom.Geom == nil {
-					panic("foo")
-				}
 				parts, err := rw.clipper.Clip(r.Geom.Geom)
 				if err != nil {
 					log.Println(err)
@@ -105,16 +83,10 @@ func (rw *RelationWriter) loop() {
 				for _, g := range parts {
 					rel := element.Relation(*r)
 					rel.Geom = &element.Geometry{g, geos.AsWkb(g)}
-					for _, match := range matches {
-						row := match.Row(&rel.OSMElem)
-						rw.insertBuffer.Insert(match.Table.Name, row)
-					}
+					rw.insertMatches(&r.OSMElem, matches)
 				}
 			} else {
-				for _, match := range matches {
-					row := match.Row(&r.OSMElem)
-					rw.insertBuffer.Insert(match.Table.Name, row)
-				}
+				rw.insertMatches(&r.OSMElem, matches)
 			}
 			err := rw.osmCache.InsertedWays.PutMembers(r.Members)
 			if err != nil {

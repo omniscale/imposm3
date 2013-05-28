@@ -4,53 +4,34 @@ import (
 	"goposm/cache"
 	"goposm/element"
 	"goposm/geom"
-	"goposm/geom/clipper"
 	"goposm/geom/geos"
 	"goposm/mapping"
 	"goposm/proj"
 	"goposm/stats"
 	"log"
-	"runtime"
 	"sync"
 )
 
 type NodeWriter struct {
-	osmCache     *cache.OSMCache
-	nodes        chan *element.Node
-	tagMatcher   *mapping.TagMatcher
-	progress     *stats.Statistics
-	insertBuffer *InsertBuffer
-	wg           *sync.WaitGroup
-	clipper      *clipper.Clipper
+	OsmElemWriter
+	nodes      chan *element.Node
+	tagMatcher *mapping.TagMatcher
 }
 
 func NewNodeWriter(osmCache *cache.OSMCache, nodes chan *element.Node,
-	insertBuffer *InsertBuffer, tagMatcher *mapping.TagMatcher, progress *stats.Statistics) *NodeWriter {
+	insertBuffer *InsertBuffer, tagMatcher *mapping.TagMatcher, progress *stats.Statistics) *OsmElemWriter {
 	nw := NodeWriter{
-		osmCache:     osmCache,
-		nodes:        nodes,
-		insertBuffer: insertBuffer,
-		tagMatcher:   tagMatcher,
-		progress:     progress,
-		wg:           &sync.WaitGroup{},
+		OsmElemWriter: OsmElemWriter{
+			osmCache:     osmCache,
+			progress:     progress,
+			wg:           &sync.WaitGroup{},
+			insertBuffer: insertBuffer,
+		},
+		nodes:      nodes,
+		tagMatcher: tagMatcher,
 	}
-
-	return &nw
-}
-
-func (nw *NodeWriter) SetClipper(clipper *clipper.Clipper) {
-	nw.clipper = clipper
-}
-
-func (nw *NodeWriter) Start() {
-	for i := 0; i < runtime.NumCPU(); i++ {
-		nw.wg.Add(1)
-		go nw.loop()
-	}
-}
-
-func (nw *NodeWriter) Close() {
-	nw.wg.Wait()
+	nw.OsmElemWriter.writer = &nw
+	return &nw.OsmElemWriter
 }
 
 func (nw *NodeWriter) loop() {
@@ -79,20 +60,13 @@ func (nw *NodeWriter) loop() {
 					continue
 				}
 				if len(parts) >= 1 {
-					for _, match := range matches {
-						row := match.Row(&n.OSMElem)
-						nw.insertBuffer.Insert(match.Table.Name, row)
-					}
+					nw.insertMatches(&n.OSMElem, matches)
 				}
 			} else {
-				for _, match := range matches {
-					row := match.Row(&n.OSMElem)
-					nw.insertBuffer.Insert(match.Table.Name, row)
-				}
+				nw.insertMatches(&n.OSMElem, matches)
 			}
 
 		}
-		// fmt.Println(r)
 	}
 	nw.wg.Done()
 }

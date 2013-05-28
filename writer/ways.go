@@ -4,56 +4,37 @@ import (
 	"goposm/cache"
 	"goposm/element"
 	"goposm/geom"
-	"goposm/geom/clipper"
 	"goposm/geom/geos"
 	"goposm/mapping"
 	"goposm/proj"
 	"goposm/stats"
 	"log"
-	"runtime"
 	"sync"
 )
 
 type WayWriter struct {
-	osmCache             *cache.OSMCache
+	OsmElemWriter
 	ways                 chan *element.Way
 	lineStringTagMatcher *mapping.TagMatcher
 	polygonTagMatcher    *mapping.TagMatcher
-	progress             *stats.Statistics
-	insertBuffer         *InsertBuffer
-	wg                   *sync.WaitGroup
-	clipper              *clipper.Clipper
 }
 
 func NewWayWriter(osmCache *cache.OSMCache, ways chan *element.Way,
 	insertBuffer *InsertBuffer, lineStringTagMatcher *mapping.TagMatcher,
-	polygonTagMatcher *mapping.TagMatcher, progress *stats.Statistics) *WayWriter {
+	polygonTagMatcher *mapping.TagMatcher, progress *stats.Statistics) *OsmElemWriter {
 	ww := WayWriter{
-		osmCache:             osmCache,
+		OsmElemWriter: OsmElemWriter{
+			osmCache:     osmCache,
+			progress:     progress,
+			wg:           &sync.WaitGroup{},
+			insertBuffer: insertBuffer,
+		},
 		ways:                 ways,
-		insertBuffer:         insertBuffer,
 		lineStringTagMatcher: lineStringTagMatcher,
 		polygonTagMatcher:    polygonTagMatcher,
-		progress:             progress,
-		wg:                   &sync.WaitGroup{},
 	}
-
-	return &ww
-}
-
-func (ww *WayWriter) SetClipper(clipper *clipper.Clipper) {
-	ww.clipper = clipper
-}
-
-func (ww *WayWriter) Start() {
-	for i := 0; i < runtime.NumCPU(); i++ {
-		ww.wg.Add(1)
-		go ww.loop()
-	}
-}
-
-func (ww *WayWriter) Close() {
-	ww.wg.Wait()
+	ww.OsmElemWriter.writer = &ww
+	return &ww.OsmElemWriter
 }
 
 func (ww *WayWriter) loop() {
@@ -76,73 +57,11 @@ func (ww *WayWriter) loop() {
 		}
 		proj.NodesToMerc(w.Nodes)
 		if matches := ww.lineStringTagMatcher.Match(&w.Tags); len(matches) > 0 {
-			// make copy to avoid interference with polygon matches
-			way := element.Way(*w)
-			way.Geom, err = geom.LineStringWkb(geos, way.Nodes)
-			if err != nil {
-				if err, ok := err.(ErrorLevel); ok {
-					if err.Level() <= 0 {
-						continue
-					}
-				}
-				log.Println(err)
-				continue
-			}
-			if ww.clipper != nil {
-				parts, err := ww.clipper.Clip(way.Geom.Geom)
-				if err != nil {
-					log.Println(err)
-					continue
-				}
-				for _, g := range parts {
-					way := element.Way(*w)
-					way.Geom = &element.Geometry{g, geos.AsWkb(g)}
-					for _, match := range matches {
-						row := match.Row(&way.OSMElem)
-						ww.insertBuffer.Insert(match.Table.Name, row)
-					}
-				}
-			} else {
-				for _, match := range matches {
-					row := match.Row(&way.OSMElem)
-					ww.insertBuffer.Insert(match.Table.Name, row)
-				}
-			}
-
+			ww.buildAndInsert(geos, w, matches, geom.LineStringWkb)
 		}
 		if w.IsClosed() {
 			if matches := ww.polygonTagMatcher.Match(&w.Tags); len(matches) > 0 {
-				way := element.Way(*w)
-				way.Geom, err = geom.PolygonWkb(geos, way.Nodes)
-				if err != nil {
-					if err, ok := err.(ErrorLevel); ok {
-						if err.Level() <= 0 {
-							continue
-						}
-					}
-					log.Println(err)
-					continue
-				}
-				if ww.clipper != nil {
-					parts, err := ww.clipper.Clip(way.Geom.Geom)
-					if err != nil {
-						log.Println(err)
-						continue
-					}
-					for _, g := range parts {
-						way := element.Way(*w)
-						way.Geom = &element.Geometry{g, geos.AsWkb(g)}
-						for _, match := range matches {
-							row := match.Row(&way.OSMElem)
-							ww.insertBuffer.Insert(match.Table.Name, row)
-						}
-					}
-				} else {
-					for _, match := range matches {
-						row := match.Row(&way.OSMElem)
-						ww.insertBuffer.Insert(match.Table.Name, row)
-					}
-				}
+				ww.buildAndInsert(geos, w, matches, geom.PolygonWkb)
 			}
 		}
 
@@ -151,4 +70,36 @@ func (ww *WayWriter) loop() {
 		// }
 	}
 	ww.wg.Done()
+}
+
+type geomBuilder func(*geos.Geos, []element.Node) (*element.Geometry, error)
+
+func (ww *WayWriter) buildAndInsert(geos *geos.Geos, w *element.Way, matches []mapping.Match, builder geomBuilder) {
+	var err error
+	// make copy to avoid interference with polygon/linestring matches
+	way := element.Way(*w)
+	way.Geom, err = builder(geos, way.Nodes)
+	if err != nil {
+		if err, ok := err.(ErrorLevel); ok {
+			if err.Level() <= 0 {
+				return
+			}
+		}
+		log.Println(err)
+		return
+	}
+	if ww.clipper != nil {
+		parts, err := ww.clipper.Clip(way.Geom.Geom)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		for _, g := range parts {
+			way := element.Way(*w)
+			way.Geom = &element.Geometry{g, geos.AsWkb(g)}
+			ww.insertMatches(&w.OSMElem, matches)
+		}
+	} else {
+		ww.insertMatches(&w.OSMElem, matches)
+	}
 }

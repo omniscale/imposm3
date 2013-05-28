@@ -1,7 +1,12 @@
 package writer
 
 import (
+	"goposm/cache"
 	"goposm/database"
+	"goposm/element"
+	"goposm/geom/clipper"
+	"goposm/mapping"
+	"goposm/stats"
 	"log"
 	"runtime"
 	"sync"
@@ -42,4 +47,39 @@ func (dw *DbWriter) loop() {
 		}
 	}
 	dw.wg.Done()
+}
+
+type looper interface {
+	loop()
+}
+
+type OsmElemWriter struct {
+	osmCache     *cache.OSMCache
+	progress     *stats.Statistics
+	insertBuffer *InsertBuffer
+	wg           *sync.WaitGroup
+	clipper      *clipper.Clipper
+	writer       looper
+}
+
+func (writer *OsmElemWriter) SetClipper(clipper *clipper.Clipper) {
+	writer.clipper = clipper
+}
+
+func (writer *OsmElemWriter) Start() {
+	for i := 0; i < runtime.NumCPU(); i++ {
+		writer.wg.Add(1)
+		go writer.writer.loop()
+	}
+}
+
+func (writer *OsmElemWriter) Close() {
+	writer.wg.Wait()
+}
+
+func (writer *OsmElemWriter) insertMatches(elem *element.OSMElem, matches []mapping.Match) {
+	for _, match := range matches {
+		row := match.Row(elem)
+		writer.insertBuffer.Insert(match.Table.Name, row)
+	}
 }
