@@ -104,10 +104,12 @@ func main() {
 	var geometryClipper *clipper.Clipper
 	if *write && *limitTo != "" {
 		var err error
+		step := log.StartStep("Reading limitto geometries")
 		geometryClipper, err = clipper.NewFromOgrSource(*limitTo)
 		if err != nil {
 			die(err)
 		}
+		log.StopStep(step)
 	}
 
 	osmCache := cache.NewOSMCache(*cachedir)

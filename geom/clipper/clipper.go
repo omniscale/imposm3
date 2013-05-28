@@ -71,7 +71,7 @@ func SplitPolygonAtGrid(g *geos.Geos, geom *geos.Geom, gridWidth, currentGridWid
 		if part == nil {
 			return nil, errors.New("couldn't create intersection")
 		}
-		if !g.IsEmpty(part) && strings.HasPrefix(g.Type(part), "Polygon") {
+		if !g.IsEmpty(part) && strings.HasSuffix(g.Type(part), "Polygon") {
 			if gridWidth >= currentGridWidth {
 				result = append(result, part)
 			} else {
