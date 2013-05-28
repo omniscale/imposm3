@@ -179,6 +179,9 @@ func (clipper *Clipper) Clip(geom *geos.Geom) ([]*geos.Geom, error) {
 		if g.PreparedIntersects(hit.Prepared, geom) {
 			hit.Unlock()
 			newPart := g.Intersection(hit.Geom, geom)
+			if newPart == nil {
+				continue
+			}
 			newParts := filterGeometryByType(g, newPart, geomType)
 			for _, p := range newParts {
 				intersections = append(intersections, p)
