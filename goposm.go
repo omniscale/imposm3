@@ -152,67 +152,73 @@ func main() {
 		}
 	}
 
+	step := log.StartStep("Imposm")
+
 	if *read != "" {
+		step := log.StartStep("Reading OSM data")
 		progress.Start()
 		osmCache.Coords.SetLinearImport(true)
 		reader.ReadPbf(osmCache, progress, tagmapping, *read)
 		osmCache.Coords.SetLinearImport(false)
 		progress.Stop()
 		osmCache.Coords.Flush()
+		log.StopStep(step)
 	}
 
 	if *write {
-		if true {
-			progress.Start()
-			err = db.Init()
-			if err != nil {
-				die(err)
-			}
-
-			diffCache := cache.NewDiffCache(*cachedir)
-			if err = diffCache.Remove(); err != nil {
-				die(err)
-			}
-			if err = diffCache.Open(); err != nil {
-				die(err)
-			}
-
-			insertBuffer := writer.NewInsertBuffer()
-			dbWriter := writer.NewDbWriter(db, insertBuffer.Out)
-
-			pointsTagMatcher := tagmapping.PointMatcher()
-			lineStringsTagMatcher := tagmapping.LineStringMatcher()
-			polygonsTagMatcher := tagmapping.PolygonMatcher()
-
-			relations := osmCache.Relations.Iter()
-			relWriter := writer.NewRelationWriter(osmCache, relations,
-				insertBuffer, polygonsTagMatcher, progress)
-			relWriter.SetClipper(geometryClipper)
-			relWriter.Start()
-
-			// blocks till the Relations.Iter() finishes
-			relWriter.Close()
-
-			ways := osmCache.Ways.Iter()
-			wayWriter := writer.NewWayWriter(osmCache, ways, insertBuffer,
-				lineStringsTagMatcher, polygonsTagMatcher, progress)
-			wayWriter.SetClipper(geometryClipper)
-			wayWriter.Start()
-
-			nodes := osmCache.Nodes.Iter()
-			nodeWriter := writer.NewNodeWriter(osmCache, nodes, insertBuffer,
-				pointsTagMatcher, progress)
-			nodeWriter.SetClipper(geometryClipper)
-			nodeWriter.Start()
-
-			diffCache.Coords.Close()
-
-			wayWriter.Close()
-			nodeWriter.Close()
-			insertBuffer.Close()
-			dbWriter.Close()
-			progress.Stop()
+		stepImport := log.StartStep("Importing OSM data")
+		stepWrite := log.StartStep("Writing OSM data")
+		progress.Start()
+		err = db.Init()
+		if err != nil {
+			die(err)
 		}
+
+		diffCache := cache.NewDiffCache(*cachedir)
+		if err = diffCache.Remove(); err != nil {
+			die(err)
+		}
+		if err = diffCache.Open(); err != nil {
+			die(err)
+		}
+
+		insertBuffer := writer.NewInsertBuffer()
+		dbWriter := writer.NewDbWriter(db, insertBuffer.Out)
+
+		pointsTagMatcher := tagmapping.PointMatcher()
+		lineStringsTagMatcher := tagmapping.LineStringMatcher()
+		polygonsTagMatcher := tagmapping.PolygonMatcher()
+
+		relations := osmCache.Relations.Iter()
+		relWriter := writer.NewRelationWriter(osmCache, relations,
+			insertBuffer, polygonsTagMatcher, progress)
+		relWriter.SetClipper(geometryClipper)
+		relWriter.Start()
+
+		// blocks till the Relations.Iter() finishes
+		relWriter.Close()
+
+		ways := osmCache.Ways.Iter()
+		wayWriter := writer.NewWayWriter(osmCache, ways, insertBuffer,
+			lineStringsTagMatcher, polygonsTagMatcher, progress)
+		wayWriter.SetClipper(geometryClipper)
+		wayWriter.Start()
+
+		nodes := osmCache.Nodes.Iter()
+		nodeWriter := writer.NewNodeWriter(osmCache, nodes, insertBuffer,
+			pointsTagMatcher, progress)
+		nodeWriter.SetClipper(geometryClipper)
+		nodeWriter.Start()
+
+		diffCache.Coords.Close()
+
+		wayWriter.Close()
+		nodeWriter.Close()
+		insertBuffer.Close()
+		dbWriter.Close()
+		progress.Stop()
+
+		log.StopStep(stepWrite)
 
 		if db, ok := db.(database.Generalizer); ok {
 			if err := db.Generalize(); err != nil {
@@ -229,6 +235,7 @@ func main() {
 		} else {
 			die("database not finishable")
 		}
+		log.StopStep(stepImport)
 	}
 
 	if *deployProduction {
@@ -260,6 +267,7 @@ func main() {
 			die("database not deployable")
 		}
 	}
-	progress.Stop()
+
+	log.StopStep(step)
 
 }

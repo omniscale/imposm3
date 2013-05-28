@@ -128,8 +128,8 @@ func StatsReporter() *Statistics {
 				case STOP:
 					tick = nil
 					tock = nil
-				case START:
 					c.PrintStats()
+				case START:
 					c = counter{}
 					c.start = time.Now()
 					tick = time.Tick(500 * time.Millisecond)
