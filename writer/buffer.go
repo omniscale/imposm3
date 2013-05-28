@@ -4,7 +4,7 @@ import (
 	"sync"
 )
 
-const bufferSize = 1024
+const bufferSize = 1024 * 8
 
 type InsertBatch struct {
 	Table string
@@ -24,8 +24,8 @@ type InsertBuffer struct {
 
 func NewInsertBuffer() *InsertBuffer {
 	ib := InsertBuffer{
-		In:  make(chan InsertElement),
-		Out: make(chan InsertBatch),
+		In:  make(chan InsertElement, 256),
+		Out: make(chan InsertBatch, 8),
 		wg:  &sync.WaitGroup{},
 	}
 	ib.wg.Add(1)
