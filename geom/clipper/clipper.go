@@ -4,9 +4,12 @@ import (
 	"errors"
 	"goposm/geom/geos"
 	"goposm/geom/ogr"
+	"goposm/logging"
 	"math"
 	"strings"
 )
+
+var log = logging.NewLogger("Clipper")
 
 // Tile bbox into multiple sub-boxes, each of `width` size.
 
@@ -140,13 +143,16 @@ func filterGeometryByType(g *geos.Geos, geom *geos.Geom, targetType string) []*g
 		for _, part := range g.Geoms(geom) {
 			// only parts with same type
 			if g.Type(part) == targetType {
-				geoms = append(geoms, part)
+				geoms = append(geoms, g.Clone(part))
 			}
 		}
+		g.Destroy(geom)
 		if len(geoms) != 0 {
 			return geoms
 		}
+		return []*geos.Geom{}
 	}
+	g.Destroy(geom)
 	return []*geos.Geom{}
 }
 
@@ -164,21 +170,21 @@ func (clipper *Clipper) Clip(geom *geos.Geom) ([]*geos.Geom, error) {
 	var intersections []*geos.Geom
 
 	for _, hit := range hits {
-		hit.Lock.Lock()
+		hit.Lock()
 		if g.PreparedContains(hit.Prepared, geom) {
-			hit.Lock.Unlock()
+			hit.Unlock()
 			return []*geos.Geom{geom}, nil
 		}
 
 		if g.PreparedIntersects(hit.Prepared, geom) {
-			hit.Lock.Unlock()
+			hit.Unlock()
 			newPart := g.Intersection(hit.Geom, geom)
 			newParts := filterGeometryByType(g, newPart, geomType)
 			for _, p := range newParts {
 				intersections = append(intersections, p)
 			}
 		} else {
-			hit.Lock.Unlock()
+			hit.Unlock()
 		}
 	}
 	return mergeGeometries(g, intersections, geomType), nil
@@ -188,9 +194,15 @@ func flattenPolygons(g *geos.Geos, geoms []*geos.Geom) []*geos.Geom {
 	var result []*geos.Geom
 	for _, geom := range geoms {
 		if g.Type(geom) == "MultiPolygon" {
-			result = append(result, g.Geoms(geom)...)
-		} else {
+			for _, part := range g.Geoms(geom) {
+				result = append(result, g.Clone(part))
+			}
+			g.Destroy(geom)
+		} else if g.Type(geom) == "Polygon" {
 			result = append(result, geom)
+		} else {
+			log.Printf("unexpected geometry type in flattenPolygons")
+			g.Destroy(geom)
 		}
 	}
 	return result
@@ -200,9 +212,15 @@ func flattenLineStrings(g *geos.Geos, geoms []*geos.Geom) []*geos.Geom {
 	var result []*geos.Geom
 	for _, geom := range geoms {
 		if g.Type(geom) == "MultiLineString" {
-			result = append(result, g.Geoms(geom)...)
-		} else {
+			for _, part := range g.Geoms(geom) {
+				result = append(result, g.Clone(part))
+			}
+			g.Destroy(geom)
+		} else if g.Type(geom) == "LineString" {
 			result = append(result, geom)
+		} else {
+			log.Printf("unexpected geometry type in flattenPolygons")
+			g.Destroy(geom)
 		}
 	}
 	return result
@@ -213,6 +231,8 @@ func filterInvalidLineStrings(g *geos.Geos, geoms []*geos.Geom) []*geos.Geom {
 	for _, geom := range geoms {
 		if geom.Length() > 1e-9 {
 			result = append(result, geom)
+		} else {
+			g.Destroy(geom)
 		}
 	}
 	return result

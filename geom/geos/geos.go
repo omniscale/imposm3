@@ -9,18 +9,12 @@ extern void goLogString(char *msg);
 extern void debug_wrap(const char *fmt, ...);
 extern GEOSContextHandle_t initGEOS_r_debug();
 extern void initGEOS_debug();
-extern void IndexQuerySendCallback(void *, void *);
-extern void goIndexSendQueryResult(size_t, void *);
-extern void IndexQuery(GEOSContextHandle_t, GEOSSTRtree *, const GEOSGeometry *, void *);
-extern void IndexAdd(GEOSContextHandle_t, GEOSSTRtree *, const GEOSGeometry *, size_t);
-
 */
 import "C"
 
 import (
 	"goposm/logging"
 	"runtime"
-	"sync"
 	"unsafe"
 )
 
@@ -37,10 +31,6 @@ type Geos struct {
 
 type Geom struct {
 	v *C.GEOSGeometry
-}
-
-type PreparedGeom struct {
-	v *C.GEOSPreparedGeometry
 }
 
 type CreateError string
@@ -79,50 +69,34 @@ func init() {
 	C.initGEOS_debug()
 }
 
-type CoordSeq struct {
-	v *C.GEOSCoordSequence
+func (this *Geos) Destroy(geom *Geom) {
+	runtime.SetFinalizer(geom, nil)
+	if geom.v != nil {
+		C.GEOSGeom_destroy_r(this.v, geom.v)
+		geom.v = nil
+	} else {
+		log.Printf("double free?")
+	}
 }
 
-func (this *Geos) CreateCoordSeq(size, dim uint32) (*CoordSeq, error) {
-	result := C.GEOSCoordSeq_create_r(this.v, C.uint(size), C.uint(dim))
+func destroyGeom(geom *Geom) {
+	C.GEOSGeom_destroy(geom.v)
+}
+
+func (this *Geos) DestroyLater(geom *Geom) {
+	runtime.SetFinalizer(geom, destroyGeom)
+}
+
+func (this *Geos) Clone(geom *Geom) *Geom {
+	if geom == nil || geom.v == nil {
+		return nil
+	}
+
+	result := C.GEOSGeom_clone_r(this.v, geom.v)
 	if result == nil {
-		return nil, CreateError("could not create CoordSeq")
+		return nil
 	}
-	return &CoordSeq{result}, nil
-}
-
-func (this *CoordSeq) SetXY(handle *Geos, i uint32, x, y float64) error {
-	if C.GEOSCoordSeq_setX_r(handle.v, this.v, C.uint(i), C.double(x)) == 0 {
-		return Error("unable to SetY")
-	}
-	if C.GEOSCoordSeq_setY_r(handle.v, this.v, C.uint(i), C.double(y)) == 0 {
-		return Error("unable to SetX")
-	}
-	return nil
-}
-
-func (this *CoordSeq) AsPoint(handle *Geos) (*Geom, error) {
-	geom := C.GEOSGeom_createPoint_r(handle.v, this.v)
-	if geom == nil {
-		return nil, CreateError("unable to create Point")
-	}
-	return &Geom{geom}, nil
-}
-
-func (this *CoordSeq) AsLineString(handle *Geos) (*Geom, error) {
-	geom := C.GEOSGeom_createLineString_r(handle.v, this.v)
-	if geom == nil {
-		return nil, CreateError("unable to create LineString")
-	}
-	return &Geom{geom}, nil
-}
-
-func (this *CoordSeq) AsLinearRing(handle *Geos) (*Geom, error) {
-	ring := C.GEOSGeom_createLinearRing_r(handle.v, this.v)
-	if ring == nil {
-		return nil, CreateError("unable to create LinearRing")
-	}
-	return &Geom{ring}, nil
+	return &Geom{result}
 }
 
 func (this *Geos) CreatePolygon(shell *Geom, holes []*Geom) *Geom {
@@ -134,16 +108,6 @@ func (this *Geos) CreatePolygon(shell *Geom, holes []*Geom) *Geom {
 		return nil
 	}
 	return &Geom{polygon}
-}
-
-func (this *Geos) FromWkt(wkt string) (geom *Geom) {
-	wktC := C.CString(wkt)
-	defer C.free(unsafe.Pointer(wktC))
-	return &Geom{C.GEOSGeomFromWKT_r(this.v, wktC)}
-}
-
-func (this *Geos) Buffer(geom *Geom, size float64) *Geom {
-	return &Geom{C.GEOSBuffer_r(this.v, geom.v, C.double(size), 50)}
 }
 
 func (this *Geos) NumGeoms(geom *Geom) int32 {
@@ -162,89 +126,6 @@ func (this *Geos) Geoms(geom *Geom) []*Geom {
 		result = append(result, &Geom{part})
 	}
 	return result
-}
-
-func (this *Geos) Contains(a, b *Geom) bool {
-	result := C.GEOSContains_r(this.v, a.v, b.v)
-	if result == 1 {
-		return true
-	}
-	// result == 2 -> exception (already logged to console)
-	return false
-}
-
-func (this *Geos) Intersects(a, b *Geom) bool {
-	result := C.GEOSIntersects_r(this.v, a.v, b.v)
-	if result == 1 {
-		return true
-	}
-	// result == 2 -> exception (already logged to console)
-	return false
-}
-
-func (this *Geos) Prepare(geom *Geom) *PreparedGeom {
-	prep := C.GEOSPrepare_r(this.v, geom.v)
-	if prep == nil {
-		return nil
-	}
-	return &PreparedGeom{prep}
-}
-
-func (this *Geos) PreparedContains(a *PreparedGeom, b *Geom) bool {
-	result := C.GEOSPreparedContains_r(this.v, a.v, b.v)
-	if result == 1 {
-		return true
-	}
-	// result == 2 -> exception (already logged to console)
-	return false
-}
-
-func (this *Geos) PreparedIntersects(a *PreparedGeom, b *Geom) bool {
-	// fmt.Println(this.Type(b))
-	result := C.GEOSPreparedIntersects_r(this.v, a.v, b.v)
-	if result == 1 {
-		return true
-	}
-	// result == 2 -> exception (already logged to console)
-	return false
-}
-
-func (this *Geos) Intersection(a, b *Geom) *Geom {
-	result := C.GEOSIntersection_r(this.v, a.v, b.v)
-	if result == nil {
-		return nil
-	}
-	geom := &Geom{result}
-	this.DestroyLater(geom)
-	return geom
-}
-
-func (this *Geos) UnionPolygons(polygons []*Geom) *Geom {
-	multiPolygon := this.MultiPolygon(polygons)
-	if multiPolygon == nil {
-		return nil
-	}
-	result := C.GEOSUnaryUnion_r(this.v, multiPolygon.v)
-	if result == nil {
-		return nil
-	}
-	return &Geom{result}
-}
-
-func (this *Geos) LineMerge(lines []*Geom) []*Geom {
-	multiLineString := this.MultiLineString(lines)
-	if multiLineString == nil {
-		return nil
-	}
-	result := C.GEOSLineMerge_r(this.v, multiLineString.v)
-	if result == nil {
-		return nil
-	}
-	geom := &Geom{result}
-	if this.Type(geom) == "LineString" {
-		return []*Geom{geom}
-	}
-	return this.Geoms(geom)
 }
 
 func (this *Geos) ExteriorRing(geom *Geom) *Geom {
@@ -349,43 +230,6 @@ func (this *Geos) MultiLineString(lines []*Geom) *Geom {
 	return &Geom{geom}
 }
 
-func (this *Geos) AsWkt(geom *Geom) string {
-	str := C.GEOSGeomToWKT_r(this.v, geom.v)
-	result := C.GoString(str)
-	C.free(unsafe.Pointer(str))
-	return result
-}
-func (this *Geos) AsWkb(geom *Geom) []byte {
-	var size C.size_t
-	buf := C.GEOSGeomToWKB_buf_r(this.v, geom.v, &size)
-	if buf == nil {
-		return nil
-	}
-	result := C.GoBytes(unsafe.Pointer(buf), C.int(size))
-	C.free(unsafe.Pointer(buf))
-	return result
-}
-
-func (this *Geos) FromWkb(wkb []byte) *Geom {
-	geom := C.GEOSGeomFromWKB_buf_r(this.v, (*C.uchar)(&wkb[0]), C.size_t(len(wkb)))
-	if geom == nil {
-		return nil
-	}
-	return &Geom{geom}
-}
-
-func (this *Geos) Clone(geom *Geom) *Geom {
-	if geom == nil || geom.v == nil {
-		return nil
-	}
-
-	result := C.GEOSGeom_clone_r(this.v, geom.v)
-	if result == nil {
-		return nil
-	}
-	return &Geom{result}
-}
-
 func (this *Geos) IsValid(geom *Geom) bool {
 	if C.GEOSisValid_r(this.v, geom.v) == 1 {
 		return true
@@ -409,6 +253,14 @@ func (this *Geos) Type(geom *Geom) string {
 	return C.GoString(geomType)
 }
 
+func (this *Geos) Equals(a, b *Geom) bool {
+	result := C.GEOSEquals_r(this.v, a.v, b.v)
+	if result == 1 {
+		return true
+	}
+	return false
+}
+
 func (this *Geom) Area() float64 {
 	var area C.double
 	if ret := C.GEOSArea(this.v, &area); ret == 1 {
@@ -427,12 +279,11 @@ func (this *Geom) Length() float64 {
 	}
 }
 
-func (this *Geos) Equals(a, b *Geom) bool {
-	result := C.GEOSEquals_r(this.v, a.v, b.v)
-	if result == 1 {
-		return true
-	}
-	return false
+type Bounds struct {
+	MinX float64
+	MinY float64
+	MaxX float64
+	MaxY float64
 }
 
 var NilBounds = Bounds{1e20, 1e20, -1e20, -1e20}
@@ -474,87 +325,4 @@ func (this *Geom) Bounds() Bounds {
 	}
 
 	return Bounds{minx, miny, maxx, maxy}
-}
-
-type Bounds struct {
-	MinX float64
-	MinY float64
-	MaxX float64
-	MaxY float64
-}
-
-func (this *Geos) Destroy(geom *Geom) {
-	if geom.v != nil {
-		C.GEOSGeom_destroy_r(this.v, geom.v)
-		geom.v = nil
-	} else {
-		panic("double free?")
-	}
-}
-
-func destroyGeom(geom *Geom) {
-	C.GEOSGeom_destroy(geom.v)
-}
-
-func (this *Geos) DestroyLater(geom *Geom) {
-	runtime.SetFinalizer(geom, destroyGeom)
-}
-
-func (this *Geos) DestroyCoordSeq(coordSeq *CoordSeq) {
-	if coordSeq.v != nil {
-		C.GEOSCoordSeq_destroy_r(this.v, coordSeq.v)
-		coordSeq.v = nil
-	} else {
-		panic("double free?")
-	}
-}
-
-type indexGeom struct {
-	Geom     *Geom
-	Lock     *sync.Mutex
-	Prepared *PreparedGeom
-}
-type Index struct {
-	v     *C.GEOSSTRtree
-	geoms []indexGeom
-}
-
-func (this *Geos) CreateIndex() *Index {
-	tree := C.GEOSSTRtree_create_r(this.v, 10)
-	if tree == nil {
-		panic("unable to create tree")
-	}
-	return &Index{tree, []indexGeom{}}
-}
-
-// IndexQuery adds a geom to the index with the id.
-func (this *Geos) IndexAdd(index *Index, geom *Geom) {
-	id := len(index.geoms)
-	C.IndexAdd(this.v, index.v, geom.v, C.size_t(id))
-	prep := this.Prepare(geom)
-	index.geoms = append(index.geoms, indexGeom{geom, &sync.Mutex{}, prep})
-}
-
-// IndexQuery queries the index for intersections with geom.
-func (this *Geos) IndexQuery(index *Index, geom *Geom) []indexGeom {
-	hits := make(chan int)
-	go func() {
-		//
-		// using a pointer to our hits chan to pass it through
-		// C.IndexQuerySendCallback (in C.IndexQuery) back
-		// to goIndexSendQueryResult
-		C.IndexQuery(this.v, index.v, geom.v, unsafe.Pointer(&hits))
-		close(hits)
-	}()
-	var geoms []indexGeom
-	for idx := range hits {
-		geoms = append(geoms, index.geoms[idx])
-	}
-	return geoms
-}
-
-//export goIndexSendQueryResult
-func goIndexSendQueryResult(id C.size_t, ptr unsafe.Pointer) {
-	results := *(*chan int)(ptr)
-	results <- int(id)
 }

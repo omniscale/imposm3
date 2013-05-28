@@ -65,12 +65,15 @@ func LineStringWkb(g *geos.Geos, nodes []element.Node) (*element.Geometry, error
 		coordSeq.SetXY(g, uint32(i), nd.Long, nd.Lat)
 	}
 	geom, err := coordSeq.AsLineString(g)
-	wkb := g.AsWkb(geom)
-	if wkb == nil {
-		g.Destroy(geom)
-		return nil, errors.New("could not create wkb")
+	if err != nil {
+		// coordSeq gets Destroy by GEOS
+		return nil, err
 	}
 	g.DestroyLater(geom)
+	wkb := g.AsWkb(geom)
+	if wkb == nil {
+		return nil, errors.New("could not create wkb")
+	}
 	return &element.Geometry{
 		Wkb:  wkb,
 		Geom: geom,
@@ -97,7 +100,8 @@ func Polygon(g *geos.Geos, nodes []element.Node) (*geos.Geom, error) {
 	if err != nil {
 		return nil, err
 	}
-	// coordSeq inherited by LineString, no destroy
+
+	// coordSeq inherited by LinearRing, no destroy
 	for i, nd := range nodes {
 		err := coordSeq.SetXY(g, uint32(i), nd.Long, nd.Lat)
 		if err != nil {
@@ -106,7 +110,7 @@ func Polygon(g *geos.Geos, nodes []element.Node) (*geos.Geom, error) {
 	}
 	ring, err := coordSeq.AsLinearRing(g)
 	if err != nil {
-		g.DestroyCoordSeq(coordSeq)
+		// coordSeq gets Destroy by GEOS
 		return nil, err
 	}
 	// ring inherited by Polygon, no destroy
