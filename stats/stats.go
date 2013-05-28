@@ -65,7 +65,6 @@ func (c *counter) Tick() {
 // Duration returns the duration since start with seconds precission.
 func (c *counter) Duration() time.Duration {
 	return time.Duration(int64(time.Since(c.start).Seconds()) * 1000 * 1000 * 1000)
-
 }
 
 type Statistics struct {
@@ -73,16 +72,25 @@ type Statistics struct {
 	nodes     chan int
 	ways      chan int
 	relations chan int
-	reset     chan bool
+	status    chan int
 	messages  chan string
 }
+
+const (
+	RESET = iota
+	START
+	STOP
+	QUIT
+)
 
 func (s *Statistics) AddCoords(n int)    { s.coords <- n }
 func (s *Statistics) AddNodes(n int)     { s.nodes <- n }
 func (s *Statistics) AddWays(n int)      { s.ways <- n }
 func (s *Statistics) AddRelations(n int) { s.relations <- n }
-func (s *Statistics) Reset()             { s.reset <- true }
-func (s *Statistics) Stop()              { s.reset <- false }
+func (s *Statistics) Reset()             { s.status <- RESET }
+func (s *Statistics) Stop()              { s.status <- STOP }
+func (s *Statistics) Start()             { s.status <- START }
+func (s *Statistics) Quit()              { s.status <- QUIT }
 func (s *Statistics) Message(msg string) { s.messages <- msg }
 
 func StatsReporter() *Statistics {
@@ -93,12 +101,11 @@ func StatsReporter() *Statistics {
 	s.nodes = make(chan int)
 	s.ways = make(chan int)
 	s.relations = make(chan int)
-	s.reset = make(chan bool)
+	s.status = make(chan int)
 	s.messages = make(chan string)
 
 	go func() {
-		tick := time.Tick(500 * time.Millisecond)
-		tock := time.Tick(time.Minute)
+		var tick, tock <-chan time.Time
 		for {
 			select {
 			case n := <-s.coords:
@@ -109,15 +116,24 @@ func StatsReporter() *Statistics {
 				c.ways.Add(n)
 			case n := <-s.relations:
 				c.relations.Add(n)
-			case v := <-s.reset:
-				if v {
+			case v := <-s.status:
+				switch v {
+				case RESET:
 					c.PrintStats()
 					c = counter{}
 					c.start = time.Now()
-				} else {
-					// stop
+				case QUIT:
 					c.PrintStats()
 					return
+				case STOP:
+					tick = nil
+					tock = nil
+				case START:
+					c.PrintStats()
+					c = counter{}
+					c.start = time.Now()
+					tick = time.Tick(500 * time.Millisecond)
+					tock = time.Tick(time.Minute)
 				}
 			case msg := <-s.messages:
 				c.PrintTick()
@@ -135,7 +151,7 @@ func StatsReporter() *Statistics {
 
 func (c *counter) PrintTick() {
 	logging.Progress(
-		fmt.Sprintf("[%6s] C: %7d/s %7d/s (%10d) N: %7d/s %7d/s (%9d) W: %7d/s %7d/s (%8d) R: %6d/s %6d/s (%7d)\r",
+		fmt.Sprintf("[%6s] C: %7d/s %7d/s (%10d) N: %7d/s %7d/s (%9d) W: %7d/s %7d/s (%8d) R: %6d/s %6d/s (%7d)",
 			c.Duration(),
 			c.coords.Rps(1000),
 			c.coords.LastRps(1000),

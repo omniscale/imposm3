@@ -70,42 +70,61 @@ func (l *Logger) Errorf(msg string, args ...interface{}) {
 	defaultLogBroker.Records <- Record{ERROR, l.Component, fmt.Sprintf(msg, args...)}
 }
 
+func (l *Logger) Warnf(msg string, args ...interface{}) {
+	defaultLogBroker.Records <- Record{WARNING, l.Component, fmt.Sprintf(msg, args...)}
+}
+
 func (l *Logger) Printfl(level Level, msg string, args ...interface{}) {
 	defaultLogBroker.Records <- Record{level, l.Component, fmt.Sprintf(msg, args...)}
+}
+
+func (l *Logger) StartStep(msg string) string {
+	defaultLogBroker.StepStart <- Step{l.Component, msg}
+	return msg
+}
+
+func (l *Logger) StopStep(msg string) {
+	defaultLogBroker.StepStop <- Step{l.Component, msg}
 }
 
 func NewLogger(component string) *Logger {
 	return &Logger{component}
 }
 
+type Step struct {
+	Component string
+	Name      string
+}
+
 type LogBroker struct {
-	Records  chan Record
-	Progress chan string
-	quit     chan bool
-	wg       *sync.WaitGroup
+	Records      chan Record
+	Progress     chan string
+	StepStart    chan Step
+	StepStop     chan Step
+	quit         chan bool
+	wg           *sync.WaitGroup
+	newline      bool
+	lastProgress string
 }
 
 func (l *LogBroker) loop() {
 	l.wg.Add(1)
-	newline := true
-	lastProgress := ""
+	steps := make(map[Step]time.Time)
 For:
 	for {
 		select {
 		case record := <-l.Records:
-			if !newline {
-				fmt.Print(CLEARLINE)
-			}
 			l.printRecord(record)
-			newline = true
-			if lastProgress != "" {
-				l.printProgress(lastProgress)
-				newline = false
-			}
 		case progress := <-l.Progress:
 			l.printProgress(progress)
-			lastProgress = progress
-			newline = false
+		case step := <-l.StepStart:
+			steps[step] = time.Now()
+			l.printProgress(step.Name)
+		case step := <-l.StepStop:
+			startTime := steps[step]
+			delete(steps, step)
+			duration := time.Since(startTime)
+			l.printRecord(Record{INFO, step.Component, step.Name + " took: " + duration.String()})
 		case <-l.quit:
 			break For
 		}
@@ -123,13 +142,24 @@ func (l *LogBroker) printComponent(component string) {
 }
 
 func (l *LogBroker) printRecord(record Record) {
+	if !l.newline {
+		fmt.Print(CLEARLINE)
+	}
 	l.printPrefix()
 	l.printComponent(record.Component)
 	fmt.Println(record.Message)
+	l.newline = true
+	if l.lastProgress != "" {
+		l.printProgress(l.lastProgress)
+		l.newline = false
+	}
 }
 func (l *LogBroker) printProgress(progress string) {
 	l.printPrefix()
 	fmt.Print(progress)
+	fmt.Print("\r")
+	l.lastProgress = progress
+	l.newline = false
 }
 
 func Shutdown() {
@@ -141,10 +171,12 @@ var defaultLogBroker LogBroker
 
 func init() {
 	defaultLogBroker = LogBroker{
-		Records:  make(chan Record, 8),
-		Progress: make(chan string),
-		quit:     make(chan bool),
-		wg:       &sync.WaitGroup{},
+		Records:   make(chan Record, 8),
+		Progress:  make(chan string),
+		StepStart: make(chan Step),
+		StepStop:  make(chan Step),
+		quit:      make(chan bool),
+		wg:        &sync.WaitGroup{},
 	}
 	go defaultLogBroker.loop()
 }

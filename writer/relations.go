@@ -83,7 +83,7 @@ func (rw *RelationWriter) loop() {
 				for _, g := range parts {
 					rel := element.Relation(*r)
 					rel.Geom = &element.Geometry{g, geos.AsWkb(g)}
-					rw.insertMatches(&r.OSMElem, matches)
+					rw.insertMatches(&rel.OSMElem, matches)
 				}
 			} else {
 				rw.insertMatches(&r.OSMElem, matches)

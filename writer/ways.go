@@ -97,9 +97,9 @@ func (ww *WayWriter) buildAndInsert(geos *geos.Geos, w *element.Way, matches []m
 		for _, g := range parts {
 			way := element.Way(*w)
 			way.Geom = &element.Geometry{g, geos.AsWkb(g)}
-			ww.insertMatches(&w.OSMElem, matches)
+			ww.insertMatches(&way.OSMElem, matches)
 		}
 	} else {
-		ww.insertMatches(&w.OSMElem, matches)
+		ww.insertMatches(&way.OSMElem, matches)
 	}
 }

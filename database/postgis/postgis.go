@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"github.com/bmizerany/pq"
 	"goposm/database"
+	"goposm/logging"
 	"goposm/mapping"
-	"log"
 	"strings"
 )
+
+var log = logging.NewLogger("PostGIS")
 
 type ColumnSpec struct {
 	Name string
@@ -87,7 +89,7 @@ func NewTableSpec(pg *PostGIS, t *mapping.Table) *TableSpec {
 	for _, field := range t.Fields {
 		pgType, ok := pgTypes[field.Type]
 		if !ok {
-			log.Println("unhandled", field)
+			log.Errorf("unhandled field %v", field)
 			pgType = pgTypes["string"]
 		}
 		col := ColumnSpec{field.Name, pgType}
@@ -325,6 +327,8 @@ func dropTableIfExists(tx *sql.Tx, schema, table string) error {
 }
 
 func (pg *PostGIS) rotate(source, dest, backup string) error {
+	defer log.StopStep(log.StartStep(fmt.Sprintf("Rotating tables")))
+
 	if err := pg.createSchema(backup); err != nil {
 		return err
 	}
@@ -338,7 +342,7 @@ func (pg *PostGIS) rotate(source, dest, backup string) error {
 	for _, tableName := range pg.TableNames() {
 		tableName = pg.Prefix + tableName
 
-		log.Printf("rotating %s from %s -> %s -> %s\n", tableName, source, dest, backup)
+		log.Printf("Rotating %s from %s -> %s -> %s", tableName, source, dest, backup)
 
 		backupExists, err := tableExists(tx, backup, tableName)
 		if err != nil {
@@ -354,7 +358,7 @@ func (pg *PostGIS) rotate(source, dest, backup string) error {
 		}
 
 		if !sourceExists {
-			log.Printf("skipping rotate of %s, table does not exists in %s", tableName, source)
+			log.Warnf("skipping rotate of %s, table does not exists in %s", tableName, source)
 			continue
 		}
 
@@ -399,7 +403,7 @@ func (pg *PostGIS) RevertDeploy() error {
 func rollbackIfTx(tx **sql.Tx) {
 	if *tx != nil {
 		if err := tx.Rollback(); err != nil {
-			log.Println("rollback failed", err)
+			log.Fatal("rollback failed", err)
 		}
 	}
 }
@@ -440,6 +444,8 @@ func (pg *PostGIS) RemoveBackup() error {
 
 // Finish creates spatial indices on all tables.
 func (pg *PostGIS) Finish() error {
+	defer log.StopStep(log.StartStep(fmt.Sprintf("Creating geometry indices")))
+
 	tx, err := pg.Db.Begin()
 	if err != nil {
 		return err
@@ -452,7 +458,9 @@ func (pg *PostGIS) Finish() error {
 			if col.Type.Name() == "GEOMETRY" {
 				sql := fmt.Sprintf(`CREATE INDEX "%s_geom" ON "%s"."%s" USING GIST ("%s")`,
 					tableName, pg.Schema, tableName, col.Name)
+				step := log.StartStep(fmt.Sprintf("Creating geometry index on %s", tableName))
 				_, err := tx.Exec(sql)
+				log.StopStep(step)
 				if err != nil {
 					return err
 				}
@@ -465,7 +473,9 @@ func (pg *PostGIS) Finish() error {
 			if col.Type.Name() == "GEOMETRY" {
 				sql := fmt.Sprintf(`CREATE INDEX "%s_geom" ON "%s"."%s" USING GIST ("%s")`,
 					tableName, pg.Schema, tableName, col.Name)
+				step := log.StartStep(fmt.Sprintf("Creating geometry index on %s", tableName))
 				_, err := tx.Exec(sql)
+				log.StopStep(step)
 				if err != nil {
 					return err
 				}
@@ -507,7 +517,8 @@ func (pg *PostGIS) checkGeneralizedTableSources() {
 }
 
 func (pg *PostGIS) Generalize() error {
-	fmt.Println("generalizing")
+	defer log.StopStep(log.StartStep(fmt.Sprintf("Creating generalized tables")))
+
 	// generalized tables can depend on other generalized tables
 	// create tables with non-generalized sources first
 	for _, table := range pg.GeneralizedTables {
@@ -537,6 +548,9 @@ func (pg *PostGIS) Generalize() error {
 }
 
 func (pg *PostGIS) generalizeTable(table *GeneralizedTableSpec) error {
+	defer log.StopStep(log.StartStep(fmt.Sprintf("Generalizing %s into %s",
+		pg.Prefix+table.SourceName, pg.Prefix+table.Name)))
+
 	tx, err := pg.Db.Begin()
 	if err != nil {
 		return err
@@ -561,7 +575,7 @@ func (pg *PostGIS) generalizeTable(table *GeneralizedTableSpec) error {
 	sql := fmt.Sprintf(`CREATE TABLE "%s"."%s" AS (SELECT %s FROM "%s"."%s"%s)`,
 		pg.Schema, table.Name, columnSQL, pg.Schema,
 		pg.Prefix+table.SourceName, where)
-	fmt.Println(sql)
+
 	_, err = tx.Exec(sql)
 	if err != nil {
 		return err

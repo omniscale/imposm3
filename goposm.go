@@ -153,16 +153,17 @@ func main() {
 	}
 
 	if *read != "" {
+		progress.Start()
 		osmCache.Coords.SetLinearImport(true)
 		reader.ReadPbf(osmCache, progress, tagmapping, *read)
 		osmCache.Coords.SetLinearImport(false)
-		progress.Reset()
+		progress.Stop()
 		osmCache.Coords.Flush()
 	}
 
 	if *write {
 		if true {
-			progress.Reset()
+			progress.Start()
 			err = db.Init()
 			if err != nil {
 				die(err)
@@ -210,6 +211,7 @@ func main() {
 			nodeWriter.Close()
 			insertBuffer.Close()
 			dbWriter.Close()
+			progress.Stop()
 		}
 
 		if db, ok := db.(database.Generalizer); ok {
