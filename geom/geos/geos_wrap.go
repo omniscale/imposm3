@@ -14,7 +14,7 @@ void debug_wrap(const char *fmt, ...) {
 	va_list a_list;
     va_start(a_list, fmt);
 
-	char buf[100];
+	char buf[1024];
 	vsnprintf(buf, sizeof(buf), fmt, a_list);
 	va_end(a_list);
 	goLogString((char *)&buf);
