@@ -55,6 +55,28 @@ func TestPolygonNotClosed(t *testing.T) {
 	}
 }
 
+func TestPolygonIntersection(t *testing.T) {
+	nodes := []element.Node{
+		element.Node{Lat: 0, Long: 0},
+		element.Node{Lat: 0, Long: 10},
+		element.Node{Lat: 10, Long: 10},
+		element.Node{Lat: 10, Long: 0},
+		element.Node{Lat: 0, Long: 0},
+	}
+	g := geos.NewGeos()
+	defer g.Finish()
+	geom, err := Polygon(g, nodes)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	result := g.Intersection(geom, g.FromWkt("LINESTRING(-10 5, 20 5)"))
+
+	if !g.Equals(result, g.FromWkt("LINESTRING(0 5, 10 5)")) {
+		t.Fatal(g.AsWkt(result))
+	}
+}
+
 func BenchmarkLineString(b *testing.B) {
 	size := 16
 	nodes := make([]element.Node, size)

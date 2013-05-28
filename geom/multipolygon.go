@@ -119,14 +119,14 @@ func BuildRelGeometry(rel *element.Relation, rings []*Ring) (*geos.Geom, error) 
 		var interiors []*geos.Geom
 		for hole, _ := range shell.holes {
 			hole.MarkInserted(relTags)
-			ring := g.ExteriorRing(hole.geom)
+			ring := g.Clone(g.ExteriorRing(hole.geom))
 			if ring == nil {
 				return nil, errors.New("Error while getting exterior ring.")
 			}
 			interiors = append(interiors, ring)
 		}
 		shell.MarkInserted(relTags)
-		exterior := g.ExteriorRing(shell.geom)
+		exterior := g.Clone(g.ExteriorRing(shell.geom))
 		if exterior == nil {
 			return nil, errors.New("Error while getting exterior ring.")
 		}
@@ -146,6 +146,7 @@ func BuildRelGeometry(rel *element.Relation, rings []*Ring) (*geos.Geom, error) 
 			return nil, errors.New("Error while building multi-polygon.")
 		}
 	}
+	g.DestroyLater(result)
 
 	insertedWays := make(map[int64]bool)
 	for _, r := range rings {

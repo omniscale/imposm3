@@ -367,11 +367,23 @@ func (this *Geos) AsWkb(geom *Geom) []byte {
 }
 
 func (this *Geos) FromWkb(wkb []byte) *Geom {
-	geom := C.GEOSGeomFromWKB_buf((*C.uchar)(&wkb[0]), C.size_t(len(wkb)))
+	geom := C.GEOSGeomFromWKB_buf_r(this.v, (*C.uchar)(&wkb[0]), C.size_t(len(wkb)))
 	if geom == nil {
 		return nil
 	}
 	return &Geom{geom}
+}
+
+func (this *Geos) Clone(geom *Geom) *Geom {
+	if geom == nil || geom.v == nil {
+		return nil
+	}
+
+	result := C.GEOSGeom_clone_r(this.v, geom.v)
+	if result == nil {
+		return nil
+	}
+	return &Geom{result}
 }
 
 func (this *Geos) IsValid(geom *Geom) bool {
@@ -413,6 +425,14 @@ func (this *Geom) Length() float64 {
 	} else {
 		return 0
 	}
+}
+
+func (this *Geos) Equals(a, b *Geom) bool {
+	result := C.GEOSEquals_r(this.v, a.v, b.v)
+	if result == 1 {
+		return true
+	}
+	return false
 }
 
 var NilBounds = Bounds{1e20, 1e20, -1e20, -1e20}

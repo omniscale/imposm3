@@ -86,7 +86,6 @@ func PolygonWkb(g *geos.Geos, nodes []element.Node) (*element.Geometry, error) {
 	if wkb == nil {
 		return nil, errors.New("could not create wkb")
 	}
-	g.DestroyLater(geom)
 	return &element.Geometry{
 		Wkb:  wkb,
 		Geom: geom,
@@ -105,15 +104,18 @@ func Polygon(g *geos.Geos, nodes []element.Node) (*geos.Geom, error) {
 			return nil, err
 		}
 	}
-	geom, err := coordSeq.AsLinearRing(g)
+	ring, err := coordSeq.AsLinearRing(g)
 	if err != nil {
+		g.DestroyCoordSeq(coordSeq)
 		return nil, err
 	}
-	// geom inherited by Polygon, no destroy
+	// ring inherited by Polygon, no destroy
 
-	geom = g.CreatePolygon(geom, nil)
-	if err != nil {
-		return nil, err
+	geom := g.CreatePolygon(ring, nil)
+	if geom == nil {
+		g.Destroy(ring)
+		return nil, errors.New("unable to create polygon")
 	}
+	g.DestroyLater(geom)
 	return geom, nil
 }
