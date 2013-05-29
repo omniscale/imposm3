@@ -48,6 +48,7 @@ var (
 	revertDeploy     = flag.Bool("revertdeploy", false, "revert deploy to production")
 	removeBackup     = flag.Bool("removebackup", false, "remove backups from deploy")
 	limitTo          = flag.String("limitto", "", "limit to geometries")
+	quiet            = flag.Bool("quiet", false, "quiet log output")
 )
 
 func die(args ...interface{}) {
@@ -91,6 +92,10 @@ func main() {
 		}
 
 		go stats.MemProfiler(parts[0], interval)
+	}
+
+	if *quiet {
+		logging.SetQuiet(true)
 	}
 
 	if (*write || *read != "") && (*revertDeploy || *removeBackup) {

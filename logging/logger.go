@@ -50,6 +50,10 @@ func Progress(msg string) {
 	defaultLogBroker.Progress <- msg
 }
 
+func SetQuiet(quiet bool) {
+	defaultLogBroker.SetQuiet(quiet)
+}
+
 type Logger struct {
 	Component string
 }
@@ -101,10 +105,15 @@ type LogBroker struct {
 	Progress     chan string
 	StepStart    chan Step
 	StepStop     chan Step
+	quiet        bool
 	quit         chan bool
 	wg           *sync.WaitGroup
 	newline      bool
 	lastProgress string
+}
+
+func (l *LogBroker) SetQuiet(quiet bool) {
+	l.quiet = quiet
 }
 
 func (l *LogBroker) loop() {
@@ -116,7 +125,9 @@ For:
 		case record := <-l.Records:
 			l.printRecord(record)
 		case progress := <-l.Progress:
-			l.printProgress(progress)
+			if !l.quiet {
+				l.printProgress(progress)
+			}
 		case step := <-l.StepStart:
 			steps[step] = time.Now()
 			l.printProgress(step.Name)
