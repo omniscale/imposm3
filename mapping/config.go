@@ -2,6 +2,7 @@ package mapping
 
 import (
 	"encoding/json"
+	"errors"
 	"goposm/element"
 	"os"
 )
@@ -68,7 +69,10 @@ func NewMapping(filename string) (*Mapping, error) {
 		return nil, err
 	}
 
-	mapping.prepare()
+	err = mapping.prepare()
+	if err != nil {
+		return nil, err
+	}
 	return &mapping, nil
 }
 
@@ -82,13 +86,25 @@ func (t *Table) ExtraTags() map[string]bool {
 	return tags
 }
 
-func (m *Mapping) prepare() {
+func (m *Mapping) prepare() error {
 	for name, t := range m.Tables {
 		t.Name = name
+	}
+	for name, t := range m.Tables {
+		switch t.Type {
+		case "":
+			return errors.New("missing table type for table " + name)
+		case "point":
+		case "linestring":
+		case "polygon":
+		default:
+			return errors.New("unknown type " + t.Type + " for table " + name)
+		}
 	}
 	for name, t := range m.GeneralizedTables {
 		t.Name = name
 	}
+	return nil
 }
 
 func (tt TagTables) addFromMapping(mapping map[string][]string, table DestTable) {
