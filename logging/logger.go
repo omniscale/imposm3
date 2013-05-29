@@ -129,6 +129,16 @@ For:
 			break For
 		}
 	}
+Flush:
+	// after quit, print all records from chan
+	for {
+		select {
+		case record := <-l.Records:
+			l.printRecord(record)
+		default:
+			break Flush
+		}
+	}
 	l.wg.Done()
 }
 
