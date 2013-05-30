@@ -35,6 +35,7 @@ func init() {
 
 var (
 	cpuprofile       = flag.String("cpuprofile", "", "filename of cpu profile output")
+	httpprofile      = flag.String("httpprofile", "", "bind address for profile server")
 	memprofile       = flag.String("memprofile", "", "dir name of mem profile output and interval (fname:interval)")
 	cachedir         = flag.String("cachedir", "/tmp/goposm", "cache directory")
 	overwritecache   = flag.Bool("overwritecache", false, "overwritecache")
@@ -75,6 +76,10 @@ func main() {
 		}
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()
+	}
+
+	if *httpprofile != "" {
+		stats.StartHttpPProf(*httpprofile)
 	}
 
 	if *memprofile != "" {
