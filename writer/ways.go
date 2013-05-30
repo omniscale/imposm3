@@ -19,12 +19,13 @@ type WayWriter struct {
 	polygonTagMatcher    *mapping.TagMatcher
 }
 
-func NewWayWriter(osmCache *cache.OSMCache, ways chan *element.Way,
+func NewWayWriter(osmCache *cache.OSMCache, diffCache *cache.DiffCache, ways chan *element.Way,
 	insertBuffer *InsertBuffer, lineStringTagMatcher *mapping.TagMatcher,
 	polygonTagMatcher *mapping.TagMatcher, progress *stats.Statistics) *OsmElemWriter {
 	ww := WayWriter{
 		OsmElemWriter: OsmElemWriter{
 			osmCache:     osmCache,
+			diffCache:    diffCache,
 			progress:     progress,
 			wg:           &sync.WaitGroup{},
 			insertBuffer: insertBuffer,
@@ -65,9 +66,9 @@ func (ww *WayWriter) loop() {
 			}
 		}
 
-		// if *diff {
-		// 	ww.diffCache.Coords.AddFromWay(w)
-		// }
+		if ww.diffCache != nil {
+			ww.diffCache.Coords.AddFromWay(w)
+		}
 	}
 	ww.wg.Done()
 }

@@ -180,13 +180,16 @@ func main() {
 		if err != nil {
 			die(err)
 		}
+		var diffCache *cache.DiffCache
 
-		diffCache := cache.NewDiffCache(*cachedir)
-		if err = diffCache.Remove(); err != nil {
-			die(err)
-		}
-		if err = diffCache.Open(); err != nil {
-			die(err)
+		if *diff {
+			diffCache = cache.NewDiffCache(*cachedir)
+			if err = diffCache.Remove(); err != nil {
+				die(err)
+			}
+			if err = diffCache.Open(); err != nil {
+				die(err)
+			}
 		}
 
 		insertBuffer := writer.NewInsertBuffer()
@@ -206,7 +209,7 @@ func main() {
 		relWriter.Close()
 
 		ways := osmCache.Ways.Iter()
-		wayWriter := writer.NewWayWriter(osmCache, ways, insertBuffer,
+		wayWriter := writer.NewWayWriter(osmCache, diffCache, ways, insertBuffer,
 			lineStringsTagMatcher, polygonsTagMatcher, progress)
 		wayWriter.SetClipper(geometryClipper)
 		wayWriter.Start()
@@ -217,13 +220,15 @@ func main() {
 		nodeWriter.SetClipper(geometryClipper)
 		nodeWriter.Start()
 
-		diffCache.Coords.Close()
-
 		wayWriter.Close()
 		nodeWriter.Close()
 		insertBuffer.Close()
 		dbWriter.Close()
 		progress.Stop()
+
+		if *diff {
+			diffCache.Close()
+		}
 
 		log.StopStep(stepWrite)
 

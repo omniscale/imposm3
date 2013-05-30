@@ -114,9 +114,9 @@ func NewRefIndex(path string) (*RefIndex, error) {
 	if err != nil {
 		return nil, err
 	}
-	index.write = make(chan map[int64][]int64)
+	index.write = make(chan map[int64][]int64, 2)
 	index.cache = make(map[int64][]int64, cacheSize)
-	index.add = make(chan idRef)
+	index.add = make(chan idRef, 1024)
 
 	index.waitWrite = &sync.WaitGroup{}
 	index.waitAdd = &sync.WaitGroup{}

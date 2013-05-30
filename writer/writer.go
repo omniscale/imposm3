@@ -55,6 +55,7 @@ type looper interface {
 
 type OsmElemWriter struct {
 	osmCache     *cache.OSMCache
+	diffCache    *cache.DiffCache
 	progress     *stats.Statistics
 	insertBuffer *InsertBuffer
 	wg           *sync.WaitGroup
