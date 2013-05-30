@@ -177,6 +177,14 @@ func (index *CoordsRefIndex) AddFromWay(way *element.Way) {
 	}
 }
 
+func (index *WaysRefIndex) AddFromMembers(relId int64, members []element.Member) {
+	for _, member := range members {
+		if member.Type == element.WAY {
+			index.add <- idRef{member.Id, relId}
+		}
+	}
+}
+
 func (index *RefIndex) addToCache(id, ref int64) {
 	refs, ok := index.cache[id]
 	if !ok {

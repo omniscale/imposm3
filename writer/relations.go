@@ -19,11 +19,12 @@ type RelationWriter struct {
 	tagMatcher *mapping.TagMatcher
 }
 
-func NewRelationWriter(osmCache *cache.OSMCache, rel chan *element.Relation,
+func NewRelationWriter(osmCache *cache.OSMCache, diffCache *cache.DiffCache, rel chan *element.Relation,
 	insertBuffer *InsertBuffer, tagMatcher *mapping.TagMatcher, progress *stats.Statistics) *OsmElemWriter {
 	rw := RelationWriter{
 		OsmElemWriter: OsmElemWriter{
 			osmCache:     osmCache,
+			diffCache:    diffCache,
 			progress:     progress,
 			wg:           &sync.WaitGroup{},
 			insertBuffer: insertBuffer,
@@ -63,6 +64,10 @@ func (rw *RelationWriter) loop() {
 			proj.NodesToMerc(m.Way.Nodes)
 		}
 
+		// BuildRelation updates r.Members but we need all of them
+		// for the diffCache
+		allMembers := r.Members
+
 		err = geom.BuildRelation(r)
 		if err != nil {
 			if err, ok := err.(ErrorLevel); ok {
@@ -91,6 +96,14 @@ func (rw *RelationWriter) loop() {
 			err := rw.osmCache.InsertedWays.PutMembers(r.Members)
 			if err != nil {
 				fmt.Println(err)
+			}
+			if rw.diffCache != nil {
+				rw.diffCache.Ways.AddFromMembers(r.Id, allMembers)
+				for _, member := range allMembers {
+					if member.Way != nil {
+						rw.diffCache.Coords.AddFromWay(member.Way)
+					}
+				}
 			}
 		}
 	}

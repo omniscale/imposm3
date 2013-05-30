@@ -200,7 +200,7 @@ func main() {
 		polygonsTagMatcher := tagmapping.PolygonMatcher()
 
 		relations := osmCache.Relations.Iter()
-		relWriter := writer.NewRelationWriter(osmCache, relations,
+		relWriter := writer.NewRelationWriter(osmCache, diffCache, relations,
 			insertBuffer, polygonsTagMatcher, progress)
 		relWriter.SetClipper(geometryClipper)
 		relWriter.Start()
