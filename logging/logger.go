@@ -58,6 +58,10 @@ type Logger struct {
 	Component string
 }
 
+func (l *Logger) Print(args ...interface{}) {
+	defaultLogBroker.Records <- Record{INFO, l.Component, fmt.Sprint(args...)}
+}
+
 func (l *Logger) Printf(msg string, args ...interface{}) {
 	defaultLogBroker.Records <- Record{INFO, l.Component, fmt.Sprintf(msg, args...)}
 }
@@ -72,6 +76,10 @@ func (l *Logger) Fatalf(msg string, args ...interface{}) {
 
 func (l *Logger) Errorf(msg string, args ...interface{}) {
 	defaultLogBroker.Records <- Record{ERROR, l.Component, fmt.Sprintf(msg, args...)}
+}
+
+func (l *Logger) Warn(args ...interface{}) {
+	defaultLogBroker.Records <- Record{WARNING, l.Component, fmt.Sprint(args...)}
 }
 
 func (l *Logger) Warnf(msg string, args ...interface{}) {

@@ -4,11 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"goposm/element"
-	"log"
+	"goposm/logging"
 	"regexp"
 	"strconv"
 	"strings"
 )
+
+var log = logging.NewLogger("mapping")
 
 var AvailableFieldTypes map[string]FieldType
 
@@ -58,6 +60,20 @@ func (t *TableFields) MakeRow(elem *element.OSMElem, match Match) []interface{} 
 	return row
 }
 
+func (field *Field) FieldType() *FieldType {
+	if fieldType, ok := AvailableFieldTypes[field.Type]; ok {
+		if fieldType.MakeFunc != nil {
+			makeValue, err := fieldType.MakeFunc(field.Name, fieldType, *field)
+			if err != nil {
+				log.Print(err)
+			}
+			fieldType = FieldType{fieldType.Name, fieldType.GoType, makeValue, nil}
+		}
+		return &fieldType
+	}
+	return nil
+}
+
 func (t *Table) TableFields() *TableFields {
 	result := TableFields{}
 
@@ -65,18 +81,11 @@ func (t *Table) TableFields() *TableFields {
 		field := FieldSpec{}
 		field.Name = mappingField.Name
 
-		fieldType, ok := AvailableFieldTypes[mappingField.Type]
-		if !ok {
-			log.Println("unhandled type:", mappingField.Type)
+		fieldType := mappingField.FieldType()
+		if fieldType != nil {
+			field.Type = *fieldType
 		} else {
-			if fieldType.MakeFunc != nil {
-				makeValue, err := fieldType.MakeFunc(mappingField.Name, fieldType, *mappingField)
-				if err != nil {
-					log.Println(err)
-				}
-				fieldType = FieldType{fieldType.Name, fieldType.GoType, makeValue, nil}
-			}
-			field.Type = fieldType
+			log.Warn("unhandled type:", mappingField.Type)
 		}
 		result.fields = append(result.fields, field)
 	}

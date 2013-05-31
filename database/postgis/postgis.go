@@ -87,9 +87,13 @@ func NewTableSpec(pg *PostGIS, t *mapping.Table) *TableSpec {
 		Srid:         pg.Config.Srid,
 	}
 	for _, field := range t.Fields {
-		pgType, ok := pgTypes[field.Type]
+		fieldType := field.FieldType()
+		if fieldType == nil {
+			continue
+		}
+		pgType, ok := pgTypes[fieldType.GoType]
 		if !ok {
-			log.Errorf("unhandled field %v", field)
+			log.Errorf("unhandled field type %v, using string type", fieldType)
 			pgType = pgTypes["string"]
 		}
 		col := ColumnSpec{field.Name, pgType}

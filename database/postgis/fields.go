@@ -51,18 +51,12 @@ var pgTypes map[string]ColumnType
 
 func init() {
 	pgTypes = map[string]ColumnType{
-		"id":            &simpleColumnType{"BIGINT"},
-		"geometry":      &geometryType{"GEOMETRY"},
-		"bool":          &simpleColumnType{"BOOL"},
-		"boolint":       &simpleColumnType{"SMALLINT"},
-		"string":        &simpleColumnType{"VARCHAR"},
-		"name":          &simpleColumnType{"VARCHAR"},
-		"direction":     &simpleColumnType{"SMALLINT"},
-		"integer":       &simpleColumnType{"INTEGER"},
-		"wayzorder":     &simpleColumnType{"INTEGER"},
-		"zorder":        &simpleColumnType{"INTEGER"},
-		"pseudoarea":    &simpleColumnType{"REAL"},
-		"mapping_key":   &simpleColumnType{"VARCHAR"},
-		"mapping_value": &simpleColumnType{"VARCHAR"},
+		"string":   &simpleColumnType{"VARCHAR"},
+		"bool":     &simpleColumnType{"BOOL"},
+		"int8":     &simpleColumnType{"SMALLINT"},
+		"int32":    &simpleColumnType{"INT"},
+		"int64":    &simpleColumnType{"BIGINT"},
+		"float32":  &simpleColumnType{"REAL"},
+		"geometry": &geometryType{"GEOMETRY"},
 	}
 }
