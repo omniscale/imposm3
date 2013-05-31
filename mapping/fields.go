@@ -2,27 +2,31 @@ package mapping
 
 import (
 	"errors"
+	"fmt"
 	"goposm/element"
 	"log"
+	"regexp"
 	"strconv"
+	"strings"
 )
 
 var AvailableFieldTypes map[string]FieldType
 
 func init() {
 	AvailableFieldTypes = map[string]FieldType{
-		"bool":          {"bool", "bool", Bool, nil},
-		"boolint":       {"boolint", "int8", BoolInt, nil},
-		"id":            {"id", "int64", Id, nil},
-		"string":        {"string", "string", String, nil},
-		"direction":     {"direction", "int8", Direction, nil},
-		"integer":       {"integer", "int32", Integer, nil},
-		"mapping_key":   {"mapping_key", "string", Key, nil},
-		"mapping_value": {"mapping_value", "string", Value, nil},
-		"geometry":      {"geometry", "geometry", Geometry, nil},
-		"wayzorder":     {"wayzorder", "int32", WayZOrder, nil},
-		"pseudoarea":    {"pseudoarea", "float32", PseudoArea, nil},
-		"zorder":        {"zorder", "int32", nil, MakeZOrder},
+		"bool":                 {"bool", "bool", Bool, nil},
+		"boolint":              {"boolint", "int8", BoolInt, nil},
+		"id":                   {"id", "int64", Id, nil},
+		"string":               {"string", "string", String, nil},
+		"direction":            {"direction", "int8", Direction, nil},
+		"integer":              {"integer", "int32", Integer, nil},
+		"mapping_key":          {"mapping_key", "string", Key, nil},
+		"mapping_value":        {"mapping_value", "string", Value, nil},
+		"geometry":             {"geometry", "geometry", Geometry, nil},
+		"wayzorder":            {"wayzorder", "int32", WayZOrder, nil},
+		"pseudoarea":           {"pseudoarea", "float32", PseudoArea, nil},
+		"zorder":               {"zorder", "int32", nil, MakeZOrder},
+		"string_suffixreplace": {"string_suffixreplace", "string", nil, MakeSuffixReplace},
 	}
 }
 
@@ -194,7 +198,6 @@ func WayZOrder(val string, elem *element.OSMElem, match Match) interface{} {
 }
 
 func MakeZOrder(fieldName string, fieldType FieldType, field Field) (MakeValue, error) {
-	ranks := make(map[string]int)
 	_rankList, ok := field.Args["ranks"]
 	if !ok {
 		return nil, errors.New("missing ranks in args for zorder")
@@ -205,6 +208,7 @@ func MakeZOrder(fieldName string, fieldType FieldType, field Field) (MakeValue, 
 		return nil, errors.New("ranks in args for zorder not a list")
 	}
 
+	ranks := make(map[string]int)
 	for i, rank := range rankList {
 		rankName, ok := rank.(string)
 		if !ok {
@@ -221,4 +225,37 @@ func MakeZOrder(fieldName string, fieldType FieldType, field Field) (MakeValue, 
 	}
 
 	return zOrder, nil
+}
+
+func MakeSuffixReplace(fieldName string, fieldType FieldType, field Field) (MakeValue, error) {
+	_changes, ok := field.Args["suffixes"]
+	if !ok {
+		return nil, errors.New("missing suffixes in args for string_suffixreplace")
+	}
+	fmt.Printf("%#v\n", _changes)
+
+	changes, ok := _changes.(map[string]string)
+	if !ok {
+		return nil, errors.New("suffixes in args for string_suffixreplace not a list")
+	}
+
+	var suffixes []string
+	for k, _ := range changes {
+		suffixes = append(suffixes, k)
+	}
+	reStr := `(` + strings.Join(suffixes, "|") + `)\b`
+	re := regexp.MustCompile(reStr)
+
+	replFunc := func(match string) string {
+		return changes[match]
+	}
+
+	suffixReplace := func(val string, elem *element.OSMElem, match Match) interface{} {
+		if val != "" {
+			return re.ReplaceAllStringFunc(val, replFunc)
+		}
+		return val
+	}
+
+	return suffixReplace, nil
 }

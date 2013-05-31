@@ -35,3 +35,24 @@ func TestBool(t *testing.T) {
 	}
 
 }
+
+func TestMakeSuffixReplace(t *testing.T) {
+	field := Field{
+		"name", "name", "string_suffixreplace",
+		map[string]interface{}{"suffixes": map[string]string{"Straße": "Str.", "straße": "str."}}}
+	suffixReplace, err := MakeSuffixReplace("name", FieldType{}, field)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if result := suffixReplace("Hauptstraße", nil, Match{}); result != "Hauptstr." {
+		t.Fatal(result)
+	}
+	if result := suffixReplace("", nil, Match{}); result != "" {
+		t.Fatal(result)
+	}
+	if result := suffixReplace("Foostraßeee", nil, Match{}); result != "Foostraßeee" {
+		t.Fatal(result)
+	}
+}
