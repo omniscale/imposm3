@@ -41,6 +41,12 @@ const (
 	RELATION            = 2
 )
 
+var MemberTypeValues = map[string]MemberType{
+	"node":     NODE,
+	"way":      WAY,
+	"relation": RELATION,
+}
+
 type Member struct {
 	Id   int64
 	Type MemberType
