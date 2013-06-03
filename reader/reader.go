@@ -8,10 +8,13 @@ import (
 	"goposm/stats"
 	"os"
 	"runtime"
+	"strconv"
+	"strings"
 	"sync"
 )
 
 var skipCoords, skipNodes, skipWays bool
+var nParser, nWays, nRels, nNodes, nCoords int64
 
 func init() {
 	if os.Getenv("GOPOSM_SKIP_COORDS") != "" {
@@ -23,6 +26,20 @@ func init() {
 	if os.Getenv("GOPOSM_SKIP_WAYS") != "" {
 		skipWays = true
 	}
+	nParser = int64(runtime.NumCPU())
+	nWays = int64(runtime.NumCPU())
+	nRels = int64(runtime.NumCPU())
+	nNodes = int64(runtime.NumCPU())
+	nCoords = int64(runtime.NumCPU())
+	if procConf := os.Getenv("GOPOSM_READ_PROCS"); procConf != "" {
+		parts := strings.Split(procConf, ":")
+		nParser, _ = strconv.ParseInt(parts[0], 10, 32)
+		nRels, _ = strconv.ParseInt(parts[1], 10, 32)
+		nWays, _ = strconv.ParseInt(parts[2], 10, 32)
+		nNodes, _ = strconv.ParseInt(parts[3], 10, 32)
+		nCoords, _ = strconv.ParseInt(parts[3], 10, 32)
+	}
+
 }
 
 func ReadPbf(cache *cache.OSMCache, progress *stats.Statistics, tagmapping *mapping.Mapping, filename string) {
@@ -34,7 +51,7 @@ func ReadPbf(cache *cache.OSMCache, progress *stats.Statistics, tagmapping *mapp
 	positions := parser.PBFBlockPositions(filename)
 
 	waitParser := sync.WaitGroup{}
-	for i := 0; i < runtime.NumCPU(); i++ {
+	for i := 0; int64(i) < nParser; i++ {
 		waitParser.Add(1)
 		go func() {
 			for pos := range positions {
@@ -52,7 +69,7 @@ func ReadPbf(cache *cache.OSMCache, progress *stats.Statistics, tagmapping *mapp
 
 	waitWriter := sync.WaitGroup{}
 
-	for i := 0; i < runtime.NumCPU(); i++ {
+	for i := 0; int64(i) < nWays; i++ {
 		waitWriter.Add(1)
 		go func() {
 			m := tagmapping.WayTagFilter()
@@ -70,7 +87,7 @@ func ReadPbf(cache *cache.OSMCache, progress *stats.Statistics, tagmapping *mapp
 		}()
 	}
 
-	for i := 0; i < runtime.NumCPU(); i++ {
+	for i := 0; int64(i) < nRels; i++ {
 		waitWriter.Add(1)
 		go func() {
 			m := tagmapping.RelationTagFilter()
@@ -85,7 +102,7 @@ func ReadPbf(cache *cache.OSMCache, progress *stats.Statistics, tagmapping *mapp
 		}()
 	}
 
-	for i := 0; i < runtime.NumCPU(); i++ {
+	for i := 0; int64(i) < nCoords; i++ {
 		waitWriter.Add(1)
 		go func() {
 			for nds := range coords {
@@ -99,7 +116,7 @@ func ReadPbf(cache *cache.OSMCache, progress *stats.Statistics, tagmapping *mapp
 		}()
 	}
 
-	for i := 0; i < runtime.NumCPU(); i++ {
+	for i := 0; int64(i) < nNodes; i++ {
 		waitWriter.Add(1)
 		go func() {
 			m := tagmapping.NodeTagFilter()
