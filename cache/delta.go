@@ -209,18 +209,34 @@ func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) error {
 	return nil
 }
 
+var (
+	freeBuffer = make(chan []byte, 4)
+)
+
 func (p *DeltaCoordsCache) putCoordsPacked(bunchId int64, nodes []element.Node) error {
 	if len(nodes) == 0 {
 		return nil
 	}
 	keyBuf := idToKeyBuf(bunchId)
 
-	data := binary.MarshalDeltaNodes(nodes, nil)
+	var data []byte
+	select {
+	case data = <-freeBuffer:
+	default:
+	}
+
+	data = binary.MarshalDeltaNodes(nodes, data)
 
 	err := p.db.Put(p.wo, keyBuf, data)
 	if err != nil {
 		return err
 	}
+
+	select {
+	case freeBuffer <- data:
+	default:
+	}
+
 	return nil
 }
 
