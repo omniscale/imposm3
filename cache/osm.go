@@ -179,9 +179,10 @@ func (c *Cache) open(path string) error {
 }
 
 func idToKeyBuf(id int64) []byte {
-	var b bytes.Buffer
-	bin.Write(&b, bin.BigEndian, &id)
-	return b.Bytes()
+	b := make([]byte, 0, 8)
+	buf := bytes.NewBuffer(b)
+	bin.Write(buf, bin.BigEndian, &id)
+	return b
 }
 
 func (p *Cache) Close() {
