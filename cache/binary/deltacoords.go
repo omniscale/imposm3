@@ -9,8 +9,11 @@ import (
 func MarshalDeltaNodes(nodes []element.Node, buf []byte) []byte {
 	estimatedLength := len(nodes)*4*3 + binary.MaxVarintLen64
 
-	if len(buf) < estimatedLength {
+	if cap(buf) < estimatedLength {
 		buf = make([]byte, estimatedLength)
+	} else {
+		// resize slice to full capacity
+		buf = buf[:cap(buf)-1]
 	}
 
 	lastId := int64(0)
