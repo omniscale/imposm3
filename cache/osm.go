@@ -182,7 +182,7 @@ func idToKeyBuf(id int64) []byte {
 	b := make([]byte, 0, 8)
 	buf := bytes.NewBuffer(b)
 	bin.Write(buf, bin.BigEndian, &id)
-	return b
+	return b[:8]
 }
 
 func (p *Cache) Close() {
