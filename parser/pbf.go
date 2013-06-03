@@ -101,7 +101,8 @@ func ReadDenseNodes(
 }
 
 func ParseDenseNodeTags(stringtable StringTable, keysVals *[]int32, pos *int) map[string]string {
-	result := make(map[string]string)
+	// make map later if needed
+	var result map[string]string
 	for {
 		if *pos >= len(*keysVals) {
 			return result
@@ -113,11 +114,17 @@ func ParseDenseNodeTags(stringtable StringTable, keysVals *[]int32, pos *int) ma
 		}
 		val := (*keysVals)[*pos]
 		*pos += 1
+		if result == nil {
+			result = make(map[string]string)
+		}
 		result[stringtable[key]] = stringtable[val]
 	}
 }
 
 func ParseTags(stringtable StringTable, keys []uint32, vals []uint32) map[string]string {
+	if len(keys) == 0 {
+		return nil
+	}
 	tags := make(map[string]string)
 	for i := 0; i < len(keys); i++ {
 		key := stringtable[keys[i]]
