@@ -87,9 +87,9 @@ func BuildRelGeometry(rel *element.Relation, rings []*Ring) (*geos.Geom, error) 
 	totalRings := len(rings)
 	shells := map[*Ring]bool{rings[0]: true}
 	for i := 0; i < totalRings; i++ {
-		testGeom := rings[i].geom //TODO prepared
+		testGeom := g.Prepare(rings[i].geom)
 		for j := i + 1; j < totalRings; j++ {
-			if g.Contains(testGeom, rings[j].geom) {
+			if g.PreparedContains(testGeom, rings[j].geom) {
 				if rings[j].containedBy != -1 {
 					// j is inside a larger ring, remove that relationship
 					// e.g. j is hole inside a hole (i)
