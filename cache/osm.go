@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"bytes"
 	bin "encoding/binary"
 	"errors"
 	"github.com/jmhodges/levigo"
@@ -179,9 +178,8 @@ func (c *Cache) open(path string) error {
 }
 
 func idToKeyBuf(id int64) []byte {
-	b := make([]byte, 0, 8)
-	buf := bytes.NewBuffer(b)
-	bin.Write(buf, bin.BigEndian, &id)
+	b := make([]byte, 8)
+	bin.BigEndian.PutUint64(b, uint64(id))
 	return b[:8]
 }
 
