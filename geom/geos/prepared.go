@@ -36,3 +36,12 @@ func (this *Geos) PreparedIntersects(a *PreparedGeom, b *Geom) bool {
 	// result == 2 -> exception (already logged to console)
 	return false
 }
+
+func (this *Geos) PreparedDestroy(geom *PreparedGeom) {
+	if geom.v != nil {
+		C.GEOSPreparedGeom_destroy_r(this.v, geom.v)
+		geom.v = nil
+	} else {
+		log.Printf("double free?")
+	}
+}

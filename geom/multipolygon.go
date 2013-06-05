@@ -88,6 +88,9 @@ func BuildRelGeometry(rel *element.Relation, rings []*Ring) (*geos.Geom, error) 
 	shells := map[*Ring]bool{rings[0]: true}
 	for i := 0; i < totalRings; i++ {
 		testGeom := g.Prepare(rings[i].geom)
+		if testGeom == nil {
+			return nil, errors.New("Error while preparing geometry")
+		}
 		for j := i + 1; j < totalRings; j++ {
 			if g.PreparedContains(testGeom, rings[j].geom) {
 				if rings[j].containedBy != -1 {
@@ -110,6 +113,7 @@ func BuildRelGeometry(rel *element.Relation, rings []*Ring) (*geos.Geom, error) 
 			// add as shell if it is not a hole
 			shells[rings[i]] = true
 		}
+		g.PreparedDestroy(testGeom)
 	}
 
 	relTags := relationTags(rel.Tags, rings[0].ways[0].Tags)
