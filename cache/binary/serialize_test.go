@@ -26,9 +26,6 @@ func TestMarshalNode(t *testing.T) {
 
 	data, _ := MarshalNode(node)
 	node, _ = UnmarshalNode(data)
-	if node.Id != 12345 {
-		t.Error("id does not match")
-	}
 
 	if node.Tags["name"] != "test" {
 		t.Error("name tag does not match")
@@ -53,9 +50,6 @@ func TestMarshalWay(t *testing.T) {
 
 	data, _ := MarshalWay(way)
 	way, _ = UnmarshalWay(data)
-	if way.Id != 12345 {
-		t.Error("id does not match")
-	}
 
 	if way.Tags["name"] != "test" {
 		t.Error("name tag does not match")
@@ -85,9 +79,6 @@ func TestMarshalRelation(t *testing.T) {
 
 	data, _ := MarshalRelation(rel)
 	rel, _ = UnmarshalRelation(data)
-	if rel.Id != 12345 {
-		t.Error("id does not match")
-	}
 
 	if rel.Tags["name"] != "test" {
 		t.Error("name tag does not match")
