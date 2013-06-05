@@ -146,6 +146,15 @@ func BuildRelGeometry(rel *element.Relation, rings []*Ring) (*geos.Geom, error) 
 			return nil, errors.New("Error while building multi-polygon.")
 		}
 	}
+	if !g.IsValid(result) {
+		buffered := g.Buffer(result, 0)
+		if buffered == nil {
+			return nil, errors.New("Error while fixing geom with buffer(0)")
+		}
+		g.Destroy(result)
+		result = buffered
+	}
+
 	g.DestroyLater(result)
 
 	insertedWays := make(map[int64]bool)
