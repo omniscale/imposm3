@@ -63,7 +63,7 @@ func UnmarshalCoord(id int64, data []byte) (node *element.Node, err error) {
 func MarshalNode(node *element.Node) ([]byte, error) {
 	pbfNode := &Node{}
 	pbfNode.FromWgsCoord(node.Long, node.Lat)
-	pbfNode.Tags = node.TagsAsArray()
+	pbfNode.Tags = TagsAsArray(node.Tags)
 	return proto.Marshal(pbfNode)
 }
 
@@ -76,7 +76,7 @@ func UnmarshalNode(data []byte) (node *element.Node, err error) {
 
 	node = &element.Node{}
 	node.Long, node.Lat = pbfNode.WgsCoord()
-	node.TagsFromArray(pbfNode.Tags)
+	node.Tags = TagsFromArray(pbfNode.Tags)
 	return node, nil
 }
 
@@ -104,7 +104,7 @@ func MarshalWay(way *element.Way) ([]byte, error) {
 	pbfWay := &Way{}
 	deltaPack(way.Refs)
 	pbfWay.Refs = way.Refs
-	pbfWay.Tags = way.TagsAsArray()
+	pbfWay.Tags = TagsAsArray(way.Tags)
 	return proto.Marshal(pbfWay)
 }
 
@@ -118,7 +118,7 @@ func UnmarshalWay(data []byte) (way *element.Way, err error) {
 	way = &element.Way{}
 	deltaUnpack(pbfWay.Refs)
 	way.Refs = pbfWay.Refs
-	way.TagsFromArray(pbfWay.Tags)
+	way.Tags = TagsFromArray(pbfWay.Tags)
 	return way, nil
 }
 
@@ -132,7 +132,7 @@ func MarshalRelation(relation *element.Relation) ([]byte, error) {
 		pbfRelation.MemberTypes[i] = Relation_MemberType(m.Type)
 		pbfRelation.MemberRoles[i] = m.Role
 	}
-	pbfRelation.Tags = relation.TagsAsArray()
+	pbfRelation.Tags = TagsAsArray(relation.Tags)
 	return proto.Marshal(pbfRelation)
 }
 
@@ -151,6 +151,6 @@ func UnmarshalRelation(data []byte) (relation *element.Relation, err error) {
 		relation.Members[i].Role = pbfRelation.MemberRoles[i]
 	}
 	//relation.Nodes = pbfRelation.Node
-	relation.TagsFromArray(pbfRelation.Tags)
+	relation.Tags = TagsFromArray(pbfRelation.Tags)
 	return relation, nil
 }

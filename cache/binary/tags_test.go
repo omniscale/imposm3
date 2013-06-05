@@ -1,0 +1,41 @@
+package binary
+
+import (
+	"goposm/element"
+	"testing"
+)
+
+func TestTagsAsAndFromArray(t *testing.T) {
+	tags := element.Tags{"name": "foo", "highway": "residential", "oneway": "yes"}
+	array := TagsAsArray(tags)
+
+	if len(array) != 4 {
+		t.Fatal("invalid length", array)
+	}
+
+	for i, expected := range []string{"name", "foo",
+		string(tagsToCodePoint["highway"]["residential"]),
+		string(tagsToCodePoint["oneway"]["yes"])} {
+		if array[i] != expected {
+			t.Fatal("invalid value", array, i, expected)
+		}
+	}
+
+	tags = TagsFromArray(array)
+	if len(tags) != 3 {
+		t.Fatal("invalid length", tags)
+	}
+}
+
+func TestCodePoints(t *testing.T) {
+	// codepoints should never change, so check a few for sanity
+	if c := tagsToCodePoint["building"]["yes"]; c != codepoint('\ue000') {
+		t.Fatalf("%x\n", c)
+	}
+	if c := tagsToCodePoint["surface"]["grass"]; c != codepoint('\ue052') {
+		t.Fatalf("%x\n", c)
+	}
+	if c := tagsToCodePoint["type"]["associatedStreet"]; c != codepoint('\ue0a5') {
+		t.Fatalf("%x\n", c)
+	}
+}

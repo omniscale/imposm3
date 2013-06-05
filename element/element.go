@@ -58,19 +58,3 @@ type Relation struct {
 	OSMElem
 	Members []Member
 }
-
-func (elem *OSMElem) TagsFromArray(arr []string) {
-	result := make(Tags)
-	for i := 0; i < len(arr); i += 2 {
-		result[arr[i]] = arr[i+1]
-	}
-	elem.Tags = result
-}
-
-func (elem *OSMElem) TagsAsArray() []string {
-	result := make([]string, 0, 2*len(elem.Tags))
-	for key, val := range elem.Tags {
-		result = append(result, key, val)
-	}
-	return result
-}
