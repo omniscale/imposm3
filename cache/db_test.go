@@ -3,6 +3,7 @@ package cache
 import (
 	"goposm/element"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"testing"
 )
@@ -152,6 +153,28 @@ func BenchmarkReadWay(b *testing.B) {
 		if coord, err := cache.GetWay(i); err != nil || coord.Id != i {
 			b.Fail()
 		}
+	}
+
+}
+
+func TestIds(t *testing.T) {
+	for i := 0; i < 10000; i++ {
+		id := rand.Int63()
+		if idFromKeyBuf(idToKeyBuf(id)) != id {
+			t.Fatal()
+		}
+	}
+
+	// check that id buffers are in lexical order
+	var id = int64(0)
+	var prevKey string
+	for i := 0; i < 100; i++ {
+		id += rand.Int63n(1e12)
+		buf := idToKeyBuf(id)
+		if prevKey > string(buf) {
+			t.Fatal()
+		}
+		prevKey = string(buf)
 	}
 
 }
