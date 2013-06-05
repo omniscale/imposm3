@@ -9,11 +9,11 @@ func TestTagsAsAndFromArray(t *testing.T) {
 	tags := element.Tags{"name": "foo", "highway": "residential", "oneway": "yes"}
 	array := TagsAsArray(tags)
 
-	if len(array) != 4 {
+	if len(array) != 3 {
 		t.Fatal("invalid length", array)
 	}
 
-	for i, expected := range []string{"name", "foo",
+	for i, expected := range []string{"\x01foo",
 		string(tagsToCodePoint["highway"]["residential"]),
 		string(tagsToCodePoint["oneway"]["yes"])} {
 		if array[i] != expected {
@@ -24,6 +24,9 @@ func TestTagsAsAndFromArray(t *testing.T) {
 	tags = TagsFromArray(array)
 	if len(tags) != 3 {
 		t.Fatal("invalid length", tags)
+	}
+	if tags["name"] != "foo" || tags["highway"] != "residential" || tags["oneway"] != "yes" {
+		t.Fatal("invalid tags", tags)
 	}
 }
 

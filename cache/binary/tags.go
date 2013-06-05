@@ -2,14 +2,17 @@ package binary
 
 // Serialize tags to a array of interleaved key and value strings.
 // Common tags like building=yes are serialized to a single unicode
-// char to save a few bytes.
+// char to save a few bytes. Common keys to a single ASCII ctrl char.
 
 // Common tags are encoded as a single unicode char from the Unicode
 // Private Use Area http://en.wikipedia.org/wiki/Private_Use_(Unicode)
 // between U+E000 and U+F8FF. They take three bytes in UTF-8 encoding.
-
+//
 // For example: building=yes will need 4 bytes instead of 13 bytes.
 // (building=8 + yes=3 + 2x1 for string length, vs. 3+1)
+
+// The most common tag kays with variable values (name, addr:street,
+// etc.) are converted to a single ASCII control char (0x01-0x1f)
 
 import (
 	"goposm/element"
@@ -25,11 +28,20 @@ type tag struct {
 var tagsToCodePoint = map[string]map[string]codepoint{}
 var codePointToTag = map[codepoint]tag{}
 
+var commonKeys = map[string]codepoint{}
+var codePointToCommonKey = map[uint8]string{}
+var nextKeyCodePoint = codepoint(1)
+var maxKeyCodePoint = codepoint(31)
+
 const minCodePoint = codepoint('\uE000')
+const maxCodePoint = codepoint('\uF8FF')
 
 var nextCodePoint = codepoint('\uE000')
 
 func addTagCodePoint(key, value string) {
+	if nextCodePoint > maxCodePoint {
+		panic("all codepoints used!")
+	}
 	valMap, ok := tagsToCodePoint[key]
 	if !ok {
 		tagsToCodePoint[key] = map[string]codepoint{value: nextCodePoint}
@@ -42,6 +54,15 @@ func addTagCodePoint(key, value string) {
 
 	codePointToTag[nextCodePoint] = tag{key, value}
 	nextCodePoint += 1
+}
+
+func addCommonKey(key string) {
+	if nextKeyCodePoint > maxKeyCodePoint {
+		panic("all codepoints used!")
+	}
+	commonKeys[key] = nextKeyCodePoint
+	codePointToCommonKey[uint8(nextKeyCodePoint)] = key
+	nextKeyCodePoint += 1
 }
 
 func TagsFromArray(arr []string) element.Tags {
@@ -58,6 +79,8 @@ func TagsFromArray(arr []string) element.Tags {
 				panic("missing tag for codepoint")
 			}
 			result[tag.Key] = tag.Value
+		} else if arr[i][0] < 32 {
+			result[codePointToCommonKey[arr[i][0]]] = arr[i][1:]
 		} else {
 			result[arr[i]] = arr[i+1]
 			i++
@@ -78,6 +101,10 @@ func TagsAsArray(tags element.Tags) []string {
 				continue
 			}
 		}
+		if codepoint, ok := commonKeys[key]; ok {
+			result = append(result, string(codepoint)+val)
+			continue
+		}
 		result = append(result, key, val)
 	}
 	return result
@@ -87,6 +114,16 @@ func init() {
 	//
 	// DO NOT EDIT, REMOVE, REORDER ANY OF THE FOLLOWING LINES!
 	//
+
+	// most common keys with variable values
+	// there are only 31 code points for common keys
+	addCommonKey("name")
+	addCommonKey("addr:street")
+	addCommonKey("addr:place")
+	addCommonKey("addr:city")
+	addCommonKey("addr:postcode")
+	addCommonKey("addr:housenumber")
+
 	// most used tags for ways
 	//
 	addTagCodePoint("building", "yes")
