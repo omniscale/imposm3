@@ -269,9 +269,9 @@ var (
 
 func (self *DeltaCoordsCache) getBunch(bunchId int64) (*CoordsBunch, error) {
 	self.mu.Lock()
-	defer self.mu.Unlock()
 	bunch, ok := self.table[bunchId]
 	var nodes []element.Node
+	needsGet := false
 	if !ok {
 		elem := self.lruList.PushFront(bunchId)
 		select {
@@ -279,17 +279,24 @@ func (self *DeltaCoordsCache) getBunch(bunchId int64) (*CoordsBunch, error) {
 		default:
 			nodes = make([]element.Node, 0, deltaCacheBunchSize)
 		}
-		nodes, err := self.getCoordsPacked(bunchId, nodes)
-		if err != nil {
-			return nil, err
-		}
-		bunch = &CoordsBunch{id: bunchId, coords: nodes, elem: elem}
+		bunch = &CoordsBunch{id: bunchId, coords: nil, elem: elem}
+		needsGet = true
 		self.table[bunchId] = bunch
 	} else {
 		self.lruList.MoveToFront(bunch.elem)
 	}
 	bunch.Lock()
 	self.CheckCapacity()
+	defer self.mu.Unlock()
+
+	if needsGet {
+		nodes, err := self.getCoordsPacked(bunchId, nodes)
+		if err != nil {
+			return nil, err
+		}
+		bunch.coords = nodes
+	}
+
 	return bunch, nil
 }
 
