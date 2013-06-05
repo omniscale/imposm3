@@ -20,7 +20,8 @@ func init() {
 
 	// bunchSize defines how many coordinates should be stored in a
 	// single record. This is the maximum and a bunch will typically contain
-	// less coordinates (e.g. when nodes are removes).
+	// less coordinates (e.g. when nodes are removed from OSM or when you
+	// are working with an OSM extract).
 	//
 	// A higher number improves -read mode (writing the cache) but also
 	// increases the overhead during -write mode (reading coords).
