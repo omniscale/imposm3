@@ -47,7 +47,7 @@ func (p *RelationsCache) PutRelations(rels []element.Relation) error {
 }
 
 func (p *RelationsCache) Iter() chan *element.Relation {
-	rel := make(chan *element.Relation)
+	rels := make(chan *element.Relation)
 	go func() {
 		ro := levigo.NewReadOptions()
 		ro.SetFillCache(false)
@@ -55,15 +55,17 @@ func (p *RelationsCache) Iter() chan *element.Relation {
 		defer it.Close()
 		it.SeekToFirst()
 		for ; it.Valid(); it.Next() {
-			relation, err := binary.UnmarshalRelation(it.Value())
+			rel, err := binary.UnmarshalRelation(it.Value())
 			if err != nil {
 				panic(err)
 			}
-			rel <- relation
+			rel.Id = idFromKeyBuf(it.Key())
+
+			rels <- rel
 		}
-		close(rel)
+		close(rels)
 	}()
-	return rel
+	return rels
 }
 
 func (p *RelationsCache) GetRelation(id int64) (*element.Relation, error) {
@@ -79,5 +81,6 @@ func (p *RelationsCache) GetRelation(id int64) (*element.Relation, error) {
 	if err != nil {
 		return nil, err
 	}
+	relation.Id = id
 	return relation, err
 }

@@ -64,11 +64,12 @@ func (p *NodesCache) GetNode(id int64) (*element.Node, error) {
 	if err != nil {
 		return nil, err
 	}
+	node.Id = id
 	return node, nil
 }
 
 func (p *NodesCache) Iter() chan *element.Node {
-	node := make(chan *element.Node)
+	nodes := make(chan *element.Node)
 	go func() {
 		ro := levigo.NewReadOptions()
 		ro.SetFillCache(false)
@@ -76,13 +77,15 @@ func (p *NodesCache) Iter() chan *element.Node {
 		defer it.Close()
 		it.SeekToFirst()
 		for ; it.Valid(); it.Next() {
-			nodes, err := binary.UnmarshalNode(it.Value())
+			node, err := binary.UnmarshalNode(it.Value())
 			if err != nil {
 				panic(err)
 			}
-			node <- nodes
+			node.Id = idFromKeyBuf(it.Key())
+
+			nodes <- node
 		}
-		close(node)
+		close(nodes)
 	}()
-	return node
+	return nodes
 }

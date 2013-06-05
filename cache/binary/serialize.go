@@ -62,8 +62,6 @@ func UnmarshalCoord(id int64, data []byte) (node *element.Node, err error) {
 
 func MarshalNode(node *element.Node) ([]byte, error) {
 	pbfNode := &Node{}
-	nodeId := node.Id
-	pbfNode.Id = &nodeId
 	pbfNode.FromWgsCoord(node.Long, node.Lat)
 	pbfNode.Tags = node.TagsAsArray()
 	return proto.Marshal(pbfNode)
@@ -77,7 +75,6 @@ func UnmarshalNode(data []byte) (node *element.Node, err error) {
 	}
 
 	node = &element.Node{}
-	node.Id = *pbfNode.Id
 	node.Long, node.Lat = pbfNode.WgsCoord()
 	node.TagsFromArray(pbfNode.Tags)
 	return node, nil
@@ -105,7 +102,6 @@ func deltaUnpack(data []int64) {
 func MarshalWay(way *element.Way) ([]byte, error) {
 	// TODO reuse Way to avoid make(Tags) for each way in TagsAsArray
 	pbfWay := &Way{}
-	pbfWay.Id = &way.Id
 	deltaPack(way.Refs)
 	pbfWay.Refs = way.Refs
 	pbfWay.Tags = way.TagsAsArray()
@@ -120,7 +116,6 @@ func UnmarshalWay(data []byte) (way *element.Way, err error) {
 	}
 
 	way = &element.Way{}
-	way.Id = *pbfWay.Id
 	deltaUnpack(pbfWay.Refs)
 	way.Refs = pbfWay.Refs
 	way.TagsFromArray(pbfWay.Tags)
@@ -129,8 +124,6 @@ func UnmarshalWay(data []byte) (way *element.Way, err error) {
 
 func MarshalRelation(relation *element.Relation) ([]byte, error) {
 	pbfRelation := &Relation{}
-	pbfRelation.Id = &relation.Id
-	// TODO store members
 	pbfRelation.MemberIds = make([]int64, len(relation.Members))
 	pbfRelation.MemberTypes = make([]Relation_MemberType, len(relation.Members))
 	pbfRelation.MemberRoles = make([]string, len(relation.Members))
@@ -151,7 +144,6 @@ func UnmarshalRelation(data []byte) (relation *element.Relation, err error) {
 	}
 
 	relation = &element.Relation{}
-	relation.Id = *pbfRelation.Id
 	relation.Members = make([]element.Member, len(pbfRelation.MemberIds))
 	for i, _ := range pbfRelation.MemberIds {
 		relation.Members[i].Id = pbfRelation.MemberIds[i]

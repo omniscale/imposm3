@@ -1,31 +1,26 @@
 package binary;
 
 message Node {
-    required int64 id = 1;
-    required uint32 long = 2;
-    required uint32 lat= 3;
-    repeated string tags = 4;
+    required uint32 long = 1;
+    required uint32 lat= 2;
+    repeated string tags = 3;
 }
 
 message Way {
-    required int64 id = 1;
-
-    repeated string tags = 2;
-    repeated int64 refs = 3 [packed = true];
+    repeated string tags = 1;
+    repeated int64 refs = 2 [packed = true];
 }
 
 message Relation {
-    required int64 id = 1;
-
-    repeated string tags = 2;
-    repeated int64 member_ids = 3;
+    repeated string tags = 1;
+    repeated int64 member_ids = 2;
     enum MemberType {
         NODE = 0;
         WAY = 1;
         RELATION = 2;
     }
-    repeated MemberType member_types = 4;
-    repeated string member_roles = 5;
+    repeated MemberType member_types = 3;
+    repeated string member_roles = 4;
 }
 
 message DeltaCoords {

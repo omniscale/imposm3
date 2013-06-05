@@ -53,23 +53,15 @@ func (x *Relation_MemberType) UnmarshalJSON(data []byte) error {
 }
 
 type Node struct {
-	Id               *int64   `protobuf:"varint,1,req,name=id" json:"id,omitempty"`
-	Long             *uint32  `protobuf:"varint,2,req,name=long" json:"long,omitempty"`
-	Lat              *uint32  `protobuf:"varint,3,req,name=lat" json:"lat,omitempty"`
-	Tags             []string `protobuf:"bytes,4,rep,name=tags" json:"tags,omitempty"`
+	Long             *uint32  `protobuf:"varint,1,req,name=long" json:"long,omitempty"`
+	Lat              *uint32  `protobuf:"varint,2,req,name=lat" json:"lat,omitempty"`
+	Tags             []string `protobuf:"bytes,3,rep,name=tags" json:"tags,omitempty"`
 	XXX_unrecognized []byte   `json:"-"`
 }
 
 func (m *Node) Reset()         { *m = Node{} }
 func (m *Node) String() string { return proto.CompactTextString(m) }
 func (*Node) ProtoMessage()    {}
-
-func (m *Node) GetId() int64 {
-	if m != nil && m.Id != nil {
-		return *m.Id
-	}
-	return 0
-}
 
 func (m *Node) GetLong() uint32 {
 	if m != nil && m.Long != nil {
@@ -93,22 +85,14 @@ func (m *Node) GetTags() []string {
 }
 
 type Way struct {
-	Id               *int64   `protobuf:"varint,1,req,name=id" json:"id,omitempty"`
-	Tags             []string `protobuf:"bytes,2,rep,name=tags" json:"tags,omitempty"`
-	Refs             []int64  `protobuf:"varint,3,rep,packed,name=refs" json:"refs,omitempty"`
+	Tags             []string `protobuf:"bytes,1,rep,name=tags" json:"tags,omitempty"`
+	Refs             []int64  `protobuf:"varint,2,rep,packed,name=refs" json:"refs,omitempty"`
 	XXX_unrecognized []byte   `json:"-"`
 }
 
 func (m *Way) Reset()         { *m = Way{} }
 func (m *Way) String() string { return proto.CompactTextString(m) }
 func (*Way) ProtoMessage()    {}
-
-func (m *Way) GetId() int64 {
-	if m != nil && m.Id != nil {
-		return *m.Id
-	}
-	return 0
-}
 
 func (m *Way) GetTags() []string {
 	if m != nil {
@@ -125,24 +109,16 @@ func (m *Way) GetRefs() []int64 {
 }
 
 type Relation struct {
-	Id               *int64                `protobuf:"varint,1,req,name=id" json:"id,omitempty"`
-	Tags             []string              `protobuf:"bytes,2,rep,name=tags" json:"tags,omitempty"`
-	MemberIds        []int64               `protobuf:"varint,3,rep,name=member_ids" json:"member_ids,omitempty"`
-	MemberTypes      []Relation_MemberType `protobuf:"varint,4,rep,name=member_types,enum=binary.Relation_MemberType" json:"member_types,omitempty"`
-	MemberRoles      []string              `protobuf:"bytes,5,rep,name=member_roles" json:"member_roles,omitempty"`
+	Tags             []string              `protobuf:"bytes,1,rep,name=tags" json:"tags,omitempty"`
+	MemberIds        []int64               `protobuf:"varint,2,rep,name=member_ids" json:"member_ids,omitempty"`
+	MemberTypes      []Relation_MemberType `protobuf:"varint,3,rep,name=member_types,enum=binary.Relation_MemberType" json:"member_types,omitempty"`
+	MemberRoles      []string              `protobuf:"bytes,4,rep,name=member_roles" json:"member_roles,omitempty"`
 	XXX_unrecognized []byte                `json:"-"`
 }
 
 func (m *Relation) Reset()         { *m = Relation{} }
 func (m *Relation) String() string { return proto.CompactTextString(m) }
 func (*Relation) ProtoMessage()    {}
-
-func (m *Relation) GetId() int64 {
-	if m != nil && m.Id != nil {
-		return *m.Id
-	}
-	return 0
-}
 
 func (m *Relation) GetTags() []string {
 	if m != nil {

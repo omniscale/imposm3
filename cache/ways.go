@@ -8,13 +8,10 @@ import (
 
 type WaysCache struct {
 	Cache
-	toWrite chan []element.Way
 }
 
 func NewWaysCache(path string) (*WaysCache, error) {
 	cache := WaysCache{}
-	cache.toWrite = make(chan []element.Way)
-	go cache.wayWriter()
 	err := cache.open(path)
 	if err != nil {
 		return nil, err
@@ -46,27 +43,6 @@ func (p *WaysCache) PutWays(ways []element.Way) error {
 	return p.db.Write(p.wo, batch)
 }
 
-func (p *WaysCache) _PutWays(ways []element.Way) {
-	p.toWrite <- ways
-}
-
-func (p *WaysCache) wayWriter() {
-	for ways := range p.toWrite {
-		batch := levigo.NewWriteBatch()
-		defer batch.Close()
-
-		for _, way := range ways {
-			keyBuf := idToKeyBuf(way.Id)
-			data, err := binary.MarshalWay(&way)
-			if err != nil {
-				panic(err)
-			}
-			batch.Put(keyBuf, data)
-		}
-		_ = p.db.Write(p.wo, batch)
-	}
-}
-
 func (p *WaysCache) GetWay(id int64) (*element.Way, error) {
 	keyBuf := idToKeyBuf(id)
 	data, err := p.db.Get(p.ro, keyBuf)
@@ -80,11 +56,12 @@ func (p *WaysCache) GetWay(id int64) (*element.Way, error) {
 	if err != nil {
 		return nil, err
 	}
+	way.Id = id
 	return way, nil
 }
 
 func (p *WaysCache) Iter() chan *element.Way {
-	way := make(chan *element.Way, 1024)
+	ways := make(chan *element.Way, 1024)
 	go func() {
 		ro := levigo.NewReadOptions()
 		ro.SetFillCache(false)
@@ -92,15 +69,16 @@ func (p *WaysCache) Iter() chan *element.Way {
 		defer it.Close()
 		it.SeekToFirst()
 		for ; it.Valid(); it.Next() {
-			ways, err := binary.UnmarshalWay(it.Value())
+			way, err := binary.UnmarshalWay(it.Value())
 			if err != nil {
 				panic(err)
 			}
-			way <- ways
+			way.Id = idFromKeyBuf(it.Key())
+			ways <- way
 		}
-		close(way)
+		close(ways)
 	}()
-	return way
+	return ways
 }
 
 func (self *WaysCache) FillMembers(members []element.Member) error {

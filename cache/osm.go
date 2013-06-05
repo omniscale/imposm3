@@ -183,6 +183,10 @@ func idToKeyBuf(id int64) []byte {
 	return b[:8]
 }
 
+func idFromKeyBuf(buf []byte) int64 {
+	return int64(bin.BigEndian.Uint64(buf))
+}
+
 func (p *Cache) Close() {
 	p.db.Close()
 }
