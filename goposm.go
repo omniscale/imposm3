@@ -219,14 +219,18 @@ func main() {
 		wayWriter.SetClipper(geometryClipper)
 		wayWriter.Start()
 
+		// blocks till the Ways.Iter() finishes
+		wayWriter.Close()
+
 		nodes := osmCache.Nodes.Iter()
 		nodeWriter := writer.NewNodeWriter(osmCache, nodes, insertBuffer,
 			pointsTagMatcher, progress)
 		nodeWriter.SetClipper(geometryClipper)
 		nodeWriter.Start()
 
-		wayWriter.Close()
+		// blocks till the Nodes.Iter() finishes
 		nodeWriter.Close()
+
 		insertBuffer.Close()
 		dbWriter.Close()
 		progress.Stop()
