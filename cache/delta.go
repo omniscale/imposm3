@@ -287,7 +287,7 @@ func (self *DeltaCoordsCache) getBunch(bunchId int64) (*CoordsBunch, error) {
 	}
 	bunch.Lock()
 	self.CheckCapacity()
-	defer self.mu.Unlock()
+	self.mu.Unlock()
 
 	if needsGet {
 		nodes, err := self.getCoordsPacked(bunchId, nodes)
