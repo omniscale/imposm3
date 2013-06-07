@@ -24,8 +24,8 @@ type InsertBuffer struct {
 
 func NewInsertBuffer() *InsertBuffer {
 	ib := InsertBuffer{
-		In:  make(chan InsertElement, 256),
-		Out: make(chan InsertBatch, 8),
+		In:  make(chan InsertElement, 64),
+		Out: make(chan InsertBatch, 1),
 		wg:  &sync.WaitGroup{},
 	}
 	ib.wg.Add(1)
