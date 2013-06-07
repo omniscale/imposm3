@@ -19,11 +19,30 @@ func BuildRelation(rel *element.Relation) error {
 	return nil
 }
 
+func destroyRings(g *geos.Geos, rings []*Ring) {
+	for _, r := range rings {
+		if r.geom != nil {
+			g.Destroy(r.geom)
+			r.geom = nil
+		}
+	}
+}
+
 func BuildRings(rel *element.Relation) ([]*Ring, error) {
 	var rings []*Ring
 	var incompleteRings []*Ring
 	var completeRings []*Ring
+	var mergedRings []*Ring
 	var err error
+	g := geos.NewGeos()
+	defer g.Finish()
+
+	defer func() {
+		if err != nil {
+			destroyRings(g, mergedRings)
+			destroyRings(g, completeRings)
+		}
+	}()
 
 	// create rings for all WAY members
 	for _, member := range rel.Members {
@@ -32,9 +51,6 @@ func BuildRings(rel *element.Relation) ([]*Ring, error) {
 		}
 		rings = append(rings, NewRing(member.Way))
 	}
-
-	g := geos.NewGeos()
-	defer g.Finish()
 
 	// create geometries for closed rings, collect incomplete rings
 	for _, r := range rings {
@@ -49,14 +65,16 @@ func BuildRings(rel *element.Relation) ([]*Ring, error) {
 		}
 	}
 	// merge incomplete rings
-	mergedRings := mergeRings(incompleteRings)
+	mergedRings = mergeRings(incompleteRings)
 	if len(completeRings)+len(mergedRings) == 0 {
-		return nil, ErrorNoRing
+		err = ErrorNoRing // for defer
+		return nil, err
 	}
 	// create geometries for merged rings
 	for _, ring := range mergedRings {
 		if !ring.IsClosed() {
-			return nil, ErrorNoRing
+			err = ErrorNoRing // for defer
+			return nil, err
 		}
 		ring.geom, err = Polygon(g, ring.nodes)
 		if err != nil {
@@ -124,6 +142,7 @@ func BuildRelGeometry(rel *element.Relation, rings []*Ring) (*geos.Geom, error) 
 		for hole, _ := range shell.holes {
 			hole.MarkInserted(relTags)
 			ring := g.Clone(g.ExteriorRing(hole.geom))
+			g.Destroy(hole.geom)
 			if ring == nil {
 				return nil, errors.New("Error while getting exterior ring.")
 			}
@@ -131,6 +150,7 @@ func BuildRelGeometry(rel *element.Relation, rings []*Ring) (*geos.Geom, error) 
 		}
 		shell.MarkInserted(relTags)
 		exterior := g.Clone(g.ExteriorRing(shell.geom))
+		g.Destroy(shell.geom)
 		if exterior == nil {
 			return nil, errors.New("Error while getting exterior ring.")
 		}

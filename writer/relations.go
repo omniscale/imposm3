@@ -40,26 +40,26 @@ func (rw *RelationWriter) loop() {
 	geos := geos.NewGeos()
 	defer geos.Finish()
 
+NextRel:
 	for r := range rw.rel {
 		rw.progress.AddRelations(1)
 		err := rw.osmCache.Ways.FillMembers(r.Members)
-
-		if err == cache.NotFound {
-			// fmt.Println("missing ways for relation", r.Id)
-		} else if err != nil {
-			fmt.Println(err)
-			continue
+		if err != nil {
+			if err != cache.NotFound {
+				fmt.Println(err)
+			}
+			continue NextRel
 		}
 		for _, m := range r.Members {
 			if m.Way == nil {
 				continue
 			}
 			err := rw.osmCache.Coords.FillWay(m.Way)
-			if err == cache.NotFound {
-				// fmt.Println("missing nodes for way", m.Way.Id, "in relation", r.Id)
-			} else if err != nil {
-				fmt.Println(err)
-				continue
+			if err != nil {
+				if err != cache.NotFound {
+					fmt.Println(err)
+				}
+				continue NextRel
 			}
 			proj.NodesToMerc(m.Way.Nodes)
 		}
@@ -70,20 +70,25 @@ func (rw *RelationWriter) loop() {
 
 		err = geom.BuildRelation(r)
 		if err != nil {
+			if r.Geom != nil && r.Geom.Geom != nil {
+				geos.Destroy(r.Geom.Geom)
+			}
 			if err, ok := err.(ErrorLevel); ok {
 				if err.Level() <= 0 {
-					continue
+					continue NextRel
+
 				}
 			}
 			log.Println(err)
-			continue
+			continue NextRel
 		}
+
 		if matches := rw.tagMatcher.Match(&r.Tags); len(matches) > 0 {
 			if rw.clipper != nil {
 				parts, err := rw.clipper.Clip(r.Geom.Geom)
 				if err != nil {
 					log.Println(err)
-					continue
+					continue NextRel
 				}
 				for _, g := range parts {
 					rel := element.Relation(*r)
@@ -106,6 +111,7 @@ func (rw *RelationWriter) loop() {
 				}
 			}
 		}
+		geos.Destroy(r.Geom.Geom)
 	}
 	rw.wg.Done()
 }
