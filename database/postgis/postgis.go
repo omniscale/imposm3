@@ -475,7 +475,7 @@ func (pg *PostGIS) NewTableTx(spec *TableSpec) *TableTx {
 		Table: spec.Name,
 		Spec:  spec,
 		wg:    &sync.WaitGroup{},
-		rows:  make(chan []interface{}, 128),
+		rows:  make(chan []interface{}, 512),
 	}
 	tt.wg.Add(1)
 	go tt.loop()
