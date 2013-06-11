@@ -2,6 +2,7 @@ package writer
 
 import (
 	"goposm/cache"
+	"goposm/database"
 	"goposm/element"
 	"goposm/geom"
 	"goposm/geom/geos"
@@ -20,7 +21,7 @@ type WayWriter struct {
 }
 
 func NewWayWriter(osmCache *cache.OSMCache, diffCache *cache.DiffCache, ways chan *element.Way,
-	insertBuffer *InsertBuffer, lineStringTagMatcher *mapping.TagMatcher,
+	insertBuffer database.RowInserter, lineStringTagMatcher *mapping.TagMatcher,
 	polygonTagMatcher *mapping.TagMatcher, progress *stats.Statistics) *OsmElemWriter {
 	ww := WayWriter{
 		OsmElemWriter: OsmElemWriter{

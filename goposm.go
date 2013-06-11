@@ -185,6 +185,11 @@ func main() {
 		if err != nil {
 			die(err)
 		}
+
+		err = db.Begin()
+		if err != nil {
+			die(err)
+		}
 		var diffCache *cache.DiffCache
 
 		if *diff {
@@ -197,16 +202,13 @@ func main() {
 			}
 		}
 
-		insertBuffer := writer.NewInsertBuffer()
-		dbWriter := writer.NewDbWriter(db, insertBuffer.Out)
-
 		pointsTagMatcher := tagmapping.PointMatcher()
 		lineStringsTagMatcher := tagmapping.LineStringMatcher()
 		polygonsTagMatcher := tagmapping.PolygonMatcher()
 
 		relations := osmCache.Relations.Iter()
 		relWriter := writer.NewRelationWriter(osmCache, diffCache, relations,
-			insertBuffer, polygonsTagMatcher, progress)
+			db, polygonsTagMatcher, progress)
 		relWriter.SetClipper(geometryClipper)
 		relWriter.Start()
 
@@ -214,7 +216,7 @@ func main() {
 		relWriter.Close()
 
 		ways := osmCache.Ways.Iter()
-		wayWriter := writer.NewWayWriter(osmCache, diffCache, ways, insertBuffer,
+		wayWriter := writer.NewWayWriter(osmCache, diffCache, ways, db,
 			lineStringsTagMatcher, polygonsTagMatcher, progress)
 		wayWriter.SetClipper(geometryClipper)
 		wayWriter.Start()
@@ -223,7 +225,7 @@ func main() {
 		wayWriter.Close()
 
 		nodes := osmCache.Nodes.Iter()
-		nodeWriter := writer.NewNodeWriter(osmCache, nodes, insertBuffer,
+		nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
 			pointsTagMatcher, progress)
 		nodeWriter.SetClipper(geometryClipper)
 		nodeWriter.Start()
@@ -231,8 +233,13 @@ func main() {
 		// blocks till the Nodes.Iter() finishes
 		nodeWriter.Close()
 
-		insertBuffer.Close()
-		dbWriter.Close()
+		err = db.End()
+		if err != nil {
+			die(err)
+		}
+
+		// insertBuffer.Close()
+		// dbWriter.Close()
 		progress.Stop()
 
 		if *diff {

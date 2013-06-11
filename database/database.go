@@ -12,8 +12,15 @@ type Config struct {
 }
 
 type DB interface {
+	Begin() error
+	End() error
+	Abort() error
 	Init() error
-	InsertBatch(string, [][]interface{}) error
+	RowInserter
+}
+
+type RowInserter interface {
+	Insert(string, []interface{})
 }
 
 type Deployer interface {
@@ -64,8 +71,11 @@ func ConnectionType(param string) string {
 
 type NullDb struct{}
 
-func (n *NullDb) Init() error                               { return nil }
-func (n *NullDb) InsertBatch(string, [][]interface{}) error { return nil }
+func (n *NullDb) Init() error                  { return nil }
+func (n *NullDb) Begin() error                 { return nil }
+func (n *NullDb) End() error                   { return nil }
+func (n *NullDb) Abort() error                 { return nil }
+func (n *NullDb) Insert(string, []interface{}) {}
 
 func NewNullDb(conf Config, m *mapping.Mapping) (DB, error) {
 	return &NullDb{}, nil

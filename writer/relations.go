@@ -3,6 +3,7 @@ package writer
 import (
 	"fmt"
 	"goposm/cache"
+	"goposm/database"
 	"goposm/element"
 	"goposm/geom"
 	"goposm/geom/geos"
@@ -20,7 +21,7 @@ type RelationWriter struct {
 }
 
 func NewRelationWriter(osmCache *cache.OSMCache, diffCache *cache.DiffCache, rel chan *element.Relation,
-	insertBuffer *InsertBuffer, tagMatcher *mapping.TagMatcher, progress *stats.Statistics) *OsmElemWriter {
+	insertBuffer database.RowInserter, tagMatcher *mapping.TagMatcher, progress *stats.Statistics) *OsmElemWriter {
 	rw := RelationWriter{
 		OsmElemWriter: OsmElemWriter{
 			osmCache:     osmCache,

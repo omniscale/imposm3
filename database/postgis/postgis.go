@@ -31,17 +31,17 @@ func (e *SQLInsertError) Error() string {
 	return fmt.Sprintf("SQL Error: %s in query %s (%+v)", e.originalError.Error(), e.query, e.data)
 }
 
-func (pg *PostGIS) createTable(spec TableSpec) error {
+func createTable(tx *sql.Tx, spec TableSpec) error {
 	var sql string
 	var err error
 	sql = fmt.Sprintf(`DROP TABLE IF EXISTS "%s"."%s"`, spec.Schema, spec.Name)
-	_, err = pg.Db.Exec(sql)
+	_, err = tx.Exec(sql)
 	if err != nil {
 		return &SQLError{sql, err}
 	}
 
 	sql = spec.CreateTableSQL()
-	_, err = pg.Db.Exec(sql)
+	_, err = tx.Exec(sql)
 	if err != nil {
 		return &SQLError{sql, err}
 	}
@@ -51,7 +51,7 @@ func (pg *PostGIS) createTable(spec TableSpec) error {
 	}
 	sql = fmt.Sprintf("SELECT AddGeometryColumn('%s', '%s', 'geometry', %d, '%s', 2);",
 		spec.Schema, spec.Name, spec.Srid, geomType)
-	row := pg.Db.QueryRow(sql)
+	row := tx.QueryRow(sql)
 	var void interface{}
 	err = row.Scan(&void)
 	if err != nil {
@@ -159,11 +159,21 @@ func (pg *PostGIS) Init() error {
 		return err
 	}
 
+	tx, err := pg.Db.Begin()
+	if err != nil {
+		return err
+	}
+	defer rollbackIfTx(&tx)
 	for _, spec := range pg.Tables {
-		if err := pg.createTable(*spec); err != nil {
+		if err := createTable(tx, *spec); err != nil {
 			return err
 		}
 	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	tx = nil
 	return nil
 }
 
@@ -343,6 +353,7 @@ type PostGIS struct {
 	Tables            map[string]*TableSpec
 	GeneralizedTables map[string]*GeneralizedTableSpec
 	Prefix            string
+	InputBuffer       *InsertBuffer
 }
 
 func (pg *PostGIS) Open() error {
@@ -362,6 +373,91 @@ func (pg *PostGIS) Open() error {
 		return err
 	}
 	return nil
+}
+
+func (pg *PostGIS) Insert(table string, row []interface{}) {
+	pg.InputBuffer.Insert(table, row)
+}
+
+func (pg *PostGIS) Begin() error {
+	pg.InputBuffer = NewInsertBuffer(pg)
+	return nil
+}
+
+func (pg *PostGIS) Abort() error {
+	return pg.InputBuffer.Abort()
+}
+
+func (pg *PostGIS) End() error {
+	return pg.InputBuffer.End()
+}
+
+type TableTx struct {
+	Pg    *PostGIS
+	Tx    *sql.Tx
+	Table string
+	Spec  *TableSpec
+	Stmt  *sql.Stmt
+	Sql   string
+}
+
+func (tt *TableTx) Begin() error {
+	tx, err := tt.Pg.Db.Begin()
+	if err != nil {
+		return err
+	}
+	tt.Tx = tx
+	tt.Sql = tt.Spec.InsertSQL()
+	stmt, err := tt.Tx.Prepare(tt.Sql)
+	if err != nil {
+		return &SQLError{tt.Sql, err}
+	}
+	tt.Stmt = stmt
+	return nil
+}
+
+func (tt *TableTx) Insert(row []interface{}) error {
+	_, err := tt.Stmt.Exec(row...)
+	if err != nil {
+		return &SQLInsertError{SQLError{tt.Sql, err}, row}
+	}
+	return nil
+}
+
+func (tt *TableTx) Delete(id int64) error {
+	sql := tt.Spec.DeleteSQL()
+	stmt, err := tt.Tx.Prepare(sql)
+	if err != nil {
+		return &SQLError{sql, err}
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(id)
+	if err != nil {
+		return &SQLInsertError{SQLError{sql, err}, id}
+	}
+	return nil
+}
+
+func (tt *TableTx) Commit() error {
+	err := tt.Tx.Commit()
+	if err != nil {
+		return err
+	}
+	tt.Tx = nil
+	return nil
+}
+
+func (tt *TableTx) Rollback() {
+	rollbackIfTx(&tt.Tx)
+}
+
+func (pg *PostGIS) NewTableTx(spec *TableSpec) *TableTx {
+	return &TableTx{
+		Pg:    pg,
+		Table: spec.Name,
+		Spec:  spec,
+	}
 }
 
 func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
