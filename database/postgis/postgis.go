@@ -410,6 +410,10 @@ func (tt *TableTx) Begin() error {
 		return err
 	}
 	tt.Tx = tx
+	_, err = tx.Exec(fmt.Sprintf(`TRUNCATE TABLE "%s"."%s" RESTART IDENTITY`, tt.Pg.Schema, tt.Table))
+	if err != nil {
+		return err
+	}
 	tt.Sql = tt.Spec.InsertSQL()
 	stmt, err := tt.Tx.Prepare(tt.Sql)
 	if err != nil {
