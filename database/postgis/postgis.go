@@ -14,8 +14,9 @@ import (
 var log = logging.NewLogger("PostGIS")
 
 type ColumnSpec struct {
-	Name string
-	Type ColumnType
+	Name      string
+	FieldType mapping.FieldType
+	Type      ColumnType
 }
 type TableSpec struct {
 	Name         string
@@ -79,6 +80,26 @@ func (spec *TableSpec) InsertSQL() string {
 	)
 }
 
+func (spec *TableSpec) DeleteSQL() string {
+	var idColumName string
+	for _, col := range spec.Columns {
+		if col.FieldType.Name == "id" {
+			idColumName = col.Name
+			break
+		}
+	}
+
+	if idColumName == "" {
+		panic("missing id column")
+	}
+
+	return fmt.Sprintf(`DELETE FROM "%s"."%s" WHERE "%s" = $1`,
+		spec.Schema,
+		spec.Name,
+		idColumName,
+	)
+}
+
 func NewTableSpec(pg *PostGIS, t *mapping.Table) *TableSpec {
 	spec := TableSpec{
 		Name:         pg.Prefix + t.Name,
@@ -96,7 +117,7 @@ func NewTableSpec(pg *PostGIS, t *mapping.Table) *TableSpec {
 			log.Errorf("unhandled field type %v, using string type", fieldType)
 			pgType = pgTypes["string"]
 		}
-		col := ColumnSpec{field.Name, pgType}
+		col := ColumnSpec{field.Name, *fieldType, pgType}
 		spec.Columns = append(spec.Columns, col)
 	}
 	return &spec
@@ -285,7 +306,38 @@ func (pg *PostGIS) InsertBatch(table string, rows [][]interface{}) error {
 	}
 	tx = nil // set nil to prevent rollback
 	return nil
+}
 
+func (pg *PostGIS) Delete(table string, id int64) error {
+	spec, ok := pg.Tables[table]
+	if !ok {
+		return errors.New("unkown table: " + table)
+	}
+
+	tx, err := pg.Db.Begin()
+	if err != nil {
+		return err
+	}
+	defer rollbackIfTx(&tx)
+
+	sql := spec.DeleteSQL()
+	stmt, err := tx.Prepare(sql)
+	if err != nil {
+		return &SQLError{sql, err}
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(id)
+	if err != nil {
+		return &SQLInsertError{SQLError{sql, err}, id}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	tx = nil // set nil to prevent rollback
+	return nil
 }
 
 func (pg *PostGIS) Init() error {
