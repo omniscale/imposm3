@@ -148,7 +148,7 @@ func Direction(val string, elem *element.OSMElem, match Match) interface{} {
 }
 
 func Geometry(val string, elem *element.OSMElem, match Match) interface{} {
-	return fmt.Sprintf("%x", elem.Geom.Wkb)
+	return asHex(elem.Geom.Wkb)
 }
 
 func PseudoArea(val string, elem *element.OSMElem, match Match) interface{} {
@@ -267,4 +267,16 @@ func MakeSuffixReplace(fieldName string, fieldType FieldType, field Field) (Make
 	}
 
 	return suffixReplace, nil
+}
+
+func asHex(b []byte) string {
+	digits := "0123456789ABCDEF"
+	buf := make([]byte, 0, len(b)*2)
+	n := len(b)
+
+	for i := 0; i < n; i++ {
+		c := b[i]
+		buf = append(buf, digits[c>>4], digits[c&0xF])
+	}
+	return string(buf)
 }
