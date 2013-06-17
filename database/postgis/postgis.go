@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/bmizerany/pq"
+	pq "github.com/olt/pqbulk"
 	"goposm/database"
 	"goposm/logging"
 	"goposm/mapping"
@@ -51,7 +51,7 @@ func createTable(tx *sql.Tx, spec TableSpec) error {
 		geomType = "GEOMETRY" // for multipolygon support
 	}
 	sql = fmt.Sprintf("SELECT AddGeometryColumn('%s', '%s', 'geometry', %d, '%s', 2);",
-		spec.Schema, spec.Name, spec.Srid, geomType)
+		spec.Schema, spec.Name, 0, geomType)
 	row := tx.QueryRow(sql)
 	var void interface{}
 	err = row.Scan(&void)
@@ -414,7 +414,7 @@ func (tt *TableTx) Begin() error {
 	if err != nil {
 		return err
 	}
-	tt.Sql = tt.Spec.InsertSQL()
+	tt.Sql = tt.Spec.CopySQL()
 	stmt, err := tt.Tx.Prepare(tt.Sql)
 	if err != nil {
 		return &SQLError{tt.Sql, err}
@@ -457,6 +457,12 @@ func (tt *TableTx) Delete(id int64) error {
 func (tt *TableTx) Commit() error {
 	close(tt.rows)
 	tt.wg.Wait()
+	if tt.Stmt != nil {
+		_, err := tt.Stmt.Exec()
+		if err != nil {
+			return err
+		}
+	}
 	err := tt.Tx.Commit()
 	if err != nil {
 		return err

@@ -73,6 +73,20 @@ func (spec *TableSpec) InsertSQL() string {
 	)
 }
 
+func (spec *TableSpec) CopySQL() string {
+	var cols []string
+	for _, col := range spec.Columns {
+		cols = append(cols, "\""+col.Name+"\"")
+	}
+	columns := strings.Join(cols, ", ")
+
+	return fmt.Sprintf(`COPY "%s"."%s" (%s) FROM STDIN`,
+		spec.Schema,
+		spec.Name,
+		columns,
+	)
+}
+
 func (spec *TableSpec) DeleteSQL() string {
 	var idColumName string
 	for _, col := range spec.Columns {
