@@ -17,7 +17,7 @@ type InsertBuffer struct {
 
 func NewInsertBuffer(pg *PostGIS) *InsertBuffer {
 	ib := InsertBuffer{
-		In:     make(chan InsertElement, 64),
+		In:     make(chan InsertElement),
 		Tables: make(map[string]*TableTx),
 		wg:     &sync.WaitGroup{},
 	}
