@@ -12,6 +12,7 @@ type WaysCache struct {
 
 func NewWaysCache(path string) (*WaysCache, error) {
 	cache := WaysCache{}
+	cache.options = &osmCacheOptions.Ways
 	err := cache.open(path)
 	if err != nil {
 		return nil, err
@@ -104,6 +105,8 @@ type InsertedWaysCache struct {
 
 func NewInsertedWaysCache(path string) (*InsertedWaysCache, error) {
 	cache := InsertedWaysCache{}
+	cache.options = &osmCacheOptions.InsertedWays
+
 	err := cache.open(path)
 	if err != nil {
 		return nil, err

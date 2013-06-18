@@ -12,6 +12,7 @@ type NodesCache struct {
 
 func NewNodesCache(path string) (*NodesCache, error) {
 	cache := NodesCache{}
+	cache.options = &osmCacheOptions.Nodes
 	err := cache.open(path)
 	if err != nil {
 		return nil, err

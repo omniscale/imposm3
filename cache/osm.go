@@ -6,32 +6,7 @@ import (
 	"github.com/jmhodges/levigo"
 	"os"
 	"path/filepath"
-	"strconv"
 )
-
-var levelDbWriteBufferSize, levelDbWriteBlockSize int64
-var deltaCacheBunchSize int64
-
-func init() {
-	levelDbWriteBufferSize, _ = strconv.ParseInt(
-		os.Getenv("GOPOSM_LEVELDB_BUFFERSIZE"), 10, 32)
-	levelDbWriteBlockSize, _ = strconv.ParseInt(
-		os.Getenv("GOPOSM_LEVELDB_BLOCKSIZE"), 10, 32)
-
-	// bunchSize defines how many coordinates should be stored in a
-	// single record. This is the maximum and a bunch will typically contain
-	// less coordinates (e.g. when nodes are removed from OSM or when you
-	// are working with an OSM extract).
-	//
-	// A higher number improves -read mode (writing the cache) but also
-	// increases the overhead during -write mode (reading coords).
-	deltaCacheBunchSize, _ = strconv.ParseInt(
-		os.Getenv("GOPOSM_DELTACACHE_BUNCHSIZE"), 10, 32)
-
-	if deltaCacheBunchSize == 0 {
-		deltaCacheBunchSize = 128
-	}
-}
 
 var (
 	NotFound = errors.New("not found")
@@ -149,25 +124,33 @@ func (c *OSMCache) Remove() error {
 }
 
 type Cache struct {
-	db *levigo.DB
-	wo *levigo.WriteOptions
-	ro *levigo.ReadOptions
+	db      *levigo.DB
+	options *CacheOptions
+	cache   *levigo.Cache
+	wo      *levigo.WriteOptions
+	ro      *levigo.ReadOptions
 }
 
 func (c *Cache) open(path string) error {
 	opts := levigo.NewOptions()
-	opts.SetCache(levigo.NewLRUCache(1024 * 1024 * 8))
 	opts.SetCreateIfMissing(true)
-	opts.SetMaxOpenFiles(64)
-	// save a few bytes by allowing leveldb to use delta enconding
-	// for up to n keys (instead of only 16)
-	opts.SetBlockRestartInterval(128)
-	if levelDbWriteBufferSize != 0 {
-		opts.SetWriteBufferSize(int(levelDbWriteBufferSize))
+	if c.options.CacheSizeM > 0 {
+		c.cache = levigo.NewLRUCache(c.options.CacheSizeM * 1024 * 1024)
+		opts.SetCache(c.cache)
 	}
-	if levelDbWriteBlockSize != 0 {
-		opts.SetBlockSize(int(levelDbWriteBlockSize))
+	if c.options.MaxOpenFiles > 0 {
+		opts.SetMaxOpenFiles(c.options.MaxOpenFiles)
 	}
+	if c.options.BlockRestartInterval > 0 {
+		opts.SetBlockRestartInterval(c.options.BlockRestartInterval)
+	}
+	if c.options.WriteBufferSizeM > 0 {
+		opts.SetWriteBufferSize(c.options.WriteBufferSizeM * 1024 * 1024)
+	}
+	if c.options.BlockSizeK > 0 {
+		opts.SetBlockSize(c.options.BlockSizeK * 1024 * 1024)
+	}
+
 	db, err := levigo.Open(path, opts)
 	if err != nil {
 		return err
@@ -188,6 +171,9 @@ func idFromKeyBuf(buf []byte) int64 {
 	return int64(bin.BigEndian.Uint64(buf))
 }
 
-func (p *Cache) Close() {
-	p.db.Close()
+func (c *Cache) Close() {
+	c.db.Close()
+	if c.cache != nil {
+		c.cache.Close()
+	}
 }

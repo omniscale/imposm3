@@ -108,8 +108,9 @@ type idRef struct {
 
 const cacheSize = 4096
 
-func NewRefIndex(path string) (*RefIndex, error) {
+func NewRefIndex(path string, opts *CacheOptions) (*RefIndex, error) {
 	index := RefIndex{}
+	index.options = opts
 	err := index.open(path)
 	if err != nil {
 		return nil, err
@@ -129,13 +130,13 @@ func NewRefIndex(path string) (*RefIndex, error) {
 }
 
 func NewCoordsRefIndex(dir string) (*CoordsRefIndex, error) {
-	cache, err := NewRefIndex(dir)
+	cache, err := NewRefIndex(dir, &osmCacheOptions.CoordsIndex)
 	refIdx, err := &CoordsRefIndex{*cache}, err
 	return refIdx, err
 }
 
 func NewWaysRefIndex(dir string) (*WaysRefIndex, error) {
-	cache, err := NewRefIndex(dir)
+	cache, err := NewRefIndex(dir, &osmCacheOptions.WaysIndex)
 	return &WaysRefIndex{*cache}, err
 }
 
