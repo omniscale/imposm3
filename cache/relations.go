@@ -12,6 +12,7 @@ type RelationsCache struct {
 
 func NewRelationsCache(path string) (*RelationsCache, error) {
 	cache := RelationsCache{}
+	cache.options = &osmCacheOptions.Relations
 	err := cache.open(path)
 	if err != nil {
 		return nil, err

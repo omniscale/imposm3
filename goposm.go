@@ -15,23 +15,11 @@ import (
 	"os"
 	"runtime"
 	"runtime/pprof"
-	"strconv"
 	"strings"
 	"time"
 )
 
-var dbImportBatchSize int64
-
 var log = logging.NewLogger("")
-
-func init() {
-	dbImportBatchSize, _ = strconv.ParseInt(
-		os.Getenv("GOPOSM_DBIMPORT_BATCHSIZE"), 10, 32)
-
-	if dbImportBatchSize == 0 {
-		dbImportBatchSize = 4096
-	}
-}
 
 var (
 	cpuprofile       = flag.String("cpuprofile", "", "filename of cpu profile output")

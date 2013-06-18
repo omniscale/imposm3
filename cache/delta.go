@@ -91,17 +91,20 @@ type DeltaCoordsCache struct {
 	capacity     int64
 	linearImport bool
 	mu           sync.Mutex
+	bunchSize    int64
 }
 
 func NewDeltaCoordsCache(path string) (*DeltaCoordsCache, error) {
 	coordsCache := DeltaCoordsCache{}
+	coordsCache.options = &osmCacheOptions.Coords.CacheOptions
 	err := coordsCache.open(path)
 	if err != nil {
 		return nil, err
 	}
+	coordsCache.bunchSize = int64(osmCacheOptions.Coords.BunchSize)
 	coordsCache.lruList = list.New()
 	coordsCache.table = make(map[int64]*CoordsBunch)
-	// mem req for cache approx. capacity*deltaCacheBunchSize*40
+	// mem req for cache approx. capacity*bunchSize*40
 	coordsCache.capacity = 1024
 	return &coordsCache, nil
 }
@@ -123,7 +126,7 @@ func (self *DeltaCoordsCache) Close() {
 }
 
 func (self *DeltaCoordsCache) GetCoord(id int64) (*element.Node, error) {
-	bunchId := getBunchId(id)
+	bunchId := self.getBunchId(id)
 	bunch, err := self.getBunch(bunchId)
 	if err != nil {
 		return nil, err
@@ -144,7 +147,7 @@ func (self *DeltaCoordsCache) FillWay(way *element.Way) error {
 	lastBunchId = -1
 
 	for i, id := range way.Refs {
-		bunchId = getBunchId(id)
+		bunchId = self.getBunchId(id)
 		// re-use bunches
 		if bunchId != lastBunchId {
 			if bunch != nil {
@@ -174,15 +177,15 @@ func (self *DeltaCoordsCache) FillWay(way *element.Way) error {
 // nodes need to be sorted by Id.
 func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) error {
 	var start, currentBunchId int64
-	currentBunchId = getBunchId(nodes[0].Id)
+	currentBunchId = self.getBunchId(nodes[0].Id)
 	start = 0
 	totalNodes := len(nodes)
 	for i, node := range nodes {
-		bunchId := getBunchId(node.Id)
+		bunchId := self.getBunchId(node.Id)
 		if bunchId != currentBunchId {
-			if self.linearImport && int64(i) > deltaCacheBunchSize && int64(i) < int64(totalNodes)-deltaCacheBunchSize {
+			if self.linearImport && int64(i) > self.bunchSize && int64(i) < int64(totalNodes)-self.bunchSize {
 				// no need to handle concurrent updates to the same
-				// bunch if we are not at the boundary of a deltaCacheBunchSize
+				// bunch if we are not at the boundary of a self.bunchSize
 				self.putCoordsPacked(currentBunchId, nodes[start:i])
 			} else {
 				bunch, err := self.getBunch(currentBunchId)
@@ -259,8 +262,8 @@ func (p *DeltaCoordsCache) getCoordsPacked(bunchId int64, nodes []element.Node) 
 	return nodes, nil
 }
 
-func getBunchId(nodeId int64) int64 {
-	return nodeId / deltaCacheBunchSize
+func (self *DeltaCoordsCache) getBunchId(nodeId int64) int64 {
+	return nodeId / self.bunchSize
 }
 
 var (
@@ -277,7 +280,7 @@ func (self *DeltaCoordsCache) getBunch(bunchId int64) (*CoordsBunch, error) {
 		select {
 		case nodes = <-freeNodes:
 		default:
-			nodes = make([]element.Node, 0, deltaCacheBunchSize)
+			nodes = make([]element.Node, 0, self.bunchSize)
 		}
 		bunch = &CoordsBunch{id: bunchId, coords: nil, elem: elem}
 		needsGet = true
