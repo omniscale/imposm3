@@ -60,6 +60,7 @@ type OsmElemWriter struct {
 	wg           *sync.WaitGroup
 	clipper      *clipper.Clipper
 	writer       looper
+	srid         int
 }
 
 func (writer *OsmElemWriter) SetClipper(clipper *clipper.Clipper) {

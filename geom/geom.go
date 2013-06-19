@@ -28,7 +28,7 @@ var (
 	ErrorNoRing     = NewGeomError("linestrings do not form ring", 0)
 )
 
-func PointWkb(g *geos.Geos, node element.Node) (*element.Geometry, error) {
+func Point(g *geos.Geos, node element.Node) (*geos.Geom, error) {
 	coordSeq, err := g.CreateCoordSeq(1, 2)
 	if err != nil {
 		return nil, err
@@ -39,19 +39,11 @@ func PointWkb(g *geos.Geos, node element.Node) (*element.Geometry, error) {
 	if err != nil {
 		return nil, err
 	}
-	wkb := g.AsWkb(geom)
-	if wkb == nil {
-		g.Destroy(geom)
-		return nil, errors.New("could not create wkb")
-	}
 	g.DestroyLater(geom)
-	return &element.Geometry{
-		Wkb:  wkb,
-		Geom: geom,
-	}, nil
+	return geom, nil
 }
 
-func LineStringWkb(g *geos.Geos, nodes []element.Node) (*element.Geometry, error) {
+func LineString(g *geos.Geos, nodes []element.Node) (*geos.Geom, error) {
 	if len(nodes) < 2 {
 		return nil, ErrorOneNodeWay
 	}
@@ -70,29 +62,7 @@ func LineStringWkb(g *geos.Geos, nodes []element.Node) (*element.Geometry, error
 		return nil, err
 	}
 	g.DestroyLater(geom)
-	wkb := g.AsWkb(geom)
-	if wkb == nil {
-		return nil, errors.New("could not create wkb")
-	}
-	return &element.Geometry{
-		Wkb:  wkb,
-		Geom: geom,
-	}, nil
-}
-
-func PolygonWkb(g *geos.Geos, nodes []element.Node) (*element.Geometry, error) {
-	geom, err := Polygon(g, nodes)
-	if err != nil {
-		return nil, err
-	}
-	wkb := g.AsWkb(geom)
-	if wkb == nil {
-		return nil, errors.New("could not create wkb")
-	}
-	return &element.Geometry{
-		Wkb:  wkb,
-		Geom: geom,
-	}, nil
+	return geom, nil
 }
 
 func Polygon(g *geos.Geos, nodes []element.Node) (*geos.Geom, error) {
@@ -122,4 +92,16 @@ func Polygon(g *geos.Geos, nodes []element.Node) (*geos.Geom, error) {
 	}
 	g.DestroyLater(geom)
 	return geom, nil
+}
+
+func AsGeomElement(g *geos.Geos, geom *geos.Geom) (*element.Geometry, error) {
+	wkb := g.AsEwkbHex(geom)
+	if wkb == nil {
+		return nil, errors.New("could not create wkb")
+	}
+
+	return &element.Geometry{
+		Wkb:  wkb,
+		Geom: geom,
+	}, nil
 }

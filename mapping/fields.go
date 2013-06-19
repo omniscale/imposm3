@@ -148,7 +148,7 @@ func Direction(val string, elem *element.OSMElem, match Match) interface{} {
 }
 
 func Geometry(val string, elem *element.OSMElem, match Match) interface{} {
-	return asHex(elem.Geom.Wkb)
+	return string(elem.Geom.Wkb)
 }
 
 func PseudoArea(val string, elem *element.OSMElem, match Match) interface{} {

@@ -50,8 +50,8 @@ func createTable(tx *sql.Tx, spec TableSpec) error {
 	if geomType == "POLYGON" {
 		geomType = "GEOMETRY" // for multipolygon support
 	}
-	sql = fmt.Sprintf("SELECT AddGeometryColumn('%s', '%s', 'geometry', -1, '%s', 2);",
-		spec.Schema, spec.Name, geomType)
+	sql = fmt.Sprintf("SELECT AddGeometryColumn('%s', '%s', 'geometry', '%d', '%s', 2);",
+		spec.Schema, spec.Name, spec.Srid, geomType)
 	row := tx.QueryRow(sql)
 	var void interface{}
 	err = row.Scan(&void)

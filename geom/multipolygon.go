@@ -7,12 +7,12 @@ import (
 	"sort"
 )
 
-func BuildRelation(rel *element.Relation) error {
+func BuildRelation(rel *element.Relation, srid int) error {
 	rings, err := BuildRings(rel)
 	if err != nil {
 		return err
 	}
-	_, err = BuildRelGeometry(rel, rings)
+	_, err = BuildRelGeometry(rel, rings, srid)
 	if err != nil {
 		return err
 	}
@@ -92,8 +92,9 @@ func (r SortableRingsDesc) Len() int           { return len(r) }
 func (r SortableRingsDesc) Less(i, j int) bool { return r[i].area > r[j].area }
 func (r SortableRingsDesc) Swap(i, j int)      { r[i], r[j] = r[j], r[i] }
 
-func BuildRelGeometry(rel *element.Relation, rings []*Ring) (*geos.Geom, error) {
+func BuildRelGeometry(rel *element.Relation, rings []*Ring, srid int) (*geos.Geom, error) {
 	g := geos.NewGeos()
+	g.SetHandleSrid(srid)
 	defer g.Finish()
 
 	// sort by area (large to small)
@@ -196,7 +197,7 @@ func BuildRelGeometry(rel *element.Relation, rings []*Ring) (*geos.Geom, error) 
 	}
 
 	rel.Members = relMembers
-	wkb := g.AsWkb(result)
+	wkb := g.AsEwkbHex(result)
 	if wkb == nil {
 		return nil, errors.New("unable to create WKB for relation")
 	}

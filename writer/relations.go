@@ -21,7 +21,8 @@ type RelationWriter struct {
 }
 
 func NewRelationWriter(osmCache *cache.OSMCache, diffCache *cache.DiffCache, rel chan *element.Relation,
-	insertBuffer database.RowInserter, tagMatcher *mapping.TagMatcher, progress *stats.Statistics) *OsmElemWriter {
+	insertBuffer database.RowInserter, tagMatcher *mapping.TagMatcher, progress *stats.Statistics,
+	srid int) *OsmElemWriter {
 	rw := RelationWriter{
 		OsmElemWriter: OsmElemWriter{
 			osmCache:     osmCache,
@@ -29,6 +30,7 @@ func NewRelationWriter(osmCache *cache.OSMCache, diffCache *cache.DiffCache, rel
 			progress:     progress,
 			wg:           &sync.WaitGroup{},
 			insertBuffer: insertBuffer,
+			srid:         srid,
 		},
 		rel:        rel,
 		tagMatcher: tagMatcher,
@@ -39,6 +41,7 @@ func NewRelationWriter(osmCache *cache.OSMCache, diffCache *cache.DiffCache, rel
 
 func (rw *RelationWriter) loop() {
 	geos := geos.NewGeos()
+	geos.SetHandleSrid(rw.srid)
 	defer geos.Finish()
 
 NextRel:
@@ -69,7 +72,7 @@ NextRel:
 		// for the diffCache
 		allMembers := r.Members
 
-		err = geom.BuildRelation(r)
+		err = geom.BuildRelation(r, rw.srid)
 		if err != nil {
 			if r.Geom != nil && r.Geom.Geom != nil {
 				geos.Destroy(r.Geom.Geom)
@@ -93,7 +96,7 @@ NextRel:
 				}
 				for _, g := range parts {
 					rel := element.Relation(*r)
-					rel.Geom = &element.Geometry{g, geos.AsWkb(g)}
+					rel.Geom = &element.Geometry{g, geos.AsEwkbHex(g)}
 					rw.insertMatches(&rel.OSMElem, matches)
 				}
 			} else {

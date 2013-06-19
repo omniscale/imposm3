@@ -139,12 +139,14 @@ func main() {
 
 	var db database.DB
 
+	srid := 3857 // TODO
+
 	if *write || *deployProduction || *revertDeploy || *removeBackup {
 		connType := database.ConnectionType(*connection)
 		conf := database.Config{
 			Type:             connType,
 			ConnectionParams: *connection,
-			Srid:             3857,
+			Srid:             srid,
 		}
 		db, err = database.Open(conf, tagmapping)
 		if err != nil {
@@ -196,7 +198,7 @@ func main() {
 
 		relations := osmCache.Relations.Iter()
 		relWriter := writer.NewRelationWriter(osmCache, diffCache, relations,
-			db, polygonsTagMatcher, progress)
+			db, polygonsTagMatcher, progress, srid)
 		relWriter.SetClipper(geometryClipper)
 		relWriter.Start()
 
@@ -205,7 +207,7 @@ func main() {
 
 		ways := osmCache.Ways.Iter()
 		wayWriter := writer.NewWayWriter(osmCache, diffCache, ways, db,
-			lineStringsTagMatcher, polygonsTagMatcher, progress)
+			lineStringsTagMatcher, polygonsTagMatcher, progress, srid)
 		wayWriter.SetClipper(geometryClipper)
 		wayWriter.Start()
 
@@ -214,7 +216,7 @@ func main() {
 
 		nodes := osmCache.Nodes.Iter()
 		nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
-			pointsTagMatcher, progress)
+			pointsTagMatcher, progress, srid)
 		nodeWriter.SetClipper(geometryClipper)
 		nodeWriter.Start()
 

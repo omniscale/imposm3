@@ -26,7 +26,8 @@ func goLogString(msg *C.char) {
 }
 
 type Geos struct {
-	v C.GEOSContextHandle_t
+	v    C.GEOSContextHandle_t
+	srid int
 }
 
 type Geom struct {
@@ -97,6 +98,10 @@ func (this *Geos) Clone(geom *Geom) *Geom {
 		return nil
 	}
 	return &Geom{result}
+}
+
+func (this *Geos) SetHandleSrid(srid int) {
+	this.srid = srid
 }
 
 func (this *Geos) CreatePolygon(shell *Geom, holes []*Geom) *Geom {

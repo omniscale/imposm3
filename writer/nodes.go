@@ -20,13 +20,15 @@ type NodeWriter struct {
 }
 
 func NewNodeWriter(osmCache *cache.OSMCache, nodes chan *element.Node,
-	insertBuffer database.RowInserter, tagMatcher *mapping.TagMatcher, progress *stats.Statistics) *OsmElemWriter {
+	insertBuffer database.RowInserter, tagMatcher *mapping.TagMatcher, progress *stats.Statistics,
+	srid int) *OsmElemWriter {
 	nw := NodeWriter{
 		OsmElemWriter: OsmElemWriter{
 			osmCache:     osmCache,
 			progress:     progress,
 			wg:           &sync.WaitGroup{},
 			insertBuffer: insertBuffer,
+			srid:         srid,
 		},
 		nodes:      nodes,
 		tagMatcher: tagMatcher,
@@ -37,14 +39,14 @@ func NewNodeWriter(osmCache *cache.OSMCache, nodes chan *element.Node,
 
 func (nw *NodeWriter) loop() {
 	geos := geos.NewGeos()
+	geos.SetHandleSrid(nw.srid)
 	defer geos.Finish()
-	var err error
 
 	for n := range nw.nodes {
 		nw.progress.AddNodes(1)
 		if matches := nw.tagMatcher.Match(&n.Tags); len(matches) > 0 {
 			proj.NodeToMerc(n)
-			n.Geom, err = geom.PointWkb(geos, *n)
+			point, err := geom.Point(geos, *n)
 			if err != nil {
 				if err, ok := err.(ErrorLevel); ok {
 					if err.Level() <= 0 {
@@ -54,6 +56,13 @@ func (nw *NodeWriter) loop() {
 				log.Println(err)
 				continue
 			}
+
+			n.Geom, err = geom.AsGeomElement(geos, point)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+
 			if nw.clipper != nil {
 				parts, err := nw.clipper.Clip(n.Geom.Geom)
 				if err != nil {

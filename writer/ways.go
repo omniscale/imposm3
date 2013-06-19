@@ -22,7 +22,7 @@ type WayWriter struct {
 
 func NewWayWriter(osmCache *cache.OSMCache, diffCache *cache.DiffCache, ways chan *element.Way,
 	insertBuffer database.RowInserter, lineStringTagMatcher *mapping.TagMatcher,
-	polygonTagMatcher *mapping.TagMatcher, progress *stats.Statistics) *OsmElemWriter {
+	polygonTagMatcher *mapping.TagMatcher, progress *stats.Statistics, srid int) *OsmElemWriter {
 	ww := WayWriter{
 		OsmElemWriter: OsmElemWriter{
 			osmCache:     osmCache,
@@ -30,6 +30,7 @@ func NewWayWriter(osmCache *cache.OSMCache, diffCache *cache.DiffCache, ways cha
 			progress:     progress,
 			wg:           &sync.WaitGroup{},
 			insertBuffer: insertBuffer,
+			srid:         srid,
 		},
 		ways:                 ways,
 		lineStringTagMatcher: lineStringTagMatcher,
@@ -41,6 +42,7 @@ func NewWayWriter(osmCache *cache.OSMCache, diffCache *cache.DiffCache, ways cha
 
 func (ww *WayWriter) loop() {
 	geos := geos.NewGeos()
+	geos.SetHandleSrid(ww.srid)
 	defer geos.Finish()
 	for w := range ww.ways {
 		ww.progress.AddWays(1)
@@ -59,11 +61,11 @@ func (ww *WayWriter) loop() {
 		}
 		proj.NodesToMerc(w.Nodes)
 		if matches := ww.lineStringTagMatcher.Match(&w.Tags); len(matches) > 0 {
-			ww.buildAndInsert(geos, w, matches, geom.LineStringWkb)
+			ww.buildAndInsert(geos, w, matches, geom.LineString)
 		}
 		if w.IsClosed() {
 			if matches := ww.polygonTagMatcher.Match(&w.Tags); len(matches) > 0 {
-				ww.buildAndInsert(geos, w, matches, geom.PolygonWkb)
+				ww.buildAndInsert(geos, w, matches, geom.Polygon)
 			}
 		}
 
@@ -74,13 +76,13 @@ func (ww *WayWriter) loop() {
 	ww.wg.Done()
 }
 
-type geomBuilder func(*geos.Geos, []element.Node) (*element.Geometry, error)
+type geomBuilder func(*geos.Geos, []element.Node) (*geos.Geom, error)
 
 func (ww *WayWriter) buildAndInsert(geos *geos.Geos, w *element.Way, matches []mapping.Match, builder geomBuilder) {
 	var err error
 	// make copy to avoid interference with polygon/linestring matches
 	way := element.Way(*w)
-	way.Geom, err = builder(geos, way.Nodes)
+	geosgeom, err := builder(geos, way.Nodes)
 	if err != nil {
 		if err, ok := err.(ErrorLevel); ok {
 			if err.Level() <= 0 {
@@ -90,6 +92,13 @@ func (ww *WayWriter) buildAndInsert(geos *geos.Geos, w *element.Way, matches []m
 		log.Println(err)
 		return
 	}
+
+	way.Geom, err = geom.AsGeomElement(geos, geosgeom)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
 	if ww.clipper != nil {
 		parts, err := ww.clipper.Clip(way.Geom.Geom)
 		if err != nil {
@@ -98,7 +107,7 @@ func (ww *WayWriter) buildAndInsert(geos *geos.Geos, w *element.Way, matches []m
 		}
 		for _, g := range parts {
 			way := element.Way(*w)
-			way.Geom = &element.Geometry{g, geos.AsWkb(g)}
+			way.Geom = &element.Geometry{g, geos.AsEwkbHex(g)}
 			ww.insertMatches(&way.OSMElem, matches)
 		}
 	} else {
