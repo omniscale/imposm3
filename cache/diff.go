@@ -106,7 +106,7 @@ type idRef struct {
 	ref int64
 }
 
-const cacheSize = 4096
+const cacheSize = 256 * 1024
 
 func NewRefIndex(path string, opts *CacheOptions) (*RefIndex, error) {
 	index := RefIndex{}
