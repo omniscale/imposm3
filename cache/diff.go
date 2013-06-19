@@ -108,6 +108,12 @@ type idRef struct {
 
 const cacheSize = 256 * 1024
 
+var refCaches chan map[int64][]int64
+
+func init() {
+	refCaches = make(chan map[int64][]int64, 1)
+}
+
 func NewRefIndex(path string, opts *CacheOptions) (*RefIndex, error) {
 	index := RefIndex{}
 	index.options = opts
@@ -162,7 +168,11 @@ func (index *RefIndex) dispatch() {
 		index.addToCache(idRef.id, idRef.ref)
 		if len(index.cache) >= cacheSize {
 			index.write <- index.cache
-			index.cache = make(map[int64][]int64, cacheSize)
+			select {
+			case index.cache = <-refCaches:
+			default:
+				index.cache = make(map[int64][]int64, cacheSize)
+			}
 		}
 	}
 	if len(index.cache) > 0 {
@@ -205,6 +215,14 @@ func (index *RefIndex) writeRefs(idRefs map[int64][]int64) error {
 		data := index.loadAppendMarshal(id, refs)
 		batch.Put(keyBuf, data)
 	}
+	go func() {
+		for k, _ := range idRefs {
+			delete(idRefs, k)
+		}
+		select {
+		case refCaches <- idRefs:
+		}
+	}()
 	return index.db.Write(index.wo, batch)
 
 }
