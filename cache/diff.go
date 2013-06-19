@@ -107,7 +107,7 @@ type idRef struct {
 	ref int64
 }
 
-const cacheSize = 256 * 1024
+const cacheSize = 64 * 1024
 
 var refCaches chan map[int64][]int64
 
