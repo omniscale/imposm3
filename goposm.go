@@ -227,9 +227,7 @@ func main() {
 
 		// blocks till the Nodes.Iter() finishes
 		nodeWriter.Close()
-		osmCache.Nodes.Close()
-		osmCache.Coords.Close()
-		osmCache.Coords.SetReadOnly(false)
+		osmCache.Close()
 
 		err = db.End()
 		if err != nil {

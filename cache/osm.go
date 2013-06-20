@@ -39,6 +39,10 @@ func (c *OSMCache) Close() {
 		c.Relations.Close()
 		c.Relations = nil
 	}
+	if c.InsertedWays != nil {
+		c.InsertedWays.Close()
+		c.InsertedWays = nil
+	}
 }
 
 func NewOSMCache(dir string) *OSMCache {
@@ -172,8 +176,12 @@ func idFromKeyBuf(buf []byte) int64 {
 }
 
 func (c *Cache) Close() {
-	c.db.Close()
+	if c.db != nil {
+		c.db.Close()
+		c.db = nil
+	}
 	if c.cache != nil {
 		c.cache.Close()
+		c.cache = nil
 	}
 }
