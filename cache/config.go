@@ -17,7 +17,8 @@ type CacheOptions struct {
 
 type CoordsCacheOptions struct {
 	CacheOptions
-	BunchSize int
+	BunchSize          int
+	BunchCacheCapacity int
 }
 type OSMCacheOptions struct {
 	Coords       CoordsCacheOptions
@@ -37,7 +38,8 @@ const defaultConfig = `
         "BlockSizeK": 0,
         "MaxOpenFiles": 64,
         "BlockRestartInterval": 256,
-        "BunchSize": 32
+        "BunchSize": 32,
+        "BunchCacheCapacity": 8096
     },
     "Nodes": {
         "CacheSizeM": 16,
