@@ -222,7 +222,6 @@ func (pg *PostGIS) Finish() error {
 					return err
 				}
 			}
-
 		}
 	}
 	for tableName, table := range pg.GeneralizedTables {
@@ -232,6 +231,16 @@ func (pg *PostGIS) Finish() error {
 				sql := fmt.Sprintf(`CREATE INDEX "%s_geom" ON "%s"."%s" USING GIST ("%s")`,
 					tableName, pg.Schema, tableName, col.Name)
 				step := log.StartStep(fmt.Sprintf("Creating geometry index on %s", tableName))
+				_, err := tx.Exec(sql)
+				log.StopStep(step)
+				if err != nil {
+					return err
+				}
+			}
+			if col.FieldType.Name == "id" {
+				sql := fmt.Sprintf(`CREATE INDEX "%s_osm_id_idx" ON "%s"."%s" USING BTREE ("%s")`,
+					tableName, pg.Schema, tableName, col.Name)
+				step := log.StartStep(fmt.Sprintf("Creating OSM id index on %s", tableName))
 				_, err := tx.Exec(sql)
 				log.StopStep(step)
 				if err != nil {
