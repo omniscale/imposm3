@@ -124,12 +124,6 @@ func main() {
 		}
 	}
 
-	err := osmCache.Open()
-	if err != nil {
-		die(err)
-	}
-	defer osmCache.Close()
-
 	progress := stats.StatsReporter()
 
 	tagmapping, err := mapping.NewMapping(*mappingFile)
@@ -158,12 +152,16 @@ func main() {
 
 	if *read != "" {
 		step := log.StartStep("Reading OSM data")
+		err = osmCache.Open()
+		if err != nil {
+			die(err)
+		}
 		progress.Start()
 		osmCache.Coords.SetLinearImport(true)
 		reader.ReadPbf(osmCache, progress, tagmapping, *read)
 		osmCache.Coords.SetLinearImport(false)
 		progress.Stop()
-		osmCache.Coords.Flush()
+		osmCache.Close()
 		log.StopStep(step)
 	}
 
@@ -192,6 +190,11 @@ func main() {
 			}
 		}
 
+		err = osmCache.Open()
+		if err != nil {
+			die(err)
+		}
+		osmCache.Coords.SetReadOnly(true)
 		pointsTagMatcher := tagmapping.PointMatcher()
 		lineStringsTagMatcher := tagmapping.LineStringMatcher()
 		polygonsTagMatcher := tagmapping.PolygonMatcher()
@@ -204,6 +207,7 @@ func main() {
 
 		// blocks till the Relations.Iter() finishes
 		relWriter.Close()
+		osmCache.Relations.Close()
 
 		ways := osmCache.Ways.Iter()
 		wayWriter := writer.NewWayWriter(osmCache, diffCache, ways, db,
@@ -213,6 +217,7 @@ func main() {
 
 		// blocks till the Ways.Iter() finishes
 		wayWriter.Close()
+		osmCache.Ways.Close()
 
 		nodes := osmCache.Nodes.Iter()
 		nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
@@ -222,14 +227,15 @@ func main() {
 
 		// blocks till the Nodes.Iter() finishes
 		nodeWriter.Close()
+		osmCache.Nodes.Close()
+		osmCache.Coords.Close()
+		osmCache.Coords.SetReadOnly(false)
 
 		err = db.End()
 		if err != nil {
 			die(err)
 		}
 
-		// insertBuffer.Close()
-		// dbWriter.Close()
 		progress.Stop()
 
 		if *diff {

@@ -92,6 +92,7 @@ type DeltaCoordsCache struct {
 	linearImport bool
 	mu           sync.Mutex
 	bunchSize    int64
+	readOnly     bool
 }
 
 func NewDeltaCoordsCache(path string) (*DeltaCoordsCache, error) {
@@ -125,13 +126,21 @@ func (self *DeltaCoordsCache) Close() {
 	self.Cache.Close()
 }
 
+func (self *DeltaCoordsCache) SetReadOnly(val bool) {
+	self.readOnly = val
+}
+
 func (self *DeltaCoordsCache) GetCoord(id int64) (*element.Node, error) {
 	bunchId := self.getBunchId(id)
 	bunch, err := self.getBunch(bunchId)
 	if err != nil {
 		return nil, err
 	}
-	defer bunch.Unlock()
+	if self.readOnly {
+		bunch.Unlock()
+	} else {
+		defer bunch.Unlock()
+	}
 	return bunch.GetCoord(id)
 }
 
