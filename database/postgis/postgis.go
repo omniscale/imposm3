@@ -201,7 +201,7 @@ func (pg *PostGIS) Finish() error {
 	defer rollbackIfTx(&tx)
 
 	worker := int(runtime.NumCPU() / 2)
-	if worker > 1 {
+	if worker < 1 {
 		worker = 1
 	}
 
@@ -313,7 +313,7 @@ func (pg *PostGIS) Generalize() error {
 	defer log.StopStep(log.StartStep(fmt.Sprintf("Creating generalized tables")))
 
 	worker := int(runtime.NumCPU() / 2)
-	if worker > 1 {
+	if worker < 1 {
 		worker = 1
 	}
 	// generalized tables can depend on other generalized tables
