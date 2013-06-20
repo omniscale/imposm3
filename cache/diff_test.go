@@ -68,7 +68,7 @@ func TestWriteDiff(t *testing.T) {
 	cache_dir, _ := ioutil.TempDir("", "goposm_test")
 	defer os.RemoveAll(cache_dir)
 
-	cache, err := NewRefIndex(cache_dir)
+	cache, err := NewRefIndex(cache_dir, &osmCacheOptions.CoordsIndex)
 	if err != nil {
 		t.Fatal()
 	}
@@ -80,7 +80,7 @@ func TestWriteDiff(t *testing.T) {
 	}
 	cache.Close()
 
-	cache, err = NewRefIndex(cache_dir)
+	cache, err = NewRefIndex(cache_dir, &osmCacheOptions.CoordsIndex)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +100,7 @@ func BenchmarkWriteDiff(b *testing.B) {
 	cache_dir, _ := ioutil.TempDir("", "goposm_test")
 	defer os.RemoveAll(cache_dir)
 
-	cache, err := NewRefIndex(cache_dir)
+	cache, err := NewRefIndex(cache_dir, &osmCacheOptions.CoordsIndex)
 	if err != nil {
 		b.Fatal()
 	}

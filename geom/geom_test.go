@@ -1,7 +1,6 @@
 package geom
 
 import (
-	"bytes"
 	"goposm/element"
 	"goposm/geom/geos"
 	"testing"
@@ -13,12 +12,13 @@ func TestLineString(t *testing.T) {
 	nodes[1] = element.Node{Lat: 0, Long: 10}
 	g := geos.NewGeos()
 	defer g.Finish()
-	geom, err := LineStringWkb(g, nodes)
+	geom, err := LineString(g, nodes)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if bytes.Compare(geom.Wkb[0:2], []byte{0x1, 0x2}) != 0 {
-		t.Errorf("%#v", geom.Wkb)
+
+	if geom.Length() != 10.0 {
+		t.Fatal(geom.Length)
 	}
 }
 
@@ -31,13 +31,13 @@ func TestPolygon(t *testing.T) {
 	}
 	g := geos.NewGeos()
 	defer g.Finish()
-	geom, err := PolygonWkb(g, nodes)
+	geom, err := Polygon(g, nodes)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if bytes.Compare(geom.Wkb[0:2], []byte{0x1, 0x3}) != 0 {
-		t.Errorf("%#v", geom.Wkb)
+	if geom.Area() != 50.0 {
+		t.Fatal(geom.Area())
 	}
 }
 
@@ -49,7 +49,7 @@ func TestPolygonNotClosed(t *testing.T) {
 	}
 	g := geos.NewGeos()
 	defer g.Finish()
-	_, err := PolygonWkb(g, nodes)
+	_, err := Polygon(g, nodes)
 	if err == nil {
 		t.Fatal("no error")
 	}
@@ -87,6 +87,6 @@ func BenchmarkLineString(b *testing.B) {
 	defer g.Finish()
 
 	for i := 0; i < b.N; i++ {
-		LineStringWkb(g, nodes)
+		LineString(g, nodes)
 	}
 }

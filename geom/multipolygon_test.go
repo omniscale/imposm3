@@ -48,7 +48,7 @@ func TestSimplePolygonWithHole(t *testing.T) {
 		{2, element.WAY, "inner", &w2},
 	}
 
-	BuildRelation(&rel)
+	BuildRelation(&rel, 3857)
 	g := geos.NewGeos()
 	defer g.Finish()
 
@@ -95,7 +95,7 @@ func TestMultiPolygonWithHoleAndRelName(t *testing.T) {
 		{2, element.WAY, "inner", &w2},
 	}
 
-	BuildRelation(&rel)
+	BuildRelation(&rel, 3857)
 	g := geos.NewGeos()
 	defer g.Finish()
 
@@ -153,7 +153,7 @@ func TestMultiPolygonWithMultipleHoles(t *testing.T) {
 		{3, element.WAY, "inner", &w3},
 	}
 
-	BuildRelation(&rel)
+	BuildRelation(&rel, 3857)
 	g := geos.NewGeos()
 	defer g.Finish()
 
@@ -226,7 +226,7 @@ func TestMultiPolygonWithNeastedHoles(t *testing.T) {
 		{5, element.WAY, "inner", &w5},
 	}
 
-	BuildRelation(&rel)
+	BuildRelation(&rel, 3857)
 	g := geos.NewGeos()
 	defer g.Finish()
 
@@ -275,7 +275,7 @@ func TestPolygonFromThreeWays(t *testing.T) {
 		{3, element.WAY, "inner", &w3},
 	}
 
-	BuildRelation(&rel)
+	BuildRelation(&rel, 3857)
 	g := geos.NewGeos()
 	defer g.Finish()
 
@@ -331,7 +331,7 @@ func TestTouchingPolygonsWithHole(t *testing.T) {
 		{2, element.WAY, "outer", &w2},
 		{3, element.WAY, "inner", &w3},
 	}
-	BuildRelation(&rel)
+	BuildRelation(&rel, 3857)
 	g := geos.NewGeos()
 	defer g.Finish()
 
@@ -378,7 +378,7 @@ func TestInsertedWaysDifferentTags(t *testing.T) {
 		{2, element.WAY, "inner", &w2},
 	}
 
-	BuildRelation(&rel)
+	BuildRelation(&rel, 3857)
 	g := geos.NewGeos()
 	defer g.Finish()
 
@@ -425,7 +425,7 @@ func TestInsertMultipleTags(t *testing.T) {
 		{2, element.WAY, "inner", &w2},
 	}
 
-	BuildRelation(&rel)
+	BuildRelation(&rel, 3857)
 	g := geos.NewGeos()
 	defer g.Finish()
 
@@ -479,7 +479,7 @@ func TestBrokenPolygonSelfIntersect(t *testing.T) {
 		{2, element.WAY, "inner", &w2},
 	}
 
-	err := BuildRelation(&rel1)
+	err := BuildRelation(&rel1, 3857)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -524,7 +524,7 @@ func TestBrokenPolygonSelfIntersect(t *testing.T) {
 		{2, element.WAY, "inner", &w2},
 	}
 
-	err = BuildRelation(&rel2)
+	err = BuildRelation(&rel2, 3857)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -577,7 +577,7 @@ func TestBrokenPolygonSelfIntersectTriangle(t *testing.T) {
 		{2, element.WAY, "inner", &w2},
 	}
 
-	err := BuildRelation(&rel)
+	err := BuildRelation(&rel, 3857)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -617,7 +617,7 @@ func TestBrokenPolygonSelfIntersectTriangle(t *testing.T) {
 		{2, element.WAY, "inner", &w4},
 	}
 
-	err = BuildRelation(&rel)
+	err = BuildRelation(&rel, 3857)
 	if err != nil {
 		t.Fatal(err)
 	}
