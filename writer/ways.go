@@ -2,6 +2,7 @@ package writer
 
 import (
 	"goposm/cache"
+	"goposm/cache/binary"
 	"goposm/database"
 	"goposm/element"
 	"goposm/geom"
@@ -15,12 +16,12 @@ import (
 
 type WayWriter struct {
 	OsmElemWriter
-	ways                 chan *element.Way
+	ways                 chan cache.RawItem
 	lineStringTagMatcher *mapping.TagMatcher
 	polygonTagMatcher    *mapping.TagMatcher
 }
 
-func NewWayWriter(osmCache *cache.OSMCache, diffCache *cache.DiffCache, ways chan *element.Way,
+func NewWayWriter(osmCache *cache.OSMCache, diffCache *cache.DiffCache, ways chan cache.RawItem,
 	insertBuffer database.RowInserter, lineStringTagMatcher *mapping.TagMatcher,
 	polygonTagMatcher *mapping.TagMatcher, progress *stats.Statistics, srid int) *OsmElemWriter {
 	ww := WayWriter{
@@ -44,8 +45,15 @@ func (ww *WayWriter) loop() {
 	geos := geos.NewGeos()
 	geos.SetHandleSrid(ww.srid)
 	defer geos.Finish()
-	for w := range ww.ways {
+	for item := range ww.ways {
 		ww.progress.AddWays(1)
+
+		w, err := binary.UnmarshalWay(item.Data)
+		if err != nil {
+			panic(err)
+		}
+		w.Id = item.Id
+
 		inserted, err := ww.osmCache.InsertedWays.IsInserted(w.Id)
 		if err != nil {
 			log.Println(err)
