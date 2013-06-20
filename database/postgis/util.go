@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"sync"
 )
 
 func schemasFromConnectionParams(params string) (string, string) {
@@ -65,6 +66,55 @@ func rollbackIfTx(tx **sql.Tx) {
 	if *tx != nil {
 		if err := tx.Rollback(); err != nil {
 			log.Fatal("rollback failed", err)
+		}
+	}
+}
+
+// workerPool runs functions in n (worker) parallel goroutines.
+// wait will return the first error or nil when all functions
+// returned succesfull.
+type workerPool struct {
+	in  chan func() error
+	out chan error
+	wg  *sync.WaitGroup
+}
+
+func newWorkerPool(worker, tasks int) *workerPool {
+	p := &workerPool{
+		make(chan func() error, tasks),
+		make(chan error, tasks),
+		&sync.WaitGroup{},
+	}
+	for i := 0; i < worker; i++ {
+		p.wg.Add(1)
+		go p.workerLoop()
+	}
+	return p
+}
+
+func (p *workerPool) workerLoop() {
+	for f := range p.in {
+		p.out <- f()
+	}
+	p.wg.Done()
+}
+
+func (p *workerPool) wait() error {
+	close(p.in)
+	done := make(chan bool)
+	go func() {
+		p.wg.Wait()
+		done <- true
+	}()
+
+	for {
+		select {
+		case err := <-p.out:
+			if err != nil {
+				return err
+			}
+		case <-done:
+			return nil
 		}
 	}
 }

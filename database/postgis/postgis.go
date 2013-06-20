@@ -8,6 +8,7 @@ import (
 	"goposm/database"
 	"goposm/logging"
 	"goposm/mapping"
+	"runtime"
 	"strings"
 	"sync"
 )
@@ -199,56 +200,81 @@ func (pg *PostGIS) Finish() error {
 	}
 	defer rollbackIfTx(&tx)
 
-	for tableName, table := range pg.Tables {
+	worker := int(runtime.NumCPU() / 2)
+	if worker > 1 {
+		worker = 1
+	}
+
+	p := newWorkerPool(worker, len(pg.Tables))
+	for tableName, tbl := range pg.Tables {
 		tableName := pg.Prefix + tableName
-		for _, col := range table.Columns {
-			if col.Type.Name() == "GEOMETRY" {
-				sql := fmt.Sprintf(`CREATE INDEX "%s_geom" ON "%s"."%s" USING GIST ("%s")`,
-					tableName, pg.Schema, tableName, col.Name)
-				step := log.StartStep(fmt.Sprintf("Creating geometry index on %s", tableName))
-				_, err := tx.Exec(sql)
-				log.StopStep(step)
-				if err != nil {
-					return err
+		table := tbl
+		p.in <- func() error {
+			for _, col := range table.Columns {
+				if col.Type.Name() == "GEOMETRY" {
+					sql := fmt.Sprintf(`CREATE INDEX "%s_geom" ON "%s"."%s" USING GIST ("%s")`,
+						tableName, pg.Schema, tableName, col.Name)
+					step := log.StartStep(fmt.Sprintf("Creating geometry index on %s", tableName))
+					_, err := tx.Exec(sql)
+					log.StopStep(step)
+					if err != nil {
+						return err
+					}
+				}
+				if col.FieldType.Name == "id" {
+					sql := fmt.Sprintf(`CREATE INDEX "%s_osm_id_idx" ON "%s"."%s" USING BTREE ("%s")`,
+						tableName, pg.Schema, tableName, col.Name)
+					step := log.StartStep(fmt.Sprintf("Creating OSM id index on %s", tableName))
+					_, err := tx.Exec(sql)
+					log.StopStep(step)
+					if err != nil {
+						return err
+					}
 				}
 			}
-			if col.FieldType.Name == "id" {
-				sql := fmt.Sprintf(`CREATE INDEX "%s_osm_id_idx" ON "%s"."%s" USING BTREE ("%s")`,
-					tableName, pg.Schema, tableName, col.Name)
-				step := log.StartStep(fmt.Sprintf("Creating OSM id index on %s", tableName))
-				_, err := tx.Exec(sql)
-				log.StopStep(step)
-				if err != nil {
-					return err
-				}
-			}
+			return nil
 		}
 	}
-	for tableName, table := range pg.GeneralizedTables {
+	err = p.wait()
+	if err != nil {
+		return err
+	}
+
+	p = newWorkerPool(worker, len(pg.GeneralizedTables))
+	for tableName, tbl := range pg.GeneralizedTables {
 		tableName := pg.Prefix + tableName
-		for _, col := range table.Source.Columns {
-			if col.Type.Name() == "GEOMETRY" {
-				sql := fmt.Sprintf(`CREATE INDEX "%s_geom" ON "%s"."%s" USING GIST ("%s")`,
-					tableName, pg.Schema, tableName, col.Name)
-				step := log.StartStep(fmt.Sprintf("Creating geometry index on %s", tableName))
-				_, err := tx.Exec(sql)
-				log.StopStep(step)
-				if err != nil {
-					return err
+		table := tbl
+		p.in <- func() error {
+			for _, col := range table.Source.Columns {
+				if col.Type.Name() == "GEOMETRY" {
+					sql := fmt.Sprintf(`CREATE INDEX "%s_geom" ON "%s"."%s" USING GIST ("%s")`,
+						tableName, pg.Schema, tableName, col.Name)
+					step := log.StartStep(fmt.Sprintf("Creating geometry index on %s", tableName))
+					_, err := tx.Exec(sql)
+					log.StopStep(step)
+					if err != nil {
+						return err
+					}
+				}
+				if col.FieldType.Name == "id" {
+					sql := fmt.Sprintf(`CREATE INDEX "%s_osm_id_idx" ON "%s"."%s" USING BTREE ("%s")`,
+						tableName, pg.Schema, tableName, col.Name)
+					step := log.StartStep(fmt.Sprintf("Creating OSM id index on %s", tableName))
+					_, err := tx.Exec(sql)
+					log.StopStep(step)
+					if err != nil {
+						return err
+					}
 				}
 			}
-			if col.FieldType.Name == "id" {
-				sql := fmt.Sprintf(`CREATE INDEX "%s_osm_id_idx" ON "%s"."%s" USING BTREE ("%s")`,
-					tableName, pg.Schema, tableName, col.Name)
-				step := log.StartStep(fmt.Sprintf("Creating OSM id index on %s", tableName))
-				_, err := tx.Exec(sql)
-				log.StopStep(step)
-				if err != nil {
-					return err
-				}
-			}
+			return nil
 		}
 	}
+	err = p.wait()
+	if err != nil {
+		return err
+	}
+
 	err = tx.Commit()
 	if err != nil {
 		return err
@@ -286,29 +312,53 @@ func (pg *PostGIS) checkGeneralizedTableSources() {
 func (pg *PostGIS) Generalize() error {
 	defer log.StopStep(log.StartStep(fmt.Sprintf("Creating generalized tables")))
 
+	worker := int(runtime.NumCPU() / 2)
+	if worker > 1 {
+		worker = 1
+	}
 	// generalized tables can depend on other generalized tables
 	// create tables with non-generalized sources first
+	p := newWorkerPool(worker, len(pg.GeneralizedTables))
 	for _, table := range pg.GeneralizedTables {
 		if table.SourceGeneralized == nil {
-			if err := pg.generalizeTable(table); err != nil {
-				return err
+			tbl := table // for following closure
+			p.in <- func() error {
+				if err := pg.generalizeTable(tbl); err != nil {
+					return err
+				}
+				tbl.created = true
+				return nil
 			}
-			table.created = true
 		}
 	}
+	err := p.wait()
+	if err != nil {
+		return err
+	}
+
 	// next create tables with created generalized sources until
 	// no new source is created
 	created := true
 	for created {
 		created = false
+
+		p := newWorkerPool(worker, len(pg.GeneralizedTables))
 		for _, table := range pg.GeneralizedTables {
 			if !table.created && table.SourceGeneralized.created {
-				if err := pg.generalizeTable(table); err != nil {
-					return err
+				tbl := table // for following closure
+				p.in <- func() error {
+					if err := pg.generalizeTable(tbl); err != nil {
+						return err
+					}
+					tbl.created = true
+					created = true
+					return nil
 				}
-				table.created = true
-				created = true
 			}
+		}
+		err := p.wait()
+		if err != nil {
+			return err
 		}
 	}
 	return nil
