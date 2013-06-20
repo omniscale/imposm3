@@ -54,7 +54,9 @@ func dief(msg string, args ...interface{}) {
 
 func main() {
 	golog.SetFlags(golog.LstdFlags | golog.Lshortfile)
-	runtime.GOMAXPROCS(runtime.NumCPU())
+	if os.Getenv("GOMAXPROCS") == "" {
+		runtime.GOMAXPROCS(runtime.NumCPU())
+	}
 	flag.Parse()
 
 	if *cpuprofile != "" {
