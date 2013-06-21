@@ -162,12 +162,6 @@ func (pg *PostGIS) TableNames() []string {
 func (pg *PostGIS) Finish() error {
 	defer log.StopStep(log.StartStep(fmt.Sprintf("Creating geometry indices")))
 
-	tx, err := pg.Db.Begin()
-	if err != nil {
-		return err
-	}
-	defer rollbackIfTx(&tx)
-
 	worker := int(runtime.NumCPU() / 2)
 	if worker < 1 {
 		worker = 1
@@ -183,7 +177,7 @@ func (pg *PostGIS) Finish() error {
 					sql := fmt.Sprintf(`CREATE INDEX "%s_geom" ON "%s"."%s" USING GIST ("%s")`,
 						tableName, pg.Schema, tableName, col.Name)
 					step := log.StartStep(fmt.Sprintf("Creating geometry index on %s", tableName))
-					_, err := tx.Exec(sql)
+					_, err := pg.Db.Exec(sql)
 					log.StopStep(step)
 					if err != nil {
 						return err
@@ -193,7 +187,7 @@ func (pg *PostGIS) Finish() error {
 					sql := fmt.Sprintf(`CREATE INDEX "%s_osm_id_idx" ON "%s"."%s" USING BTREE ("%s")`,
 						tableName, pg.Schema, tableName, col.Name)
 					step := log.StartStep(fmt.Sprintf("Creating OSM id index on %s", tableName))
-					_, err := tx.Exec(sql)
+					_, err := pg.Db.Exec(sql)
 					log.StopStep(step)
 					if err != nil {
 						return err
@@ -203,7 +197,7 @@ func (pg *PostGIS) Finish() error {
 			return nil
 		}
 	}
-	err = p.wait()
+	err := p.wait()
 	if err != nil {
 		return err
 	}
@@ -218,7 +212,7 @@ func (pg *PostGIS) Finish() error {
 					sql := fmt.Sprintf(`CREATE INDEX "%s_geom" ON "%s"."%s" USING GIST ("%s")`,
 						tableName, pg.Schema, tableName, col.Name)
 					step := log.StartStep(fmt.Sprintf("Creating geometry index on %s", tableName))
-					_, err := tx.Exec(sql)
+					_, err := pg.Db.Exec(sql)
 					log.StopStep(step)
 					if err != nil {
 						return err
@@ -228,7 +222,7 @@ func (pg *PostGIS) Finish() error {
 					sql := fmt.Sprintf(`CREATE INDEX "%s_osm_id_idx" ON "%s"."%s" USING BTREE ("%s")`,
 						tableName, pg.Schema, tableName, col.Name)
 					step := log.StartStep(fmt.Sprintf("Creating OSM id index on %s", tableName))
-					_, err := tx.Exec(sql)
+					_, err := pg.Db.Exec(sql)
 					log.StopStep(step)
 					if err != nil {
 						return err
@@ -243,11 +237,6 @@ func (pg *PostGIS) Finish() error {
 		return err
 	}
 
-	err = tx.Commit()
-	if err != nil {
-		return err
-	}
-	tx = nil // set nil to prevent rollback
 	return nil
 }
 
