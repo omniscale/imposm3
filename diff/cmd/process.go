@@ -37,7 +37,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	tagmapping, err := mapping.NewMapping("../../mapping.json")
+	tagmapping, err := mapping.NewMapping("./mapping.json")
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -35,7 +35,14 @@ func NewDeleter(db database.Deleter, osmCache *cache.OSMCache, diffCache *cache.
 func (d *Deleter) deleteRelation(id int64) {
 	elem, err := d.osmCache.Relations.GetRelation(id)
 	if err != nil {
-		log.Println("rel ", id, err)
+		if err == cache.NotFound {
+			return
+		}
+		// TODO
+		log.Println("rel", id, err)
+		return
+	}
+	if elem.Tags == nil {
 		return
 	}
 	for _, m := range d.tmPolygons.Match(&elem.Tags) {
@@ -46,7 +53,14 @@ func (d *Deleter) deleteRelation(id int64) {
 func (d *Deleter) deleteWay(id int64) {
 	elem, err := d.osmCache.Ways.GetWay(id)
 	if err != nil {
-		log.Println("way ", id, err)
+		if err == cache.NotFound {
+			return
+		}
+		// TODO
+		log.Println("way", id, err)
+		return
+	}
+	if elem.Tags == nil {
 		return
 	}
 	for _, m := range d.tmPolygons.Match(&elem.Tags) {
@@ -60,9 +74,14 @@ func (d *Deleter) deleteWay(id int64) {
 func (d *Deleter) deleteNode(id int64) {
 	elem, err := d.osmCache.Nodes.GetNode(id)
 	if err != nil {
-		if err != cache.NotFound {
-			log.Println(err)
+		if err == cache.NotFound {
+			return
 		}
+		// TODO
+		log.Println("node", id, err)
+		return
+	}
+	if elem.Tags == nil {
 		return
 	}
 	for _, m := range d.tmPoints.Match(&elem.Tags) {
