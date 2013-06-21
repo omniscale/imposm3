@@ -175,11 +175,6 @@ func idFromKeyBuf(buf []byte) int64 {
 	return int64(bin.BigEndian.Uint64(buf))
 }
 
-type RawItem struct {
-	Id   int64
-	Data []byte
-}
-
 func (c *Cache) Close() {
 	if c.db != nil {
 		c.db.Close()

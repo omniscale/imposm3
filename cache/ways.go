@@ -61,8 +61,8 @@ func (p *WaysCache) GetWay(id int64) (*element.Way, error) {
 	return way, nil
 }
 
-func (p *WaysCache) Iter() chan RawItem {
-	ways := make(chan RawItem, 1024)
+func (p *WaysCache) Iter() chan *element.Way {
+	ways := make(chan *element.Way, 1024)
 	go func() {
 		ro := levigo.NewReadOptions()
 		ro.SetFillCache(false)
@@ -70,7 +70,12 @@ func (p *WaysCache) Iter() chan RawItem {
 		defer it.Close()
 		it.SeekToFirst()
 		for ; it.Valid(); it.Next() {
-			ways <- RawItem{idFromKeyBuf(it.Key()), it.Value()}
+			way, err := binary.UnmarshalWay(it.Value())
+			if err != nil {
+				panic(err)
+			}
+			way.Id = idFromKeyBuf(it.Key())
+			ways <- way
 		}
 		close(ways)
 	}()
