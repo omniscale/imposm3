@@ -54,6 +54,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	err = db.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	delDb, ok := db.(database.Deleter)
 	if !ok {
 		log.Fatal("database not deletable")
@@ -75,9 +80,6 @@ func main() {
 	wayTagFilter := tagmapping.WayTagFilter()
 	nodeTagFilter := tagmapping.NodeTagFilter()
 
-	insertBuffer := writer.NewInsertBuffer()
-	dbWriter := writer.NewDbWriter(db, insertBuffer.Out)
-
 	pointsTagMatcher := tagmapping.PointMatcher()
 	lineStringsTagMatcher := tagmapping.LineStringMatcher()
 	polygonsTagMatcher := tagmapping.PolygonMatcher()
@@ -86,18 +88,20 @@ func main() {
 	ways := make(chan *element.Way)
 	nodes := make(chan *element.Node)
 
+	srid := 3857 // TODO
+
 	relWriter := writer.NewRelationWriter(osmCache, diffCache, relations,
-		insertBuffer, polygonsTagMatcher, progress)
+		db, polygonsTagMatcher, progress, srid)
 	relWriter.SetClipper(geometryClipper)
 	relWriter.Start()
 
-	wayWriter := writer.NewWayWriter(osmCache, diffCache, ways, insertBuffer,
-		lineStringsTagMatcher, polygonsTagMatcher, progress)
+	wayWriter := writer.NewWayWriter(osmCache, diffCache, ways, db,
+		lineStringsTagMatcher, polygonsTagMatcher, progress, srid)
 	wayWriter.SetClipper(geometryClipper)
 	wayWriter.Start()
 
-	nodeWriter := writer.NewNodeWriter(osmCache, nodes, insertBuffer,
-		pointsTagMatcher, progress)
+	nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
+		pointsTagMatcher, progress, srid)
 	nodeWriter.SetClipper(geometryClipper)
 	nodeWriter.Start()
 
@@ -183,8 +187,6 @@ For:
 	relWriter.Close()
 	wayWriter.Close()
 
-	insertBuffer.Close()
-	dbWriter.Close()
 	progress.Stop()
 	osmCache.Coords.Flush()
 	osmCache.Close()

@@ -124,38 +124,6 @@ func (pg *PostGIS) InsertBatch(table string, rows [][]interface{}) error {
 	return nil
 }
 
-func (pg *PostGIS) Delete(table string, id int64) error {
-	spec, ok := pg.Tables[table]
-	if !ok {
-		return errors.New("unkown table: " + table)
-	}
-
-	tx, err := pg.Db.Begin()
-	if err != nil {
-		return err
-	}
-	defer rollbackIfTx(&tx)
-
-	sql := spec.DeleteSQL()
-	stmt, err := tx.Prepare(sql)
-	if err != nil {
-		return &SQLError{sql, err}
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(id)
-	if err != nil {
-		return &SQLInsertError{SQLError{sql, err}, id}
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return err
-	}
-	tx = nil // set nil to prevent rollback
-	return nil
-}
-
 func (pg *PostGIS) Init() error {
 	if err := pg.createSchema(pg.Schema); err != nil {
 		return err
@@ -439,6 +407,11 @@ func (pg *PostGIS) Insert(table string, row []interface{}) {
 	pg.InputBuffer.Insert(table, row)
 }
 
+func (pg *PostGIS) Delete(table string, id int64) error {
+	pg.InputBuffer.Delete(table, id)
+	return nil
+}
+
 func (pg *PostGIS) Begin() error {
 	pg.InputBuffer = NewInsertBuffer(pg, false)
 	return nil
@@ -477,9 +450,12 @@ func (tt *TableTx) Begin() error {
 		return err
 	}
 	tt.Tx = tx
-	_, err = tx.Exec(fmt.Sprintf(`TRUNCATE TABLE "%s"."%s" RESTART IDENTITY`, tt.Pg.Schema, tt.Table))
-	if err != nil {
-		return err
+
+	if tt.bulkImport {
+		_, err = tx.Exec(fmt.Sprintf(`TRUNCATE TABLE "%s"."%s" RESTART IDENTITY`, tt.Pg.Schema, tt.Table))
+		if err != nil {
+			return err
+		}
 	}
 
 	if tt.bulkImport {

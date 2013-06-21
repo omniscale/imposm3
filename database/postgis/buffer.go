@@ -1,27 +1,28 @@
 package postgis
 
-import (
-	"sync"
-)
-
 type InsertElement struct {
 	Table string
 	Row   []interface{}
 }
+type DeleteElement struct {
+	Table string
+	Id    int64
+}
 
 type InsertBuffer struct {
-	In     chan InsertElement
-	Tables map[string]*TableTx
-	wg     *sync.WaitGroup
+	insertc chan InsertElement
+	deletec chan DeleteElement
+	done    chan bool
+	Tables  map[string]*TableTx
 }
 
 func NewInsertBuffer(pg *PostGIS, bulkImport bool) *InsertBuffer {
 	ib := InsertBuffer{
-		In:     make(chan InsertElement),
-		Tables: make(map[string]*TableTx),
-		wg:     &sync.WaitGroup{},
+		insertc: make(chan InsertElement),
+		deletec: make(chan DeleteElement),
+		done:    make(chan bool),
+		Tables:  make(map[string]*TableTx),
 	}
-	ib.wg.Add(1)
 	for tableName, table := range pg.Tables {
 		tt := pg.NewTableTx(table, bulkImport)
 		err := tt.Begin()
@@ -54,21 +55,34 @@ func (ib *InsertBuffer) Abort() error {
 }
 
 func (ib *InsertBuffer) Close() {
-	close(ib.In)
-	ib.wg.Wait()
+	ib.done <- true
 }
 
 func (ib *InsertBuffer) Insert(table string, row []interface{}) {
-	ib.In <- InsertElement{table, row}
+	ib.insertc <- InsertElement{table, row}
+}
+
+func (ib *InsertBuffer) Delete(table string, id int64) {
+	ib.deletec <- DeleteElement{table, id}
 }
 
 func (ib *InsertBuffer) loop() {
-	for elem := range ib.In {
-		tt, ok := ib.Tables[elem.Table]
-		if !ok {
-			panic("unknown table " + elem.Table)
+	for {
+		select {
+		case elem := <-ib.insertc:
+			tt, ok := ib.Tables[elem.Table]
+			if !ok {
+				panic("unknown table " + elem.Table)
+			}
+			tt.Insert(elem.Row)
+		case elem := <-ib.deletec:
+			tt, ok := ib.Tables[elem.Table]
+			if !ok {
+				panic("unknown table " + elem.Table)
+			}
+			tt.Delete(elem.Id)
+		case <-ib.done:
+			return
 		}
-		tt.Insert(elem.Row)
 	}
-	ib.wg.Done()
 }
