@@ -15,7 +15,7 @@ type InsertBuffer struct {
 	wg     *sync.WaitGroup
 }
 
-func NewInsertBuffer(pg *PostGIS) *InsertBuffer {
+func NewInsertBuffer(pg *PostGIS, bulkImport bool) *InsertBuffer {
 	ib := InsertBuffer{
 		In:     make(chan InsertElement),
 		Tables: make(map[string]*TableTx),
@@ -23,7 +23,7 @@ func NewInsertBuffer(pg *PostGIS) *InsertBuffer {
 	}
 	ib.wg.Add(1)
 	for tableName, table := range pg.Tables {
-		tt := pg.NewTableTx(table)
+		tt := pg.NewTableTx(table, bulkImport)
 		err := tt.Begin()
 		if err != nil {
 			panic(err) // TODO

@@ -176,12 +176,17 @@ func main() {
 			die(err)
 		}
 
-		err = db.Begin()
+		bulkDb, ok := db.(database.BulkBeginner)
+		if ok {
+			err = bulkDb.BeginBulk()
+		} else {
+			err = db.Begin()
+		}
 		if err != nil {
 			die(err)
 		}
-		var diffCache *cache.DiffCache
 
+		var diffCache *cache.DiffCache
 		if *diff {
 			diffCache = cache.NewDiffCache(*cachedir)
 			if err = diffCache.Remove(); err != nil {

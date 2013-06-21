@@ -36,8 +36,8 @@ func (t *geometryType) Name() string {
 }
 
 func (t *geometryType) PrepareInsertSql(i int, spec *TableSpec) string {
-	return fmt.Sprintf("ST_GeomFromWKB($%d, %d)",
-		i, spec.Srid,
+	return fmt.Sprintf("$%d::Geometry",
+		i,
 	)
 }
 

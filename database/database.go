@@ -19,6 +19,10 @@ type DB interface {
 	RowInserter
 }
 
+type BulkBeginner interface {
+	BeginBulk() error
+}
+
 type RowInserter interface {
 	Insert(string, []interface{})
 }
