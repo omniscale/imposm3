@@ -138,13 +138,18 @@ func NewRefIndex(path string, opts *CacheOptions) (*RefIndex, error) {
 
 func NewCoordsRefIndex(dir string) (*CoordsRefIndex, error) {
 	cache, err := NewRefIndex(dir, &osmCacheOptions.CoordsIndex)
-	refIdx, err := &CoordsRefIndex{*cache}, err
-	return refIdx, err
+	if err != nil {
+		return nil, err
+	}
+	return &CoordsRefIndex{*cache}, nil
 }
 
 func NewWaysRefIndex(dir string) (*WaysRefIndex, error) {
 	cache, err := NewRefIndex(dir, &osmCacheOptions.WaysIndex)
-	return &WaysRefIndex{*cache}, err
+	if err != nil {
+		return nil, err
+	}
+	return &WaysRefIndex{*cache}, nil
 }
 
 func (index *RefIndex) writer() {
