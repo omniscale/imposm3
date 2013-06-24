@@ -22,7 +22,7 @@ func (a Refs) Less(i, j int) bool { return a[i] < a[j] }
 
 type DiffCache struct {
 	Dir    string
-	Coords *CoordsRefIndex
+	Coords *BunchRefCache
 	Ways   *WaysRefIndex
 	opened bool
 }
@@ -45,7 +45,7 @@ func NewDiffCache(dir string) *DiffCache {
 
 func (c *DiffCache) Open() error {
 	var err error
-	c.Coords, err = NewCoordsRefIndex(filepath.Join(c.Dir, "coords_index"))
+	c.Coords, err = NewBunchRefCache(filepath.Join(c.Dir, "coords_index"), &osmCacheOptions.CoordsIndex)
 	if err != nil {
 		c.Close()
 		return err
@@ -107,7 +107,7 @@ type idRef struct {
 	ref int64
 }
 
-const cacheSize = 64 * 1024
+const cacheSize = 1024
 
 var refCaches chan map[int64][]int64
 
@@ -295,6 +295,9 @@ func insertRefs(refs []int64, ref int64) []int64 {
 		return refs[i] >= ref
 	})
 	if i < len(refs) && refs[i] >= ref {
+		if refs[i] == ref {
+			return refs
+		}
 		refs = append(refs, 0)
 		copy(refs[i+1:], refs[i:])
 		refs[i] = ref
