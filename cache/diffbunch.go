@@ -81,7 +81,7 @@ func (index *BunchRefCache) dispatch() {
 			select {
 			case index.cache = <-bunchCaches:
 			default:
-				index.cache = make(map[int64]RefBunch, cacheSize)
+				index.cache = make(bunchCache, cacheSize)
 			}
 		}
 	}
@@ -129,7 +129,7 @@ type writeBunchItem struct {
 	data       []byte
 }
 
-func (index *BunchRefCache) writeRefs(idRefs map[int64]RefBunch) error {
+func (index *BunchRefCache) writeRefs(idRefs bunchCache) error {
 	batch := levigo.NewWriteBatch()
 	defer batch.Close()
 
@@ -142,9 +142,14 @@ func (index *BunchRefCache) writeRefs(idRefs map[int64]RefBunch) error {
 		go func() {
 			for item := range loadc {
 				keyBuf := idToKeyBuf(item.bunchId)
+				bunchList := make([]IdRef, len(item.bunch))
+				for id, refs := range item.bunch {
+					bunchList = append(bunchList, IdRef{id, refs})
+				}
+				// TODO
 				putc <- writeBunchItem{
 					keyBuf,
-					index.loadMergeMarshal(keyBuf, item.bunch),
+					index.loadMergeMarshal(keyBuf, bunchList),
 				}
 			}
 			wg.Done()
@@ -175,43 +180,44 @@ func (index *BunchRefCache) writeRefs(idRefs map[int64]RefBunch) error {
 	return index.db.Write(index.wo, batch)
 
 }
-func (index *BunchRefCache) loadMergeMarshal(keyBuf []byte, newBunch RefBunch) []byte {
+func (index *BunchRefCache) loadMergeMarshal(keyBuf []byte, newBunch []IdRef) []byte {
 	data, err := index.db.Get(index.ro, keyBuf)
 	if err != nil {
 		panic(err)
 	}
 
-	bunch := make(RefBunch)
+	var bunch []IdRef
 
 	if data != nil {
-		for _, idRef := range UnmarshalBunch(data) {
-			bunch[idRef.id] = idRef.refs
-		}
+		bunch = UnmarshalBunch(data)
 	}
 
 	if bunch == nil {
 		bunch = newBunch
 	} else {
-		for id, newRefs := range newBunch {
-			refs, ok := bunch[id]
-			if !ok {
-				bunch[id] = newRefs
-			} else {
-				for _, ref := range newRefs {
-					refs = insertRefs(refs, ref)
-
+		var last int
+		for _, newIdRefs := range newBunch {
+			for i := last; i < len(bunch); i++ {
+				if bunch[i].id == newIdRefs.id {
+					for _, r := range newIdRefs.refs {
+						bunch[i].refs = insertRefs(bunch[i].refs, r)
+					}
+					last = i
+					break
 				}
-				// sort.Sort(Refs(refs))
-				bunch[id] = refs
+				if bunch[i].id >= newIdRefs.id {
+					// insert before
+					bunch = append(bunch, IdRef{})
+					copy(bunch[i+1:], bunch[i:])
+					bunch[i] = newIdRefs
+					last = i
+					break
+				}
 			}
 		}
 	}
 
-	bunchList := make([]IdRef, len(bunch))
-	for id, refs := range bunch {
-		bunchList = append(bunchList, IdRef{id, refs})
-	}
-	data = MarshalBunch(bunchList)
+	data = MarshalBunch(bunch)
 	return data
 }
 

@@ -172,12 +172,22 @@ func TestWriteDiffBunch(t *testing.T) {
 	if err != nil {
 		t.Fatal()
 	}
-	defer cache.Close()
 
 	for w := 0; w < 5; w++ {
 		for n := 0; n < 200; n++ {
 			cache.addToCache(int64(n), int64(w))
 		}
 	}
+	cache.Close()
+
+	cache, err = NewBunchRefCache(cache_dir, &osmCacheOptions.CoordsIndex)
+	if err != nil {
+		t.Fatal()
+	}
+	result := cache.Get(100)
+	if len(result) != 5 {
+		t.Fatal(result)
+	}
+	cache.Close()
 
 }
