@@ -175,7 +175,7 @@ func TestWriteDiffBunch(t *testing.T) {
 
 	for w := 0; w < 5; w++ {
 		for n := 0; n < 200; n++ {
-			cache.addToCache(int64(n), int64(w))
+			cache.cache.add(1, int64(n), int64(w))
 		}
 	}
 	cache.Close()
@@ -190,4 +190,47 @@ func TestWriteDiffBunch(t *testing.T) {
 	}
 	cache.Close()
 
+}
+
+func TestIdRefBunches(t *testing.T) {
+	bunches := make(IdRefBunches)
+	bunches.add(1, 100, 999)
+
+	if r := bunches[1].idRefs[0]; r.id != 100 || r.refs[0] != 999 {
+		t.Fatal(bunches)
+	}
+
+	// same id
+	bunches.add(1, 100, 998)
+	if r := bunches[1].idRefs[0]; r.id != 100 || r.refs[0] != 998 || r.refs[1] != 999 {
+		t.Fatal(bunches)
+	}
+
+	// before
+	bunches.add(1, 99, 888)
+	if r := bunches[1].idRefs[0]; r.id != 99 || r.refs[0] != 888 {
+		t.Fatal(bunches)
+	}
+
+	// after
+	bunches.add(1, 102, 777)
+	if r := bunches[1].idRefs[2]; r.id != 102 || r.refs[0] != 777 {
+		t.Fatal(bunches)
+	}
+
+	// in between
+	bunches.add(1, 101, 666)
+	if r := bunches[1].idRefs[2]; r.id != 101 || r.refs[0] != 666 {
+		t.Fatal(bunches)
+	}
+
+	if len(bunches) != 1 {
+		t.Fatal(bunches)
+	}
+	if bunches[1].id != 1 {
+		t.Fatal(bunches)
+	}
+	if len(bunches[1].idRefs) != 4 {
+		t.Fatal(bunches)
+	}
 }

@@ -7,19 +7,24 @@ import (
 	"goposm/element"
 	"log"
 	"runtime"
+	"sort"
 	"sync"
 )
 
-type bunchCache map[int64]RefBunch
-
 type BunchRefCache struct {
 	Cache
-	cache     bunchCache
-	write     chan bunchCache
+	cache     IdRefBunches
+	write     chan IdRefBunches
 	add       chan idRef
 	mu        sync.Mutex
 	waitAdd   *sync.WaitGroup
 	waitWrite *sync.WaitGroup
+}
+
+var IdRefBunchesCache chan IdRefBunches
+
+func init() {
+	IdRefBunchesCache = make(chan IdRefBunches, 1)
 }
 
 type IdRef struct {
@@ -27,13 +32,12 @@ type IdRef struct {
 	refs []int64
 }
 
-var bunchCaches chan bunchCache
-
-func init() {
-	bunchCaches = make(chan bunchCache, 1)
+type IdRefBunch struct {
+	id     int64
+	idRefs []IdRef
 }
 
-type RefBunch map[int64][]int64
+type IdRefBunches map[int64]IdRefBunch
 
 func NewBunchRefCache(path string, opts *CacheOptions) (*BunchRefCache, error) {
 	index := BunchRefCache{}
@@ -42,8 +46,8 @@ func NewBunchRefCache(path string, opts *CacheOptions) (*BunchRefCache, error) {
 	if err != nil {
 		return nil, err
 	}
-	index.write = make(chan bunchCache, 2)
-	index.cache = make(bunchCache, cacheSize)
+	index.write = make(chan IdRefBunches, 2)
+	index.cache = make(IdRefBunches, cacheSize)
 	index.add = make(chan idRef, 1024)
 
 	index.waitWrite = &sync.WaitGroup{}
@@ -75,13 +79,13 @@ func (index *BunchRefCache) Close() {
 
 func (index *BunchRefCache) dispatch() {
 	for idRef := range index.add {
-		index.addToCache(idRef.id, idRef.ref)
+		index.cache.add(index.getBunchId(idRef.id), idRef.id, idRef.ref)
 		if len(index.cache) >= cacheSize {
 			index.write <- index.cache
 			select {
-			case index.cache = <-bunchCaches:
+			case index.cache = <-IdRefBunchesCache:
 			default:
-				index.cache = make(bunchCache, cacheSize)
+				index.cache = make(IdRefBunches, cacheSize)
 			}
 		}
 	}
@@ -102,26 +106,37 @@ func (index *BunchRefCache) getBunchId(id int64) int64 {
 	return id / 64
 }
 
-func (index *BunchRefCache) addToCache(id, ref int64) {
-	bunchId := index.getBunchId(id)
-
-	bunch, ok := index.cache[bunchId]
+func (bunches *IdRefBunches) add(bunchId, id, ref int64) {
+	bunch, ok := (*bunches)[bunchId]
 	if !ok {
-		bunch = RefBunch{}
+		bunch = IdRefBunch{id: bunchId}
+	}
+	var idRef *IdRef
+
+	i := sort.Search(len(bunch.idRefs), func(i int) bool {
+		return bunch.idRefs[i].id >= id
+	})
+	if i < len(bunch.idRefs) && bunch.idRefs[i].id >= id {
+		if bunch.idRefs[i].id == id {
+			idRef = &bunch.idRefs[i]
+		} else {
+			bunch.idRefs = append(bunch.idRefs, IdRef{})
+			copy(bunch.idRefs[i+1:], bunch.idRefs[i:])
+			bunch.idRefs[i] = IdRef{id: id}
+			idRef = &bunch.idRefs[i]
+		}
+	} else {
+		bunch.idRefs = append(bunch.idRefs, IdRef{id: id})
+		idRef = &bunch.idRefs[len(bunch.idRefs)-1]
 	}
 
-	refs, ok := bunch[id]
-	if !ok {
-		refs = make([]int64, 0, 1)
-	}
-	refs = insertRefs(refs, ref)
-	bunch[id] = refs
-	index.cache[bunchId] = bunch
+	idRef.refs = insertRefs(idRef.refs, ref)
+	(*bunches)[bunchId] = bunch
 }
 
 type loadBunchItem struct {
 	bunchId int64
-	bunch   RefBunch
+	bunch   IdRefBunch
 }
 
 type writeBunchItem struct {
@@ -129,7 +144,7 @@ type writeBunchItem struct {
 	data       []byte
 }
 
-func (index *BunchRefCache) writeRefs(idRefs bunchCache) error {
+func (index *BunchRefCache) writeRefs(idRefs IdRefBunches) error {
 	batch := levigo.NewWriteBatch()
 	defer batch.Close()
 
@@ -142,14 +157,9 @@ func (index *BunchRefCache) writeRefs(idRefs bunchCache) error {
 		go func() {
 			for item := range loadc {
 				keyBuf := idToKeyBuf(item.bunchId)
-				bunchList := make([]IdRef, len(item.bunch))
-				for id, refs := range item.bunch {
-					bunchList = append(bunchList, IdRef{id, refs})
-				}
-				// TODO
 				putc <- writeBunchItem{
 					keyBuf,
-					index.loadMergeMarshal(keyBuf, bunchList),
+					index.loadMergeMarshal(keyBuf, item.bunch.idRefs),
 				}
 			}
 			wg.Done()
@@ -174,7 +184,7 @@ func (index *BunchRefCache) writeRefs(idRefs bunchCache) error {
 			delete(idRefs, k)
 		}
 		select {
-		case bunchCaches <- idRefs:
+		case IdRefBunchesCache <- idRefs:
 		}
 	}()
 	return index.db.Write(index.wo, batch)
