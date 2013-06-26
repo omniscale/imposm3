@@ -192,17 +192,49 @@ func TestWriteDiffBunch(t *testing.T) {
 
 }
 
+func TestMergeIdRefs(t *testing.T) {
+	bunch := []IdRef{}
+
+	bunch = mergeBunch(bunch, []IdRef{IdRef{50, []int64{1}}})
+	if b := bunch[0]; b.id != 50 || b.refs[0] != 1 {
+		t.Fatal(bunch)
+	}
+
+	// before
+	bunch = mergeBunch(bunch, []IdRef{IdRef{40, []int64{3}}})
+	if b := bunch[0]; b.id != 40 || b.refs[0] != 3 {
+		t.Fatal(bunch)
+	}
+
+	// after
+	bunch = mergeBunch(bunch, []IdRef{IdRef{70, []int64{4}}})
+	if b := bunch[2]; b.id != 70 || b.refs[0] != 4 {
+		t.Fatal(bunch)
+	}
+
+	// in between
+	bunch = mergeBunch(bunch, []IdRef{IdRef{60, []int64{5}}})
+	if b := bunch[2]; b.id != 60 || b.refs[0] != 5 {
+		t.Fatal(bunch)
+	}
+
+	// same
+	bunch = mergeBunch(bunch, []IdRef{IdRef{50, []int64{0, 5}}})
+	if b := bunch[1]; b.id != 50 || b.refs[0] != 0 ||
+		b.refs[1] != 1 || b.refs[2] != 5 {
+		t.Fatal(bunch)
+	}
+
+	if len(bunch) != 4 {
+		t.Fatal(bunch)
+	}
+}
+
 func TestIdRefBunches(t *testing.T) {
 	bunches := make(IdRefBunches)
 	bunches.add(1, 100, 999)
 
 	if r := bunches[1].idRefs[0]; r.id != 100 || r.refs[0] != 999 {
-		t.Fatal(bunches)
-	}
-
-	// same id
-	bunches.add(1, 100, 998)
-	if r := bunches[1].idRefs[0]; r.id != 100 || r.refs[0] != 998 || r.refs[1] != 999 {
 		t.Fatal(bunches)
 	}
 
@@ -221,6 +253,12 @@ func TestIdRefBunches(t *testing.T) {
 	// in between
 	bunches.add(1, 101, 666)
 	if r := bunches[1].idRefs[2]; r.id != 101 || r.refs[0] != 666 {
+		t.Fatal(bunches)
+	}
+
+	// same id
+	bunches.add(1, 100, 998)
+	if r := bunches[1].idRefs[1]; r.id != 100 || r.refs[0] != 998 || r.refs[1] != 999 {
 		t.Fatal(bunches)
 	}
 
