@@ -241,11 +241,10 @@ func MakeSuffixReplace(fieldName string, fieldType FieldType, field Field) (Make
 	if !ok {
 		return nil, errors.New("missing suffixes in args for string_suffixreplace")
 	}
-	fmt.Printf("%#v\n", _changes)
 
-	changes, ok := _changes.(map[string]string)
+	changes, ok := _changes.(map[string]interface{})
 	if !ok {
-		return nil, errors.New("suffixes in args for string_suffixreplace not a list")
+		return nil, errors.New("suffixes in args for string_suffixreplace not a dict")
 	}
 
 	var suffixes []string
@@ -256,7 +255,7 @@ func MakeSuffixReplace(fieldName string, fieldType FieldType, field Field) (Make
 	re := regexp.MustCompile(reStr)
 
 	replFunc := func(match string) string {
-		return changes[match]
+		return changes[match].(string)
 	}
 
 	suffixReplace := func(val string, elem *element.OSMElem, match Match) interface{} {
