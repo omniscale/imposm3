@@ -2,7 +2,6 @@ package mapping
 
 import (
 	"errors"
-	"fmt"
 	"goposm/element"
 	"goposm/logging"
 	"regexp"
