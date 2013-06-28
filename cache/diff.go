@@ -1,15 +1,9 @@
 package cache
 
 import (
-	"bytes"
-	"encoding/binary"
-	"github.com/jmhodges/levigo"
 	"goposm/element"
-	"io"
-	"log"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"sync"
 )
@@ -96,10 +90,10 @@ type RefIndex struct {
 }
 
 type CoordsRefIndex struct {
-	RefIndex
+	BunchRefCache
 }
 type WaysRefIndex struct {
-	RefIndex
+	BunchRefCache
 }
 
 type idRef struct {
@@ -115,29 +109,8 @@ func init() {
 	refCaches = make(chan map[int64][]int64, 1)
 }
 
-func NewRefIndex(path string, opts *CacheOptions) (*RefIndex, error) {
-	index := RefIndex{}
-	index.options = opts
-	err := index.open(path)
-	if err != nil {
-		return nil, err
-	}
-	index.write = make(chan map[int64][]int64, 2)
-	index.cache = make(map[int64][]int64, cacheSize)
-	index.add = make(chan idRef, 1024)
-
-	index.waitWrite = &sync.WaitGroup{}
-	index.waitAdd = &sync.WaitGroup{}
-	index.waitWrite.Add(1)
-	index.waitAdd.Add(1)
-
-	go index.writer()
-	go index.dispatch()
-	return &index, nil
-}
-
 func NewCoordsRefIndex(dir string) (*CoordsRefIndex, error) {
-	cache, err := NewRefIndex(dir, &osmCacheOptions.CoordsIndex)
+	cache, err := NewBunchRefCache(dir, &osmCacheOptions.CoordsIndex)
 	if err != nil {
 		return nil, err
 	}
@@ -145,47 +118,11 @@ func NewCoordsRefIndex(dir string) (*CoordsRefIndex, error) {
 }
 
 func NewWaysRefIndex(dir string) (*WaysRefIndex, error) {
-	cache, err := NewRefIndex(dir, &osmCacheOptions.WaysIndex)
+	cache, err := NewBunchRefCache(dir, &osmCacheOptions.WaysIndex)
 	if err != nil {
 		return nil, err
 	}
 	return &WaysRefIndex{*cache}, nil
-}
-
-func (index *RefIndex) writer() {
-	for cache := range index.write {
-		if err := index.writeRefs(cache); err != nil {
-			log.Println("error while writing ref index", err)
-		}
-	}
-	index.waitWrite.Done()
-}
-
-func (index *RefIndex) Close() {
-	close(index.add)
-	index.waitAdd.Wait()
-	close(index.write)
-	index.waitWrite.Wait()
-	index.Cache.Close()
-}
-
-func (index *RefIndex) dispatch() {
-	for idRef := range index.add {
-		index.addToCache(idRef.id, idRef.ref)
-		if len(index.cache) >= cacheSize {
-			index.write <- index.cache
-			select {
-			case index.cache = <-refCaches:
-			default:
-				index.cache = make(map[int64][]int64, cacheSize)
-			}
-		}
-	}
-	if len(index.cache) > 0 {
-		index.write <- index.cache
-		index.cache = nil
-	}
-	index.waitAdd.Done()
 }
 
 func (index *CoordsRefIndex) AddFromWay(way *element.Way) {
@@ -200,94 +137,6 @@ func (index *WaysRefIndex) AddFromMembers(relId int64, members []element.Member)
 			index.add <- idRef{member.Id, relId}
 		}
 	}
-}
-
-func (index *RefIndex) addToCache(id, ref int64) {
-	refs, ok := index.cache[id]
-	if !ok {
-		refs = make([]int64, 0, 1)
-	}
-	refs = insertRefs(refs, ref)
-
-	index.cache[id] = refs
-}
-
-type writeRefItem struct {
-	key  []byte
-	data []byte
-}
-type loadRefItem struct {
-	id   int64
-	refs []int64
-}
-
-func (index *RefIndex) writeRefs(idRefs map[int64][]int64) error {
-	batch := levigo.NewWriteBatch()
-	defer batch.Close()
-
-	wg := sync.WaitGroup{}
-	putc := make(chan writeRefItem)
-	loadc := make(chan loadRefItem)
-
-	for i := 0; i < runtime.NumCPU(); i++ {
-		wg.Add(1)
-		go func() {
-			for item := range loadc {
-				keyBuf := idToKeyBuf(item.id)
-				putc <- writeRefItem{
-					keyBuf,
-					index.loadAppendMarshal(keyBuf, item.refs),
-				}
-			}
-			wg.Done()
-		}()
-	}
-
-	go func() {
-		for id, refs := range idRefs {
-			loadc <- loadRefItem{id, refs}
-		}
-		close(loadc)
-		wg.Wait()
-		close(putc)
-	}()
-
-	for item := range putc {
-		batch.Put(item.key, item.data)
-	}
-
-	go func() {
-		for k, _ := range idRefs {
-			delete(idRefs, k)
-		}
-		select {
-		case refCaches <- idRefs:
-		}
-	}()
-	return index.db.Write(index.wo, batch)
-
-}
-func (index *RefIndex) loadAppendMarshal(keyBuf []byte, newRefs []int64) []byte {
-	data, err := index.db.Get(index.ro, keyBuf)
-	if err != nil {
-		panic(err)
-	}
-
-	var refs []int64
-
-	if data != nil {
-		refs = UnmarshalRefs(data)
-	}
-
-	if refs == nil {
-		refs = newRefs
-	} else {
-		refs = append(refs, newRefs...)
-		sort.Sort(Refs(refs))
-	}
-
-	data = MarshalRefs(refs)
-	return data
 }
 
 func insertRefs(refs []int64, ref int64) []int64 {
@@ -305,60 +154,4 @@ func insertRefs(refs []int64, ref int64) []int64 {
 		refs = append(refs, ref)
 	}
 	return refs
-}
-
-func (index *RefIndex) Get(id int64) []int64 {
-	keyBuf := idToKeyBuf(id)
-	data, err := index.db.Get(index.ro, keyBuf)
-	if err != nil {
-		panic(err)
-	}
-	var refs []int64
-	if data != nil {
-		refs = UnmarshalRefs(data)
-		if err != nil {
-			panic(err)
-		}
-	}
-	return refs
-}
-
-func UnmarshalRefs(buf []byte) []int64 {
-	refs := make([]int64, 0, 8)
-
-	r := bytes.NewBuffer(buf)
-
-	lastRef := int64(0)
-	for {
-		ref, err := binary.ReadVarint(r)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			log.Println("error while unmarshaling refs:", err)
-			break
-		}
-		ref = lastRef + ref
-		refs = append(refs, ref)
-		lastRef = ref
-	}
-
-	return refs
-}
-
-func MarshalRefs(refs []int64) []byte {
-	buf := make([]byte, len(refs)*4+binary.MaxVarintLen64)
-
-	lastRef := int64(0)
-	nextPos := 0
-	for _, ref := range refs {
-		if len(buf)-nextPos < binary.MaxVarintLen64 {
-			tmp := make([]byte, len(buf)*2)
-			copy(tmp, buf)
-			buf = tmp
-		}
-		nextPos += binary.PutVarint(buf[nextPos:], ref-lastRef)
-		lastRef = ref
-	}
-	return buf[:nextPos]
 }

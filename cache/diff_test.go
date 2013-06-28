@@ -46,41 +46,23 @@ func TestInsertRefs(t *testing.T) {
 
 }
 
-func TestMarshalRefs(t *testing.T) {
-	refs := []int64{1890166659, -1890166659, 0, 1890166, 1890167, 1890167, 1890165}
-	buf := MarshalRefs(refs)
-
-	t.Log(len(refs), len(buf))
-	result := UnmarshalRefs(buf)
-
-	if len(result) != len(refs) {
-		t.Fatal(result)
-	}
-	for i, ref := range refs {
-		if result[i] != ref {
-			t.Fatal(result)
-		}
-	}
-
-}
-
 func TestWriteDiff(t *testing.T) {
 	cache_dir, _ := ioutil.TempDir("", "goposm_test")
 	defer os.RemoveAll(cache_dir)
 
-	cache, err := NewRefIndex(cache_dir, &osmCacheOptions.CoordsIndex)
+	cache, err := NewBunchRefCache(cache_dir, &osmCacheOptions.CoordsIndex)
 	if err != nil {
 		t.Fatal()
 	}
 
 	for w := 0; w < 5; w++ {
 		for n := 0; n < 200; n++ {
-			cache.addToCache(int64(n), int64(w))
+			cache.cache.add(cache.getBunchId(int64(n)), int64(n), int64(w))
 		}
 	}
 	cache.Close()
 
-	cache, err = NewRefIndex(cache_dir, &osmCacheOptions.CoordsIndex)
+	cache, err = NewBunchRefCache(cache_dir, &osmCacheOptions.CoordsIndex)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,7 +129,7 @@ func BenchmarkWriteDiff(b *testing.B) {
 	cache_dir, _ := ioutil.TempDir("", "goposm_test")
 	defer os.RemoveAll(cache_dir)
 
-	cache, err := NewRefIndex(cache_dir, &osmCacheOptions.CoordsIndex)
+	cache, err := NewBunchRefCache(cache_dir, &osmCacheOptions.CoordsIndex)
 	if err != nil {
 		b.Fatal()
 	}
@@ -157,38 +139,10 @@ func BenchmarkWriteDiff(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		for w := 0; w < 5; w++ {
 			for n := 0; n < 200; n++ {
-				cache.addToCache(int64(n), int64(w))
+				cache.cache.add(cache.getBunchId(int64(n)), int64(n), int64(w))
 			}
 		}
 	}
-
-}
-
-func TestWriteDiffBunch(t *testing.T) {
-	cache_dir, _ := ioutil.TempDir("", "goposm_test")
-	defer os.RemoveAll(cache_dir)
-
-	cache, err := NewBunchRefCache(cache_dir, &osmCacheOptions.CoordsIndex)
-	if err != nil {
-		t.Fatal()
-	}
-
-	for w := 0; w < 5; w++ {
-		for n := 0; n < 200; n++ {
-			cache.cache.add(1, int64(n), int64(w))
-		}
-	}
-	cache.Close()
-
-	cache, err = NewBunchRefCache(cache_dir, &osmCacheOptions.CoordsIndex)
-	if err != nil {
-		t.Fatal()
-	}
-	result := cache.Get(100)
-	if len(result) != 5 {
-		t.Fatal(result)
-	}
-	cache.Close()
 
 }
 
