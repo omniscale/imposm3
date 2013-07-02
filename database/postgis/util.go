@@ -57,9 +57,15 @@ func tableExists(tx *sql.Tx, schema, table string) (bool, error) {
 }
 
 func dropTableIfExists(tx *sql.Tx, schema, table string) error {
-	sql := fmt.Sprintf(`DROP TABLE IF EXISTS "%s"."%s"`, schema, table)
-	_, err := tx.Exec(sql)
-	return err
+	sql := fmt.Sprintf("SELECT DropGeometryTable('%s', '%s');",
+		schema, table)
+	row := tx.QueryRow(sql)
+	var void interface{}
+	err := row.Scan(&void)
+	if err != nil {
+		return &SQLError{sql, err}
+	}
+	return nil
 }
 
 func rollbackIfTx(tx **sql.Tx) {
