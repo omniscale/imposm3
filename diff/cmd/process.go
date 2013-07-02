@@ -121,14 +121,17 @@ For:
 			}
 			if elem.Add {
 				if elem.Rel != nil {
+					// TODO: check for existence of first way member
 					relTagFilter.Filter(&elem.Rel.Tags)
 					osmCache.Relations.PutRelation(elem.Rel)
 					relIds[elem.Rel.Id] = true
 				} else if elem.Way != nil {
+					// TODO: check for existence of first ref
 					wayTagFilter.Filter(&elem.Way.Tags)
 					osmCache.Ways.PutWay(elem.Way)
 					wayIds[elem.Way.Id] = true
 				} else if elem.Node != nil {
+					// TODO: check for intersection with import BBOX/poly
 					nodeTagFilter.Filter(&elem.Node.Tags)
 					osmCache.Nodes.PutNode(elem.Node)
 					osmCache.Coords.PutCoords([]element.Node{*elem.Node})
@@ -147,11 +150,16 @@ For:
 
 	for nodeId, _ := range nodeIds {
 		node, err := osmCache.Nodes.GetNode(nodeId)
-		if err == nil {
-			nodes <- node
+		if err != nil {
 			// missing nodes can still be Coords
+			// no `continue` here
+		}
+		if node != nil {
+			// insert new node
+			nodes <- node
 		}
 		dependers := diffCache.Coords.Get(nodeId)
+		// mark depending ways for (re)insert
 		for _, way := range dependers {
 			wayIds[way] = true
 		}
@@ -163,8 +171,10 @@ For:
 			log.Println(wayId, err)
 			continue
 		}
+		// insert new way
 		ways <- way
 		dependers := diffCache.Ways.Get(wayId)
+		// mark depending relations for (re)insert
 		for _, rel := range dependers {
 			relIds[rel] = true
 		}
@@ -176,6 +186,7 @@ For:
 			log.Println(err)
 			continue
 		}
+		// insert new relation
 		relations <- rel
 	}
 
