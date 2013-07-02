@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 )
 
 var log = logging.NewLogger("PostGIS")
@@ -36,10 +37,10 @@ func (e *SQLInsertError) Error() string {
 func createTable(tx *sql.Tx, spec TableSpec) error {
 	var sql string
 	var err error
-	sql = fmt.Sprintf(`DROP TABLE IF EXISTS "%s"."%s"`, spec.Schema, spec.Name)
-	_, err = tx.Exec(sql)
+
+	err = dropTableIfExists(tx, spec.Schema, spec.Name)
 	if err != nil {
-		return &SQLError{sql, err}
+		return err
 	}
 
 	sql = spec.CreateTableSQL()
@@ -47,15 +48,36 @@ func createTable(tx *sql.Tx, spec TableSpec) error {
 	if err != nil {
 		return &SQLError{sql, err}
 	}
+
+	err = addGeometryColumn(tx, spec.Name, spec)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func addGeometryColumn(tx *sql.Tx, tableName string, spec TableSpec) error {
 	geomType := strings.ToUpper(spec.GeometryType)
 	if geomType == "POLYGON" {
 		geomType = "GEOMETRY" // for multipolygon support
 	}
-	sql = fmt.Sprintf("SELECT AddGeometryColumn('%s', '%s', 'geometry', '%d', '%s', 2);",
-		spec.Schema, spec.Name, spec.Srid, geomType)
+	sql := fmt.Sprintf("SELECT AddGeometryColumn('%s', '%s', 'geometry', '%d', '%s', 2);",
+		spec.Schema, tableName, spec.Srid, geomType)
 	row := tx.QueryRow(sql)
 	var void interface{}
-	err = row.Scan(&void)
+	err := row.Scan(&void)
+	if err != nil {
+		return &SQLError{sql, err}
+	}
+	return nil
+}
+
+func populateGeometryColumn(tx *sql.Tx, tableName string, spec TableSpec) error {
+	sql := fmt.Sprintf("SELECT Populate_Geometry_Columns('%s.%s'::regclass);",
+		spec.Schema, tableName)
+	row := tx.QueryRow(sql)
+	var void interface{}
+	err := row.Scan(&void)
 	if err != nil {
 		return &SQLError{sql, err}
 	}
@@ -167,6 +189,7 @@ func (pg *PostGIS) Finish() error {
 		worker = 1
 	}
 
+	time.Sleep(0 * time.Second)
 	p := newWorkerPool(worker, len(pg.Tables))
 	for tableName, tbl := range pg.Tables {
 		tableName := pg.Prefix + tableName
@@ -352,8 +375,14 @@ func (pg *PostGIS) generalizeTable(table *GeneralizedTableSpec) error {
 
 	_, err = tx.Exec(sql)
 	if err != nil {
+		return &SQLError{sql, err}
+	}
+
+	err = populateGeometryColumn(tx, table.Name, *table.Source)
+	if err != nil {
 		return err
 	}
+
 	err = tx.Commit()
 	if err != nil {
 		return err
