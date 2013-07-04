@@ -11,7 +11,6 @@ import (
 	"runtime"
 	"strings"
 	"sync"
-	"time"
 )
 
 var log = logging.NewLogger("PostGIS")
@@ -189,7 +188,6 @@ func (pg *PostGIS) Finish() error {
 		worker = 1
 	}
 
-	time.Sleep(0 * time.Second)
 	p := newWorkerPool(worker, len(pg.Tables)+len(pg.GeneralizedTables))
 	for tableName, tbl := range pg.Tables {
 		tableName := pg.Prefix + tableName
@@ -239,32 +237,6 @@ func createIndex(pg *PostGIS, tableName string, columns []ColumnSpec) error {
 		}
 	}
 	return nil
-}
-
-func (pg *PostGIS) checkGeneralizedTableSources() {
-	for name, table := range pg.GeneralizedTables {
-		if source, ok := pg.Tables[table.SourceName]; ok {
-			table.Source = source
-		} else if source, ok := pg.GeneralizedTables[table.SourceName]; ok {
-			table.SourceGeneralized = source
-		} else {
-			log.Printf("missing source '%s' for generalized table '%s'\n",
-				table.SourceName, name)
-		}
-	}
-
-	filled := true
-	for filled {
-		filled = false
-		for _, table := range pg.GeneralizedTables {
-			if table.Source == nil {
-				if source, ok := pg.GeneralizedTables[table.SourceName]; ok && source.Source != nil {
-					table.Source = source.Source
-				}
-				filled = true
-			}
-		}
-	}
 }
 
 func (pg *PostGIS) Generalize() error {
@@ -369,6 +341,40 @@ func (pg *PostGIS) generalizeTable(table *GeneralizedTableSpec) error {
 	return nil
 }
 
+// Optimize clusters tables on new GeoHash index.
+func (pg *PostGIS) Optimize() error {
+	defer log.StopStep(log.StartStep(fmt.Sprintf("Clustering on geometry")))
+
+	worker := int(runtime.NumCPU() / 2)
+	if worker < 1 {
+		worker = 1
+	}
+
+	p := newWorkerPool(worker, len(pg.Tables)+len(pg.GeneralizedTables))
+
+	for tableName, tbl := range pg.Tables {
+		tableName := pg.Prefix + tableName
+		table := tbl
+		p.in <- func() error {
+			return clusterTable(pg, tableName, table.Srid, table.Columns)
+		}
+	}
+	for tableName, tbl := range pg.GeneralizedTables {
+		tableName := pg.Prefix + tableName
+		table := tbl
+		p.in <- func() error {
+			return clusterTable(pg, tableName, table.Source.Srid, table.Source.Columns)
+		}
+	}
+
+	err := p.wait()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func clusterTable(pg *PostGIS, tableName string, srid int, columns []ColumnSpec) error {
 	for _, col := range columns {
 		if col.Type.Name() == "GEOMETRY" {
@@ -392,46 +398,6 @@ func clusterTable(pg *PostGIS, tableName string, srid int, columns []ColumnSpec)
 			break
 		}
 	}
-	return nil
-
-}
-
-// Finish creates spatial indices on all tables.
-func (pg *PostGIS) Optimize() error {
-	defer log.StopStep(log.StartStep(fmt.Sprintf("Clustering on geometry")))
-
-	worker := int(runtime.NumCPU() / 2)
-	if worker < 1 {
-		worker = 1
-	}
-
-	time.Sleep(0 * time.Second)
-	p := newWorkerPool(worker, len(pg.Tables))
-	for tableName, tbl := range pg.Tables {
-		tableName := pg.Prefix + tableName
-		table := tbl
-		p.in <- func() error {
-			return clusterTable(pg, tableName, table.Srid, table.Columns)
-		}
-	}
-	err := p.wait()
-	if err != nil {
-		return err
-	}
-
-	p = newWorkerPool(worker, len(pg.GeneralizedTables))
-	for tableName, tbl := range pg.GeneralizedTables {
-		tableName := pg.Prefix + tableName
-		table := tbl
-		p.in <- func() error {
-			return clusterTable(pg, tableName, table.Source.Srid, table.Source.Columns)
-		}
-	}
-	err = p.wait()
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -635,13 +601,42 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	for name, table := range m.GeneralizedTables {
 		db.GeneralizedTables[name] = NewGeneralizedTableSpec(db, table)
 	}
-	db.checkGeneralizedTableSources()
+	db.prepareGeneralizedTableSources()
 
 	err = db.Open()
 	if err != nil {
 		return nil, err
 	}
 	return db, nil
+}
+
+// prepareGeneralizedTableSources checks if all generalized table have an
+// existing source and sets .Source to the original source (works even
+// when source is allready generalized).
+func (pg *PostGIS) prepareGeneralizedTableSources() {
+	for name, table := range pg.GeneralizedTables {
+		if source, ok := pg.Tables[table.SourceName]; ok {
+			table.Source = source
+		} else if source, ok := pg.GeneralizedTables[table.SourceName]; ok {
+			table.SourceGeneralized = source
+		} else {
+			log.Printf("missing source '%s' for generalized table '%s'\n",
+				table.SourceName, name)
+		}
+	}
+
+	// set source table until all generalized tables have a source
+	for filled := true; filled; {
+		filled = false
+		for _, table := range pg.GeneralizedTables {
+			if table.Source == nil {
+				if source, ok := pg.GeneralizedTables[table.SourceName]; ok && source.Source != nil {
+					table.Source = source.Source
+				}
+				filled = true
+			}
+		}
+	}
 }
 
 func init() {
