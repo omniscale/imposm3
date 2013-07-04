@@ -193,6 +193,14 @@ func (clipper *Clipper) Clip(geom *geos.Geom) ([]*geos.Geom, error) {
 	return mergeGeometries(g, intersections, geomType), nil
 }
 
+func (clipper *Clipper) Intersects(g *geos.Geos, geom *geos.Geom) bool {
+	hits := g.IndexQuery(clipper.index, geom)
+	if len(hits) == 0 {
+		return false
+	}
+	return true
+}
+
 func flattenPolygons(g *geos.Geos, geoms []*geos.Geom) []*geos.Geom {
 	var result []*geos.Geom
 	for _, geom := range geoms {

@@ -391,6 +391,72 @@ func (pg *PostGIS) generalizeTable(table *GeneralizedTableSpec) error {
 	return nil
 }
 
+func clusterTable(pg *PostGIS, tableName string, srid int, columns []ColumnSpec) error {
+	for _, col := range columns {
+		if col.Type.Name() == "GEOMETRY" {
+			step := log.StartStep(fmt.Sprintf("Indexing %s on geohash", tableName))
+			sql := fmt.Sprintf(`CREATE INDEX "%s_geom_geohash" ON "%s"."%s" (ST_GeoHash(ST_Transform(ST_SetSRID(Box2D(%s), %d), 4326)))`,
+				tableName, pg.Schema, tableName, col.Name, srid)
+			_, err := pg.Db.Exec(sql)
+			log.StopStep(step)
+			if err != nil {
+				return err
+			}
+
+			step = log.StartStep(fmt.Sprintf("Clustering %s on geohash", tableName))
+			sql = fmt.Sprintf(`CLUSTER "%s_geom_geohash" ON "%s"."%s"`,
+				tableName, pg.Schema, tableName)
+			_, err = pg.Db.Exec(sql)
+			log.StopStep(step)
+			if err != nil {
+				return err
+			}
+			break
+		}
+	}
+	return nil
+
+}
+
+// Finish creates spatial indices on all tables.
+func (pg *PostGIS) Optimize() error {
+	defer log.StopStep(log.StartStep(fmt.Sprintf("Clustering on geometry")))
+
+	worker := int(runtime.NumCPU() / 2)
+	if worker < 1 {
+		worker = 1
+	}
+
+	time.Sleep(0 * time.Second)
+	p := newWorkerPool(worker, len(pg.Tables))
+	for tableName, tbl := range pg.Tables {
+		tableName := pg.Prefix + tableName
+		table := tbl
+		p.in <- func() error {
+			return clusterTable(pg, tableName, table.Srid, table.Columns)
+		}
+	}
+	err := p.wait()
+	if err != nil {
+		return err
+	}
+
+	p = newWorkerPool(worker, len(pg.GeneralizedTables))
+	for tableName, tbl := range pg.GeneralizedTables {
+		tableName := pg.Prefix + tableName
+		table := tbl
+		p.in <- func() error {
+			return clusterTable(pg, tableName, table.Source.Srid, table.Source.Columns)
+		}
+	}
+	err = p.wait()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 type PostGIS struct {
 	Db                *sql.DB
 	Schema            string
