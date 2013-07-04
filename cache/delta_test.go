@@ -23,7 +23,7 @@ func TestReadWriteDeltaCoords(t *testing.T) {
 	cache_dir, _ := ioutil.TempDir("", "goposm_test")
 	defer os.RemoveAll(cache_dir)
 
-	cache, err := NewDeltaCoordsCache(cache_dir)
+	cache, err := newDeltaCoordsCache(cache_dir)
 	if err != nil {
 		t.Fatal()
 	}
@@ -38,13 +38,13 @@ func TestReadWriteDeltaCoords(t *testing.T) {
 	// add nodes in batches of ten
 	for i := 0; i <= len(nodes)-10; i = i + 10 {
 		// sort each batch as required by PutCoords
-		sort.Sort(Nodes(nodes[i : i+10]))
+		sort.Sort(byId(nodes[i : i+10]))
 		cache.PutCoords(nodes[i : i+10])
 	}
 
 	cache.Close()
 
-	cache, err = NewDeltaCoordsCache(cache_dir)
+	cache, err = newDeltaCoordsCache(cache_dir)
 	if err != nil {
 		t.Fatal()
 	}

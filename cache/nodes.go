@@ -7,12 +7,12 @@ import (
 )
 
 type NodesCache struct {
-	Cache
+	cache
 }
 
-func NewNodesCache(path string) (*NodesCache, error) {
+func newNodesCache(path string) (*NodesCache, error) {
 	cache := NodesCache{}
-	cache.options = &osmCacheOptions.Nodes
+	cache.options = &globalCacheOptions.Nodes
 	err := cache.open(path)
 	if err != nil {
 		return nil, err

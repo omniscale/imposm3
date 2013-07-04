@@ -61,8 +61,8 @@ func init() {
 
 // BunchRefCache
 type BunchRefCache struct {
-	Cache
-	cache     IdRefBunches
+	cache
+	buffer    IdRefBunches
 	write     chan IdRefBunches
 	add       chan idRef
 	mu        sync.Mutex
@@ -70,7 +70,7 @@ type BunchRefCache struct {
 	waitWrite *sync.WaitGroup
 }
 
-func NewBunchRefCache(path string, opts *CacheOptions) (*BunchRefCache, error) {
+func NewBunchRefCache(path string, opts *cacheOptions) (*BunchRefCache, error) {
 	index := BunchRefCache{}
 	index.options = opts
 	err := index.open(path)
@@ -78,7 +78,7 @@ func NewBunchRefCache(path string, opts *CacheOptions) (*BunchRefCache, error) {
 		return nil, err
 	}
 	index.write = make(chan IdRefBunches, 2)
-	index.cache = make(IdRefBunches, cacheSize)
+	index.buffer = make(IdRefBunches, cacheSize)
 	index.add = make(chan idRef, 1024)
 
 	index.waitWrite = &sync.WaitGroup{}
@@ -92,8 +92,8 @@ func NewBunchRefCache(path string, opts *CacheOptions) (*BunchRefCache, error) {
 }
 
 func (index *BunchRefCache) writer() {
-	for cache := range index.write {
-		if err := index.writeRefs(cache); err != nil {
+	for buffer := range index.write {
+		if err := index.writeRefs(buffer); err != nil {
 			log.Println("error while writing ref index", err)
 		}
 	}
@@ -105,24 +105,24 @@ func (index *BunchRefCache) Close() {
 	index.waitAdd.Wait()
 	close(index.write)
 	index.waitWrite.Wait()
-	index.Cache.Close()
+	index.cache.Close()
 }
 
 func (index *BunchRefCache) dispatch() {
 	for idRef := range index.add {
-		index.cache.add(index.getBunchId(idRef.id), idRef.id, idRef.ref)
-		if len(index.cache) >= cacheSize {
-			index.write <- index.cache
+		index.buffer.add(index.getBunchId(idRef.id), idRef.id, idRef.ref)
+		if len(index.buffer) >= cacheSize {
+			index.write <- index.buffer
 			select {
-			case index.cache = <-IdRefBunchesPool:
+			case index.buffer = <-IdRefBunchesPool:
 			default:
-				index.cache = make(IdRefBunches, cacheSize)
+				index.buffer = make(IdRefBunches, cacheSize)
 			}
 		}
 	}
-	if len(index.cache) > 0 {
-		index.write <- index.cache
-		index.cache = nil
+	if len(index.buffer) > 0 {
+		index.write <- index.buffer
+		index.buffer = nil
 	}
 	index.waitAdd.Done()
 }

@@ -30,6 +30,7 @@ var (
 	appendcache      = flag.Bool("appendcache", false, "append cache")
 	read             = flag.String("read", "", "read")
 	write            = flag.Bool("write", false, "write")
+	optimize         = flag.Bool("optimize", false, "optimize")
 	connection       = flag.String("connection", "", "connection parameters")
 	diff             = flag.Bool("diff", false, "enable diff support")
 	mappingFile      = flag.String("mapping", "", "mapping file")
@@ -137,7 +138,7 @@ func main() {
 
 	srid := 3857 // TODO
 
-	if *write || *deployProduction || *revertDeploy || *removeBackup {
+	if *write || *deployProduction || *revertDeploy || *removeBackup || *optimize {
 		connType := database.ConnectionType(*connection)
 		conf := database.Config{
 			Type:             connType,
@@ -265,6 +266,16 @@ func main() {
 			die("database not finishable")
 		}
 		log.StopStep(stepImport)
+	}
+
+	if *optimize {
+		if db, ok := db.(database.Optimizer); ok {
+			if err := db.Optimize(); err != nil {
+				die(err)
+			}
+		} else {
+			die("database not optimizable")
+		}
 	}
 
 	if *deployProduction {

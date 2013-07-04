@@ -7,7 +7,7 @@ import (
 
 func TestTagsAsAndFromArray(t *testing.T) {
 	tags := element.Tags{"name": "foo", "highway": "residential", "oneway": "yes"}
-	array := TagsAsArray(tags)
+	array := tagsAsArray(tags)
 
 	if len(array) != 3 {
 		t.Fatal("invalid length", array)
@@ -21,7 +21,7 @@ func TestTagsAsAndFromArray(t *testing.T) {
 		}
 	}
 
-	tags = TagsFromArray(array)
+	tags = tagsFromArray(array)
 	if len(tags) != 3 {
 		t.Fatal("invalid length", tags)
 	}

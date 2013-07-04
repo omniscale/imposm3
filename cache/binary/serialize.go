@@ -1,9 +1,7 @@
 package binary
 
 import (
-	"bytes"
 	"code.google.com/p/goprotobuf/proto"
-	bin "encoding/binary"
 	"goposm/element"
 )
 
@@ -26,44 +24,10 @@ func Marshal(elem interface{}) ([]byte, error) {
 	}
 }
 
-func MarshalCoord(node *element.Node) ([]byte, error) {
-	data := make([]byte, 8)
-
-	buf := bytes.NewBuffer(data)
-	err := bin.Write(buf, bin.LittleEndian, CoordToInt(node.Long))
-	if err != nil {
-		return nil, err
-	}
-	err = bin.Write(buf, bin.LittleEndian, CoordToInt(node.Lat))
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
-}
-
-func UnmarshalCoord(id int64, data []byte) (node *element.Node, err error) {
-	var long, lat uint32
-	buf := bytes.NewBuffer(data)
-	err = bin.Read(buf, bin.LittleEndian, &long)
-	if err != nil {
-		return nil, err
-	}
-	err = bin.Read(buf, bin.LittleEndian, &lat)
-	if err != nil {
-		return nil, err
-	}
-
-	node = &element.Node{}
-	node.Id = id
-	node.Long = IntToCoord(long)
-	node.Lat = IntToCoord(lat)
-	return node, nil
-}
-
 func MarshalNode(node *element.Node) ([]byte, error) {
 	pbfNode := &Node{}
-	pbfNode.FromWgsCoord(node.Long, node.Lat)
-	pbfNode.Tags = TagsAsArray(node.Tags)
+	pbfNode.fromWgsCoord(node.Long, node.Lat)
+	pbfNode.Tags = tagsAsArray(node.Tags)
 	return proto.Marshal(pbfNode)
 }
 
@@ -75,8 +39,8 @@ func UnmarshalNode(data []byte) (node *element.Node, err error) {
 	}
 
 	node = &element.Node{}
-	node.Long, node.Lat = pbfNode.WgsCoord()
-	node.Tags = TagsFromArray(pbfNode.Tags)
+	node.Long, node.Lat = pbfNode.wgsCoord()
+	node.Tags = tagsFromArray(pbfNode.Tags)
 	return node, nil
 }
 
@@ -100,11 +64,11 @@ func deltaUnpack(data []int64) {
 }
 
 func MarshalWay(way *element.Way) ([]byte, error) {
-	// TODO reuse Way to avoid make(Tags) for each way in TagsAsArray
+	// TODO reuse Way to avoid make(Tags) for each way in tagsAsArray
 	pbfWay := &Way{}
 	deltaPack(way.Refs)
 	pbfWay.Refs = way.Refs
-	pbfWay.Tags = TagsAsArray(way.Tags)
+	pbfWay.Tags = tagsAsArray(way.Tags)
 	return proto.Marshal(pbfWay)
 }
 
@@ -118,7 +82,7 @@ func UnmarshalWay(data []byte) (way *element.Way, err error) {
 	way = &element.Way{}
 	deltaUnpack(pbfWay.Refs)
 	way.Refs = pbfWay.Refs
-	way.Tags = TagsFromArray(pbfWay.Tags)
+	way.Tags = tagsFromArray(pbfWay.Tags)
 	return way, nil
 }
 
@@ -132,7 +96,7 @@ func MarshalRelation(relation *element.Relation) ([]byte, error) {
 		pbfRelation.MemberTypes[i] = Relation_MemberType(m.Type)
 		pbfRelation.MemberRoles[i] = m.Role
 	}
-	pbfRelation.Tags = TagsAsArray(relation.Tags)
+	pbfRelation.Tags = tagsAsArray(relation.Tags)
 	return proto.Marshal(pbfRelation)
 }
 
@@ -151,6 +115,6 @@ func UnmarshalRelation(data []byte) (relation *element.Relation, err error) {
 		relation.Members[i].Role = pbfRelation.MemberRoles[i]
 	}
 	//relation.Nodes = pbfRelation.Node
-	relation.Tags = TagsFromArray(pbfRelation.Tags)
+	relation.Tags = tagsFromArray(pbfRelation.Tags)
 	return relation, nil
 }

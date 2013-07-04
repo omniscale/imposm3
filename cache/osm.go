@@ -13,7 +13,7 @@ var (
 )
 
 type OSMCache struct {
-	Dir          string
+	dir          string
 	Coords       *DeltaCoordsCache
 	Ways         *WaysCache
 	Nodes        *NodesCache
@@ -46,35 +46,35 @@ func (c *OSMCache) Close() {
 }
 
 func NewOSMCache(dir string) *OSMCache {
-	cache := &OSMCache{Dir: dir}
+	cache := &OSMCache{dir: dir}
 	return cache
 }
 
 func (c *OSMCache) Open() error {
-	err := os.MkdirAll(c.Dir, 0755)
+	err := os.MkdirAll(c.dir, 0755)
 	if err != nil {
 		return err
 	}
-	c.Coords, err = NewDeltaCoordsCache(filepath.Join(c.Dir, "coords"))
+	c.Coords, err = newDeltaCoordsCache(filepath.Join(c.dir, "coords"))
 	if err != nil {
 		return err
 	}
-	c.Nodes, err = NewNodesCache(filepath.Join(c.Dir, "nodes"))
-	if err != nil {
-		c.Close()
-		return err
-	}
-	c.Ways, err = NewWaysCache(filepath.Join(c.Dir, "ways"))
+	c.Nodes, err = newNodesCache(filepath.Join(c.dir, "nodes"))
 	if err != nil {
 		c.Close()
 		return err
 	}
-	c.Relations, err = NewRelationsCache(filepath.Join(c.Dir, "relations"))
+	c.Ways, err = newWaysCache(filepath.Join(c.dir, "ways"))
 	if err != nil {
 		c.Close()
 		return err
 	}
-	c.InsertedWays, err = NewInsertedWaysCache(filepath.Join(c.Dir, "inserted_ways"))
+	c.Relations, err = newRelationsCache(filepath.Join(c.dir, "relations"))
+	if err != nil {
+		c.Close()
+		return err
+	}
+	c.InsertedWays, err = newInsertedWaysCache(filepath.Join(c.dir, "inserted_ways"))
 	if err != nil {
 		c.Close()
 		return err
@@ -87,19 +87,19 @@ func (c *OSMCache) Exists() bool {
 	if c.opened {
 		return true
 	}
-	if _, err := os.Stat(filepath.Join(c.Dir, "coords")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(c.dir, "coords")); !os.IsNotExist(err) {
 		return true
 	}
-	if _, err := os.Stat(filepath.Join(c.Dir, "nodes")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(c.dir, "nodes")); !os.IsNotExist(err) {
 		return true
 	}
-	if _, err := os.Stat(filepath.Join(c.Dir, "ways")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(c.dir, "ways")); !os.IsNotExist(err) {
 		return true
 	}
-	if _, err := os.Stat(filepath.Join(c.Dir, "relations")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(c.dir, "relations")); !os.IsNotExist(err) {
 		return true
 	}
-	if _, err := os.Stat(filepath.Join(c.Dir, "inserted_ways")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(c.dir, "inserted_ways")); !os.IsNotExist(err) {
 		return true
 	}
 	return false
@@ -109,33 +109,33 @@ func (c *OSMCache) Remove() error {
 	if c.opened {
 		c.Close()
 	}
-	if err := os.RemoveAll(filepath.Join(c.Dir, "coords")); err != nil {
+	if err := os.RemoveAll(filepath.Join(c.dir, "coords")); err != nil {
 		return err
 	}
-	if err := os.RemoveAll(filepath.Join(c.Dir, "nodes")); err != nil {
+	if err := os.RemoveAll(filepath.Join(c.dir, "nodes")); err != nil {
 		return err
 	}
-	if err := os.RemoveAll(filepath.Join(c.Dir, "ways")); err != nil {
+	if err := os.RemoveAll(filepath.Join(c.dir, "ways")); err != nil {
 		return err
 	}
-	if err := os.RemoveAll(filepath.Join(c.Dir, "relations")); err != nil {
+	if err := os.RemoveAll(filepath.Join(c.dir, "relations")); err != nil {
 		return err
 	}
-	if err := os.RemoveAll(filepath.Join(c.Dir, "inserted_ways")); err != nil {
+	if err := os.RemoveAll(filepath.Join(c.dir, "inserted_ways")); err != nil {
 		return err
 	}
 	return nil
 }
 
-type Cache struct {
+type cache struct {
 	db      *levigo.DB
-	options *CacheOptions
+	options *cacheOptions
 	cache   *levigo.Cache
 	wo      *levigo.WriteOptions
 	ro      *levigo.ReadOptions
 }
 
-func (c *Cache) open(path string) error {
+func (c *cache) open(path string) error {
 	opts := levigo.NewOptions()
 	opts.SetCreateIfMissing(true)
 	if c.options.CacheSizeM > 0 {
@@ -175,7 +175,7 @@ func idFromKeyBuf(buf []byte) int64 {
 	return int64(bin.BigEndian.Uint64(buf))
 }
 
-func (c *Cache) Close() {
+func (c *cache) Close() {
 	if c.db != nil {
 		c.db.Close()
 		c.db = nil

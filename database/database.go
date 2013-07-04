@@ -45,6 +45,10 @@ type Deleter interface {
 	Delete(string, int64) error
 }
 
+type Optimizer interface {
+	Optimize() error
+}
+
 var databases map[string]func(Config, *mapping.Mapping) (DB, error)
 
 func init() {

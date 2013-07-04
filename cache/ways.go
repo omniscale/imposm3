@@ -7,12 +7,12 @@ import (
 )
 
 type WaysCache struct {
-	Cache
+	cache
 }
 
-func NewWaysCache(path string) (*WaysCache, error) {
+func newWaysCache(path string) (*WaysCache, error) {
 	cache := WaysCache{}
-	cache.options = &osmCacheOptions.Ways
+	cache.options = &globalCacheOptions.Ways
 	err := cache.open(path)
 	if err != nil {
 		return nil, err
@@ -100,12 +100,12 @@ func (self *WaysCache) FillMembers(members []element.Member) error {
 }
 
 type InsertedWaysCache struct {
-	Cache
+	cache
 }
 
-func NewInsertedWaysCache(path string) (*InsertedWaysCache, error) {
+func newInsertedWaysCache(path string) (*InsertedWaysCache, error) {
 	cache := InsertedWaysCache{}
-	cache.options = &osmCacheOptions.InsertedWays
+	cache.options = &globalCacheOptions.InsertedWays
 
 	err := cache.open(path)
 	if err != nil {
