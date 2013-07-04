@@ -65,7 +65,7 @@ func addCommonKey(key string) {
 	nextKeyCodePoint += 1
 }
 
-func TagsFromArray(arr []string) element.Tags {
+func tagsFromArray(arr []string) element.Tags {
 	if len(arr) == 0 {
 		return element.Tags{}
 	}
@@ -89,7 +89,7 @@ func TagsFromArray(arr []string) element.Tags {
 	return result
 }
 
-func TagsAsArray(tags element.Tags) []string {
+func tagsAsArray(tags element.Tags) []string {
 	if len(tags) == 0 {
 		return nil
 	}
