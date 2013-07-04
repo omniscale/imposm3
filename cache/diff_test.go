@@ -48,10 +48,10 @@ func TestInsertRefs(t *testing.T) {
 
 func TestMarshalRefs(t *testing.T) {
 	refs := []int64{1890166659, -1890166659, 0, 1890166, 1890167, 1890167, 1890165}
-	buf := MarshalRefs(refs)
+	buf := marshalRefs(refs)
 
 	t.Log(len(refs), len(buf))
-	result := UnmarshalRefs(buf)
+	result := unmarshalRefs(buf)
 
 	if len(result) != len(refs) {
 		t.Fatal(result)
@@ -68,7 +68,7 @@ func TestWriteDiff(t *testing.T) {
 	cache_dir, _ := ioutil.TempDir("", "goposm_test")
 	defer os.RemoveAll(cache_dir)
 
-	cache, err := NewRefIndex(cache_dir, &osmCacheOptions.CoordsIndex)
+	cache, err := newRefIndex(cache_dir, &globalCacheOptions.CoordsIndex)
 	if err != nil {
 		t.Fatal()
 	}
@@ -80,7 +80,7 @@ func TestWriteDiff(t *testing.T) {
 	}
 	cache.Close()
 
-	cache, err = NewRefIndex(cache_dir, &osmCacheOptions.CoordsIndex)
+	cache, err = newRefIndex(cache_dir, &globalCacheOptions.CoordsIndex)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +100,7 @@ func BenchmarkWriteDiff(b *testing.B) {
 	cache_dir, _ := ioutil.TempDir("", "goposm_test")
 	defer os.RemoveAll(cache_dir)
 
-	cache, err := NewRefIndex(cache_dir, &osmCacheOptions.CoordsIndex)
+	cache, err := newRefIndex(cache_dir, &globalCacheOptions.CoordsIndex)
 	if err != nil {
 		b.Fatal()
 	}

@@ -14,14 +14,14 @@ import (
 	"sync"
 )
 
-type Refs []int64
+type byInt64 []int64
 
-func (a Refs) Len() int           { return len(a) }
-func (a Refs) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a Refs) Less(i, j int) bool { return a[i] < a[j] }
+func (a byInt64) Len() int           { return len(a) }
+func (a byInt64) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a byInt64) Less(i, j int) bool { return a[i] < a[j] }
 
 type DiffCache struct {
-	Dir    string
+	dir    string
 	Coords *CoordsRefIndex
 	Ways   *WaysRefIndex
 	opened bool
@@ -39,18 +39,18 @@ func (c *DiffCache) Close() {
 }
 
 func NewDiffCache(dir string) *DiffCache {
-	cache := &DiffCache{Dir: dir}
+	cache := &DiffCache{dir: dir}
 	return cache
 }
 
 func (c *DiffCache) Open() error {
 	var err error
-	c.Coords, err = NewCoordsRefIndex(filepath.Join(c.Dir, "coords_index"))
+	c.Coords, err = newCoordsRefIndex(filepath.Join(c.dir, "coords_index"))
 	if err != nil {
 		c.Close()
 		return err
 	}
-	c.Ways, err = NewWaysRefIndex(filepath.Join(c.Dir, "ways_index"))
+	c.Ways, err = newWaysRefIndex(filepath.Join(c.dir, "ways_index"))
 	if err != nil {
 		c.Close()
 		return err
@@ -63,10 +63,10 @@ func (c *DiffCache) Exists() bool {
 	if c.opened {
 		return true
 	}
-	if _, err := os.Stat(filepath.Join(c.Dir, "coords_index")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(c.dir, "coords_index")); !os.IsNotExist(err) {
 		return true
 	}
-	if _, err := os.Stat(filepath.Join(c.Dir, "ways_index")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(c.dir, "ways_index")); !os.IsNotExist(err) {
 		return true
 	}
 	return false
@@ -76,18 +76,18 @@ func (c *DiffCache) Remove() error {
 	if c.opened {
 		c.Close()
 	}
-	if err := os.RemoveAll(filepath.Join(c.Dir, "coords_index")); err != nil {
+	if err := os.RemoveAll(filepath.Join(c.dir, "coords_index")); err != nil {
 		return err
 	}
-	if err := os.RemoveAll(filepath.Join(c.Dir, "ways_index")); err != nil {
+	if err := os.RemoveAll(filepath.Join(c.dir, "ways_index")); err != nil {
 		return err
 	}
 	return nil
 }
 
-type RefIndex struct {
-	Cache
-	cache     map[int64][]int64
+type refIndex struct {
+	cache
+	buffer    map[int64][]int64
 	write     chan map[int64][]int64
 	add       chan idRef
 	mu        sync.Mutex
@@ -96,10 +96,10 @@ type RefIndex struct {
 }
 
 type CoordsRefIndex struct {
-	RefIndex
+	refIndex
 }
 type WaysRefIndex struct {
-	RefIndex
+	refIndex
 }
 
 type idRef struct {
@@ -107,23 +107,23 @@ type idRef struct {
 	ref int64
 }
 
-const cacheSize = 64 * 1024
+const bufferSize = 64 * 1024
 
-var refCaches chan map[int64][]int64
+var idRefsPool chan map[int64][]int64
 
 func init() {
-	refCaches = make(chan map[int64][]int64, 1)
+	idRefsPool = make(chan map[int64][]int64, 1)
 }
 
-func NewRefIndex(path string, opts *CacheOptions) (*RefIndex, error) {
-	index := RefIndex{}
+func newRefIndex(path string, opts *cacheOptions) (*refIndex, error) {
+	index := refIndex{}
 	index.options = opts
 	err := index.open(path)
 	if err != nil {
 		return nil, err
 	}
 	index.write = make(chan map[int64][]int64, 2)
-	index.cache = make(map[int64][]int64, cacheSize)
+	index.buffer = make(map[int64][]int64, bufferSize)
 	index.add = make(chan idRef, 1024)
 
 	index.waitWrite = &sync.WaitGroup{}
@@ -136,54 +136,54 @@ func NewRefIndex(path string, opts *CacheOptions) (*RefIndex, error) {
 	return &index, nil
 }
 
-func NewCoordsRefIndex(dir string) (*CoordsRefIndex, error) {
-	cache, err := NewRefIndex(dir, &osmCacheOptions.CoordsIndex)
+func newCoordsRefIndex(dir string) (*CoordsRefIndex, error) {
+	cache, err := newRefIndex(dir, &globalCacheOptions.CoordsIndex)
 	if err != nil {
 		return nil, err
 	}
 	return &CoordsRefIndex{*cache}, nil
 }
 
-func NewWaysRefIndex(dir string) (*WaysRefIndex, error) {
-	cache, err := NewRefIndex(dir, &osmCacheOptions.WaysIndex)
+func newWaysRefIndex(dir string) (*WaysRefIndex, error) {
+	cache, err := newRefIndex(dir, &globalCacheOptions.WaysIndex)
 	if err != nil {
 		return nil, err
 	}
 	return &WaysRefIndex{*cache}, nil
 }
 
-func (index *RefIndex) writer() {
-	for cache := range index.write {
-		if err := index.writeRefs(cache); err != nil {
+func (index *refIndex) writer() {
+	for buffer := range index.write {
+		if err := index.writeRefs(buffer); err != nil {
 			log.Println("error while writing ref index", err)
 		}
 	}
 	index.waitWrite.Done()
 }
 
-func (index *RefIndex) Close() {
+func (index *refIndex) Close() {
 	close(index.add)
 	index.waitAdd.Wait()
 	close(index.write)
 	index.waitWrite.Wait()
-	index.Cache.Close()
+	index.cache.Close()
 }
 
-func (index *RefIndex) dispatch() {
+func (index *refIndex) dispatch() {
 	for idRef := range index.add {
 		index.addToCache(idRef.id, idRef.ref)
-		if len(index.cache) >= cacheSize {
-			index.write <- index.cache
+		if len(index.buffer) >= bufferSize {
+			index.write <- index.buffer
 			select {
-			case index.cache = <-refCaches:
+			case index.buffer = <-idRefsPool:
 			default:
-				index.cache = make(map[int64][]int64, cacheSize)
+				index.buffer = make(map[int64][]int64, bufferSize)
 			}
 		}
 	}
-	if len(index.cache) > 0 {
-		index.write <- index.cache
-		index.cache = nil
+	if len(index.buffer) > 0 {
+		index.write <- index.buffer
+		index.buffer = nil
 	}
 	index.waitAdd.Done()
 }
@@ -202,14 +202,14 @@ func (index *WaysRefIndex) AddFromMembers(relId int64, members []element.Member)
 	}
 }
 
-func (index *RefIndex) addToCache(id, ref int64) {
-	refs, ok := index.cache[id]
+func (index *refIndex) addToCache(id, ref int64) {
+	refs, ok := index.buffer[id]
 	if !ok {
 		refs = make([]int64, 0, 1)
 	}
 	refs = insertRefs(refs, ref)
 
-	index.cache[id] = refs
+	index.buffer[id] = refs
 }
 
 type writeRefItem struct {
@@ -221,7 +221,7 @@ type loadRefItem struct {
 	refs []int64
 }
 
-func (index *RefIndex) writeRefs(idRefs map[int64][]int64) error {
+func (index *refIndex) writeRefs(idRefs map[int64][]int64) error {
 	batch := levigo.NewWriteBatch()
 	defer batch.Close()
 
@@ -261,13 +261,13 @@ func (index *RefIndex) writeRefs(idRefs map[int64][]int64) error {
 			delete(idRefs, k)
 		}
 		select {
-		case refCaches <- idRefs:
+		case idRefsPool <- idRefs:
 		}
 	}()
 	return index.db.Write(index.wo, batch)
 
 }
-func (index *RefIndex) loadAppendMarshal(keyBuf []byte, newRefs []int64) []byte {
+func (index *refIndex) loadAppendMarshal(keyBuf []byte, newRefs []int64) []byte {
 	data, err := index.db.Get(index.ro, keyBuf)
 	if err != nil {
 		panic(err)
@@ -276,17 +276,17 @@ func (index *RefIndex) loadAppendMarshal(keyBuf []byte, newRefs []int64) []byte 
 	var refs []int64
 
 	if data != nil {
-		refs = UnmarshalRefs(data)
+		refs = unmarshalRefs(data)
 	}
 
 	if refs == nil {
 		refs = newRefs
 	} else {
 		refs = append(refs, newRefs...)
-		sort.Sort(Refs(refs))
+		sort.Sort(byInt64(refs))
 	}
 
-	data = MarshalRefs(refs)
+	data = marshalRefs(refs)
 	return data
 }
 
@@ -304,7 +304,7 @@ func insertRefs(refs []int64, ref int64) []int64 {
 	return refs
 }
 
-func (index *RefIndex) Get(id int64) []int64 {
+func (index *refIndex) Get(id int64) []int64 {
 	keyBuf := idToKeyBuf(id)
 	data, err := index.db.Get(index.ro, keyBuf)
 	if err != nil {
@@ -312,7 +312,7 @@ func (index *RefIndex) Get(id int64) []int64 {
 	}
 	var refs []int64
 	if data != nil {
-		refs = UnmarshalRefs(data)
+		refs = unmarshalRefs(data)
 		if err != nil {
 			panic(err)
 		}
@@ -320,7 +320,7 @@ func (index *RefIndex) Get(id int64) []int64 {
 	return refs
 }
 
-func UnmarshalRefs(buf []byte) []int64 {
+func unmarshalRefs(buf []byte) []int64 {
 	refs := make([]int64, 0, 8)
 
 	r := bytes.NewBuffer(buf)
@@ -343,7 +343,7 @@ func UnmarshalRefs(buf []byte) []int64 {
 	return refs
 }
 
-func MarshalRefs(refs []int64) []byte {
+func marshalRefs(refs []int64) []byte {
 	buf := make([]byte, len(refs)*4+binary.MaxVarintLen64)
 
 	lastRef := int64(0)

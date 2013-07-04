@@ -8,11 +8,11 @@ import (
 	"sync"
 )
 
-type Nodes []element.Node
+type byId []element.Node
 
-func (s Nodes) Len() int           { return len(s) }
-func (s Nodes) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-func (s Nodes) Less(i, j int) bool { return s[i].Id < s[j].Id }
+func (s byId) Len() int           { return len(s) }
+func (s byId) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s byId) Less(i, j int) bool { return s[i].Id < s[j].Id }
 
 func packNodes(nodes []element.Node) *binary.DeltaCoords {
 	var lastLon, lastLat int64
@@ -66,7 +66,7 @@ func unpackNodes(deltaCoords *binary.DeltaCoords, nodes []element.Node) []elemen
 	return nodes
 }
 
-type CoordsBunch struct {
+type coordsBunch struct {
 	sync.Mutex
 	id         int64
 	coords     []element.Node
@@ -74,7 +74,7 @@ type CoordsBunch struct {
 	needsWrite bool
 }
 
-func (b *CoordsBunch) GetCoord(id int64) (*element.Node, error) {
+func (b *coordsBunch) GetCoord(id int64) (*element.Node, error) {
 	idx := sort.Search(len(b.coords), func(i int) bool {
 		return b.coords[i].Id >= id
 	})
@@ -85,9 +85,9 @@ func (b *CoordsBunch) GetCoord(id int64) (*element.Node, error) {
 }
 
 type DeltaCoordsCache struct {
-	Cache
+	cache
 	lruList      *list.List
-	table        map[int64]*CoordsBunch
+	table        map[int64]*coordsBunch
 	capacity     int64
 	linearImport bool
 	mu           sync.Mutex
@@ -95,18 +95,18 @@ type DeltaCoordsCache struct {
 	readOnly     bool
 }
 
-func NewDeltaCoordsCache(path string) (*DeltaCoordsCache, error) {
+func newDeltaCoordsCache(path string) (*DeltaCoordsCache, error) {
 	coordsCache := DeltaCoordsCache{}
-	coordsCache.options = &osmCacheOptions.Coords.CacheOptions
+	coordsCache.options = &globalCacheOptions.Coords.cacheOptions
 	err := coordsCache.open(path)
 	if err != nil {
 		return nil, err
 	}
-	coordsCache.bunchSize = int64(osmCacheOptions.Coords.BunchSize)
+	coordsCache.bunchSize = int64(globalCacheOptions.Coords.BunchSize)
 	coordsCache.lruList = list.New()
-	coordsCache.table = make(map[int64]*CoordsBunch)
+	coordsCache.table = make(map[int64]*coordsBunch)
 	// mem req for cache approx. capacity*bunchSize*40
-	coordsCache.capacity = int64(osmCacheOptions.Coords.BunchCacheCapacity)
+	coordsCache.capacity = int64(globalCacheOptions.Coords.BunchCacheCapacity)
 	return &coordsCache, nil
 }
 
@@ -123,7 +123,7 @@ func (self *DeltaCoordsCache) Flush() {
 }
 func (self *DeltaCoordsCache) Close() {
 	self.Flush()
-	self.Cache.Close()
+	self.cache.Close()
 }
 
 func (self *DeltaCoordsCache) SetReadOnly(val bool) {
@@ -151,7 +151,7 @@ func (self *DeltaCoordsCache) FillWay(way *element.Way) error {
 	way.Nodes = make([]element.Node, len(way.Refs))
 
 	var err error
-	var bunch *CoordsBunch
+	var bunch *coordsBunch
 	var bunchId, lastBunchId int64
 	lastBunchId = -1
 
@@ -202,7 +202,7 @@ func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) error {
 					return err
 				}
 				bunch.coords = append(bunch.coords, nodes[start:i]...)
-				sort.Sort(Nodes(bunch.coords))
+				sort.Sort(byId(bunch.coords))
 				bunch.needsWrite = true
 				bunch.Unlock()
 			}
@@ -215,7 +215,7 @@ func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) error {
 		return err
 	}
 	bunch.coords = append(bunch.coords, nodes[start:]...)
-	sort.Sort(Nodes(bunch.coords))
+	sort.Sort(byId(bunch.coords))
 	bunch.needsWrite = true
 	bunch.Unlock()
 	return nil
@@ -279,7 +279,7 @@ var (
 	freeNodes = make(chan []element.Node, 4)
 )
 
-func (self *DeltaCoordsCache) getBunch(bunchId int64) (*CoordsBunch, error) {
+func (self *DeltaCoordsCache) getBunch(bunchId int64) (*coordsBunch, error) {
 	self.mu.Lock()
 	bunch, ok := self.table[bunchId]
 	var nodes []element.Node
@@ -291,7 +291,7 @@ func (self *DeltaCoordsCache) getBunch(bunchId int64) (*CoordsBunch, error) {
 		default:
 			nodes = make([]element.Node, 0, self.bunchSize)
 		}
-		bunch = &CoordsBunch{id: bunchId, coords: nil, elem: elem}
+		bunch = &coordsBunch{id: bunchId, coords: nil, elem: elem}
 		needsGet = true
 		self.table[bunchId] = bunch
 	} else {

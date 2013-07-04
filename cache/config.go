@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-type CacheOptions struct {
+type cacheOptions struct {
 	CacheSizeM           int
 	MaxOpenFiles         int
 	BlockRestartInterval int
@@ -15,19 +15,19 @@ type CacheOptions struct {
 	BlockSizeK           int
 }
 
-type CoordsCacheOptions struct {
-	CacheOptions
+type coordsCacheOptions struct {
+	cacheOptions
 	BunchSize          int
 	BunchCacheCapacity int
 }
-type OSMCacheOptions struct {
-	Coords       CoordsCacheOptions
-	Ways         CacheOptions
-	Nodes        CacheOptions
-	Relations    CacheOptions
-	InsertedWays CacheOptions
-	CoordsIndex  CacheOptions
-	WaysIndex    CacheOptions
+type osmCacheOptions struct {
+	Coords       coordsCacheOptions
+	Ways         cacheOptions
+	Nodes        cacheOptions
+	Relations    cacheOptions
+	InsertedWays cacheOptions
+	CoordsIndex  cacheOptions
+	WaysIndex    cacheOptions
 }
 
 const defaultConfig = `
@@ -86,10 +86,10 @@ const defaultConfig = `
 }
 `
 
-var osmCacheOptions OSMCacheOptions
+var globalCacheOptions osmCacheOptions
 
 func init() {
-	err := json.Unmarshal([]byte(defaultConfig), &osmCacheOptions)
+	err := json.Unmarshal([]byte(defaultConfig), &globalCacheOptions)
 	if err != nil {
 		panic(err)
 	}
@@ -100,7 +100,7 @@ func init() {
 		if err != nil {
 			log.Println("Unable to read cache config:", err)
 		}
-		err = json.Unmarshal(data, &osmCacheOptions)
+		err = json.Unmarshal(data, &globalCacheOptions)
 		if err != nil {
 			log.Println("Unable to parse cache config:", err)
 		}

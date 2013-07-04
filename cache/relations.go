@@ -7,12 +7,12 @@ import (
 )
 
 type RelationsCache struct {
-	Cache
+	cache
 }
 
-func NewRelationsCache(path string) (*RelationsCache, error) {
+func newRelationsCache(path string) (*RelationsCache, error) {
 	cache := RelationsCache{}
-	cache.options = &osmCacheOptions.Relations
+	cache.options = &globalCacheOptions.Relations
 	err := cache.open(path)
 	if err != nil {
 		return nil, err
