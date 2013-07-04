@@ -190,76 +190,54 @@ func (pg *PostGIS) Finish() error {
 	}
 
 	time.Sleep(0 * time.Second)
-	p := newWorkerPool(worker, len(pg.Tables))
+	p := newWorkerPool(worker, len(pg.Tables)+len(pg.GeneralizedTables))
 	for tableName, tbl := range pg.Tables {
 		tableName := pg.Prefix + tableName
 		table := tbl
 		p.in <- func() error {
-			for _, col := range table.Columns {
-				if col.Type.Name() == "GEOMETRY" {
-					sql := fmt.Sprintf(`CREATE INDEX "%s_geom" ON "%s"."%s" USING GIST ("%s")`,
-						tableName, pg.Schema, tableName, col.Name)
-					step := log.StartStep(fmt.Sprintf("Creating geometry index on %s", tableName))
-					_, err := pg.Db.Exec(sql)
-					log.StopStep(step)
-					if err != nil {
-						return err
-					}
-				}
-				if col.FieldType.Name == "id" {
-					sql := fmt.Sprintf(`CREATE INDEX "%s_osm_id_idx" ON "%s"."%s" USING BTREE ("%s")`,
-						tableName, pg.Schema, tableName, col.Name)
-					step := log.StartStep(fmt.Sprintf("Creating OSM id index on %s", tableName))
-					_, err := pg.Db.Exec(sql)
-					log.StopStep(step)
-					if err != nil {
-						return err
-					}
-				}
-			}
-			return nil
+			return createIndex(pg, tableName, table.Columns)
 		}
 	}
+
+	for tableName, tbl := range pg.GeneralizedTables {
+		tableName := pg.Prefix + tableName
+		table := tbl
+		p.in <- func() error {
+			return createIndex(pg, tableName, table.Source.Columns)
+		}
+	}
+
 	err := p.wait()
 	if err != nil {
 		return err
 	}
 
-	p = newWorkerPool(worker, len(pg.GeneralizedTables))
-	for tableName, tbl := range pg.GeneralizedTables {
-		tableName := pg.Prefix + tableName
-		table := tbl
-		p.in <- func() error {
-			for _, col := range table.Source.Columns {
-				if col.Type.Name() == "GEOMETRY" {
-					sql := fmt.Sprintf(`CREATE INDEX "%s_geom" ON "%s"."%s" USING GIST ("%s")`,
-						tableName, pg.Schema, tableName, col.Name)
-					step := log.StartStep(fmt.Sprintf("Creating geometry index on %s", tableName))
-					_, err := pg.Db.Exec(sql)
-					log.StopStep(step)
-					if err != nil {
-						return err
-					}
-				}
-				if col.FieldType.Name == "id" {
-					sql := fmt.Sprintf(`CREATE INDEX "%s_osm_id_idx" ON "%s"."%s" USING BTREE ("%s")`,
-						tableName, pg.Schema, tableName, col.Name)
-					step := log.StartStep(fmt.Sprintf("Creating OSM id index on %s", tableName))
-					_, err := pg.Db.Exec(sql)
-					log.StopStep(step)
-					if err != nil {
-						return err
-					}
-				}
+	return nil
+}
+
+func createIndex(pg *PostGIS, tableName string, columns []ColumnSpec) error {
+	for _, col := range columns {
+		if col.Type.Name() == "GEOMETRY" {
+			sql := fmt.Sprintf(`CREATE INDEX "%s_geom" ON "%s"."%s" USING GIST ("%s")`,
+				tableName, pg.Schema, tableName, col.Name)
+			step := log.StartStep(fmt.Sprintf("Creating geometry index on %s", tableName))
+			_, err := pg.Db.Exec(sql)
+			log.StopStep(step)
+			if err != nil {
+				return err
 			}
-			return nil
+		}
+		if col.FieldType.Name == "id" {
+			sql := fmt.Sprintf(`CREATE INDEX "%s_osm_id_idx" ON "%s"."%s" USING BTREE ("%s")`,
+				tableName, pg.Schema, tableName, col.Name)
+			step := log.StartStep(fmt.Sprintf("Creating OSM id index on %s", tableName))
+			_, err := pg.Db.Exec(sql)
+			log.StopStep(step)
+			if err != nil {
+				return err
+			}
 		}
 	}
-	err = p.wait()
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
