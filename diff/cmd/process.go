@@ -23,7 +23,14 @@ var (
 
 func main() {
 	flag.Parse()
-	elems, errc := parser.Parse(flag.Arg(0))
+	for _, oscFile := range flag.Args() {
+		update(oscFile)
+	}
+}
+
+func update(oscFile string) {
+	flag.Parse()
+	elems, errc := parser.Parse(oscFile)
 
 	osmCache := cache.NewOSMCache("/tmp/goposm")
 	err := osmCache.Open()
@@ -116,7 +123,24 @@ For:
 			if elem.Del {
 				deleter.Delete(elem)
 				if !elem.Add {
-					// TODO delete from osmCache
+					if elem.Rel != nil {
+						if err := osmCache.Relations.DeleteRelation(elem.Rel.Id); err != nil {
+							log.Fatal(err)
+						}
+					} else if elem.Way != nil {
+						if err := osmCache.Ways.DeleteWay(elem.Way.Id); err != nil {
+							log.Fatal(err)
+						}
+						diffCache.Ways.Delete(elem.Way.Id)
+					} else if elem.Node != nil {
+						if err := osmCache.Nodes.DeleteNode(elem.Node.Id); err != nil {
+							log.Fatal(err)
+						}
+						if err := osmCache.Coords.DeleteCoord(elem.Node.Id); err != nil {
+							log.Fatal(err)
+						}
+						diffCache.Coords.Delete(elem.Node.Id)
+					}
 				}
 			}
 			if elem.Add {
@@ -151,6 +175,9 @@ For:
 	for nodeId, _ := range nodeIds {
 		node, err := osmCache.Nodes.GetNode(nodeId)
 		if err != nil {
+			if err != cache.NotFound {
+				log.Println(node, err)
+			}
 			// missing nodes can still be Coords
 			// no `continue` here
 		}
@@ -168,7 +195,9 @@ For:
 	for wayId, _ := range wayIds {
 		way, err := osmCache.Ways.GetWay(wayId)
 		if err != nil {
-			log.Println(wayId, err)
+			if err != cache.NotFound {
+				log.Println(way, err)
+			}
 			continue
 		}
 		// insert new way
@@ -183,7 +212,9 @@ For:
 	for relId, _ := range relIds {
 		rel, err := osmCache.Relations.GetRelation(relId)
 		if err != nil {
-			log.Println(err)
+			if err != cache.NotFound {
+				log.Println(rel, err)
+			}
 			continue
 		}
 		// insert new relation
@@ -198,7 +229,16 @@ For:
 	relWriter.Close()
 	wayWriter.Close()
 
+	err = db.End()
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = db.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	progress.Stop()
-	osmCache.Coords.Flush()
 	osmCache.Close()
+	diffCache.Close()
 }

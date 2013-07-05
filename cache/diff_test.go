@@ -57,7 +57,7 @@ func TestWriteDiff(t *testing.T) {
 
 	for w := 0; w < 5; w++ {
 		for n := 0; n < 200; n++ {
-			cache.add <- idRef{int64(n), int64(w)}
+			cache.add <- idRef{id: int64(n), ref: int64(w)}
 		}
 	}
 	cache.Close()
@@ -139,7 +139,7 @@ func BenchmarkWriteDiff(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		for w := 0; w < 5; w++ {
 			for n := 0; n < 200; n++ {
-				cache.add <- idRef{int64(n), int64(w)}
+				cache.add <- idRef{id: int64(n), ref: int64(w)}
 			}
 		}
 	}
@@ -182,6 +182,20 @@ func TestMergeIdRefs(t *testing.T) {
 	if len(bunch) != 4 {
 		t.Fatal(bunch)
 	}
+
+	// remove multiple
+	bunch = mergeBunch(bunch, []idRefs{idRefs{40, []int64{}}, idRefs{60, []int64{}}})
+	if bunch[0].id != 50 || bunch[1].id != 70 || len(bunch) != 2 {
+		t.Fatal(bunch)
+	}
+
+	// add multiple
+	bunch = mergeBunch(bunch, []idRefs{idRefs{40, []int64{1}}, idRefs{60, []int64{1}}, idRefs{80, []int64{1}}})
+	if len(bunch) != 5 || bunch[0].id != 40 ||
+		bunch[2].id != 60 || bunch[4].id != 80 {
+		t.Fatal(bunch)
+	}
+
 }
 
 func TestIdRefBunches(t *testing.T) {

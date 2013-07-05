@@ -69,6 +69,11 @@ func (p *NodesCache) GetNode(id int64) (*element.Node, error) {
 	return node, nil
 }
 
+func (p *NodesCache) DeleteNode(id int64) error {
+	keyBuf := idToKeyBuf(id)
+	return p.db.Delete(p.wo, keyBuf)
+}
+
 func (p *NodesCache) Iter() chan *element.Node {
 	nodes := make(chan *element.Node)
 	go func() {

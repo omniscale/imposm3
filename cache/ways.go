@@ -61,6 +61,11 @@ func (p *WaysCache) GetWay(id int64) (*element.Way, error) {
 	return way, nil
 }
 
+func (p *WaysCache) DeleteWay(id int64) error {
+	keyBuf := idToKeyBuf(id)
+	return p.db.Delete(p.wo, keyBuf)
+}
+
 func (p *WaysCache) Iter() chan *element.Way {
 	ways := make(chan *element.Way, 1024)
 	go func() {

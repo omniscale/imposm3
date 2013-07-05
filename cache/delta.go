@@ -84,6 +84,15 @@ func (b *coordsBunch) GetCoord(id int64) (*element.Node, error) {
 	return nil, NotFound
 }
 
+func (b *coordsBunch) DeleteCoord(id int64) {
+	idx := sort.Search(len(b.coords), func(i int) bool {
+		return b.coords[i].Id >= id
+	})
+	if idx < len(b.coords) && b.coords[idx].Id == id {
+		b.coords = append(b.coords[:idx], b.coords[idx+1:]...)
+	}
+}
+
 type DeltaCoordsCache struct {
 	cache
 	lruList      *list.List
@@ -142,6 +151,18 @@ func (self *DeltaCoordsCache) GetCoord(id int64) (*element.Node, error) {
 		defer bunch.Unlock()
 	}
 	return bunch.GetCoord(id)
+}
+
+func (self *DeltaCoordsCache) DeleteCoord(id int64) error {
+	bunchId := self.getBunchId(id)
+	bunch, err := self.getBunch(bunchId)
+	if err != nil {
+		return err
+	}
+	defer bunch.Unlock()
+	bunch.DeleteCoord(id)
+	bunch.needsWrite = true
+	return nil
 }
 
 func (self *DeltaCoordsCache) FillWay(way *element.Way) error {
@@ -226,10 +247,11 @@ var (
 )
 
 func (p *DeltaCoordsCache) putCoordsPacked(bunchId int64, nodes []element.Node) error {
-	if len(nodes) == 0 {
-		return nil
-	}
 	keyBuf := idToKeyBuf(bunchId)
+
+	if len(nodes) == 0 {
+		return p.db.Delete(p.wo, keyBuf)
+	}
 
 	var data []byte
 	select {

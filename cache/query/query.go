@@ -51,15 +51,15 @@ func printWays(osmCache *cache.OSMCache, diffCache *cache.DiffCache, ids []int64
 				printNodes(osmCache, nil, way.Refs, false)
 				log.SetPrefix(oldPrefix)
 			}
-			if deps {
-				oldPrefix := log.Prefix()
-				log.SetPrefix(oldPrefix + "        ")
-				rels := diffCache.Ways.Get(id)
-				if len(rels) != 0 {
-					printRelations(osmCache, rels, false)
-				}
-				log.SetPrefix(oldPrefix)
+		}
+		if deps {
+			oldPrefix := log.Prefix()
+			log.SetPrefix(oldPrefix + "        ")
+			rels := diffCache.Ways.Get(id)
+			if len(rels) != 0 {
+				printRelations(osmCache, rels, false)
 			}
+			log.SetPrefix(oldPrefix)
 		}
 	}
 }
@@ -80,15 +80,15 @@ func printNodes(osmCache *cache.OSMCache, diffCache *cache.DiffCache, ids []int6
 		}
 		if node != nil {
 			log.Println(node)
-			if deps {
-				oldPrefix := log.Prefix()
-				log.SetPrefix(oldPrefix + "        ")
-				ways := diffCache.Coords.Get(id)
-				if len(ways) != 0 {
-					printWays(osmCache, diffCache, ways, false, true)
-				}
-				log.SetPrefix(oldPrefix)
+		}
+		if deps {
+			oldPrefix := log.Prefix()
+			log.SetPrefix(oldPrefix + "        ")
+			ways := diffCache.Coords.Get(id)
+			if len(ways) != 0 {
+				printWays(osmCache, diffCache, ways, false, true)
 			}
+			log.SetPrefix(oldPrefix)
 		}
 	}
 }

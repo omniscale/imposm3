@@ -85,3 +85,8 @@ func (p *RelationsCache) GetRelation(id int64) (*element.Relation, error) {
 	relation.Id = id
 	return relation, err
 }
+
+func (p *RelationsCache) DeleteRelation(id int64) error {
+	keyBuf := idToKeyBuf(id)
+	return p.db.Delete(p.wo, keyBuf)
+}

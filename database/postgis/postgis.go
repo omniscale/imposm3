@@ -458,6 +458,10 @@ func (pg *PostGIS) End() error {
 	return pg.InputBuffer.End()
 }
 
+func (pg *PostGIS) Close() error {
+	return pg.Db.Close()
+}
+
 type TableTx struct {
 	Pg         *PostGIS
 	Tx         *sql.Tx

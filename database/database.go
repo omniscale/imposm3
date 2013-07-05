@@ -16,6 +16,7 @@ type DB interface {
 	End() error
 	Abort() error
 	Init() error
+	Close() error
 	RowInserter
 }
 
@@ -82,6 +83,7 @@ type NullDb struct{}
 func (n *NullDb) Init() error                  { return nil }
 func (n *NullDb) Begin() error                 { return nil }
 func (n *NullDb) End() error                   { return nil }
+func (n *NullDb) Close() error                 { return nil }
 func (n *NullDb) Abort() error                 { return nil }
 func (n *NullDb) Insert(string, []interface{}) {}
 

@@ -103,8 +103,9 @@ func insertRefs(refs []int64, ref int64) []int64 {
 }
 
 type idRef struct {
-	id  int64
-	ref int64 // for single id/ref
+	id     int64
+	ref    int64
+	delete bool
 }
 
 type idRefs struct {
@@ -122,31 +123,41 @@ type idRefBunch struct {
 type idRefBunches map[int64]idRefBunch
 
 func (bunches *idRefBunches) add(bunchId, id, ref int64) {
+	idRefs := bunches.getIdRefsCreateMissing(bunchId, id)
+	idRefs.refs = insertRefs(idRefs.refs, ref)
+}
+
+func (bunches *idRefBunches) delete(bunchId, id int64) {
+	idRefs := bunches.getIdRefsCreateMissing(bunchId, id)
+	idRefs.refs = nil
+}
+
+func (bunches *idRefBunches) getIdRefsCreateMissing(bunchId, id int64) *idRefs {
 	bunch, ok := (*bunches)[bunchId]
 	if !ok {
 		bunch = idRefBunch{id: bunchId}
 	}
-	var targetIdRefs *idRefs
+	var result *idRefs
 
 	i := sort.Search(len(bunch.idRefs), func(i int) bool {
 		return bunch.idRefs[i].id >= id
 	})
 	if i < len(bunch.idRefs) && bunch.idRefs[i].id >= id {
 		if bunch.idRefs[i].id == id {
-			targetIdRefs = &bunch.idRefs[i]
+			result = &bunch.idRefs[i]
 		} else {
 			bunch.idRefs = append(bunch.idRefs, idRefs{})
 			copy(bunch.idRefs[i+1:], bunch.idRefs[i:])
 			bunch.idRefs[i] = idRefs{id: id}
-			targetIdRefs = &bunch.idRefs[i]
+			result = &bunch.idRefs[i]
 		}
 	} else {
 		bunch.idRefs = append(bunch.idRefs, idRefs{id: id})
-		targetIdRefs = &bunch.idRefs[len(bunch.idRefs)-1]
+		result = &bunch.idRefs[len(bunch.idRefs)-1]
 	}
 
-	targetIdRefs.refs = insertRefs(targetIdRefs.refs, ref)
 	(*bunches)[bunchId] = bunch
+	return result
 }
 
 var idRefBunchesPool chan idRefBunches
@@ -243,7 +254,11 @@ func (index *bunchRefCache) Close() {
 
 func (index *bunchRefCache) dispatch() {
 	for idRef := range index.add {
-		index.buffer.add(index.getBunchId(idRef.id), idRef.id, idRef.ref)
+		if idRef.delete {
+			index.buffer.delete(index.getBunchId(idRef.id), idRef.id)
+		} else {
+			index.buffer.add(index.getBunchId(idRef.id), idRef.id, idRef.ref)
+		}
 		if len(index.buffer) >= bufferSize {
 			index.write <- index.buffer
 			select {
@@ -335,25 +350,34 @@ NextIdRef:
 		// search place in bunch
 		for i := lastIdx; i < len(bunch); i++ {
 			if bunch[i].id == newIdRefs.id {
-				// id already present, add refs
-				for _, r := range newIdRefs.refs {
-					bunch[i].refs = insertRefs(bunch[i].refs, r)
+				// id already present
+				if len(newIdRefs.refs) == 0 {
+					// no new refs -> delete
+					bunch = append(bunch[:i], bunch[i+1:]...)
+				} else { // otherwise add refs
+					for _, r := range newIdRefs.refs {
+						bunch[i].refs = insertRefs(bunch[i].refs, r)
+					}
 				}
 				lastIdx = i
-				break NextIdRef
+				continue NextIdRef
 			}
 			if bunch[i].id > newIdRefs.id {
 				// insert before
-				bunch = append(bunch, idRefs{})
-				copy(bunch[i+1:], bunch[i:])
-				bunch[i] = newIdRefs
+				if len(newIdRefs.refs) > 0 {
+					bunch = append(bunch, idRefs{})
+					copy(bunch[i+1:], bunch[i:])
+					bunch[i] = newIdRefs
+				}
 				lastIdx = i
-				break NextIdRef
+				continue NextIdRef
 			}
 		}
 		// insert at the end
-		bunch = append(bunch, newIdRefs)
-		lastIdx = len(bunch) - 1
+		if len(newIdRefs.refs) > 0 {
+			bunch = append(bunch, newIdRefs)
+			lastIdx = len(bunch) - 1
+		}
 	}
 	return bunch
 }
@@ -396,6 +420,10 @@ func (index *bunchRefCache) Get(id int64) []int64 {
 		}
 	}
 	return nil
+}
+
+func (index *bunchRefCache) Delete(id int64) {
+	index.add <- idRef{id: id, delete: true}
 }
 
 func marshalBunch(idRefs []idRefs) []byte {
