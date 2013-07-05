@@ -76,8 +76,8 @@ func TestWriteDiff(t *testing.T) {
 	}
 }
 
-func TestMarshalBunch(t *testing.T) {
-	bunch := []IdRef{
+func TestmarshalBunch(t *testing.T) {
+	bunch := []idRefs{
 		{123923123, []int64{1213123}},
 		{123923133, []int64{1231237}},
 		{123924123, []int64{912412210, 912412213}},
@@ -86,8 +86,8 @@ func TestMarshalBunch(t *testing.T) {
 		{123924132, []int64{912412210, 9124213, 212412210}},
 	}
 
-	buf := MarshalBunch(bunch)
-	newBunch := UnmarshalBunch(buf)
+	buf := marshalBunch(bunch)
+	newBunch := unmarshalBunch(buf)
 
 	t.Log(len(buf), float64(len(buf))/6.0)
 
@@ -109,7 +109,7 @@ func TestMarshalBunch(t *testing.T) {
 }
 
 func BenchmarkMarshalBunch(b *testing.B) {
-	bunch := []IdRef{
+	bunch := []idRefs{
 		{123923123, []int64{1213123}},
 		{123923133, []int64{1231237}},
 		{123924123, []int64{912412210, 912412213}},
@@ -119,8 +119,8 @@ func BenchmarkMarshalBunch(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		buf := MarshalBunch(bunch)
-		UnmarshalBunch(buf)
+		buf := marshalBunch(bunch)
+		unmarshalBunch(buf)
 	}
 }
 
@@ -147,33 +147,33 @@ func BenchmarkWriteDiff(b *testing.B) {
 }
 
 func TestMergeIdRefs(t *testing.T) {
-	bunch := []IdRef{}
+	bunch := []idRefs{}
 
-	bunch = mergeBunch(bunch, []IdRef{IdRef{50, []int64{1}}})
+	bunch = mergeBunch(bunch, []idRefs{idRefs{50, []int64{1}}})
 	if b := bunch[0]; b.id != 50 || b.refs[0] != 1 {
 		t.Fatal(bunch)
 	}
 
 	// before
-	bunch = mergeBunch(bunch, []IdRef{IdRef{40, []int64{3}}})
+	bunch = mergeBunch(bunch, []idRefs{idRefs{40, []int64{3}}})
 	if b := bunch[0]; b.id != 40 || b.refs[0] != 3 {
 		t.Fatal(bunch)
 	}
 
 	// after
-	bunch = mergeBunch(bunch, []IdRef{IdRef{70, []int64{4}}})
+	bunch = mergeBunch(bunch, []idRefs{idRefs{70, []int64{4}}})
 	if b := bunch[2]; b.id != 70 || b.refs[0] != 4 {
 		t.Fatal(bunch)
 	}
 
 	// in between
-	bunch = mergeBunch(bunch, []IdRef{IdRef{60, []int64{5}}})
+	bunch = mergeBunch(bunch, []idRefs{idRefs{60, []int64{5}}})
 	if b := bunch[2]; b.id != 60 || b.refs[0] != 5 {
 		t.Fatal(bunch)
 	}
 
 	// same (50:1 already inserted)
-	bunch = mergeBunch(bunch, []IdRef{IdRef{50, []int64{0, 5}}})
+	bunch = mergeBunch(bunch, []idRefs{idRefs{50, []int64{0, 5}}})
 	if b := bunch[1]; b.id != 50 || len(b.refs) != 3 ||
 		b.refs[0] != 0 || b.refs[1] != 1 || b.refs[2] != 5 {
 		t.Fatal(bunch)
@@ -185,7 +185,7 @@ func TestMergeIdRefs(t *testing.T) {
 }
 
 func TestIdRefBunches(t *testing.T) {
-	bunches := make(IdRefBunches)
+	bunches := make(idRefBunches)
 	bunches.add(1, 100, 999)
 
 	if r := bunches[1].idRefs[0]; r.id != 100 || r.refs[0] != 999 {
