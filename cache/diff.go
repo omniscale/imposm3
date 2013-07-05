@@ -96,9 +96,11 @@ func insertRefs(refs []int64, ref int64) []int64 {
 		return refs[i] >= ref
 	})
 	if i < len(refs) && refs[i] >= ref {
-		refs = append(refs, 0)
-		copy(refs[i+1:], refs[i:])
-		refs[i] = ref
+		if refs[i] > ref {
+			refs = append(refs, 0)
+			copy(refs[i+1:], refs[i:])
+			refs[i] = ref
+		} // else already inserted
 	} else {
 		refs = append(refs, ref)
 	}
