@@ -6,7 +6,7 @@ import (
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"goposm/element"
-	"goposm/parser"
+	"goposm/parser/pbf"
 	"log"
 	"os"
 	"runtime"
@@ -16,7 +16,7 @@ import (
 )
 
 type Entry struct {
-	Pos                 parser.BlockPosition
+	Pos                 pbf.BlockPosition
 	NodeFirst, NodeLast int64
 	WayFirst, WayLast   int64
 	RelFirst, RelLast   int64
@@ -41,11 +41,11 @@ func searchNode(nodes []element.Node, id int64) (*element.Node, error) {
 }
 
 func (entry *Entry) readWay(id int64) (*element.Way, error) {
-	block := parser.ReadPrimitiveBlock(entry.Pos)
-	stringtable := parser.NewStringTable(block.GetStringtable())
+	block := pbf.ReadPrimitiveBlock(entry.Pos)
+	stringtable := pbf.NewStringTable(block.GetStringtable())
 
 	for _, group := range block.Primitivegroup {
-		parsedWays := parser.ReadWays(group.Ways, block, stringtable)
+		parsedWays := pbf.ReadWays(group.Ways, block, stringtable)
 		if len(parsedWays) > 0 {
 			i := sort.Search(len(parsedWays), func(i int) bool {
 				return parsedWays[i].Id >= id
@@ -59,11 +59,11 @@ func (entry *Entry) readWay(id int64) (*element.Way, error) {
 }
 
 func (entry *Entry) readRel(id int64) (*element.Relation, error) {
-	block := parser.ReadPrimitiveBlock(entry.Pos)
-	stringtable := parser.NewStringTable(block.GetStringtable())
+	block := pbf.ReadPrimitiveBlock(entry.Pos)
+	stringtable := pbf.NewStringTable(block.GetStringtable())
 
 	for _, group := range block.Primitivegroup {
-		parsedRels := parser.ReadRelations(group.Relations, block, stringtable)
+		parsedRels := pbf.ReadRelations(group.Relations, block, stringtable)
 		if len(parsedRels) > 0 {
 			i := sort.Search(len(parsedRels), func(i int) bool {
 				return parsedRels[i].Id >= id
@@ -76,8 +76,8 @@ func (entry *Entry) readRel(id int64) (*element.Relation, error) {
 	return nil, &NotFound{id}
 }
 
-func CreateEntry(pos parser.BlockPosition) Entry {
-	block := parser.ReadPrimitiveBlock(pos)
+func CreateEntry(pos pbf.BlockPosition) Entry {
+	block := pbf.ReadPrimitiveBlock(pos)
 
 	entry := Entry{pos, -1, -1, -1, -1, -1, -1}
 
@@ -204,8 +204,8 @@ func (index *IndexCache) queryNode(id int64) (Entry, error) {
 	}
 	entry := Entry{}
 	stmt, err := index.db.Prepare(
-		`select node_first, node_last, offset, size 
-		from indices 
+		`select node_first, node_last, offset, size
+		from indices
 		where node_first <= ? and node_last >= ?`)
 	if err != nil {
 		return entry, err
@@ -235,8 +235,8 @@ func (index *IndexCache) queryNode(id int64) (Entry, error) {
 func (index *IndexCache) queryWay(id int64) (Entry, error) {
 	entry := Entry{}
 	stmt, err := index.db.Prepare(
-		`select way_first, way_last, offset, size 
-		from indices 
+		`select way_first, way_last, offset, size
+		from indices
 		where way_first <= ? and way_last >= ?`)
 	if err != nil {
 		return entry, err
@@ -254,8 +254,8 @@ func (index *IndexCache) queryWay(id int64) (Entry, error) {
 func (index *IndexCache) queryRel(id int64) (Entry, error) {
 	entry := Entry{}
 	stmt, err := index.db.Prepare(
-		`select rel_first, rel_last, offset, size 
-		from indices 
+		`select rel_first, rel_last, offset, size
+		from indices
 		where rel_first <= ? and rel_last >= ?`)
 	if err != nil {
 		return entry, err
@@ -301,7 +301,7 @@ func init() {
 func (index *IndexCache) Rebuild() {
 	indices := make(chan Entry)
 
-	positions := parser.PBFBlockPositions(index.pbfFilename)
+	positions := pbf.PBFBlockPositions(index.pbfFilename)
 
 	waitParser := sync.WaitGroup{}
 	for i := 0; i < runtime.NumCPU(); i++ {
@@ -363,14 +363,14 @@ func (loader *Loader) loadNode(id int64) (*element.Node, error) {
 	nodes, ok := loader.nodes[entry.Pos.Offset]
 	if !ok {
 		entry.Pos.Filename = loader.filename
-		block := parser.ReadPrimitiveBlock(entry.Pos)
+		block := pbf.ReadPrimitiveBlock(entry.Pos)
 		nodes = make([]element.Node, 0, len(block.Primitivegroup)*8000)
 		for _, group := range block.Primitivegroup {
 			dense := group.GetDense()
 			if dense != nil {
 				nodes = append(nodes, parser.ReadDenseNodes(dense, block, nil)...)
 			}
-			nodes = append(nodes, parser.ReadNodes(group.Nodes, block, nil)...)
+			nodes = append(nodes, pbf.ReadNodes(group.Nodes, block, nil)...)
 		}
 		loader.nodes[entry.Pos.Offset] = nodes
 	}

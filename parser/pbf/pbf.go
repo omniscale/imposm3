@@ -1,9 +1,9 @@
-package parser
+package pbf
 
 import (
 	"fmt"
 	"goposm/element"
-	"goposm/parser/osmpbf"
+	"goposm/parser/pbf/osmpbf"
 	"log"
 	"os"
 )

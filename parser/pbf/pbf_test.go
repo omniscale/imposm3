@@ -1,11 +1,11 @@
-package parser
+package pbf
 
 import (
 	"bytes"
 	"code.google.com/p/goprotobuf/proto"
 	"compress/zlib"
 	"fmt"
-	"goposm/parser/osmpbf"
+	"goposm/parser/pbf/osmpbf"
 	"io"
 	"log"
 	"os"
