@@ -14,16 +14,16 @@ import (
 
 func BenchmarkHello(b *testing.B) {
 	b.StopTimer()
-	pbf, err := Open("../azores.osm.pbf")
+	pbf, err := open("../azores.osm.pbf")
 	if err != nil {
 		panic(err)
 	}
 
 	for pos := range pbf.BlockPositions() {
-		fmt.Println(pos.Size, pos.Offset)
+		fmt.Println(pos.size, pos.offset)
 		b.StartTimer()
 		for i := 0; i < b.N; i++ {
-			ReadPrimitiveBlock(pos)
+			readPrimitiveBlock(pos)
 		}
 		return
 		// for {

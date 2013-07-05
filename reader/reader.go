@@ -48,15 +48,14 @@ func ReadPbf(cache *cache.OSMCache, progress *stats.Statistics, tagmapping *mapp
 	ways := make(chan []element.Way, 4)
 	relations := make(chan []element.Relation, 4)
 
-	positions := pbf.PBFBlockPositions(filename)
+	blocks := pbf.Blocks(filename)
 
 	waitParser := sync.WaitGroup{}
 	for i := 0; int64(i) < nParser; i++ {
 		waitParser.Add(1)
 		go func() {
-			for pos := range positions {
-				pbf.ParseBlock(
-					pos,
+			for block := range blocks {
+				block.Parse(
 					coords,
 					nodes,
 					ways,

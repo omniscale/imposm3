@@ -11,8 +11,8 @@ import (
 	"os"
 )
 
-func ReadPrimitiveBlock(pos BlockPosition) *osmpbf.PrimitiveBlock {
-	file, err := os.Open(pos.Filename)
+func readPrimitiveBlock(pos Block) *osmpbf.PrimitiveBlock {
+	file, err := os.Open(pos.filename)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -21,8 +21,8 @@ func ReadPrimitiveBlock(pos BlockPosition) *osmpbf.PrimitiveBlock {
 	var block = &osmpbf.PrimitiveBlock{}
 	var blob = &osmpbf.Blob{}
 
-	blobData := make([]byte, pos.Size)
-	file.Seek(pos.Offset, 0)
+	blobData := make([]byte, pos.size)
+	file.Seek(pos.offset, 0)
 	io.ReadFull(file, blobData)
 	err = proto.Unmarshal(blobData, blob)
 	if err != nil {
@@ -45,8 +45,41 @@ func ReadPrimitiveBlock(pos BlockPosition) *osmpbf.PrimitiveBlock {
 	return block
 }
 
-func (pbf *PBF) BlockPositions() (positions chan BlockPosition) {
-	positions = make(chan BlockPosition, 8)
+type pbf struct {
+	file     *os.File
+	filename string
+	offset   int64
+}
+
+func open(filename string) (f *pbf, err error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	f = &pbf{filename: filename, file: file}
+	return f, nil
+}
+
+func (pbf *pbf) Close() error {
+	return pbf.file.Close()
+}
+
+func (pbf *pbf) NextDataPosition() (offset int64, size int32) {
+	header := pbf.nextBlobHeader()
+	size = header.GetDatasize()
+	offset = pbf.offset
+
+	pbf.offset += int64(size)
+	pbf.file.Seek(pbf.offset, 0)
+
+	if header.GetType() == "OSMHeader" {
+		return pbf.NextDataPosition()
+	}
+	return
+}
+
+func (pbf *pbf) BlockPositions() (positions chan Block) {
+	positions = make(chan Block, 8)
 	go func() {
 		for {
 			offset, size := pbf.NextDataPosition()
@@ -55,19 +88,19 @@ func (pbf *PBF) BlockPositions() (positions chan BlockPosition) {
 				pbf.Close()
 				return
 			}
-			positions <- BlockPosition{pbf.filename, offset, size}
+			positions <- Block{pbf.filename, offset, size}
 		}
 	}()
 	return
 }
 
-func (pbf *PBF) nextBlobHeaderSize() (size int32) {
+func (pbf *pbf) nextBlobHeaderSize() (size int32) {
 	pbf.offset += 4
 	structs.Read(pbf.file, structs.BigEndian, &size)
 	return
 }
 
-func (pbf *PBF) nextBlobHeader() *osmpbf.BlobHeader {
+func (pbf *pbf) nextBlobHeader() *osmpbf.BlobHeader {
 	var blobHeader = &osmpbf.BlobHeader{}
 
 	size := pbf.nextBlobHeaderSize()
