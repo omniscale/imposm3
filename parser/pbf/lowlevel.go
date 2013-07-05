@@ -29,13 +29,20 @@ func readPrimitiveBlock(pos Block) *osmpbf.PrimitiveBlock {
 		log.Panic("unmarshaling error blob: ", err)
 	}
 
-	buf := bytes.NewBuffer(blob.GetZlibData())
-	r, err := zlib.NewReader(buf)
-	if err != nil {
-		log.Panic("zlib error: ", err)
+	// pbf contains (uncompressed) raw or zlibdata
+	raw := blob.GetRaw()
+	if raw == nil {
+		buf := bytes.NewBuffer(blob.GetZlibData())
+		r, err := zlib.NewReader(buf)
+		if err != nil {
+			log.Panic("zlib error: ", err)
+		}
+		raw = make([]byte, blob.GetRawSize())
+		_, err = io.ReadFull(r, raw)
+		if err != nil {
+			log.Panic("zlib read error: ", err)
+		}
 	}
-	raw := make([]byte, blob.GetRawSize())
-	io.ReadFull(r, raw)
 
 	err = proto.Unmarshal(raw, block)
 	if err != nil {
