@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"goposm/cache"
+	"goposm/config"
 	"goposm/database"
 	_ "goposm/database/postgis"
 	"goposm/geom/clipper"
@@ -31,9 +32,7 @@ var (
 	read             = flag.String("read", "", "read")
 	write            = flag.Bool("write", false, "write")
 	optimize         = flag.Bool("optimize", false, "optimize")
-	connection       = flag.String("connection", "", "connection parameters")
 	diff             = flag.Bool("diff", false, "enable diff support")
-	mappingFile      = flag.String("mapping", "", "mapping file")
 	deployProduction = flag.Bool("deployproduction", false, "deploy production")
 	revertDeploy     = flag.Bool("revertdeploy", false, "revert deploy to production")
 	removeBackup     = flag.Bool("removebackup", false, "remove backups from deploy")
@@ -59,6 +58,15 @@ func main() {
 		runtime.GOMAXPROCS(runtime.NumCPU())
 	}
 	flag.Parse()
+	conf, errs := config.Parse()
+	if len(errs) > 0 {
+		log.Fatal("errors in config/options:")
+		for _, err := range errs {
+			log.Fatalf("\t%s", err)
+		}
+		logging.Shutdown()
+		os.Exit(1)
+	}
 
 	if *cpuprofile != "" {
 		f, err := os.Create(*cpuprofile)
@@ -129,21 +137,19 @@ func main() {
 
 	progress := stats.StatsReporter()
 
-	tagmapping, err := mapping.NewMapping(*mappingFile)
+	tagmapping, err := mapping.NewMapping(conf.MappingFile)
 	if err != nil {
-		die(err)
+		die("mapping file: ", err)
 	}
 
 	var db database.DB
 
-	srid := 3857 // TODO
-
 	if *write || *deployProduction || *revertDeploy || *removeBackup || *optimize {
-		connType := database.ConnectionType(*connection)
+		connType := database.ConnectionType(conf.Connection)
 		conf := database.Config{
 			Type:             connType,
-			ConnectionParams: *connection,
-			Srid:             srid,
+			ConnectionParams: conf.Connection,
+			Srid:             conf.Srid,
 		}
 		db, err = database.Open(conf, tagmapping)
 		if err != nil {
@@ -209,7 +215,7 @@ func main() {
 
 		relations := osmCache.Relations.Iter()
 		relWriter := writer.NewRelationWriter(osmCache, diffCache, relations,
-			db, polygonsTagMatcher, progress, srid)
+			db, polygonsTagMatcher, progress, conf.Srid)
 		relWriter.SetClipper(geometryClipper)
 		relWriter.Start()
 
@@ -219,7 +225,7 @@ func main() {
 
 		ways := osmCache.Ways.Iter()
 		wayWriter := writer.NewWayWriter(osmCache, diffCache, ways, db,
-			lineStringsTagMatcher, polygonsTagMatcher, progress, srid)
+			lineStringsTagMatcher, polygonsTagMatcher, progress, conf.Srid)
 		wayWriter.SetClipper(geometryClipper)
 		wayWriter.Start()
 
@@ -229,7 +235,7 @@ func main() {
 
 		nodes := osmCache.Nodes.Iter()
 		nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
-			pointsTagMatcher, progress, srid)
+			pointsTagMatcher, progress, conf.Srid)
 		nodeWriter.SetClipper(geometryClipper)
 		nodeWriter.Start()
 
