@@ -57,13 +57,20 @@ func tableExists(tx *sql.Tx, schema, table string) (bool, error) {
 }
 
 func dropTableIfExists(tx *sql.Tx, schema, table string) error {
-	sql := fmt.Sprintf("SELECT DropGeometryTable('%s', '%s');",
-		schema, table)
-	row := tx.QueryRow(sql)
-	var void interface{}
-	err := row.Scan(&void)
+	exists, err := tableExists(tx, schema, table)
 	if err != nil {
-		return &SQLError{sql, err}
+		return err
+	}
+	if !exists {
+		return nil
+	}
+	sqlStmt := fmt.Sprintf("SELECT DropGeometryTable('%s', '%s');",
+		schema, table)
+	row := tx.QueryRow(sqlStmt)
+	var void interface{}
+	err = row.Scan(&void)
+	if err != nil {
+		return &SQLError{sqlStmt, err}
 	}
 	return nil
 }
