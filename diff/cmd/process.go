@@ -63,7 +63,7 @@ func update(oscFile string, conf *config.Config) {
 	dbConf := database.Config{
 		Type:             connType,
 		ConnectionParams: conf.Connection,
-		Srid:             3857,
+		Srid:             conf.Srid,
 	}
 	db, err := database.Open(dbConf, tagmapping)
 	if err != nil {
@@ -104,20 +104,18 @@ func update(oscFile string, conf *config.Config) {
 	ways := make(chan *element.Way)
 	nodes := make(chan *element.Node)
 
-	srid := 3857 // TODO
-
 	relWriter := writer.NewRelationWriter(osmCache, diffCache, relations,
-		db, polygonsTagMatcher, progress, srid)
+		db, polygonsTagMatcher, progress, conf.Srid)
 	relWriter.SetClipper(geometryClipper)
 	relWriter.Start()
 
 	wayWriter := writer.NewWayWriter(osmCache, diffCache, ways, db,
-		lineStringsTagMatcher, polygonsTagMatcher, progress, srid)
+		lineStringsTagMatcher, polygonsTagMatcher, progress, conf.Srid)
 	wayWriter.SetClipper(geometryClipper)
 	wayWriter.Start()
 
 	nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
-		pointsTagMatcher, progress, srid)
+		pointsTagMatcher, progress, conf.Srid)
 	nodeWriter.SetClipper(geometryClipper)
 	nodeWriter.Start()
 
