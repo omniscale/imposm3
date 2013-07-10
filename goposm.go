@@ -23,21 +23,23 @@ import (
 var log = logging.NewLogger("")
 
 var (
-	cpuprofile       = flag.String("cpuprofile", "", "filename of cpu profile output")
-	httpprofile      = flag.String("httpprofile", "", "bind address for profile server")
-	memprofile       = flag.String("memprofile", "", "dir name of mem profile output and interval (fname:interval)")
-	cachedir         = flag.String("cachedir", "/tmp/goposm", "cache directory")
-	overwritecache   = flag.Bool("overwritecache", false, "overwritecache")
-	appendcache      = flag.Bool("appendcache", false, "append cache")
-	read             = flag.String("read", "", "read")
-	write            = flag.Bool("write", false, "write")
-	optimize         = flag.Bool("optimize", false, "optimize")
-	diff             = flag.Bool("diff", false, "enable diff support")
+	cpuprofile  = flag.String("cpuprofile", "", "filename of cpu profile output")
+	httpprofile = flag.String("httpprofile", "", "bind address for profile server")
+	memprofile  = flag.String("memprofile", "", "dir name of mem profile output and interval (fname:interval)")
+
+	overwritecache = flag.Bool("overwritecache", false, "overwritecache")
+	appendcache    = flag.Bool("appendcache", false, "append cache")
+
+	read     = flag.String("read", "", "read")
+	write    = flag.Bool("write", false, "write")
+	optimize = flag.Bool("optimize", false, "optimize")
+	diff     = flag.Bool("diff", false, "enable diff support")
+
 	deployProduction = flag.Bool("deployproduction", false, "deploy production")
 	revertDeploy     = flag.Bool("revertdeploy", false, "revert deploy to production")
 	removeBackup     = flag.Bool("removebackup", false, "remove backups from deploy")
-	limitTo          = flag.String("limitto", "", "limit to geometries")
-	quiet            = flag.Bool("quiet", false, "quiet log output")
+
+	quiet = flag.Bool("quiet", false, "quiet log output")
 )
 
 func die(args ...interface{}) {
@@ -111,21 +113,21 @@ func main() {
 	}
 
 	var geometryClipper *clipper.Clipper
-	if *write && *limitTo != "" {
+	if *write && conf.LimitTo != "" {
 		var err error
 		step := log.StartStep("Reading limitto geometries")
-		geometryClipper, err = clipper.NewFromOgrSource(*limitTo)
+		geometryClipper, err = clipper.NewFromOgrSource(conf.LimitTo)
 		if err != nil {
 			die(err)
 		}
 		log.StopStep(step)
 	}
 
-	osmCache := cache.NewOSMCache(*cachedir)
+	osmCache := cache.NewOSMCache(conf.CacheDir)
 
 	if *read != "" && osmCache.Exists() {
 		if *overwritecache {
-			log.Printf("removing existing cache %s", *cachedir)
+			log.Printf("removing existing cache %s", conf.CacheDir)
 			err := osmCache.Remove()
 			if err != nil {
 				die("unable to remove cache:", err)
@@ -195,7 +197,7 @@ func main() {
 
 		var diffCache *cache.DiffCache
 		if *diff {
-			diffCache = cache.NewDiffCache(*cachedir)
+			diffCache = cache.NewDiffCache(conf.CacheDir)
 			if err = diffCache.Remove(); err != nil {
 				die(err)
 			}
