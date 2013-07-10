@@ -4,61 +4,70 @@ import (
 	"flag"
 	"fmt"
 	"goposm/cache"
+	"goposm/config"
 	"goposm/database"
 	_ "goposm/database/postgis"
 	"goposm/diff"
 	"goposm/diff/parser"
 	"goposm/element"
 	"goposm/geom/clipper"
+	"goposm/logging"
 	"goposm/mapping"
 	"goposm/stats"
 	"goposm/writer"
 	"io"
-	"log"
+	"os"
 )
 
-var (
-	connection = flag.String("connection", "", "connection parameters")
-)
+var log = logging.NewLogger("")
 
 func main() {
 	flag.Parse()
+	conf, errs := config.Parse()
+	if len(errs) > 0 {
+		log.Warn("errors in config/options:")
+		for _, err := range errs {
+			log.Warnf("\t%s", err)
+		}
+		logging.Shutdown()
+		os.Exit(1)
+	}
 	for _, oscFile := range flag.Args() {
-		update(oscFile)
+		update(oscFile, conf)
 	}
 }
 
-func update(oscFile string) {
-	flag.Parse()
+func update(oscFile string, conf *config.Config) {
+	defer log.StopStep(log.StartStep(fmt.Sprintf("Processing %s", oscFile)))
+
 	elems, errc := parser.Parse(oscFile)
 
-	osmCache := cache.NewOSMCache("/tmp/goposm")
+	osmCache := cache.NewOSMCache(conf.CacheDir)
 	err := osmCache.Open()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("osm cache: ", err)
 	}
 
-	diffCache := cache.NewDiffCache("/tmp/goposm")
+	diffCache := cache.NewDiffCache(conf.CacheDir)
 	err = diffCache.Open()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("diff cache: ", err)
 	}
 
-	tagmapping, err := mapping.NewMapping("./mapping.json")
+	tagmapping, err := mapping.NewMapping(conf.MappingFile)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println(*connection)
-	connType := database.ConnectionType(*connection)
-	conf := database.Config{
+	connType := database.ConnectionType(conf.Connection)
+	dbConf := database.Config{
 		Type:             connType,
-		ConnectionParams: *connection,
+		ConnectionParams: conf.Connection,
 		Srid:             3857,
 	}
-	db, err := database.Open(conf, tagmapping)
+	db, err := database.Open(dbConf, tagmapping)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("database open: ", err)
 	}
 
 	err = db.Begin()
@@ -116,10 +125,26 @@ func update(oscFile string) {
 	wayIds := make(map[int64]bool)
 	relIds := make(map[int64]bool)
 
+	step := log.StartStep("Parsing changes, updating cache and removing elements")
+
+	progress.Start()
 For:
 	for {
 		select {
 		case elem := <-elems:
+			if elem.Rel != nil {
+				relTagFilter.Filter(&elem.Rel.Tags)
+				progress.AddRelations(1)
+			} else if elem.Way != nil {
+				wayTagFilter.Filter(&elem.Way.Tags)
+				progress.AddWays(1)
+			} else if elem.Node != nil {
+				nodeTagFilter.Filter(&elem.Node.Tags)
+				if len(elem.Node.Tags) > 0 {
+					progress.AddNodes(1)
+				}
+				progress.AddCoords(1)
+			}
 			if elem.Del {
 				deleter.Delete(elem)
 				if !elem.Add {
@@ -146,37 +171,37 @@ For:
 			if elem.Add {
 				if elem.Rel != nil {
 					// TODO: check for existence of first way member
-					relTagFilter.Filter(&elem.Rel.Tags)
 					osmCache.Relations.PutRelation(elem.Rel)
 					relIds[elem.Rel.Id] = true
 				} else if elem.Way != nil {
 					// TODO: check for existence of first ref
-					wayTagFilter.Filter(&elem.Way.Tags)
 					osmCache.Ways.PutWay(elem.Way)
 					wayIds[elem.Way.Id] = true
 				} else if elem.Node != nil {
 					// TODO: check for intersection with import BBOX/poly
-					nodeTagFilter.Filter(&elem.Node.Tags)
 					osmCache.Nodes.PutNode(elem.Node)
 					osmCache.Coords.PutCoords([]element.Node{*elem.Node})
 					nodeIds[elem.Node.Id] = true
 				}
 			}
 		case err := <-errc:
-			if err == io.EOF {
-				fmt.Println("done")
-			} else {
-				fmt.Println(err)
+			if err != io.EOF {
+				log.Fatal(err)
 			}
 			break For
 		}
 	}
+	progress.Stop()
+	log.StopStep(step)
+	step = log.StartStep("Writing added/modified elements")
+
+	progress.Start()
 
 	for nodeId, _ := range nodeIds {
 		node, err := osmCache.Nodes.GetNode(nodeId)
 		if err != nil {
 			if err != cache.NotFound {
-				log.Println(node, err)
+				log.Print(node, err)
 			}
 			// missing nodes can still be Coords
 			// no `continue` here
@@ -196,7 +221,7 @@ For:
 		way, err := osmCache.Ways.GetWay(wayId)
 		if err != nil {
 			if err != cache.NotFound {
-				log.Println(way, err)
+				log.Print(way, err)
 			}
 			continue
 		}
@@ -213,7 +238,7 @@ For:
 		rel, err := osmCache.Relations.GetRelation(relId)
 		if err != nil {
 			if err != cache.NotFound {
-				log.Println(rel, err)
+				log.Print(rel, err)
 			}
 			continue
 		}
@@ -241,4 +266,5 @@ For:
 	progress.Stop()
 	osmCache.Close()
 	diffCache.Close()
+	log.StopStep(step)
 }

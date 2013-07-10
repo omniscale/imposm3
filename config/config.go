@@ -28,7 +28,10 @@ var (
 )
 
 func Parse() (*Config, []error) {
-	config := &Config{}
+	config := &Config{
+		CacheDir: defaultCacheDir,
+		Srid:     defaultSrid,
+	}
 	if *configFile != "" {
 		f, err := os.Open(*configFile)
 		if err != nil {
@@ -75,6 +78,5 @@ func checkConfig(config *Config) []error {
 	if config.Connection == "" {
 		errs = append(errs, errors.New("missing connection"))
 	}
-
 	return errs
 }

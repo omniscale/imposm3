@@ -44,14 +44,10 @@ var (
 
 func die(args ...interface{}) {
 	log.Fatal(args...)
-	logging.Shutdown()
-	os.Exit(1)
 }
 
 func dief(msg string, args ...interface{}) {
 	log.Fatalf(msg, args...)
-	logging.Shutdown()
-	os.Exit(1)
 }
 
 func main() {
@@ -62,9 +58,9 @@ func main() {
 	flag.Parse()
 	conf, errs := config.Parse()
 	if len(errs) > 0 {
-		log.Fatal("errors in config/options:")
+		log.Warn("errors in config/options:")
 		for _, err := range errs {
-			log.Fatalf("\t%s", err)
+			log.Warnf("\t%s", err)
 		}
 		logging.Shutdown()
 		os.Exit(1)

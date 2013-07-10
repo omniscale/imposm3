@@ -2,6 +2,7 @@ package logging
 
 import (
 	"fmt"
+	"os"
 	"sync"
 	"time"
 )
@@ -44,6 +45,8 @@ func Errorf(msg string, args ...interface{}) {
 
 func Fatalf(msg string, args ...interface{}) {
 	defaultLogBroker.Records <- Record{FATAL, "", fmt.Sprintf(msg, args...)}
+	Shutdown()
+	os.Exit(1)
 }
 
 func Progress(msg string) {
@@ -68,10 +71,14 @@ func (l *Logger) Printf(msg string, args ...interface{}) {
 
 func (l *Logger) Fatal(args ...interface{}) {
 	defaultLogBroker.Records <- Record{FATAL, l.Component, fmt.Sprint(args...)}
+	Shutdown()
+	os.Exit(1)
 }
 
 func (l *Logger) Fatalf(msg string, args ...interface{}) {
 	defaultLogBroker.Records <- Record{FATAL, l.Component, fmt.Sprintf(msg, args...)}
+	Shutdown()
+	os.Exit(1)
 }
 
 func (l *Logger) Errorf(msg string, args ...interface{}) {
