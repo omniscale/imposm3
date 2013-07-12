@@ -46,6 +46,9 @@ func (nw *NodeWriter) loop() {
 		nw.progress.AddNodes(1)
 		if matches := nw.tagMatcher.Match(&n.Tags); len(matches) > 0 {
 			proj.NodeToMerc(n)
+			if nw.expireTiles != nil {
+				nw.expireTiles.ExpireFromNodes([]element.Node{*n})
+			}
 			point, err := geom.Point(geos, *n)
 			if err != nil {
 				if err, ok := err.(ErrorLevel); ok {
