@@ -66,6 +66,9 @@ NextRel:
 				continue NextRel
 			}
 			proj.NodesToMerc(m.Way.Nodes)
+			if rw.expireTiles != nil {
+				rw.expireTiles.ExpireFromNodes(m.Way.Nodes)
+			}
 		}
 
 		// BuildRelation updates r.Members but we need all of them

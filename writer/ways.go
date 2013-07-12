@@ -60,6 +60,10 @@ func (ww *WayWriter) loop() {
 			continue
 		}
 		proj.NodesToMerc(w.Nodes)
+		if ww.expireTiles != nil {
+			ww.expireTiles.ExpireFromNodes(w.Nodes)
+		}
+
 		if matches := ww.lineStringTagMatcher.Match(&w.Tags); len(matches) > 0 {
 			ww.buildAndInsert(geos, w, matches, geom.LineString)
 		}

@@ -10,6 +10,7 @@ import (
 	"goposm/diff"
 	"goposm/diff/parser"
 	"goposm/element"
+	"goposm/expire"
 	"goposm/geom/clipper"
 	"goposm/logging"
 	"goposm/mapping"
@@ -92,6 +93,8 @@ func update(oscFile string, conf *config.Config) {
 
 	var geometryClipper *clipper.Clipper
 
+	expiredTiles := expire.NewTiles(14)
+
 	relTagFilter := tagmapping.RelationTagFilter()
 	wayTagFilter := tagmapping.WayTagFilter()
 	nodeTagFilter := tagmapping.NodeTagFilter()
@@ -107,11 +110,13 @@ func update(oscFile string, conf *config.Config) {
 	relWriter := writer.NewRelationWriter(osmCache, diffCache, relations,
 		db, polygonsTagMatcher, progress, conf.Srid)
 	relWriter.SetClipper(geometryClipper)
+	relWriter.SetExpireTiles(expiredTiles)
 	relWriter.Start()
 
 	wayWriter := writer.NewWayWriter(osmCache, diffCache, ways, db,
 		lineStringsTagMatcher, polygonsTagMatcher, progress, conf.Srid)
 	wayWriter.SetClipper(geometryClipper)
+	wayWriter.SetExpireTiles(expiredTiles)
 	wayWriter.Start()
 
 	nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
@@ -261,8 +266,15 @@ For:
 		log.Fatal(err)
 	}
 
-	progress.Stop()
 	osmCache.Close()
 	diffCache.Close()
 	log.StopStep(step)
+
+	step = log.StartStep("Updating expired tiles db")
+	expire.WriteTileExpireDb(
+		expiredTiles.SortedTiles(),
+		"/tmp/expire_tiles.db",
+	)
+	log.StopStep(step)
+	progress.Stop()
 }

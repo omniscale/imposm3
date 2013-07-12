@@ -4,6 +4,7 @@ import (
 	"goposm/cache"
 	"goposm/database"
 	"goposm/element"
+	"goposm/expire"
 	"goposm/geom/clipper"
 	"goposm/mapping"
 	"goposm/stats"
@@ -61,6 +62,7 @@ type OsmElemWriter struct {
 	clipper      *clipper.Clipper
 	writer       looper
 	srid         int
+	expireTiles  *expire.Tiles
 }
 
 func (writer *OsmElemWriter) SetClipper(clipper *clipper.Clipper) {
@@ -72,6 +74,10 @@ func (writer *OsmElemWriter) Start() {
 		writer.wg.Add(1)
 		go writer.writer.loop()
 	}
+}
+
+func (writer *OsmElemWriter) SetExpireTiles(expireTiles *expire.Tiles) {
+	writer.expireTiles = expireTiles
 }
 
 func (writer *OsmElemWriter) Close() {
