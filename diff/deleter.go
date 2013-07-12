@@ -4,7 +4,10 @@ import (
 	"goposm/cache"
 	"goposm/database"
 	"goposm/diff/parser"
+	"goposm/element"
+	"goposm/expire"
 	"goposm/mapping"
+	"goposm/proj"
 	"log"
 )
 
@@ -15,6 +18,7 @@ type Deleter struct {
 	tmPoints      *mapping.TagMatcher
 	tmLineStrings *mapping.TagMatcher
 	tmPolygons    *mapping.TagMatcher
+	expireTiles   *expire.Tiles
 }
 
 func NewDeleter(db database.Deleter, osmCache *cache.OSMCache, diffCache *cache.DiffCache,
@@ -29,7 +33,12 @@ func NewDeleter(db database.Deleter, osmCache *cache.OSMCache, diffCache *cache.
 		tmPoints,
 		tmLineStrings,
 		tmPolygons,
+		nil,
 	}
+}
+
+func (d *Deleter) SetExpireTiles(expireTiles *expire.Tiles) {
+	d.expireTiles = expireTiles
 }
 
 func (d *Deleter) deleteRelation(id int64) {
@@ -45,8 +54,23 @@ func (d *Deleter) deleteRelation(id int64) {
 	if elem.Tags == nil {
 		return
 	}
+	deleted := false
 	for _, m := range d.tmPolygons.Match(&elem.Tags) {
 		d.delDb.Delete(m.Table.Name, elem.Id)
+		deleted = true
+	}
+	if deleted && d.expireTiles != nil {
+		for _, m := range elem.Members {
+			if m.Way == nil {
+				continue
+			}
+			err := d.osmCache.Coords.FillWay(m.Way)
+			if err != nil {
+				continue
+			}
+			proj.NodesToMerc(m.Way.Nodes)
+			d.expireTiles.ExpireFromNodes(m.Way.Nodes)
+		}
 	}
 }
 
@@ -63,11 +87,21 @@ func (d *Deleter) deleteWay(id int64) {
 	if elem.Tags == nil {
 		return
 	}
+	deleted := false
 	for _, m := range d.tmPolygons.Match(&elem.Tags) {
 		d.delDb.Delete(m.Table.Name, elem.Id)
+		deleted = true
 	}
 	for _, m := range d.tmLineStrings.Match(&elem.Tags) {
 		d.delDb.Delete(m.Table.Name, elem.Id)
+		deleted = true
+	}
+	if deleted && d.expireTiles != nil {
+		err := d.osmCache.Coords.FillWay(elem)
+		if err != nil {
+			return
+		}
+		d.expireTiles.ExpireFromNodes(elem.Nodes)
 	}
 }
 
@@ -84,9 +118,16 @@ func (d *Deleter) deleteNode(id int64) {
 	if elem.Tags == nil {
 		return
 	}
+	deleted := false
+
 	for _, m := range d.tmPoints.Match(&elem.Tags) {
 		d.delDb.Delete(m.Table.Name, elem.Id)
+		deleted = true
 	}
+	if deleted && d.expireTiles != nil {
+		d.expireTiles.ExpireFromNodes([]element.Node{*elem})
+	}
+
 }
 
 func (d *Deleter) Delete(delElem parser.DiffElem) {
