@@ -149,6 +149,11 @@ func WriteTileExpireDb(tiles []tile, dbfile string) error {
 	}
 	defer db.Close()
 
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
 	stmts := []string{
 		`create table if not exists tiles (
             x integer,
@@ -159,13 +164,13 @@ func WriteTileExpireDb(tiles []tile, dbfile string) error {
         )`,
 	}
 	for _, stmt := range stmts {
-		_, err := db.Exec(stmt)
+		_, err := tx.Exec(stmt)
 		if err != nil {
 			return err
 		}
 	}
 
-	stmt, err := db.Prepare(`insert or replace into tiles (x, y, z, time) values (?, ?, ?, DATETIME('now'))`)
+	stmt, err := tx.Prepare(`insert or replace into tiles (x, y, z, time) values (?, ?, ?, DATETIME('now'))`)
 	if err != nil {
 		return err
 	}
@@ -177,5 +182,5 @@ func WriteTileExpireDb(tiles []tile, dbfile string) error {
 			return err
 		}
 	}
-	return nil
+	return tx.Commit()
 }
