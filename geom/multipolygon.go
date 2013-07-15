@@ -12,11 +12,40 @@ func BuildRelation(rel *element.Relation, srid int) error {
 	if err != nil {
 		return err
 	}
+
+	rel.Tags = relationTags(rel.Tags, rings[0].ways[0].Tags)
+
 	_, err = BuildRelGeometry(rel, rings, srid)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+type preparedRelation struct {
+	rings []*Ring
+	rel   *element.Relation
+	srid  int
+}
+
+func PrepareRelation(rel *element.Relation, srid int) (*preparedRelation, error) {
+	rings, err := BuildRings(rel)
+	if err != nil {
+		return nil, err
+	}
+
+	rel.Tags = relationTags(rel.Tags, rings[0].ways[0].Tags)
+
+	return &preparedRelation{rings, rel, srid}, nil
+}
+
+func (prep *preparedRelation) Build() (*element.Relation, error) {
+	_, err := BuildRelGeometry(prep.rel, prep.rings, prep.srid)
+	if err != nil {
+		return nil, err
+	}
+	return prep.rel, nil
+
 }
 
 func destroyRings(g *geos.Geos, rings []*Ring) {
@@ -83,6 +112,13 @@ func BuildRings(rel *element.Relation) ([]*Ring, error) {
 	}
 
 	completeRings = append(completeRings, mergedRings...)
+
+	// sort by area (large to small)
+	for _, r := range completeRings {
+		r.area = r.geom.Area()
+	}
+	sort.Sort(SortableRingsDesc(completeRings))
+
 	return completeRings, nil
 }
 
@@ -92,16 +128,12 @@ func (r SortableRingsDesc) Len() int           { return len(r) }
 func (r SortableRingsDesc) Less(i, j int) bool { return r[i].area > r[j].area }
 func (r SortableRingsDesc) Swap(i, j int)      { r[i], r[j] = r[j], r[i] }
 
+// BuildRelGeometry builds the geometry of rel by creating a multipolygon of all rings.
+// rings need to be sorted by area (large to small).
 func BuildRelGeometry(rel *element.Relation, rings []*Ring, srid int) (*geos.Geom, error) {
 	g := geos.NewGeos()
 	g.SetHandleSrid(srid)
 	defer g.Finish()
-
-	// sort by area (large to small)
-	for _, r := range rings {
-		r.area = r.geom.Area()
-	}
-	sort.Sort(SortableRingsDesc(rings))
 
 	totalRings := len(rings)
 	shells := map[*Ring]bool{rings[0]: true}
@@ -135,13 +167,11 @@ func BuildRelGeometry(rel *element.Relation, rings []*Ring, srid int) (*geos.Geo
 		g.PreparedDestroy(testGeom)
 	}
 
-	relTags := relationTags(rel.Tags, rings[0].ways[0].Tags)
-
 	var polygons []*geos.Geom
 	for shell, _ := range shells {
 		var interiors []*geos.Geom
 		for hole, _ := range shell.holes {
-			hole.MarkInserted(relTags)
+			hole.MarkInserted(rel.Tags)
 			ring := g.Clone(g.ExteriorRing(hole.geom))
 			g.Destroy(hole.geom)
 			if ring == nil {
@@ -149,7 +179,7 @@ func BuildRelGeometry(rel *element.Relation, rings []*Ring, srid int) (*geos.Geo
 			}
 			interiors = append(interiors, ring)
 		}
-		shell.MarkInserted(relTags)
+		shell.MarkInserted(rel.Tags)
 		exterior := g.Clone(g.ExteriorRing(shell.geom))
 		g.Destroy(shell.geom)
 		if exterior == nil {
@@ -202,7 +232,6 @@ func BuildRelGeometry(rel *element.Relation, rings []*Ring, srid int) (*geos.Geo
 		return nil, errors.New("unable to create WKB for relation")
 	}
 	rel.Geom = &element.Geometry{Geom: result, Wkb: wkb}
-	rel.Tags = relTags
 
 	return result, nil
 }
