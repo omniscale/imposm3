@@ -60,19 +60,22 @@ func (ww *WayWriter) loop() {
 			continue
 		}
 		proj.NodesToMerc(w.Nodes)
-		if ww.expireTiles != nil {
-			ww.expireTiles.ExpireFromNodes(w.Nodes)
-		}
 
+		inserted = false
 		if matches := ww.lineStringTagMatcher.Match(&w.Tags); len(matches) > 0 {
 			ww.buildAndInsert(geos, w, matches, geom.LineString)
+			inserted = true
 		}
 		if w.IsClosed() {
 			if matches := ww.polygonTagMatcher.Match(&w.Tags); len(matches) > 0 {
 				ww.buildAndInsert(geos, w, matches, geom.Polygon)
+				inserted = true
 			}
 		}
 
+		if inserted && ww.expireTiles != nil {
+			ww.expireTiles.ExpireFromNodes(w.Nodes)
+		}
 		if ww.diffCache != nil {
 			ww.diffCache.Coords.AddFromWay(w)
 		}

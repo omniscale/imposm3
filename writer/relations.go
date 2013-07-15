@@ -66,9 +66,6 @@ NextRel:
 				continue NextRel
 			}
 			proj.NodesToMerc(m.Way.Nodes)
-			if rw.expireTiles != nil {
-				rw.expireTiles.ExpireFromNodes(m.Way.Nodes)
-			}
 		}
 
 		// BuildRelation updates r.Members but we need all of them
@@ -114,6 +111,13 @@ NextRel:
 				for _, member := range allMembers {
 					if member.Way != nil {
 						rw.diffCache.Coords.AddFromWay(member.Way)
+					}
+				}
+			}
+			if rw.expireTiles != nil {
+				for _, m := range allMembers {
+					if m.Way != nil {
+						rw.expireTiles.ExpireFromNodes(m.Way.Nodes)
 					}
 				}
 			}
