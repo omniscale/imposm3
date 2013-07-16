@@ -8,7 +8,6 @@ import (
 	"goposm/expire"
 	"goposm/mapping"
 	"goposm/proj"
-	"log"
 )
 
 type Deleter struct {
@@ -48,7 +47,7 @@ func (d *Deleter) deleteRelation(id int64) {
 			return
 		}
 		// TODO
-		log.Println("rel", id, err)
+		log.Print("rel", id, err)
 		return
 	}
 	if elem.Tags == nil {
@@ -81,7 +80,7 @@ func (d *Deleter) deleteWay(id int64) {
 			return
 		}
 		// TODO
-		log.Println("way", id, err)
+		log.Print("way", id, err)
 		return
 	}
 	if elem.Tags == nil {
@@ -112,7 +111,7 @@ func (d *Deleter) deleteNode(id int64) {
 			return
 		}
 		// TODO
-		log.Println("node", id, err)
+		log.Print("node", id, err)
 		return
 	}
 	if elem.Tags == nil {

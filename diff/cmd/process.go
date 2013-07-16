@@ -34,17 +34,35 @@ func main() {
 		os.Exit(1)
 	}
 	for _, oscFile := range flag.Args() {
-		update(oscFile, conf)
+		update(oscFile, conf, false)
 	}
+	logging.Shutdown()
+	os.Exit(0)
 }
 
-func update(oscFile string, conf *config.Config) {
+func update(oscFile string, conf *config.Config, force bool) {
+	state, err := diff.ParseState(oscFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	lastState, err := diff.ParseLastState(conf.CacheDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if lastState != nil && lastState.Sequence != 0 && state.Sequence <= lastState.Sequence {
+		if !force {
+			log.Warn(state, " already imported")
+			return
+		}
+	}
+
 	defer log.StopStep(log.StartStep(fmt.Sprintf("Processing %s", oscFile)))
 
 	elems, errc := parser.Parse(oscFile)
 
 	osmCache := cache.NewOSMCache(conf.CacheDir)
-	err := osmCache.Open()
+	err = osmCache.Open()
 	if err != nil {
 		log.Fatal("osm cache: ", err)
 	}
@@ -277,4 +295,9 @@ For:
 	)
 	log.StopStep(step)
 	progress.Stop()
+
+	err = diff.WriteLastState(conf.CacheDir, state)
+	if err != nil {
+		log.Warn(err) // warn only
+	}
 }
