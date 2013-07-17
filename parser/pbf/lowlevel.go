@@ -5,20 +5,37 @@ import (
 	"code.google.com/p/goprotobuf/proto"
 	"compress/zlib"
 	structs "encoding/binary"
+	"errors"
+	"fmt"
 	"goposm/parser/pbf/osmpbf"
 	"io"
 	"log"
 	"os"
+	"time"
 )
 
-func readPrimitiveBlock(pos Block) *osmpbf.PrimitiveBlock {
+type parserError struct {
+	message       string
+	originalError error
+}
+
+func (e *parserError) Error() string {
+	return fmt.Sprintf("%s: %v", e.message, e.originalError)
+}
+
+func newParserError(message string, err error) *parserError {
+	return &parserError{message, err}
+}
+
+var supportedFeatured = map[string]bool{"OsmSchema-V0.6": true, "DenseNodes": true}
+
+func readBlobData(pos Block) ([]byte, error) {
 	file, err := os.Open(pos.filename)
 	if err != nil {
-		log.Panic(err)
+		return nil, newParserError("file open", err)
 	}
 	defer file.Close()
 
-	var block = &osmpbf.PrimitiveBlock{}
 	var blob = &osmpbf.Blob{}
 
 	blobData := make([]byte, pos.size)
@@ -26,7 +43,7 @@ func readPrimitiveBlock(pos Block) *osmpbf.PrimitiveBlock {
 	io.ReadFull(file, blobData)
 	err = proto.Unmarshal(blobData, blob)
 	if err != nil {
-		log.Panic("unmarshaling error blob: ", err)
+		return nil, newParserError("unmarshaling blob", err)
 	}
 
 	// pbf contains (uncompressed) raw or zlibdata
@@ -35,15 +52,23 @@ func readPrimitiveBlock(pos Block) *osmpbf.PrimitiveBlock {
 		buf := bytes.NewBuffer(blob.GetZlibData())
 		r, err := zlib.NewReader(buf)
 		if err != nil {
-			log.Panic("zlib error: ", err)
+			return nil, newParserError("zlib error", err)
 		}
 		raw = make([]byte, blob.GetRawSize())
 		_, err = io.ReadFull(r, raw)
 		if err != nil {
-			log.Panic("zlib read error: ", err)
+			return nil, newParserError("zlib read error", err)
 		}
 	}
+	return raw, nil
+}
 
+func readPrimitiveBlock(pos Block) *osmpbf.PrimitiveBlock {
+	raw, err := readBlobData(pos)
+	if err != nil {
+		log.Panic(err)
+	}
+	block := &osmpbf.PrimitiveBlock{}
 	err = proto.Unmarshal(raw, block)
 	if err != nil {
 		log.Panic("unmarshaling error: ", err)
@@ -52,18 +77,52 @@ func readPrimitiveBlock(pos Block) *osmpbf.PrimitiveBlock {
 	return block
 }
 
+func readAndParseHeaderBlock(pos Block) (*pbfHeader, error) {
+	raw, err := readBlobData(pos)
+	if err != nil {
+		return nil, err
+	}
+
+	header := &osmpbf.HeaderBlock{}
+	err = proto.Unmarshal(raw, header)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, feature := range header.RequiredFeatures {
+		if supportedFeatured[feature] != true {
+			return nil, errors.New("cannot parse file, feature " + feature + " not supported")
+		}
+	}
+
+	result := &pbfHeader{}
+	timestamp := header.GetOsmosisReplicationTimestamp()
+	result.Time = time.Unix(timestamp, 0 /* nanoseconds */)
+	return result, nil
+}
+
 type pbf struct {
 	file     *os.File
 	filename string
 	offset   int64
+	Header   *pbfHeader
 }
 
-func open(filename string) (f *pbf, err error) {
+type pbfHeader struct {
+	Time time.Time
+}
+
+func Open(filename string) (f *pbf, err error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
 	}
 	f = &pbf{filename: filename, file: file}
+	err = f.parseHeader()
+	if err != nil {
+		file.Close()
+		return nil, err
+	}
 	return f, nil
 }
 
@@ -71,29 +130,38 @@ func (pbf *pbf) Close() error {
 	return pbf.file.Close()
 }
 
-func (pbf *pbf) NextDataPosition() (offset int64, size int32) {
-	header := pbf.nextBlobHeader()
+func (pbf *pbf) parseHeader() error {
+	offset, size, header := pbf.nextBlock()
+	if header.GetType() != "OSMHeader" {
+		panic("invalid block type, expected OSMHeader, got " + header.GetType())
+	}
+	var err error
+	pbf.Header, err = readAndParseHeaderBlock(Block{pbf.filename, offset, size})
+	return err
+}
+
+func (pbf *pbf) nextBlock() (offset int64, size int32, header *osmpbf.BlobHeader) {
+	header = pbf.nextBlobHeader()
 	size = header.GetDatasize()
 	offset = pbf.offset
 
 	pbf.offset += int64(size)
 	pbf.file.Seek(pbf.offset, 0)
-
-	if header.GetType() == "OSMHeader" {
-		return pbf.NextDataPosition()
-	}
-	return
+	return offset, size, header
 }
 
 func (pbf *pbf) BlockPositions() (positions chan Block) {
 	positions = make(chan Block, 8)
 	go func() {
 		for {
-			offset, size := pbf.NextDataPosition()
+			offset, size, header := pbf.nextBlock()
 			if size == 0 {
 				close(positions)
 				pbf.Close()
 				return
+			}
+			if header.GetType() != "OSMData" {
+				panic("invalid block type, expected OSMData, got " + header.GetType())
 			}
 			positions <- Block{pbf.filename, offset, size}
 		}

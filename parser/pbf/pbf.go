@@ -201,7 +201,7 @@ func newStringTable(source *osmpbf.StringTable) stringTable {
 }
 
 func Blocks(filename string) chan Block {
-	pbf, err := open(filename)
+	pbf, err := Open(filename)
 	if err != nil {
 		log.Fatal(err)
 	}

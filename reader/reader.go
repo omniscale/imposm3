@@ -3,6 +3,7 @@ package reader
 import (
 	"goposm/cache"
 	"goposm/element"
+	"goposm/logging"
 	"goposm/mapping"
 	"goposm/parser/pbf"
 	"goposm/stats"
@@ -12,6 +13,8 @@ import (
 	"strings"
 	"sync"
 )
+
+var log = logging.NewLogger("reader")
 
 var skipCoords, skipNodes, skipWays bool
 var nParser, nWays, nRels, nNodes, nCoords int64
@@ -48,7 +51,16 @@ func ReadPbf(cache *cache.OSMCache, progress *stats.Statistics, tagmapping *mapp
 	ways := make(chan []element.Way, 4)
 	relations := make(chan []element.Relation, 4)
 
-	blocks := pbf.Blocks(filename)
+	pbfFile, err := pbf.Open(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if pbfFile.Header.Time.Unix() != 0 {
+		log.Printf("reading %s with data till %v", filename, pbfFile.Header.Time.Local())
+	}
+
+	blocks := pbfFile.BlockPositions()
 
 	waitParser := sync.WaitGroup{}
 	for i := 0; int64(i) < nParser; i++ {
