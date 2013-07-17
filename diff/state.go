@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"goposm/logging"
+	"io"
 	"os"
 	"path"
 	"strconv"
@@ -50,7 +51,7 @@ func WriteLastState(cacheDir string, state *DiffState) error {
 	return state.WriteToFile(stateFile)
 }
 
-func ParseState(oscFile string) (*DiffState, error) {
+func ParseStateFromOsc(oscFile string) (*DiffState, error) {
 	var stateFile string
 	if !strings.HasSuffix(oscFile, ".osc.gz") {
 		log.Warn("cannot read state file for non .osc.gz files")
@@ -62,11 +63,26 @@ func ParseState(oscFile string) (*DiffState, error) {
 		log.Warn("cannot find state file ", stateFile)
 		return nil, nil
 	}
+
+	f, err := os.Open(stateFile)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
 	return parseStateFile(stateFile)
 }
 
 func parseStateFile(stateFile string) (*DiffState, error) {
-	values, err := parseSimpleIni(stateFile)
+	f, err := os.Open(stateFile)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return parseState(f)
+}
+
+func parseState(f io.Reader) (*DiffState, error) {
+	values, err := parseSimpleIni(f)
 	if err != nil {
 		return nil, err
 	}
@@ -92,13 +108,7 @@ func ParseLastState(cacheDir string) (*DiffState, error) {
 	return parseStateFile(stateFile)
 }
 
-func parseSimpleIni(file string) (map[string]string, error) {
-	f, err := os.Open(file)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
+func parseSimpleIni(f io.Reader) (map[string]string, error) {
 	result := make(map[string]string)
 
 	reader := bufio.NewScanner(f)

@@ -41,7 +41,7 @@ func main() {
 }
 
 func update(oscFile string, conf *config.Config, force bool) {
-	state, err := diff.ParseState(oscFile)
+	state, err := diff.ParseStateFromOsc(oscFile)
 	if err != nil {
 		log.Fatal(err)
 	}
