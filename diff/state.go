@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"goposm/logging"
+	"goposm/parser/pbf"
 	"io"
 	"os"
 	"path"
@@ -35,7 +36,9 @@ func (d DiffState) WriteToFile(file string) error {
 
 	lines := []string{}
 	lines = append(lines, "timestamp="+d.Time.Format("2006-01-02T15\\:04\\:05Z"))
-	lines = append(lines, "sequenceNumber="+fmt.Sprintf("%d", d.Sequence))
+	if d.Sequence != 0 {
+		lines = append(lines, "sequenceNumber="+fmt.Sprintf("%d", d.Sequence))
+	}
 
 	for _, line := range lines {
 		_, err = writer.WriteString(line + "\n")
@@ -70,6 +73,21 @@ func ParseStateFromOsc(oscFile string) (*DiffState, error) {
 	}
 	defer f.Close()
 	return parseStateFile(stateFile)
+}
+
+func StateFromPbf(pbfFile *pbf.Pbf) *DiffState {
+	var timestamp time.Time
+	if pbfFile.Header.Time.Unix() != 0 {
+		timestamp = pbfFile.Header.Time
+	} else {
+		fstat, err := os.Stat(pbfFile.Filename)
+		if err != nil {
+			log.Warn("unable to stat pbffile: ", err)
+			return nil
+		}
+		timestamp = fstat.ModTime()
+	}
+	return &DiffState{Time: timestamp}
 }
 
 func parseStateFile(stateFile string) (*DiffState, error) {
@@ -139,7 +157,8 @@ func parseTimeStamp(value string) (time.Time, error) {
 
 func parseSequence(value string) (int32, error) {
 	if value == "" {
-		return 0, errors.New("missing sqeuenceNumber in state")
+		log.Warn("missing sequenceNumber in state file")
+		return 0, nil
 	}
 	val, err := strconv.ParseInt(value, 10, 32)
 	return int32(val), err

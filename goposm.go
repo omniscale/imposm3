@@ -6,14 +6,17 @@ import (
 	"goposm/config"
 	"goposm/database"
 	_ "goposm/database/postgis"
+	diffstate "goposm/diff"
 	"goposm/geom/clipper"
 	"goposm/logging"
 	"goposm/mapping"
+	"goposm/parser/pbf"
 	"goposm/reader"
 	"goposm/stats"
 	"goposm/writer"
 	golog "log"
 	"os"
+	"path"
 	"runtime"
 	"runtime/pprof"
 	"strings"
@@ -164,12 +167,24 @@ func main() {
 			die(err)
 		}
 		progress.Start()
+
+		pbfFile, err := pbf.Open(*read)
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		osmCache.Coords.SetLinearImport(true)
-		reader.ReadPbf(osmCache, progress, tagmapping, *read)
+		reader.ReadPbf(osmCache, progress, tagmapping, pbfFile)
 		osmCache.Coords.SetLinearImport(false)
 		progress.Stop()
 		osmCache.Close()
 		log.StopStep(step)
+		if *diff {
+			state := diffstate.StateFromPbf(pbfFile)
+			if state != nil {
+				state.WriteToFile(path.Join(conf.CacheDir, "last.state.txt"))
+			}
+		}
 	}
 
 	if *write {

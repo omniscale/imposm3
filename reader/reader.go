@@ -45,19 +45,14 @@ func init() {
 
 }
 
-func ReadPbf(cache *cache.OSMCache, progress *stats.Statistics, tagmapping *mapping.Mapping, filename string) {
+func ReadPbf(cache *cache.OSMCache, progress *stats.Statistics, tagmapping *mapping.Mapping, pbfFile *pbf.Pbf) {
 	nodes := make(chan []element.Node, 4)
 	coords := make(chan []element.Node, 4)
 	ways := make(chan []element.Way, 4)
 	relations := make(chan []element.Relation, 4)
 
-	pbfFile, err := pbf.Open(filename)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	if pbfFile.Header.Time.Unix() != 0 {
-		log.Printf("reading %s with data till %v", filename, pbfFile.Header.Time.Local())
+		log.Printf("reading %s with data till %v", pbfFile.Filename, pbfFile.Header.Time.Local())
 	}
 
 	blocks := pbfFile.BlockPositions()
