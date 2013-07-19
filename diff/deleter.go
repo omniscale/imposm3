@@ -6,9 +6,12 @@ import (
 	"goposm/diff/parser"
 	"goposm/element"
 	"goposm/expire"
+	"goposm/logging"
 	"goposm/mapping"
 	"goposm/proj"
 )
+
+var log = logging.NewLogger("diff")
 
 type Deleter struct {
 	delDb         database.Deleter

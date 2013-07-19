@@ -1,4 +1,4 @@
-package diff
+package state
 
 import (
 	"bufio"
@@ -54,7 +54,7 @@ func WriteLastState(cacheDir string, state *DiffState) error {
 	return state.WriteToFile(stateFile)
 }
 
-func ParseStateFromOsc(oscFile string) (*DiffState, error) {
+func ParseFromOsc(oscFile string) (*DiffState, error) {
 	var stateFile string
 	if !strings.HasSuffix(oscFile, ".osc.gz") {
 		log.Warn("cannot read state file for non .osc.gz files")
@@ -72,10 +72,10 @@ func ParseStateFromOsc(oscFile string) (*DiffState, error) {
 		return nil, err
 	}
 	defer f.Close()
-	return parseStateFile(stateFile)
+	return ParseFile(stateFile)
 }
 
-func StateFromPbf(pbfFile *pbf.Pbf) *DiffState {
+func FromPbf(pbfFile *pbf.Pbf) *DiffState {
 	var timestamp time.Time
 	if pbfFile.Header.Time.Unix() != 0 {
 		timestamp = pbfFile.Header.Time
@@ -90,16 +90,16 @@ func StateFromPbf(pbfFile *pbf.Pbf) *DiffState {
 	return &DiffState{Time: timestamp}
 }
 
-func parseStateFile(stateFile string) (*DiffState, error) {
+func ParseFile(stateFile string) (*DiffState, error) {
 	f, err := os.Open(stateFile)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
-	return parseState(f)
+	return Parse(f)
 }
 
-func parseState(f io.Reader) (*DiffState, error) {
+func Parse(f io.Reader) (*DiffState, error) {
 	values, err := parseSimpleIni(f)
 	if err != nil {
 		return nil, err
@@ -123,7 +123,7 @@ func ParseLastState(cacheDir string) (*DiffState, error) {
 		log.Warn("cannot find state file ", stateFile)
 		return nil, nil
 	}
-	return parseStateFile(stateFile)
+	return ParseFile(stateFile)
 }
 
 func parseSimpleIni(f io.Reader) (map[string]string, error) {

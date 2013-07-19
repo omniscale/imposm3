@@ -6,7 +6,7 @@ import (
 	"goposm/config"
 	"goposm/database"
 	_ "goposm/database/postgis"
-	diffstate "goposm/diff"
+	state "goposm/diff/state"
 	"goposm/geom/clipper"
 	"goposm/logging"
 	"goposm/mapping"
@@ -180,9 +180,9 @@ func main() {
 		osmCache.Close()
 		log.StopStep(step)
 		if *diff {
-			state := diffstate.StateFromPbf(pbfFile)
-			if state != nil {
-				state.WriteToFile(path.Join(conf.CacheDir, "last.state.txt"))
+			diffstate := state.FromPbf(pbfFile)
+			if diffstate != nil {
+				diffstate.WriteToFile(path.Join(conf.CacheDir, "last.state.txt"))
 			}
 		}
 	}

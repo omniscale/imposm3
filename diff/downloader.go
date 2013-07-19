@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"goposm/diff/state"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -63,7 +64,7 @@ func (d *diffDownload) downloadDiff(sequence int32) error {
 	return nil
 }
 
-func (d *diffDownload) currentState() (*DiffState, error) {
+func (d *diffDownload) currentState() (*state.DiffState, error) {
 	resp, err := http.Get(d.url + "state.txt")
 	if err != nil {
 		return nil, err
@@ -72,10 +73,10 @@ func (d *diffDownload) currentState() (*DiffState, error) {
 		return nil, errors.New(fmt.Sprintf("invalid repsonse: %v", resp))
 	}
 	defer resp.Body.Close()
-	return parseState(resp.Body)
+	return state.Parse(resp.Body)
 }
 
-func (d *diffDownload) downloadState(sequence int32) (*DiffState, error) {
+func (d *diffDownload) downloadState(sequence int32) (*state.DiffState, error) {
 	dest := path.Join(d.dest, diffPath(sequence))
 	err := os.MkdirAll(path.Dir(dest), 0755)
 	if err != nil {
@@ -104,7 +105,7 @@ func (d *diffDownload) downloadState(sequence int32) (*DiffState, error) {
 	}
 
 	reader := bytes.NewReader(buf.Bytes())
-	return parseState(reader)
+	return state.Parse(reader)
 }
 
 // func missingDiffs(since time.Time, source *diffDownload) ([]int, error) {
