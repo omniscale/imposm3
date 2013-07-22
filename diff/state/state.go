@@ -19,6 +19,7 @@ var log = logging.NewLogger("diff")
 type DiffState struct {
 	Time     time.Time
 	Sequence int32
+	Url      string
 }
 
 func (d DiffState) String() string {
@@ -39,6 +40,7 @@ func (d DiffState) WriteToFile(file string) error {
 	if d.Sequence != 0 {
 		lines = append(lines, "sequenceNumber="+fmt.Sprintf("%d", d.Sequence))
 	}
+	lines = append(lines, "replicationUrl="+d.Url)
 
 	for _, line := range lines {
 		_, err = writer.WriteString(line + "\n")
@@ -114,7 +116,8 @@ func Parse(f io.Reader) (*DiffState, error) {
 		return nil, err
 	}
 
-	return &DiffState{timestamp, sequence}, nil
+	url := values["replicationUrl"]
+	return &DiffState{timestamp, sequence, url}, nil
 }
 
 func ParseLastState(cacheDir string) (*DiffState, error) {

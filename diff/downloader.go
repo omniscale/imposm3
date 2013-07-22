@@ -28,8 +28,9 @@ type diffDownload struct {
 	lastSequence int32
 }
 
-func NewDiffDownload(url, dest string) *diffDownload {
-	return &diffDownload{url, dest, 0}
+func NewDiffDownload(dest string) *diffDownload {
+	state, err := state.ParseLastState(dest)
+	return &diffDownload{state.Url, dest, 0}
 }
 
 func (d *diffDownload) downloadDiff(sequence int32) error {
