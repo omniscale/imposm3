@@ -1,7 +1,6 @@
-package main
+package cmd
 
 import (
-	"flag"
 	"fmt"
 	"goposm/cache"
 	"goposm/config"
@@ -9,6 +8,7 @@ import (
 	_ "goposm/database/postgis"
 	"goposm/diff"
 	"goposm/diff/parser"
+	diffstate "goposm/diff/state"
 	"goposm/element"
 	"goposm/expire"
 	"goposm/geom/clipper"
@@ -17,35 +17,16 @@ import (
 	"goposm/stats"
 	"goposm/writer"
 	"io"
-	"os"
 )
 
 var log = logging.NewLogger("")
 
-func main() {
-	flag.Parse()
-	conf, errs := config.Parse()
-	if len(errs) > 0 {
-		log.Warn("errors in config/options:")
-		for _, err := range errs {
-			log.Warnf("\t%s", err)
-		}
-		logging.Shutdown()
-		os.Exit(1)
-	}
-	for _, oscFile := range flag.Args() {
-		update(oscFile, conf, false)
-	}
-	logging.Shutdown()
-	os.Exit(0)
-}
-
-func update(oscFile string, conf *config.Config, force bool) {
-	state, err := diff.ParseStateFromOsc(oscFile)
+func Update(oscFile string, conf *config.Config, force bool) {
+	state, err := diffstate.ParseFromOsc(oscFile)
 	if err != nil {
 		log.Fatal(err)
 	}
-	lastState, err := diff.ParseLastState(conf.CacheDir)
+	lastState, err := diffstate.ParseLastState(conf.CacheDir)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -296,7 +277,7 @@ For:
 	log.StopStep(step)
 	progress.Stop()
 
-	err = diff.WriteLastState(conf.CacheDir, state)
+	err = diffstate.WriteLastState(conf.CacheDir, state)
 	if err != nil {
 		log.Warn(err) // warn only
 	}

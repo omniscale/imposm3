@@ -30,6 +30,9 @@ type diffDownload struct {
 
 func NewDiffDownload(dest string) *diffDownload {
 	state, err := state.ParseLastState(dest)
+	if err != nil {
+		panic(err)
+	}
 	return &diffDownload{state.Url, dest, 0}
 }
 
