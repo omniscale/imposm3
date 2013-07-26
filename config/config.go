@@ -19,12 +19,12 @@ type Config struct {
 const defaultSrid = 3857
 const defaultCacheDir = "/tmp/goposm"
 
-var ImportFlags = flag.NewFlagSet("import", flag.ContinueOnError)
-var DiffImportFlags = flag.NewFlagSet("diff", flag.ContinueOnError)
+var ImportFlags = flag.NewFlagSet("import", flag.ExitOnError)
+var DiffImportFlags = flag.NewFlagSet("diff", flag.ExitOnError)
 
 type ImportBaseOptions struct {
 	Connection  string
-	Cachedir    string
+	CacheDir    string
 	MappingFile string
 	Srid        int
 	LimitTo     string
@@ -57,7 +57,7 @@ var DiffImportOptions = _DiffImportOptions{}
 
 func addBaseFlags(flags *flag.FlagSet, baseOptions *ImportBaseOptions) {
 	flags.StringVar(&baseOptions.Connection, "connection", "", "connection parameters")
-	flags.StringVar(&baseOptions.Cachedir, "cachedir", defaultCacheDir, "cache directory")
+	flags.StringVar(&baseOptions.CacheDir, "cachedir", defaultCacheDir, "cache directory")
 	flags.StringVar(&baseOptions.MappingFile, "mapping", "", "mapping file")
 	flags.IntVar(&baseOptions.Srid, "srid", defaultSrid, "srs id")
 	flags.StringVar(&baseOptions.LimitTo, "limitto", "", "limit to geometries")
@@ -100,60 +100,85 @@ func init() {
 // 	configFile  = flag.String("config", "", "config (json)")
 // )
 
-func Parse(args []string) (*Config, []error) {
+func ParseImport(args []string) []error {
 	err := ImportFlags.Parse(args)
 	if err != nil {
 		log.Fatal(err)
 	}
+	errs := updateBaseOpts(&ImportOptions.Base)
+	if errs != nil {
+		return errs
+	}
 
-	config := &Config{
+	errs = checkOptions(&ImportOptions.Base)
+	return errs
+}
+
+func updateBaseOpts(opts *ImportBaseOptions) []error {
+
+	conf := &Config{
 		CacheDir: defaultCacheDir,
 		Srid:     defaultSrid,
 	}
-	if ImportOptions.Base.ConfigFile != "" {
-		f, err := os.Open(ImportOptions.Base.ConfigFile)
+
+	if opts.ConfigFile != "" {
+		f, err := os.Open(opts.ConfigFile)
 		if err != nil {
-			return nil, []error{err}
+			return []error{err}
 		}
 		decoder := json.NewDecoder(f)
 
-		err = decoder.Decode(&config)
+		err = decoder.Decode(&conf)
 		if err != nil {
-			return nil, []error{err}
+			return []error{err}
 		}
 	}
-	if ImportOptions.Base.Connection != "" {
-		config.Connection = ImportOptions.Base.Connection
+	if opts.Connection == "" {
+		opts.Connection = conf.Connection
 	}
-	if config.Srid == 0 {
-		config.Srid = defaultSrid
+	if conf.Srid == 0 {
+		conf.Srid = defaultSrid
 	}
-	if ImportOptions.Base.Srid != defaultSrid {
-		config.Srid = ImportOptions.Base.Srid
+	if opts.Srid != defaultSrid {
+		opts.Srid = conf.Srid
 	}
-	if ImportOptions.Base.MappingFile != "" {
-		config.MappingFile = ImportOptions.Base.MappingFile
+	if opts.MappingFile == "" {
+		opts.MappingFile = conf.MappingFile
 	}
-	if ImportOptions.Base.LimitTo != "" {
-		config.LimitTo = ImportOptions.Base.LimitTo
+	if opts.LimitTo == "" {
+		opts.LimitTo = conf.LimitTo
 	}
-	if ImportOptions.Base.Cachedir != defaultCacheDir {
-		config.CacheDir = ImportOptions.Base.Cachedir
+	if opts.CacheDir == defaultCacheDir {
+		opts.CacheDir = conf.CacheDir
 	}
-
-	errs := checkConfig(config)
-	return config, errs
+	return nil
 }
 
-func checkConfig(config *Config) []error {
+func ParseDiffImport(args []string) []error {
+	err := DiffImportFlags.Parse(args)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	errs := updateBaseOpts(&DiffImportOptions.Base)
+	if errs != nil {
+		return errs
+	}
+
+	errs = checkOptions(&DiffImportOptions.Base)
+
+	return errs
+}
+
+func checkOptions(opts *ImportBaseOptions) []error {
 	errs := []error{}
-	if config.Srid != 3857 {
+	if opts.Srid != 3857 {
 		errs = append(errs, errors.New("srid!=3857 not implemented"))
 	}
-	if config.MappingFile == "" {
+	if opts.MappingFile == "" {
 		errs = append(errs, errors.New("missing mapping"))
 	}
-	if config.Connection == "" {
+	if opts.Connection == "" {
 		errs = append(errs, errors.New("missing connection"))
 	}
 	return errs

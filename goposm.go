@@ -33,6 +33,15 @@ func dief(msg string, args ...interface{}) {
 	log.Fatalf(msg, args...)
 }
 
+func reportErrors(errs []error) {
+	log.Warn("errors in config/options:")
+	for _, err := range errs {
+		log.Warnf("\t%s", err)
+	}
+	logging.Shutdown()
+	os.Exit(1)
+}
+
 func main() {
 
 	golog.SetFlags(golog.LstdFlags | golog.Lshortfile)
@@ -44,22 +53,22 @@ func main() {
 		os.Exit(1)
 	}
 
-	conf, errs := config.Parse(os.Args[2:])
-	if len(errs) > 0 {
-		log.Warn("errors in config/options:")
-		for _, err := range errs {
-			log.Warnf("\t%s", err)
-		}
-		logging.Shutdown()
-		os.Exit(1)
-	}
-
 	switch os.Args[1] {
 	case "import":
-		mainimport(conf)
+		errs := config.ParseImport(os.Args[2:])
+		if len(errs) > 0 {
+			reportErrors(errs)
+			break
+		}
+		mainimport()
 	case "diff":
+		errs := config.ParseDiffImport(os.Args[2:])
+		if len(errs) > 0 {
+			reportErrors(errs)
+			break
+		}
 		for _, oscFile := range config.DiffImportFlags.Args() {
-			cmd.Update(oscFile, conf, false)
+			cmd.Update(oscFile, false)
 		}
 	default:
 		log.Fatal("invalid command")
@@ -69,7 +78,7 @@ func main() {
 
 }
 
-func mainimport(conf *config.Config) {
+func mainimport() {
 	if config.ImportOptions.Cpuprofile != "" {
 		f, err := os.Create(config.ImportOptions.Cpuprofile)
 		if err != nil {
@@ -113,21 +122,21 @@ func mainimport(conf *config.Config) {
 	}
 
 	var geometryClipper *clipper.Clipper
-	if config.ImportOptions.Write && conf.LimitTo != "" {
+	if config.ImportOptions.Write && config.ImportOptions.Base.LimitTo != "" {
 		var err error
 		step := log.StartStep("Reading limitto geometries")
-		geometryClipper, err = clipper.NewFromOgrSource(conf.LimitTo)
+		geometryClipper, err = clipper.NewFromOgrSource(config.ImportOptions.Base.LimitTo)
 		if err != nil {
 			die(err)
 		}
 		log.StopStep(step)
 	}
 
-	osmCache := cache.NewOSMCache(conf.CacheDir)
+	osmCache := cache.NewOSMCache(config.ImportOptions.Base.CacheDir)
 
 	if config.ImportOptions.Read != "" && osmCache.Exists() {
 		if config.ImportOptions.Overwritecache {
-			log.Printf("removing existing cache %s", conf.CacheDir)
+			log.Printf("removing existing cache %s", config.ImportOptions.Base.CacheDir)
 			err := osmCache.Remove()
 			if err != nil {
 				die("unable to remove cache:", err)
@@ -139,7 +148,7 @@ func mainimport(conf *config.Config) {
 
 	progress := stats.StatsReporter()
 
-	tagmapping, err := mapping.NewMapping(conf.MappingFile)
+	tagmapping, err := mapping.NewMapping(config.ImportOptions.Base.MappingFile)
 	if err != nil {
 		die("mapping file: ", err)
 	}
@@ -147,11 +156,11 @@ func mainimport(conf *config.Config) {
 	var db database.DB
 
 	if config.ImportOptions.Write || config.ImportOptions.DeployProduction || config.ImportOptions.RevertDeploy || config.ImportOptions.RemoveBackup || config.ImportOptions.Optimize {
-		connType := database.ConnectionType(conf.Connection)
+		connType := database.ConnectionType(config.ImportOptions.Base.Connection)
 		conf := database.Config{
 			Type:             connType,
-			ConnectionParams: conf.Connection,
-			Srid:             conf.Srid,
+			ConnectionParams: config.ImportOptions.Base.Connection,
+			Srid:             config.ImportOptions.Base.Srid,
 		}
 		db, err = database.Open(conf, tagmapping)
 		if err != nil {
@@ -183,7 +192,7 @@ func mainimport(conf *config.Config) {
 		if config.ImportOptions.Diff {
 			diffstate := state.FromPbf(pbfFile)
 			if diffstate != nil {
-				diffstate.WriteToFile(path.Join(conf.CacheDir, "last.state.txt"))
+				diffstate.WriteToFile(path.Join(config.ImportOptions.Base.CacheDir, "last.state.txt"))
 			}
 		}
 	}
@@ -209,7 +218,7 @@ func mainimport(conf *config.Config) {
 
 		var diffCache *cache.DiffCache
 		if config.ImportOptions.Diff {
-			diffCache = cache.NewDiffCache(conf.CacheDir)
+			diffCache = cache.NewDiffCache(config.ImportOptions.Base.CacheDir)
 			if err = diffCache.Remove(); err != nil {
 				die(err)
 			}
@@ -229,7 +238,7 @@ func mainimport(conf *config.Config) {
 
 		relations := osmCache.Relations.Iter()
 		relWriter := writer.NewRelationWriter(osmCache, diffCache, relations,
-			db, polygonsTagMatcher, progress, conf.Srid)
+			db, polygonsTagMatcher, progress, config.ImportOptions.Base.Srid)
 		relWriter.SetClipper(geometryClipper)
 		relWriter.Start()
 
@@ -239,7 +248,7 @@ func mainimport(conf *config.Config) {
 
 		ways := osmCache.Ways.Iter()
 		wayWriter := writer.NewWayWriter(osmCache, diffCache, ways, db,
-			lineStringsTagMatcher, polygonsTagMatcher, progress, conf.Srid)
+			lineStringsTagMatcher, polygonsTagMatcher, progress, config.ImportOptions.Base.Srid)
 		wayWriter.SetClipper(geometryClipper)
 		wayWriter.Start()
 
@@ -249,7 +258,7 @@ func mainimport(conf *config.Config) {
 
 		nodes := osmCache.Nodes.Iter()
 		nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
-			pointsTagMatcher, progress, conf.Srid)
+			pointsTagMatcher, progress, config.ImportOptions.Base.Srid)
 		nodeWriter.SetClipper(geometryClipper)
 		nodeWriter.Start()
 
