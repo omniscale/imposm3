@@ -70,8 +70,19 @@ func main() {
 			reportErrors(errs)
 			break
 		}
+		var geometryClipper *clipper.Clipper
+		if config.DiffImportOptions.Base.LimitTo != "" {
+			var err error
+			step := log.StartStep("Reading limitto geometries")
+			geometryClipper, err = clipper.NewFromOgrSource(config.DiffImportOptions.Base.LimitTo)
+			if err != nil {
+				log.Fatal(err)
+			}
+			log.StopStep(step)
+		}
+
 		for _, oscFile := range config.DiffImportFlags.Args() {
-			diff.Update(oscFile, false)
+			diff.Update(oscFile, geometryClipper, false)
 		}
 	default:
 		log.Fatal("invalid command")

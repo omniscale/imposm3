@@ -20,7 +20,7 @@ import (
 
 var log = logging.NewLogger("diff")
 
-func Update(oscFile string, force bool) {
+func Update(oscFile string, geometryClipper *clipper.Clipper, force bool) {
 	state, err := diffstate.ParseFromOsc(oscFile)
 	if err != nil {
 		log.Fatal(err)
@@ -88,8 +88,6 @@ func Update(oscFile string, force bool) {
 	)
 
 	progress := stats.NewStatsReporter()
-
-	var geometryClipper *clipper.Clipper
 
 	expiredTiles := expire.NewTiles(14)
 
