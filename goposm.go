@@ -143,20 +143,6 @@ func mainimport() {
 		log.StopStep(step)
 	}
 
-	osmCache := cache.NewOSMCache(config.ImportOptions.Base.CacheDir)
-
-	if config.ImportOptions.Read != "" && osmCache.Exists() {
-		if config.ImportOptions.Overwritecache {
-			log.Printf("removing existing cache %s", config.ImportOptions.Base.CacheDir)
-			err := osmCache.Remove()
-			if err != nil {
-				die("unable to remove cache:", err)
-			}
-		} else if !config.ImportOptions.Appendcache {
-			die("cache already exists use -appendcache or -overwritecache")
-		}
-	}
-
 	progress := stats.StatsReporter()
 
 	tagmapping, err := mapping.NewMapping(config.ImportOptions.Base.MappingFile)
@@ -176,6 +162,20 @@ func mainimport() {
 		db, err = database.Open(conf, tagmapping)
 		if err != nil {
 			die(err)
+		}
+	}
+
+	osmCache := cache.NewOSMCache(config.ImportOptions.Base.CacheDir)
+
+	if config.ImportOptions.Read != "" && osmCache.Exists() {
+		if config.ImportOptions.Overwritecache {
+			log.Printf("removing existing cache %s", config.ImportOptions.Base.CacheDir)
+			err := osmCache.Remove()
+			if err != nil {
+				die("unable to remove cache:", err)
+			}
+		} else if !config.ImportOptions.Appendcache {
+			die("cache already exists use -appendcache or -overwritecache")
 		}
 	}
 
