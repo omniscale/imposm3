@@ -45,10 +45,10 @@ func (ww *WayWriter) loop() {
 	geos.SetHandleSrid(ww.srid)
 	defer geos.Finish()
 	for w := range ww.ways {
+		ww.progress.AddWays(1)
 		if len(w.Tags) == 0 {
 			continue
 		}
-		ww.progress.AddWays(1)
 		inserted, err := ww.osmCache.InsertedWays.IsInserted(w.Id)
 		if err != nil {
 			log.Println(err)

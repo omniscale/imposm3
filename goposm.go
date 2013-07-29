@@ -135,8 +135,6 @@ func mainimport() {
 		log.StopStep(step)
 	}
 
-	progress := stats.StatsReporter()
-
 	tagmapping, err := mapping.NewMapping(config.ImportOptions.Base.MappingFile)
 	if err != nil {
 		log.Fatal("mapping file: ", err)
@@ -173,13 +171,15 @@ func mainimport() {
 
 	step := log.StartStep("Imposm")
 
+	var elementCounts *stats.ElementCounts
+
 	if config.ImportOptions.Read != "" {
 		step := log.StartStep("Reading OSM data")
 		err = osmCache.Open()
 		if err != nil {
 			log.Fatal(err)
 		}
-		progress.Start()
+		progress := stats.NewStatsReporter()
 
 		pbfFile, err := pbf.Open(config.ImportOptions.Read)
 		if err != nil {
@@ -189,7 +189,7 @@ func mainimport() {
 		osmCache.Coords.SetLinearImport(true)
 		reader.ReadPbf(osmCache, progress, tagmapping, pbfFile)
 		osmCache.Coords.SetLinearImport(false)
-		progress.Stop()
+		elementCounts = progress.Stop()
 		osmCache.Close()
 		log.StopStep(step)
 		if config.ImportOptions.Diff {
@@ -203,7 +203,8 @@ func mainimport() {
 	if config.ImportOptions.Write {
 		stepImport := log.StartStep("Importing OSM data")
 		stepWrite := log.StartStep("Writing OSM data")
-		progress.Start()
+		progress := stats.NewStatsReporterWithEstimate(elementCounts)
+
 		err = db.Init()
 		if err != nil {
 			log.Fatal(err)

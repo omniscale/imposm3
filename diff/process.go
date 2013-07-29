@@ -87,7 +87,7 @@ func Update(oscFile string, force bool) {
 		tagmapping.PolygonMatcher(),
 	)
 
-	progress := stats.StatsReporter()
+	progress := stats.NewStatsReporter()
 
 	var geometryClipper *clipper.Clipper
 
@@ -128,7 +128,6 @@ func Update(oscFile string, force bool) {
 
 	step := log.StartStep("Parsing changes, updating cache and removing elements")
 
-	progress.Start()
 For:
 	for {
 		select {
@@ -196,7 +195,7 @@ For:
 	log.StopStep(step)
 	step = log.StartStep("Writing added/modified elements")
 
-	progress.Start()
+	progress = stats.NewStatsReporter()
 
 	for nodeId, _ := range nodeIds {
 		node, err := osmCache.Nodes.GetNode(nodeId)

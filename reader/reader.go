@@ -98,11 +98,15 @@ func ReadPbf(cache *cache.OSMCache, progress *stats.Statistics, tagmapping *mapp
 		go func() {
 			m := tagmapping.RelationTagFilter()
 			for rels := range relations {
+				numWithTags := 0
 				for i, _ := range rels {
 					m.Filter(&rels[i].Tags)
+					if len(rels[i].Tags) > 0 {
+						numWithTags += 1
+					}
 				}
 				cache.Relations.PutRelations(rels)
-				progress.AddRelations(len(rels))
+				progress.AddRelations(numWithTags)
 			}
 			waitWriter.Done()
 		}()
@@ -127,11 +131,15 @@ func ReadPbf(cache *cache.OSMCache, progress *stats.Statistics, tagmapping *mapp
 		go func() {
 			m := tagmapping.NodeTagFilter()
 			for nds := range nodes {
+				numWithTags := 0
 				for i, _ := range nds {
 					m.Filter(&nds[i].Tags)
+					if len(nds[i].Tags) > 0 {
+						numWithTags += 1
+					}
 				}
 				cache.Nodes.PutNodes(nds)
-				progress.AddNodes(len(nds))
+				progress.AddNodes(numWithTags)
 			}
 			waitWriter.Done()
 		}()
