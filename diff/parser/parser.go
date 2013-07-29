@@ -155,7 +155,7 @@ NextToken:
 				e.Way = way
 				way = &element.Way{}
 				newElem = true
-			case "rel":
+			case "relation":
 				if len(tags) > 0 {
 					rel.Tags = tags
 				}
