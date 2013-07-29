@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 )
 
 var log = logging.NewLogger("PostGIS")
@@ -268,9 +269,9 @@ func (pg *PostGIS) Generalize() error {
 
 	// next create tables with created generalized sources until
 	// no new source is created
-	created := true
-	for created {
-		created = false
+	created := int32(1)
+	for created == 1 {
+		created = 0
 
 		p := newWorkerPool(worker, len(pg.GeneralizedTables))
 		for _, table := range pg.GeneralizedTables {
@@ -281,7 +282,7 @@ func (pg *PostGIS) Generalize() error {
 						return err
 					}
 					tbl.created = true
-					created = true
+					atomic.StoreInt32(&created, 1)
 					return nil
 				}
 			}
