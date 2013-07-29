@@ -26,14 +26,6 @@ import (
 
 var log = logging.NewLogger("")
 
-func die(args ...interface{}) {
-	log.Fatal(args...)
-}
-
-func dief(msg string, args ...interface{}) {
-	log.Fatalf(msg, args...)
-}
-
 func reportErrors(errs []error) {
 	fmt.Println("errors in config/options:")
 	for _, err := range errs {
@@ -125,11 +117,11 @@ func mainimport() {
 	}
 
 	if (config.ImportOptions.Write || config.ImportOptions.Read != "") && (config.ImportOptions.RevertDeploy || config.ImportOptions.RemoveBackup) {
-		die("-revertdeploy and -removebackup not compatible with -read/-write")
+		log.Fatal("-revertdeploy and -removebackup not compatible with -read/-write")
 	}
 
 	if config.ImportOptions.RevertDeploy && (config.ImportOptions.RemoveBackup || config.ImportOptions.DeployProduction) {
-		die("-revertdeploy not compatible with -deployproduction/-removebackup")
+		log.Fatal("-revertdeploy not compatible with -deployproduction/-removebackup")
 	}
 
 	var geometryClipper *clipper.Clipper
@@ -138,7 +130,7 @@ func mainimport() {
 		step := log.StartStep("Reading limitto geometries")
 		geometryClipper, err = clipper.NewFromOgrSource(config.ImportOptions.Base.LimitTo)
 		if err != nil {
-			die(err)
+			log.Fatal(err)
 		}
 		log.StopStep(step)
 	}
@@ -147,7 +139,7 @@ func mainimport() {
 
 	tagmapping, err := mapping.NewMapping(config.ImportOptions.Base.MappingFile)
 	if err != nil {
-		die("mapping file: ", err)
+		log.Fatal("mapping file: ", err)
 	}
 
 	var db database.DB
@@ -161,7 +153,7 @@ func mainimport() {
 		}
 		db, err = database.Open(conf, tagmapping)
 		if err != nil {
-			die(err)
+			log.Fatal(err)
 		}
 	}
 
@@ -172,10 +164,10 @@ func mainimport() {
 			log.Printf("removing existing cache %s", config.ImportOptions.Base.CacheDir)
 			err := osmCache.Remove()
 			if err != nil {
-				die("unable to remove cache:", err)
+				log.Fatal("unable to remove cache:", err)
 			}
 		} else if !config.ImportOptions.Appendcache {
-			die("cache already exists use -appendcache or -overwritecache")
+			log.Fatal("cache already exists use -appendcache or -overwritecache")
 		}
 	}
 
@@ -185,7 +177,7 @@ func mainimport() {
 		step := log.StartStep("Reading OSM data")
 		err = osmCache.Open()
 		if err != nil {
-			die(err)
+			log.Fatal(err)
 		}
 		progress.Start()
 
@@ -214,7 +206,7 @@ func mainimport() {
 		progress.Start()
 		err = db.Init()
 		if err != nil {
-			die(err)
+			log.Fatal(err)
 		}
 
 		bulkDb, ok := db.(database.BulkBeginner)
@@ -224,23 +216,23 @@ func mainimport() {
 			err = db.Begin()
 		}
 		if err != nil {
-			die(err)
+			log.Fatal(err)
 		}
 
 		var diffCache *cache.DiffCache
 		if config.ImportOptions.Diff {
 			diffCache = cache.NewDiffCache(config.ImportOptions.Base.CacheDir)
 			if err = diffCache.Remove(); err != nil {
-				die(err)
+				log.Fatal(err)
 			}
 			if err = diffCache.Open(); err != nil {
-				die(err)
+				log.Fatal(err)
 			}
 		}
 
 		err = osmCache.Open()
 		if err != nil {
-			die(err)
+			log.Fatal(err)
 		}
 		osmCache.Coords.SetReadOnly(true)
 		pointsTagMatcher := tagmapping.PointMatcher()
@@ -279,7 +271,7 @@ func mainimport() {
 
 		err = db.End()
 		if err != nil {
-			die(err)
+			log.Fatal(err)
 		}
 
 		progress.Stop()
@@ -292,18 +284,18 @@ func mainimport() {
 
 		if db, ok := db.(database.Generalizer); ok {
 			if err := db.Generalize(); err != nil {
-				die(err)
+				log.Fatal(err)
 			}
 		} else {
-			die("database not generalizeable")
+			log.Fatal("database not generalizeable")
 		}
 
 		if db, ok := db.(database.Finisher); ok {
 			if err := db.Finish(); err != nil {
-				die(err)
+				log.Fatal(err)
 			}
 		} else {
-			die("database not finishable")
+			log.Fatal("database not finishable")
 		}
 		log.StopStep(stepImport)
 	}
@@ -311,40 +303,40 @@ func mainimport() {
 	if config.ImportOptions.Optimize {
 		if db, ok := db.(database.Optimizer); ok {
 			if err := db.Optimize(); err != nil {
-				die(err)
+				log.Fatal(err)
 			}
 		} else {
-			die("database not optimizable")
+			log.Fatal("database not optimizable")
 		}
 	}
 
 	if config.ImportOptions.DeployProduction {
 		if db, ok := db.(database.Deployer); ok {
 			if err := db.Deploy(); err != nil {
-				die(err)
+				log.Fatal(err)
 			}
 		} else {
-			die("database not deployable")
+			log.Fatal("database not deployable")
 		}
 	}
 
 	if config.ImportOptions.RevertDeploy {
 		if db, ok := db.(database.Deployer); ok {
 			if err := db.RevertDeploy(); err != nil {
-				die(err)
+				log.Fatal(err)
 			}
 		} else {
-			die("database not deployable")
+			log.Fatal("database not deployable")
 		}
 	}
 
 	if config.ImportOptions.RemoveBackup {
 		if db, ok := db.(database.Deployer); ok {
 			if err := db.RemoveBackup(); err != nil {
-				die(err)
+				log.Fatal(err)
 			}
 		} else {
-			die("database not deployable")
+			log.Fatal("database not deployable")
 		}
 	}
 
