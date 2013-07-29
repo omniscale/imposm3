@@ -1,14 +1,13 @@
-package main
+package diff
 
 import (
-	"flag"
 	"fmt"
 	"goposm/cache"
 	"goposm/config"
 	"goposm/database"
 	_ "goposm/database/postgis"
-	"goposm/diff"
 	"goposm/diff/parser"
+	diffstate "goposm/diff/state"
 	"goposm/element"
 	"goposm/expire"
 	"goposm/geom/clipper"
@@ -17,40 +16,21 @@ import (
 	"goposm/stats"
 	"goposm/writer"
 	"io"
-	"os"
 )
 
-var log = logging.NewLogger("")
+var log = logging.NewLogger("diff")
 
-func main() {
-	flag.Parse()
-	conf, errs := config.Parse()
-	if len(errs) > 0 {
-		log.Warn("errors in config/options:")
-		for _, err := range errs {
-			log.Warnf("\t%s", err)
-		}
-		logging.Shutdown()
-		os.Exit(1)
-	}
-	for _, oscFile := range flag.Args() {
-		update(oscFile, conf, false)
-	}
-	logging.Shutdown()
-	os.Exit(0)
-}
-
-func update(oscFile string, conf *config.Config, force bool) {
-	state, err := diff.ParseStateFromOsc(oscFile)
+func Update(oscFile string, force bool) {
+	state, err := diffstate.ParseFromOsc(oscFile)
 	if err != nil {
 		log.Fatal(err)
 	}
-	lastState, err := diff.ParseLastState(conf.CacheDir)
+	lastState, err := diffstate.ParseLastState(config.DiffImportOptions.Base.CacheDir)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if lastState != nil && lastState.Sequence != 0 && state.Sequence <= lastState.Sequence {
+	if lastState != nil && lastState.Sequence != 0 && state != nil && state.Sequence <= lastState.Sequence {
 		if !force {
 			log.Warn(state, " already imported")
 			return
@@ -61,28 +41,28 @@ func update(oscFile string, conf *config.Config, force bool) {
 
 	elems, errc := parser.Parse(oscFile)
 
-	osmCache := cache.NewOSMCache(conf.CacheDir)
+	osmCache := cache.NewOSMCache(config.DiffImportOptions.Base.CacheDir)
 	err = osmCache.Open()
 	if err != nil {
 		log.Fatal("osm cache: ", err)
 	}
 
-	diffCache := cache.NewDiffCache(conf.CacheDir)
+	diffCache := cache.NewDiffCache(config.DiffImportOptions.Base.CacheDir)
 	err = diffCache.Open()
 	if err != nil {
 		log.Fatal("diff cache: ", err)
 	}
 
-	tagmapping, err := mapping.NewMapping(conf.MappingFile)
+	tagmapping, err := mapping.NewMapping(config.DiffImportOptions.Base.MappingFile)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	connType := database.ConnectionType(conf.Connection)
+	connType := database.ConnectionType(config.DiffImportOptions.Base.Connection)
 	dbConf := database.Config{
 		Type:             connType,
-		ConnectionParams: conf.Connection,
-		Srid:             conf.Srid,
+		ConnectionParams: config.DiffImportOptions.Base.Connection,
+		Srid:             config.DiffImportOptions.Base.Srid,
 	}
 	db, err := database.Open(dbConf, tagmapping)
 	if err != nil {
@@ -98,7 +78,7 @@ func update(oscFile string, conf *config.Config, force bool) {
 	if !ok {
 		log.Fatal("database not deletable")
 	}
-	deleter := diff.NewDeleter(
+	deleter := NewDeleter(
 		delDb,
 		osmCache,
 		diffCache,
@@ -126,19 +106,19 @@ func update(oscFile string, conf *config.Config, force bool) {
 	nodes := make(chan *element.Node)
 
 	relWriter := writer.NewRelationWriter(osmCache, diffCache, relations,
-		db, polygonsTagMatcher, progress, conf.Srid)
+		db, polygonsTagMatcher, progress, config.DiffImportOptions.Base.Srid)
 	relWriter.SetClipper(geometryClipper)
 	relWriter.SetExpireTiles(expiredTiles)
 	relWriter.Start()
 
 	wayWriter := writer.NewWayWriter(osmCache, diffCache, ways, db,
-		lineStringsTagMatcher, polygonsTagMatcher, progress, conf.Srid)
+		lineStringsTagMatcher, polygonsTagMatcher, progress, config.DiffImportOptions.Base.Srid)
 	wayWriter.SetClipper(geometryClipper)
 	wayWriter.SetExpireTiles(expiredTiles)
 	wayWriter.Start()
 
 	nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
-		pointsTagMatcher, progress, conf.Srid)
+		pointsTagMatcher, progress, config.DiffImportOptions.Base.Srid)
 	nodeWriter.SetClipper(geometryClipper)
 	nodeWriter.Start()
 
@@ -296,7 +276,7 @@ For:
 	log.StopStep(step)
 	progress.Stop()
 
-	err = diff.WriteLastState(conf.CacheDir, state)
+	err = diffstate.WriteLastState(config.DiffImportOptions.Base.CacheDir, state)
 	if err != nil {
 		log.Warn(err) // warn only
 	}

@@ -1,11 +1,12 @@
 package main
 
 import (
-	"flag"
+	"fmt"
 	"goposm/cache"
 	"goposm/config"
 	"goposm/database"
 	_ "goposm/database/postgis"
+	"goposm/diff"
 	state "goposm/diff/state"
 	"goposm/geom/clipper"
 	"goposm/logging"
@@ -25,52 +26,64 @@ import (
 
 var log = logging.NewLogger("")
 
-var (
-	cpuprofile  = flag.String("cpuprofile", "", "filename of cpu profile output")
-	httpprofile = flag.String("httpprofile", "", "bind address for profile server")
-	memprofile  = flag.String("memprofile", "", "dir name of mem profile output and interval (fname:interval)")
-
-	overwritecache = flag.Bool("overwritecache", false, "overwritecache")
-	appendcache    = flag.Bool("appendcache", false, "append cache")
-
-	read     = flag.String("read", "", "read")
-	write    = flag.Bool("write", false, "write")
-	optimize = flag.Bool("optimize", false, "optimize")
-	diff     = flag.Bool("diff", false, "enable diff support")
-
-	deployProduction = flag.Bool("deployproduction", false, "deploy production")
-	revertDeploy     = flag.Bool("revertdeploy", false, "revert deploy to production")
-	removeBackup     = flag.Bool("removebackup", false, "remove backups from deploy")
-
-	quiet = flag.Bool("quiet", false, "quiet log output")
-)
-
-func die(args ...interface{}) {
-	log.Fatal(args...)
+func reportErrors(errs []error) {
+	fmt.Println("errors in config/options:")
+	for _, err := range errs {
+		fmt.Printf("\t%s\n", err)
+	}
+	logging.Shutdown()
+	os.Exit(1)
 }
 
-func dief(msg string, args ...interface{}) {
-	log.Fatalf(msg, args...)
+func printCmds() {
+	fmt.Println("available commands:")
+	fmt.Println("\timport")
+	fmt.Println("\tdiff")
 }
 
 func main() {
+
 	golog.SetFlags(golog.LstdFlags | golog.Lshortfile)
 	if os.Getenv("GOMAXPROCS") == "" {
 		runtime.GOMAXPROCS(runtime.NumCPU())
 	}
-	flag.Parse()
-	conf, errs := config.Parse()
-	if len(errs) > 0 {
-		log.Warn("errors in config/options:")
-		for _, err := range errs {
-			log.Warnf("\t%s", err)
-		}
+
+	if len(os.Args) <= 1 {
+		printCmds()
 		logging.Shutdown()
 		os.Exit(1)
 	}
 
-	if *cpuprofile != "" {
-		f, err := os.Create(*cpuprofile)
+	switch os.Args[1] {
+	case "import":
+		errs := config.ParseImport(os.Args[2:])
+		if len(errs) > 0 {
+			config.ImportFlags.PrintDefaults()
+			reportErrors(errs)
+			break
+		}
+		mainimport()
+	case "diff":
+		errs := config.ParseDiffImport(os.Args[2:])
+		if len(errs) > 0 {
+			config.DiffImportFlags.PrintDefaults()
+			reportErrors(errs)
+			break
+		}
+		for _, oscFile := range config.DiffImportFlags.Args() {
+			diff.Update(oscFile, false)
+		}
+	default:
+		log.Fatal("invalid command")
+	}
+	logging.Shutdown()
+	os.Exit(0)
+
+}
+
+func mainimport() {
+	if config.ImportOptions.Cpuprofile != "" {
+		f, err := os.Create(config.ImportOptions.Cpuprofile)
 		if err != nil {
 			golog.Fatal(err)
 		}
@@ -78,12 +91,12 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	if *httpprofile != "" {
-		stats.StartHttpPProf(*httpprofile)
+	if config.ImportOptions.Httpprofile != "" {
+		stats.StartHttpPProf(config.ImportOptions.Httpprofile)
 	}
 
-	if *memprofile != "" {
-		parts := strings.Split(*memprofile, string(os.PathListSeparator))
+	if config.ImportOptions.Memprofile != "" {
+		parts := strings.Split(config.ImportOptions.Memprofile, string(os.PathListSeparator))
 		var interval time.Duration
 
 		if len(parts) < 2 {
@@ -99,76 +112,76 @@ func main() {
 		go stats.MemProfiler(parts[0], interval)
 	}
 
-	if *quiet {
+	if config.ImportOptions.Quiet {
 		logging.SetQuiet(true)
 	}
 
-	if (*write || *read != "") && (*revertDeploy || *removeBackup) {
-		die("-revertdeploy and -removebackup not compatible with -read/-write")
+	if (config.ImportOptions.Write || config.ImportOptions.Read != "") && (config.ImportOptions.RevertDeploy || config.ImportOptions.RemoveBackup) {
+		log.Fatal("-revertdeploy and -removebackup not compatible with -read/-write")
 	}
 
-	if *revertDeploy && (*removeBackup || *deployProduction) {
-		die("-revertdeploy not compatible with -deployproduction/-removebackup")
+	if config.ImportOptions.RevertDeploy && (config.ImportOptions.RemoveBackup || config.ImportOptions.DeployProduction) {
+		log.Fatal("-revertdeploy not compatible with -deployproduction/-removebackup")
 	}
 
 	var geometryClipper *clipper.Clipper
-	if *write && conf.LimitTo != "" {
+	if config.ImportOptions.Write && config.ImportOptions.Base.LimitTo != "" {
 		var err error
 		step := log.StartStep("Reading limitto geometries")
-		geometryClipper, err = clipper.NewFromOgrSource(conf.LimitTo)
+		geometryClipper, err = clipper.NewFromOgrSource(config.ImportOptions.Base.LimitTo)
 		if err != nil {
-			die(err)
+			log.Fatal(err)
 		}
 		log.StopStep(step)
 	}
 
-	osmCache := cache.NewOSMCache(conf.CacheDir)
-
-	if *read != "" && osmCache.Exists() {
-		if *overwritecache {
-			log.Printf("removing existing cache %s", conf.CacheDir)
-			err := osmCache.Remove()
-			if err != nil {
-				die("unable to remove cache:", err)
-			}
-		} else if !*appendcache {
-			die("cache already exists use -appendcache or -overwritecache")
-		}
-	}
-
 	progress := stats.StatsReporter()
 
-	tagmapping, err := mapping.NewMapping(conf.MappingFile)
+	tagmapping, err := mapping.NewMapping(config.ImportOptions.Base.MappingFile)
 	if err != nil {
-		die("mapping file: ", err)
+		log.Fatal("mapping file: ", err)
 	}
 
 	var db database.DB
 
-	if *write || *deployProduction || *revertDeploy || *removeBackup || *optimize {
-		connType := database.ConnectionType(conf.Connection)
+	if config.ImportOptions.Write || config.ImportOptions.DeployProduction || config.ImportOptions.RevertDeploy || config.ImportOptions.RemoveBackup || config.ImportOptions.Optimize {
+		connType := database.ConnectionType(config.ImportOptions.Base.Connection)
 		conf := database.Config{
 			Type:             connType,
-			ConnectionParams: conf.Connection,
-			Srid:             conf.Srid,
+			ConnectionParams: config.ImportOptions.Base.Connection,
+			Srid:             config.ImportOptions.Base.Srid,
 		}
 		db, err = database.Open(conf, tagmapping)
 		if err != nil {
-			die(err)
+			log.Fatal(err)
+		}
+	}
+
+	osmCache := cache.NewOSMCache(config.ImportOptions.Base.CacheDir)
+
+	if config.ImportOptions.Read != "" && osmCache.Exists() {
+		if config.ImportOptions.Overwritecache {
+			log.Printf("removing existing cache %s", config.ImportOptions.Base.CacheDir)
+			err := osmCache.Remove()
+			if err != nil {
+				log.Fatal("unable to remove cache:", err)
+			}
+		} else if !config.ImportOptions.Appendcache {
+			log.Fatal("cache already exists use -appendcache or -overwritecache")
 		}
 	}
 
 	step := log.StartStep("Imposm")
 
-	if *read != "" {
+	if config.ImportOptions.Read != "" {
 		step := log.StartStep("Reading OSM data")
 		err = osmCache.Open()
 		if err != nil {
-			die(err)
+			log.Fatal(err)
 		}
 		progress.Start()
 
-		pbfFile, err := pbf.Open(*read)
+		pbfFile, err := pbf.Open(config.ImportOptions.Read)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -179,21 +192,21 @@ func main() {
 		progress.Stop()
 		osmCache.Close()
 		log.StopStep(step)
-		if *diff {
+		if config.ImportOptions.Diff {
 			diffstate := state.FromPbf(pbfFile)
 			if diffstate != nil {
-				diffstate.WriteToFile(path.Join(conf.CacheDir, "last.state.txt"))
+				diffstate.WriteToFile(path.Join(config.ImportOptions.Base.CacheDir, "last.state.txt"))
 			}
 		}
 	}
 
-	if *write {
+	if config.ImportOptions.Write {
 		stepImport := log.StartStep("Importing OSM data")
 		stepWrite := log.StartStep("Writing OSM data")
 		progress.Start()
 		err = db.Init()
 		if err != nil {
-			die(err)
+			log.Fatal(err)
 		}
 
 		bulkDb, ok := db.(database.BulkBeginner)
@@ -203,23 +216,23 @@ func main() {
 			err = db.Begin()
 		}
 		if err != nil {
-			die(err)
+			log.Fatal(err)
 		}
 
 		var diffCache *cache.DiffCache
-		if *diff {
-			diffCache = cache.NewDiffCache(conf.CacheDir)
+		if config.ImportOptions.Diff {
+			diffCache = cache.NewDiffCache(config.ImportOptions.Base.CacheDir)
 			if err = diffCache.Remove(); err != nil {
-				die(err)
+				log.Fatal(err)
 			}
 			if err = diffCache.Open(); err != nil {
-				die(err)
+				log.Fatal(err)
 			}
 		}
 
 		err = osmCache.Open()
 		if err != nil {
-			die(err)
+			log.Fatal(err)
 		}
 		osmCache.Coords.SetReadOnly(true)
 		pointsTagMatcher := tagmapping.PointMatcher()
@@ -228,7 +241,7 @@ func main() {
 
 		relations := osmCache.Relations.Iter()
 		relWriter := writer.NewRelationWriter(osmCache, diffCache, relations,
-			db, polygonsTagMatcher, progress, conf.Srid)
+			db, polygonsTagMatcher, progress, config.ImportOptions.Base.Srid)
 		relWriter.SetClipper(geometryClipper)
 		relWriter.Start()
 
@@ -238,7 +251,7 @@ func main() {
 
 		ways := osmCache.Ways.Iter()
 		wayWriter := writer.NewWayWriter(osmCache, diffCache, ways, db,
-			lineStringsTagMatcher, polygonsTagMatcher, progress, conf.Srid)
+			lineStringsTagMatcher, polygonsTagMatcher, progress, config.ImportOptions.Base.Srid)
 		wayWriter.SetClipper(geometryClipper)
 		wayWriter.Start()
 
@@ -248,7 +261,7 @@ func main() {
 
 		nodes := osmCache.Nodes.Iter()
 		nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
-			pointsTagMatcher, progress, conf.Srid)
+			pointsTagMatcher, progress, config.ImportOptions.Base.Srid)
 		nodeWriter.SetClipper(geometryClipper)
 		nodeWriter.Start()
 
@@ -258,12 +271,12 @@ func main() {
 
 		err = db.End()
 		if err != nil {
-			die(err)
+			log.Fatal(err)
 		}
 
 		progress.Stop()
 
-		if *diff {
+		if config.ImportOptions.Diff {
 			diffCache.Close()
 		}
 
@@ -271,59 +284,59 @@ func main() {
 
 		if db, ok := db.(database.Generalizer); ok {
 			if err := db.Generalize(); err != nil {
-				die(err)
+				log.Fatal(err)
 			}
 		} else {
-			die("database not generalizeable")
+			log.Fatal("database not generalizeable")
 		}
 
 		if db, ok := db.(database.Finisher); ok {
 			if err := db.Finish(); err != nil {
-				die(err)
+				log.Fatal(err)
 			}
 		} else {
-			die("database not finishable")
+			log.Fatal("database not finishable")
 		}
 		log.StopStep(stepImport)
 	}
 
-	if *optimize {
+	if config.ImportOptions.Optimize {
 		if db, ok := db.(database.Optimizer); ok {
 			if err := db.Optimize(); err != nil {
-				die(err)
+				log.Fatal(err)
 			}
 		} else {
-			die("database not optimizable")
+			log.Fatal("database not optimizable")
 		}
 	}
 
-	if *deployProduction {
+	if config.ImportOptions.DeployProduction {
 		if db, ok := db.(database.Deployer); ok {
 			if err := db.Deploy(); err != nil {
-				die(err)
+				log.Fatal(err)
 			}
 		} else {
-			die("database not deployable")
+			log.Fatal("database not deployable")
 		}
 	}
 
-	if *revertDeploy {
+	if config.ImportOptions.RevertDeploy {
 		if db, ok := db.(database.Deployer); ok {
 			if err := db.RevertDeploy(); err != nil {
-				die(err)
+				log.Fatal(err)
 			}
 		} else {
-			die("database not deployable")
+			log.Fatal("database not deployable")
 		}
 	}
 
-	if *removeBackup {
+	if config.ImportOptions.RemoveBackup {
 		if db, ok := db.(database.Deployer); ok {
 			if err := db.RemoveBackup(); err != nil {
-				die(err)
+				log.Fatal(err)
 			}
 		} else {
-			die("database not deployable")
+			log.Fatal("database not deployable")
 		}
 	}
 

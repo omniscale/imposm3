@@ -403,6 +403,7 @@ func clusterTable(pg *PostGIS, tableName string, srid int, columns []ColumnSpec)
 
 type PostGIS struct {
 	Db                *sql.DB
+	Params            string
 	Schema            string
 	BackupSchema      string
 	Config            database.Config
@@ -415,11 +416,7 @@ type PostGIS struct {
 func (pg *PostGIS) Open() error {
 	var err error
 
-	params, err := pq.ParseURL(pg.Config.ConnectionParams)
-	if err != nil {
-		return err
-	}
-	pg.Db, err = sql.Open("postgres", params)
+	pg.Db, err = sql.Open("postgres", pg.Params)
 	if err != nil {
 		return err
 	}
@@ -580,6 +577,7 @@ func (pg *PostGIS) NewTableTx(spec *TableSpec, bulkImport bool) *TableTx {
 
 func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	db := &PostGIS{}
+
 	db.Tables = make(map[string]*TableSpec)
 	db.GeneralizedTables = make(map[string]*GeneralizedTableSpec)
 
@@ -596,6 +594,7 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	params = disableDefaultSslOnLocalhost(params)
 	db.Schema, db.BackupSchema = schemasFromConnectionParams(params)
 	db.Prefix = prefixFromConnectionParams(params)
 
@@ -607,6 +606,7 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	}
 	db.prepareGeneralizedTableSources()
 
+	db.Params = params
 	err = db.Open()
 	if err != nil {
 		return nil, err
