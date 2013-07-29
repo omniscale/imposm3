@@ -5,7 +5,7 @@ import (
 	"goposm/config"
 	"goposm/database"
 	_ "goposm/database/postgis"
-	"goposm/diff/cmd"
+	"goposm/diff"
 	state "goposm/diff/state"
 	"goposm/geom/clipper"
 	"goposm/logging"
@@ -68,7 +68,7 @@ func main() {
 			break
 		}
 		for _, oscFile := range config.DiffImportFlags.Args() {
-			cmd.Update(oscFile, false)
+			diff.Update(oscFile, false)
 		}
 	default:
 		log.Fatal("invalid command")

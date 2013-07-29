@@ -1,4 +1,4 @@
-package cmd
+package diff
 
 import (
 	"fmt"
@@ -6,7 +6,6 @@ import (
 	"goposm/config"
 	"goposm/database"
 	_ "goposm/database/postgis"
-	"goposm/diff"
 	"goposm/diff/parser"
 	diffstate "goposm/diff/state"
 	"goposm/element"
@@ -19,7 +18,7 @@ import (
 	"io"
 )
 
-var log = logging.NewLogger("")
+var log = logging.NewLogger("diff")
 
 func Update(oscFile string, force bool) {
 	state, err := diffstate.ParseFromOsc(oscFile)
@@ -79,7 +78,7 @@ func Update(oscFile string, force bool) {
 	if !ok {
 		log.Fatal("database not deletable")
 	}
-	deleter := diff.NewDeleter(
+	deleter := NewDeleter(
 		delDb,
 		osmCache,
 		diffCache,
