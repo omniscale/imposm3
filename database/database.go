@@ -1,6 +1,7 @@
 package database
 
 import (
+	"errors"
 	"goposm/mapping"
 	"strings"
 )
@@ -63,7 +64,7 @@ func Register(name string, f func(Config, *mapping.Mapping) (DB, error)) {
 func Open(conf Config, m *mapping.Mapping) (DB, error) {
 	newFunc, ok := databases[conf.Type]
 	if !ok {
-		panic("unsupported database type: " + conf.Type)
+		return nil, errors.New("unsupported database type: " + conf.Type)
 	}
 
 	db, err := newFunc(conf, m)
