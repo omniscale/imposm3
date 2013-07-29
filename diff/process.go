@@ -170,13 +170,19 @@ For:
 			}
 			if elem.Add {
 				if elem.Rel != nil {
-					// TODO: check for existence of first way member
-					osmCache.Relations.PutRelation(elem.Rel)
-					relIds[elem.Rel.Id] = true
+					// check if first member is cached to avoid caching
+					// unneeded relations (typical outside of our coverage)
+					if memberIsCached(elem.Rel.Members, osmCache.Ways) {
+						osmCache.Relations.PutRelation(elem.Rel)
+						relIds[elem.Rel.Id] = true
+					}
 				} else if elem.Way != nil {
-					// TODO: check for existence of first ref
-					osmCache.Ways.PutWay(elem.Way)
-					wayIds[elem.Way.Id] = true
+					// check if first coord is cached to avoid caching
+					// unneeded ways (typical outside of our coverage)
+					if coordIsCached(elem.Way.Nodes, osmCache.Coords) {
+						osmCache.Ways.PutWay(elem.Way)
+						wayIds[elem.Way.Id] = true
+					}
 				} else if elem.Node != nil {
 					// TODO: check for intersection with import BBOX/poly
 					osmCache.Nodes.PutNode(elem.Node)
@@ -275,8 +281,34 @@ For:
 	log.StopStep(step)
 	progress.Stop()
 
-	err = diffstate.WriteLastState(config.DiffImportOptions.Base.CacheDir, state)
-	if err != nil {
-		log.Warn(err) // warn only
+	if state != nil {
+		err = diffstate.WriteLastState(config.DiffImportOptions.Base.CacheDir, state)
+		if err != nil {
+			log.Warn(err) // warn only
+		}
 	}
+}
+
+func memberIsCached(members []element.Member, wayCache *cache.WaysCache) bool {
+	for _, m := range members {
+		if m.Type == element.WAY {
+			_, err := wayCache.GetWay(m.Id)
+			if err != nil {
+				return false
+			}
+			return true
+		}
+	}
+	return false
+}
+
+func coordIsCached(nodes []element.Node, coordCache *cache.DeltaCoordsCache) bool {
+	if len(nodes) <= 0 {
+		return false
+	}
+	_, err := coordCache.GetCoord(nodes[0].Id)
+	if err != nil {
+		return false
+	}
+	return true
 }
