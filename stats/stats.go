@@ -29,14 +29,12 @@ func (r *RpsCounter) Value() int64 {
 	return r.counter
 }
 
-func (r *RpsCounter) Rps(round int) int32 {
-	rps := float64(r.counter) / float64(r.stop.Sub(r.start).Seconds())
-	return int32(rps/float64(round)) * int32(round)
+func (r *RpsCounter) Rps() float64 {
+	return float64(r.counter) / float64(r.stop.Sub(r.start).Seconds())
 }
 
-func (r *RpsCounter) LastRps(round int32) int32 {
-	rps := float64(r.lastAdd) / float64(time.Since(r.stop).Seconds())
-	return int32(rps/float64(round)) * int32(round)
+func (r *RpsCounter) LastRps() float64 {
+	return float64(r.lastAdd) / float64(time.Since(r.stop).Seconds())
 }
 
 func (r *RpsCounter) Tick() {
@@ -45,6 +43,10 @@ func (r *RpsCounter) Tick() {
 		r.updated = false
 	}
 	r.lastAdd = 0
+}
+
+func roundInt(val float64, round int) int64 {
+	return int64(val/float64(round)) * int64(round)
 }
 
 type counter struct {
@@ -153,17 +155,17 @@ func (c *counter) PrintTick() {
 	logging.Progress(
 		fmt.Sprintf("[%6s] C: %7d/s %7d/s (%10d) N: %7d/s %7d/s (%9d) W: %7d/s %7d/s (%8d) R: %6d/s %6d/s (%7d)",
 			c.Duration(),
-			c.coords.Rps(1000),
-			c.coords.LastRps(1000),
+			roundInt(c.coords.Rps(), 1000),
+			roundInt(c.coords.LastRps(), 1000),
 			c.coords.Value(),
-			c.nodes.Rps(100),
-			c.nodes.LastRps(100),
+			roundInt(c.nodes.Rps(), 100),
+			roundInt(c.nodes.LastRps(), 100),
 			c.nodes.Value(),
-			c.ways.Rps(100),
-			c.ways.LastRps(100),
+			roundInt(c.ways.Rps(), 100),
+			roundInt(c.ways.LastRps(), 100),
 			c.ways.Value(),
-			c.relations.Rps(10),
-			c.relations.LastRps(10),
+			roundInt(c.relations.Rps(), 10),
+			roundInt(c.relations.LastRps(), 10),
 			c.relations.Value(),
 		))
 }
@@ -171,13 +173,13 @@ func (c *counter) PrintTick() {
 func (c *counter) PrintStats() {
 	logging.Infof("[%6s] C: %7d/s (%10d) N: %7d/s (%9d) W: %7d/s (%8d) R: %6d/s (%7d)",
 		c.Duration(),
-		c.coords.Rps(1000),
+		roundInt(c.coords.Rps(), 1000),
 		c.coords.Value(),
-		c.nodes.Rps(100),
+		roundInt(c.nodes.Rps(), 100),
 		c.nodes.Value(),
-		c.ways.Rps(100),
+		roundInt(c.ways.Rps(), 100),
 		c.ways.Value(),
-		c.relations.Rps(10),
+		roundInt(c.relations.Rps(), 10),
 		c.relations.Value(),
 	)
 }
