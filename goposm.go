@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"goposm/cache"
 	"goposm/config"
 	"goposm/database"
@@ -34,12 +35,18 @@ func dief(msg string, args ...interface{}) {
 }
 
 func reportErrors(errs []error) {
-	log.Warn("errors in config/options:")
+	fmt.Println("errors in config/options:")
 	for _, err := range errs {
-		log.Warnf("\t%s", err)
+		fmt.Printf("\t%s\n", err)
 	}
 	logging.Shutdown()
 	os.Exit(1)
+}
+
+func printCmds() {
+	fmt.Println("available commands:")
+	fmt.Println("\timport")
+	fmt.Println("\tdiff")
 }
 
 func main() {
@@ -50,6 +57,8 @@ func main() {
 	}
 
 	if len(os.Args) <= 1 {
+		printCmds()
+		logging.Shutdown()
 		os.Exit(1)
 	}
 
@@ -57,6 +66,7 @@ func main() {
 	case "import":
 		errs := config.ParseImport(os.Args[2:])
 		if len(errs) > 0 {
+			config.ImportFlags.PrintDefaults()
 			reportErrors(errs)
 			break
 		}
@@ -64,6 +74,7 @@ func main() {
 	case "diff":
 		errs := config.ParseDiffImport(os.Args[2:])
 		if len(errs) > 0 {
+			config.DiffImportFlags.PrintDefaults()
 			reportErrors(errs)
 			break
 		}
