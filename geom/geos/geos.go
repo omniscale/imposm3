@@ -176,6 +176,20 @@ func (this *Geos) BoundsPolygon(bounds Bounds) *Geom {
 
 }
 
+func (this *Geos) Point(x, y float64) *Geom {
+	coordSeq, err := this.CreateCoordSeq(1, 2)
+	if err != nil {
+		return nil
+	}
+	// coordSeq inherited by LineString
+	coordSeq.SetXY(this, 0, x, y)
+	geom, err := coordSeq.AsPoint(this)
+	if err != nil {
+		return nil
+	}
+	return geom
+}
+
 func (this *Geos) Polygon(exterior *Geom, interiors []*Geom) *Geom {
 	if len(interiors) == 0 {
 		geom := C.GEOSGeom_createPolygon_r(this.v, exterior.v, nil, C.uint(0))

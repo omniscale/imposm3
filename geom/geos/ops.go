@@ -42,6 +42,14 @@ func (this *Geos) Buffer(geom *Geom, size float64) *Geom {
 	return &Geom{buffered}
 }
 
+func (this *Geos) SimplifyPreserveTopology(geom *Geom, tolerance float64) *Geom {
+	simplified := C.GEOSTopologyPreserveSimplify_r(this.v, geom.v, C.double(tolerance))
+	if simplified == nil {
+		return nil
+	}
+	return &Geom{simplified}
+}
+
 // UnionPolygons tries to merge polygons.
 // Returns a single (Multi)Polygon.
 // Destroys polygons and returns new allocated (Multi)Polygon as necessary.

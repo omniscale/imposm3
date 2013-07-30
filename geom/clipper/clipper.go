@@ -87,10 +87,16 @@ func SplitPolygonAtGrid(g *geos.Geos, geom *geos.Geom, gridWidth, currentGridWid
 }
 
 type Clipper struct {
-	index *geos.Index
+	index        *geos.Index
+	bufferedPrep *geos.PreparedGeom
+	bufferedBbox geos.Bounds
 }
 
 func NewFromOgrSource(source string) (*Clipper, error) {
+	return NewFromOgrSourceWithBuffered(source, 0.0)
+}
+
+func NewFromOgrSourceWithBuffered(source string, buffer float64) (*Clipper, error) {
 	ds, err := ogr.Open(source)
 	if err != nil {
 		return nil, err
@@ -106,7 +112,27 @@ func NewFromOgrSource(source string) (*Clipper, error) {
 
 	index := g.CreateIndex()
 
+	var polygons []*geos.Geom
+
+	withBuffer := false
+	if buffer != 0.0 {
+		withBuffer = true
+	}
+
 	for geom := range layer.Geoms() {
+		if withBuffer {
+			simplified := g.SimplifyPreserveTopology(geom, 1000)
+			if simplified == nil {
+				return nil, errors.New("couldn't simplify limitto")
+			}
+			buffered := g.Buffer(simplified, buffer)
+			g.Destroy(simplified)
+			if buffered == nil {
+				return nil, errors.New("couldn't buffer limitto")
+			}
+			g.DestroyLater(buffered)
+			polygons = append(polygons, buffered)
+		}
 		parts, err := SplitPolygonAtGrid(g, geom, 20000, 20000*100)
 		if err != nil {
 			return nil, err
@@ -115,7 +141,27 @@ func NewFromOgrSource(source string) (*Clipper, error) {
 			g.IndexAdd(index, part)
 		}
 	}
-	return &Clipper{index}, nil
+
+	var bbox geos.Bounds
+	var prep *geos.PreparedGeom
+	if len(polygons) > 0 {
+		union := g.UnionPolygons(polygons)
+		if union == nil {
+			return nil, errors.New("unable to union limitto polygons")
+		}
+		simplified := g.SimplifyPreserveTopology(union, 5000)
+		if simplified == nil {
+			return nil, errors.New("unable to simplify limitto polygons")
+		}
+		g.Destroy(union)
+		bbox = simplified.Bounds()
+		prep = g.Prepare(simplified)
+		// keep simplified around for prepared geometry
+		if prep == nil {
+			return nil, errors.New("unable to prepare limitto polygons")
+		}
+	}
+	return &Clipper{index, prep, bbox}, nil
 }
 
 func filterGeometryByType(g *geos.Geos, geom *geos.Geom, targetType string) []*geos.Geom {
@@ -193,12 +239,23 @@ func (clipper *Clipper) Clip(geom *geos.Geom) ([]*geos.Geom, error) {
 	return mergeGeometries(g, intersections, geomType), nil
 }
 
-func (clipper *Clipper) Intersects(g *geos.Geos, geom *geos.Geom) bool {
-	hits := g.IndexQuery(clipper.index, geom)
-	if len(hits) == 0 {
+func (c *Clipper) IntersectsBuffer(g *geos.Geos, x, y float64) bool {
+	if c.bufferedPrep == nil {
+		return true
+	}
+	if x < c.bufferedBbox.MinX ||
+		y < c.bufferedBbox.MinY ||
+		x > c.bufferedBbox.MaxX ||
+		y > c.bufferedBbox.MaxY {
 		return false
 	}
-	return true
+	p := g.Point(x, y)
+	if p == nil {
+		return false
+	}
+	defer g.Destroy(p)
+
+	return g.PreparedIntersects(c.bufferedPrep, p)
 }
 
 func flattenPolygons(g *geos.Geos, geoms []*geos.Geom) []*geos.Geom {

@@ -299,6 +299,21 @@ func TestClipper(t *testing.T) {
 	}
 }
 
+func TestClipperWithBuffer(t *testing.T) {
+	g := geos.NewGeos()
+	defer g.Finish()
+	clipper, err := NewFromOgrSourceWithBuffered("./hamburg_clip.geojson", 10000.0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if clipper.IntersectsBuffer(g, 1106543, 7082055) != true {
+		t.Fatal()
+	}
+	if clipper.IntersectsBuffer(g, 1006543, 7082055) != false {
+		t.Fatal()
+	}
+}
+
 func BenchmarkClipper(b *testing.B) {
 	g := geos.NewGeos()
 	defer g.Finish()

@@ -29,15 +29,9 @@ var (
 )
 
 func Point(g *geos.Geos, node element.Node) (*geos.Geom, error) {
-	coordSeq, err := g.CreateCoordSeq(1, 2)
-	if err != nil {
-		return nil, err
-	}
-	// coordSeq inherited by LineString
-	coordSeq.SetXY(g, 0, node.Long, node.Lat)
-	geom, err := coordSeq.AsPoint(g)
-	if err != nil {
-		return nil, err
+	geom := g.Point(node.Long, node.Lat)
+	if geom == nil {
+		return nil, NewGeomError("couldn't create point")
 	}
 	g.DestroyLater(geom)
 	return geom, nil
