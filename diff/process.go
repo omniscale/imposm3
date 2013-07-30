@@ -10,6 +10,7 @@ import (
 	diffstate "goposm/diff/state"
 	"goposm/element"
 	"goposm/expire"
+	"goposm/geom/geos"
 	"goposm/geom/limit"
 	"goposm/logging"
 	"goposm/mapping"
@@ -126,6 +127,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, force bool) {
 
 	step := log.StartStep("Parsing changes, updating cache and removing elements")
 
+	g := geos.NewGeos()
 For:
 	for {
 		select {
@@ -182,10 +184,11 @@ For:
 						wayIds[elem.Way.Id] = true
 					}
 				} else if elem.Node != nil {
-					// TODO: check for intersection with import BBOX/poly
-					osmCache.Nodes.PutNode(elem.Node)
-					osmCache.Coords.PutCoords([]element.Node{*elem.Node})
-					nodeIds[elem.Node.Id] = true
+					if geometryLimiter.IntersectsBuffer(g, elem.Node.Long, elem.Node.Lat) {
+						osmCache.Nodes.PutNode(elem.Node)
+						osmCache.Coords.PutCoords([]element.Node{*elem.Node})
+						nodeIds[elem.Node.Id] = true
+					}
 				}
 			}
 		case err := <-errc:

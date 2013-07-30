@@ -74,7 +74,10 @@ func main() {
 		if config.DiffImportOptions.Base.LimitTo != "" {
 			var err error
 			step := log.StartStep("Reading limitto geometries")
-			geometryLimiter, err = limit.NewFromOgrSource(config.DiffImportOptions.Base.LimitTo)
+			geometryLimiter, err = limit.NewFromOgrSourceWithBuffered(
+				config.DiffImportOptions.Base.LimitTo,
+				config.DiffImportOptions.Base.LimitToCacheBuffer,
+			)
 			if err != nil {
 				log.Fatal(err)
 			}

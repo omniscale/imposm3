@@ -9,11 +9,12 @@ import (
 )
 
 type Config struct {
-	CacheDir    string `json:"cachedir"`
-	Connection  string `json:"connection"`
-	MappingFile string `json:"mapping"`
-	LimitTo     string `json:"limitto"`
-	Srid        int    `json:"srid"`
+	CacheDir           string  `json:"cachedir"`
+	Connection         string  `json:"connection"`
+	MappingFile        string  `json:"mapping"`
+	LimitTo            string  `json:"limitto"`
+	LimitToCacheBuffer float64 `json:"limitto_cache_buffer"`
+	Srid               int     `json:"srid"`
 }
 
 const defaultSrid = 3857
@@ -23,12 +24,13 @@ var ImportFlags = flag.NewFlagSet("import", flag.ExitOnError)
 var DiffImportFlags = flag.NewFlagSet("diff", flag.ExitOnError)
 
 type ImportBaseOptions struct {
-	Connection  string
-	CacheDir    string
-	MappingFile string
-	Srid        int
-	LimitTo     string
-	ConfigFile  string
+	Connection         string
+	CacheDir           string
+	MappingFile        string
+	Srid               int
+	LimitTo            string
+	LimitToCacheBuffer float64
+	ConfigFile         string
 }
 
 type _ImportOptions struct {
@@ -147,6 +149,9 @@ func updateBaseOpts(opts *ImportBaseOptions) []error {
 	}
 	if opts.LimitTo == "" {
 		opts.LimitTo = conf.LimitTo
+	}
+	if opts.LimitToCacheBuffer == 0.0 {
+		opts.LimitToCacheBuffer = conf.LimitToCacheBuffer
 	}
 	if opts.CacheDir == defaultCacheDir {
 		opts.CacheDir = conf.CacheDir
