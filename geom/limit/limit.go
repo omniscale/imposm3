@@ -7,6 +7,7 @@ import (
 	"goposm/logging"
 	"math"
 	"strings"
+	"sync"
 )
 
 var log = logging.NewLogger("limiter")
@@ -87,9 +88,10 @@ func SplitPolygonAtGrid(g *geos.Geos, geom *geos.Geom, gridWidth, currentGridWid
 }
 
 type Limiter struct {
-	index        *geos.Index
-	bufferedPrep *geos.PreparedGeom
-	bufferedBbox geos.Bounds
+	index          *geos.Index
+	bufferedPrep   *geos.PreparedGeom
+	bufferedPrepMu *sync.Mutex
+	bufferedBbox   geos.Bounds
 }
 
 func NewFromOgrSource(source string) (*Limiter, error) {
@@ -161,7 +163,7 @@ func NewFromOgrSourceWithBuffered(source string, buffer float64) (*Limiter, erro
 			return nil, errors.New("unable to prepare limitto polygons")
 		}
 	}
-	return &Limiter{index, prep, bbox}, nil
+	return &Limiter{index, prep, &sync.Mutex{}, bbox}, nil
 }
 
 func filterGeometryByType(g *geos.Geos, geom *geos.Geom, targetType string) []*geos.Geom {
@@ -255,6 +257,8 @@ func (c *Limiter) IntersectsBuffer(g *geos.Geos, x, y float64) bool {
 	}
 	defer g.Destroy(p)
 
+	c.bufferedPrepMu.Lock()
+	defer c.bufferedPrepMu.Unlock()
 	return g.PreparedIntersects(c.bufferedPrep, p)
 }
 
