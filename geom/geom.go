@@ -31,7 +31,7 @@ var (
 func Point(g *geos.Geos, node element.Node) (*geos.Geom, error) {
 	geom := g.Point(node.Long, node.Lat)
 	if geom == nil {
-		return nil, NewGeomError("couldn't create point")
+		return nil, NewGeomError("couldn't create point", 1)
 	}
 	g.DestroyLater(geom)
 	return geom, nil

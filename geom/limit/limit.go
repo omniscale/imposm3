@@ -1,4 +1,4 @@
-package clipper
+package limit
 
 import (
 	"errors"
@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-var log = logging.NewLogger("Clipper")
+var log = logging.NewLogger("limiter")
 
 // Tile bbox into multiple sub-boxes, each of `width` size.
 
@@ -86,17 +86,17 @@ func SplitPolygonAtGrid(g *geos.Geos, geom *geos.Geom, gridWidth, currentGridWid
 	return result, nil
 }
 
-type Clipper struct {
+type Limiter struct {
 	index        *geos.Index
 	bufferedPrep *geos.PreparedGeom
 	bufferedBbox geos.Bounds
 }
 
-func NewFromOgrSource(source string) (*Clipper, error) {
+func NewFromOgrSource(source string) (*Limiter, error) {
 	return NewFromOgrSourceWithBuffered(source, 0.0)
 }
 
-func NewFromOgrSourceWithBuffered(source string, buffer float64) (*Clipper, error) {
+func NewFromOgrSourceWithBuffered(source string, buffer float64) (*Limiter, error) {
 	ds, err := ogr.Open(source)
 	if err != nil {
 		return nil, err
@@ -161,7 +161,7 @@ func NewFromOgrSourceWithBuffered(source string, buffer float64) (*Clipper, erro
 			return nil, errors.New("unable to prepare limitto polygons")
 		}
 	}
-	return &Clipper{index, prep, bbox}, nil
+	return &Limiter{index, prep, bbox}, nil
 }
 
 func filterGeometryByType(g *geos.Geos, geom *geos.Geom, targetType string) []*geos.Geom {
@@ -202,11 +202,11 @@ func filterGeometryByType(g *geos.Geos, geom *geos.Geom, targetType string) []*g
 	return []*geos.Geom{}
 }
 
-func (clipper *Clipper) Clip(geom *geos.Geom) ([]*geos.Geom, error) {
+func (l *Limiter) Clip(geom *geos.Geom) ([]*geos.Geom, error) {
 	g := geos.NewGeos()
 	defer g.Finish()
 
-	hits := g.IndexQuery(clipper.index, geom)
+	hits := g.IndexQuery(l.index, geom)
 
 	if len(hits) == 0 {
 		return nil, nil
@@ -239,7 +239,7 @@ func (clipper *Clipper) Clip(geom *geos.Geom) ([]*geos.Geom, error) {
 	return mergeGeometries(g, intersections, geomType), nil
 }
 
-func (c *Clipper) IntersectsBuffer(g *geos.Geos, x, y float64) bool {
+func (c *Limiter) IntersectsBuffer(g *geos.Geos, x, y float64) bool {
 	if c.bufferedPrep == nil {
 		return true
 	}

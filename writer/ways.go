@@ -109,8 +109,8 @@ func (ww *WayWriter) buildAndInsert(geos *geos.Geos, w *element.Way, matches []m
 		return
 	}
 
-	if ww.clipper != nil {
-		parts, err := ww.clipper.Clip(way.Geom.Geom)
+	if ww.limiter != nil {
+		parts, err := ww.limiter.Clip(way.Geom.Geom)
 		if err != nil {
 			log.Println(err)
 			return

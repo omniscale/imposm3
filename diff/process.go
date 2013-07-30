@@ -10,7 +10,7 @@ import (
 	diffstate "goposm/diff/state"
 	"goposm/element"
 	"goposm/expire"
-	"goposm/geom/clipper"
+	"goposm/geom/limit"
 	"goposm/logging"
 	"goposm/mapping"
 	"goposm/stats"
@@ -20,7 +20,7 @@ import (
 
 var log = logging.NewLogger("diff")
 
-func Update(oscFile string, geometryClipper *clipper.Clipper, force bool) {
+func Update(oscFile string, geometryLimiter *limit.Limiter, force bool) {
 	state, err := diffstate.ParseFromOsc(oscFile)
 	if err != nil {
 		log.Fatal(err)
@@ -105,19 +105,19 @@ func Update(oscFile string, geometryClipper *clipper.Clipper, force bool) {
 
 	relWriter := writer.NewRelationWriter(osmCache, diffCache, relations,
 		db, polygonsTagMatcher, progress, config.DiffImportOptions.Base.Srid)
-	relWriter.SetClipper(geometryClipper)
+	relWriter.SetLimiter(geometryLimiter)
 	relWriter.SetExpireTiles(expiredTiles)
 	relWriter.Start()
 
 	wayWriter := writer.NewWayWriter(osmCache, diffCache, ways, db,
 		lineStringsTagMatcher, polygonsTagMatcher, progress, config.DiffImportOptions.Base.Srid)
-	wayWriter.SetClipper(geometryClipper)
+	wayWriter.SetLimiter(geometryLimiter)
 	wayWriter.SetExpireTiles(expiredTiles)
 	wayWriter.Start()
 
 	nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
 		pointsTagMatcher, progress, config.DiffImportOptions.Base.Srid)
-	nodeWriter.SetClipper(geometryClipper)
+	nodeWriter.SetLimiter(geometryLimiter)
 	nodeWriter.Start()
 
 	nodeIds := make(map[int64]bool)

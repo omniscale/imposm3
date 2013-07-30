@@ -8,7 +8,7 @@ import (
 	_ "goposm/database/postgis"
 	"goposm/diff"
 	state "goposm/diff/state"
-	"goposm/geom/clipper"
+	"goposm/geom/limit"
 	"goposm/logging"
 	"goposm/mapping"
 	"goposm/parser/pbf"
@@ -70,11 +70,11 @@ func main() {
 			reportErrors(errs)
 			break
 		}
-		var geometryClipper *clipper.Clipper
+		var geometryLimiter *limit.Limiter
 		if config.DiffImportOptions.Base.LimitTo != "" {
 			var err error
 			step := log.StartStep("Reading limitto geometries")
-			geometryClipper, err = clipper.NewFromOgrSource(config.DiffImportOptions.Base.LimitTo)
+			geometryLimiter, err = limit.NewFromOgrSource(config.DiffImportOptions.Base.LimitTo)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -82,7 +82,7 @@ func main() {
 		}
 
 		for _, oscFile := range config.DiffImportFlags.Args() {
-			diff.Update(oscFile, geometryClipper, false)
+			diff.Update(oscFile, geometryLimiter, false)
 		}
 	default:
 		log.Fatal("invalid command")
@@ -135,11 +135,11 @@ func mainimport() {
 		log.Fatal("-revertdeploy not compatible with -deployproduction/-removebackup")
 	}
 
-	var geometryClipper *clipper.Clipper
+	var geometryLimiter *limit.Limiter
 	if config.ImportOptions.Write && config.ImportOptions.Base.LimitTo != "" {
 		var err error
 		step := log.StartStep("Reading limitto geometries")
-		geometryClipper, err = clipper.NewFromOgrSource(config.ImportOptions.Base.LimitTo)
+		geometryLimiter, err = limit.NewFromOgrSource(config.ImportOptions.Base.LimitTo)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -254,7 +254,7 @@ func mainimport() {
 		relations := osmCache.Relations.Iter()
 		relWriter := writer.NewRelationWriter(osmCache, diffCache, relations,
 			db, polygonsTagMatcher, progress, config.ImportOptions.Base.Srid)
-		relWriter.SetClipper(geometryClipper)
+		relWriter.SetLimiter(geometryLimiter)
 		relWriter.Start()
 
 		// blocks till the Relations.Iter() finishes
@@ -264,7 +264,7 @@ func mainimport() {
 		ways := osmCache.Ways.Iter()
 		wayWriter := writer.NewWayWriter(osmCache, diffCache, ways, db,
 			lineStringsTagMatcher, polygonsTagMatcher, progress, config.ImportOptions.Base.Srid)
-		wayWriter.SetClipper(geometryClipper)
+		wayWriter.SetLimiter(geometryLimiter)
 		wayWriter.Start()
 
 		// blocks till the Ways.Iter() finishes
@@ -274,7 +274,7 @@ func mainimport() {
 		nodes := osmCache.Nodes.Iter()
 		nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
 			pointsTagMatcher, progress, config.ImportOptions.Base.Srid)
-		nodeWriter.SetClipper(geometryClipper)
+		nodeWriter.SetLimiter(geometryLimiter)
 		nodeWriter.Start()
 
 		// blocks till the Nodes.Iter() finishes

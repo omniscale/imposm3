@@ -66,8 +66,8 @@ func (nw *NodeWriter) loop() {
 				continue
 			}
 
-			if nw.clipper != nil {
-				parts, err := nw.clipper.Clip(n.Geom.Geom)
+			if nw.limiter != nil {
+				parts, err := nw.limiter.Clip(n.Geom.Geom)
 				if err != nil {
 					log.Println(err)
 					continue

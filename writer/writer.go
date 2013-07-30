@@ -5,7 +5,7 @@ import (
 	"goposm/database"
 	"goposm/element"
 	"goposm/expire"
-	"goposm/geom/clipper"
+	"goposm/geom/limit"
 	"goposm/mapping"
 	"goposm/stats"
 	"runtime"
@@ -26,14 +26,14 @@ type OsmElemWriter struct {
 	progress     *stats.Statistics
 	insertBuffer database.RowInserter
 	wg           *sync.WaitGroup
-	clipper      *clipper.Clipper
+	limiter      *limit.Limiter
 	writer       looper
 	srid         int
 	expireTiles  *expire.Tiles
 }
 
-func (writer *OsmElemWriter) SetClipper(clipper *clipper.Clipper) {
-	writer.clipper = clipper
+func (writer *OsmElemWriter) SetLimiter(limiter *limit.Limiter) {
+	writer.limiter = limiter
 }
 
 func (writer *OsmElemWriter) Start() {

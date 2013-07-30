@@ -107,8 +107,8 @@ NextRel:
 			continue NextRel
 		}
 
-		if rw.clipper != nil {
-			parts, err := rw.clipper.Clip(r.Geom.Geom)
+		if rw.limiter != nil {
+			parts, err := rw.limiter.Clip(r.Geom.Geom)
 			if err != nil {
 				log.Println(err)
 				continue NextRel

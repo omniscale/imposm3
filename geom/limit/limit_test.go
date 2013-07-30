@@ -1,4 +1,4 @@
-package clipper
+package limit
 
 import (
 	"goposm/geom/geos"
@@ -260,17 +260,17 @@ func TestFilterGeometryByType(t *testing.T) {
 func TestClipper(t *testing.T) {
 	g := geos.NewGeos()
 	defer g.Finish()
-	clipper, err := NewFromOgrSource("./hamburg_clip.geojson")
+	limiter, err := NewFromOgrSource("./hamburg_clip.geojson")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	result, err := clipper.Clip(g.FromWkt("POINT(0 0)"))
+	result, err := limiter.Clip(g.FromWkt("POINT(0 0)"))
 	if err != nil || result != nil {
 		t.Fatal(err)
 	}
 
-	result, err = clipper.Clip(g.FromWkt("POINT(1106543 7082055)"))
+	result, err = limiter.Clip(g.FromWkt("POINT(1106543 7082055)"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -278,7 +278,7 @@ func TestClipper(t *testing.T) {
 		t.Fatal()
 	}
 
-	result, err = clipper.Clip(g.FromWkt("LINESTRING(1106543 7082055, 1107105.2 7087540.0)"))
+	result, err = limiter.Clip(g.FromWkt("LINESTRING(1106543 7082055, 1107105.2 7087540.0)"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -287,7 +287,7 @@ func TestClipper(t *testing.T) {
 	}
 
 	geom := g.FromWkt("POLYGON((1106543 7082055, 1107105.2 7087540.0, 1112184.9 7084424.5, 1106543 7082055))")
-	result, err = clipper.Clip(geom)
+	result, err = limiter.Clip(geom)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -302,14 +302,14 @@ func TestClipper(t *testing.T) {
 func TestClipperWithBuffer(t *testing.T) {
 	g := geos.NewGeos()
 	defer g.Finish()
-	clipper, err := NewFromOgrSourceWithBuffered("./hamburg_clip.geojson", 10000.0)
+	limiter, err := NewFromOgrSourceWithBuffered("./hamburg_clip.geojson", 10000.0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if clipper.IntersectsBuffer(g, 1106543, 7082055) != true {
+	if limiter.IntersectsBuffer(g, 1106543, 7082055) != true {
 		t.Fatal()
 	}
-	if clipper.IntersectsBuffer(g, 1006543, 7082055) != false {
+	if limiter.IntersectsBuffer(g, 1006543, 7082055) != false {
 		t.Fatal()
 	}
 }
@@ -317,14 +317,14 @@ func TestClipperWithBuffer(t *testing.T) {
 func BenchmarkClipper(b *testing.B) {
 	g := geos.NewGeos()
 	defer g.Finish()
-	clipper, err := NewFromOgrSource("./hamburg_clip.geojson")
+	limiter, err := NewFromOgrSource("./hamburg_clip.geojson")
 	if err != nil {
 		b.Fatal(err)
 	}
 
 	geom := g.FromWkt("LINESTRING(1106543 7082055, 1107105.2 7087540.0)")
 	for i := 0; i < b.N; i++ {
-		result, err := clipper.Clip(geom)
+		result, err := limiter.Clip(geom)
 		if err != nil {
 			b.Fatal(err)
 		}
