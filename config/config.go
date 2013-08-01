@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 )
@@ -21,9 +22,9 @@ const defaultSrid = 3857
 const defaultCacheDir = "/tmp/goposm"
 
 var ImportFlags = flag.NewFlagSet("import", flag.ExitOnError)
-var DiffImportFlags = flag.NewFlagSet("diff", flag.ExitOnError)
+var DiffFlags = flag.NewFlagSet("diff", flag.ExitOnError)
 
-type ImportBaseOptions struct {
+type _BaseOptions struct {
 	Connection         string
 	CacheDir           string
 	MappingFile        string
@@ -33,8 +34,60 @@ type ImportBaseOptions struct {
 	ConfigFile         string
 }
 
+func (o *_BaseOptions) updateFromConfig() error {
+	conf := &Config{
+		CacheDir: defaultCacheDir,
+		Srid:     defaultSrid,
+	}
+
+	if o.ConfigFile != "" {
+		f, err := os.Open(o.ConfigFile)
+		if err != nil {
+			return err
+		}
+		decoder := json.NewDecoder(f)
+
+		err = decoder.Decode(&conf)
+		if err != nil {
+			return err
+		}
+	}
+	if o.Connection == "" {
+		o.Connection = conf.Connection
+	}
+	if conf.Srid == 0 {
+		conf.Srid = defaultSrid
+	}
+	if o.Srid != defaultSrid {
+		o.Srid = conf.Srid
+	}
+	if o.MappingFile == "" {
+		o.MappingFile = conf.MappingFile
+	}
+	if o.LimitTo == "" {
+		o.LimitTo = conf.LimitTo
+	}
+	if o.LimitToCacheBuffer == 0.0 {
+		o.LimitToCacheBuffer = conf.LimitToCacheBuffer
+	}
+	if o.CacheDir == defaultCacheDir {
+		o.CacheDir = conf.CacheDir
+	}
+	return nil
+}
+
+func (o *_BaseOptions) check() []error {
+	errs := []error{}
+	if o.Srid != 3857 {
+		errs = append(errs, errors.New("srid!=3857 not implemented"))
+	}
+	if o.MappingFile == "" {
+		errs = append(errs, errors.New("missing mapping"))
+	}
+	return errs
+}
+
 type _ImportOptions struct {
-	Base             ImportBaseOptions
 	Cpuprofile       string
 	Httpprofile      string
 	Memprofile       string
@@ -50,141 +103,95 @@ type _ImportOptions struct {
 	Quiet            bool
 }
 
-type _DiffImportOptions struct {
-	Base ImportBaseOptions
-}
-
+var BaseOptions = _BaseOptions{}
 var ImportOptions = _ImportOptions{}
-var DiffImportOptions = _DiffImportOptions{}
 
-func addBaseFlags(flags *flag.FlagSet, baseOptions *ImportBaseOptions) {
-	flags.StringVar(&baseOptions.Connection, "connection", "", "connection parameters")
-	flags.StringVar(&baseOptions.CacheDir, "cachedir", defaultCacheDir, "cache directory")
-	flags.StringVar(&baseOptions.MappingFile, "mapping", "", "mapping file")
-	flags.IntVar(&baseOptions.Srid, "srid", defaultSrid, "srs id")
-	flags.StringVar(&baseOptions.LimitTo, "limitto", "", "limit to geometries")
-	flags.StringVar(&baseOptions.ConfigFile, "config", "", "config (json)")
+func addBaseFlags(flags *flag.FlagSet) {
+	flags.StringVar(&BaseOptions.Connection, "connection", "", "connection parameters")
+	flags.StringVar(&BaseOptions.CacheDir, "cachedir", defaultCacheDir, "cache directory")
+	flags.StringVar(&BaseOptions.MappingFile, "mapping", "", "mapping file")
+	flags.IntVar(&BaseOptions.Srid, "srid", defaultSrid, "srs id")
+	flags.StringVar(&BaseOptions.LimitTo, "limitto", "", "limit to geometries")
+	flags.StringVar(&BaseOptions.ConfigFile, "config", "", "config (json)")
 }
 
-func addImportFlags(flags *flag.FlagSet, options *_ImportOptions) {
-	flags.StringVar(&options.Cpuprofile, "cpuprofile", "", "filename of cpu profile output")
-	flags.StringVar(&options.Httpprofile, "httpprofile", "", "bind address for profile server")
-	flags.StringVar(&options.Memprofile, "memprofile", "", "dir name of mem profile output and interval (fname:interval)")
-	flags.BoolVar(&options.Overwritecache, "overwritecache", false, "overwritecache")
-	flags.BoolVar(&options.Appendcache, "appendcache", false, "append cache")
-	flags.StringVar(&options.Read, "read", "", "read")
-	flags.BoolVar(&options.Write, "write", false, "write")
-	flags.BoolVar(&options.Optimize, "optimize", false, "optimize")
-	flags.BoolVar(&options.Diff, "diff", false, "enable diff support")
-	flags.BoolVar(&options.DeployProduction, "deployproduction", false, "deploy production")
-	flags.BoolVar(&options.RevertDeploy, "revertdeploy", false, "revert deploy to production")
-	flags.BoolVar(&options.RemoveBackup, "removebackup", false, "remove backups from deploy")
-	flags.BoolVar(&options.Quiet, "quiet", false, "quiet log output")
+func UsageImport() {
+	fmt.Fprintf(os.Stderr, "Usage: %s %s [args]\n\n", os.Args[0], os.Args[1])
+	ImportFlags.PrintDefaults()
+	os.Exit(2)
 }
 
-func addDiffImportFlags(flags *flag.FlagSet, options *_DiffImportOptions) {
-	// no options yet
+func UsageDiff() {
+	fmt.Fprintf(os.Stderr, "Usage: %s %s [args] [.osc.gz, ...]\n\n", os.Args[0], os.Args[1])
+	DiffFlags.PrintDefaults()
+	os.Exit(2)
 }
 
 func init() {
-	addBaseFlags(ImportFlags, &ImportOptions.Base)
-	addImportFlags(ImportFlags, &ImportOptions)
-	addBaseFlags(DiffImportFlags, &DiffImportOptions.Base)
-	addDiffImportFlags(DiffImportFlags, &DiffImportOptions)
+	ImportFlags.Usage = UsageImport
+	DiffFlags.Usage = UsageDiff
+
+	addBaseFlags(DiffFlags)
+	addBaseFlags(ImportFlags)
+	ImportFlags.StringVar(&ImportOptions.Cpuprofile, "cpuprofile", "", "filename of cpu profile output")
+	ImportFlags.StringVar(&ImportOptions.Httpprofile, "httpprofile", "", "bind address for profile server")
+	ImportFlags.StringVar(&ImportOptions.Memprofile, "memprofile", "", "dir name of mem profile output and interval (fname:interval)")
+	ImportFlags.BoolVar(&ImportOptions.Overwritecache, "overwritecache", false, "overwritecache")
+	ImportFlags.BoolVar(&ImportOptions.Appendcache, "appendcache", false, "append cache")
+	ImportFlags.StringVar(&ImportOptions.Read, "read", "", "read")
+	ImportFlags.BoolVar(&ImportOptions.Write, "write", false, "write")
+	ImportFlags.BoolVar(&ImportOptions.Optimize, "optimize", false, "optimize")
+	ImportFlags.BoolVar(&ImportOptions.Diff, "diff", false, "enable diff support")
+	ImportFlags.BoolVar(&ImportOptions.DeployProduction, "deployproduction", false, "deploy production")
+	ImportFlags.BoolVar(&ImportOptions.RevertDeploy, "revertdeploy", false, "revert deploy to production")
+	ImportFlags.BoolVar(&ImportOptions.RemoveBackup, "removebackup", false, "remove backups from deploy")
+	ImportFlags.BoolVar(&ImportOptions.Quiet, "quiet", false, "quiet log output")
 }
 
-// var (
-// 	connection  = flag.String("connection", "", "connection parameters")
-// 	cachedir    = flag.String("cachedir", defaultCacheDir, "cache directory")
-// 	mappingFile = flag.String("mapping", "", "mapping file")
-// 	srid        = flag.Int("srid", defaultSrid, "srs id")
-// 	limitTo     = flag.String("limitto", "", "limit to geometries")
-// 	configFile  = flag.String("config", "", "config (json)")
-// )
-
-func ParseImport(args []string) []error {
+func ParseImport(args []string) {
+	if len(args) == 0 {
+		UsageImport()
+	}
 	err := ImportFlags.Parse(args)
 	if err != nil {
 		log.Fatal(err)
 	}
-	errs := updateBaseOpts(&ImportOptions.Base)
-	if errs != nil {
-		return errs
+	err = BaseOptions.updateFromConfig()
+	if err != nil {
+		log.Fatal(err)
 	}
-
-	errs = checkOptions(&ImportOptions.Base)
-	return errs
+	errs := BaseOptions.check()
+	if len(errs) != 0 {
+		reportErrors(errs)
+		UsageImport()
+	}
 }
 
-func updateBaseOpts(opts *ImportBaseOptions) []error {
-
-	conf := &Config{
-		CacheDir: defaultCacheDir,
-		Srid:     defaultSrid,
+func ParseDiffImport(args []string) {
+	if len(args) == 0 {
+		UsageDiff()
 	}
-
-	if opts.ConfigFile != "" {
-		f, err := os.Open(opts.ConfigFile)
-		if err != nil {
-			return []error{err}
-		}
-		decoder := json.NewDecoder(f)
-
-		err = decoder.Decode(&conf)
-		if err != nil {
-			return []error{err}
-		}
-	}
-	if opts.Connection == "" {
-		opts.Connection = conf.Connection
-	}
-	if conf.Srid == 0 {
-		conf.Srid = defaultSrid
-	}
-	if opts.Srid != defaultSrid {
-		opts.Srid = conf.Srid
-	}
-	if opts.MappingFile == "" {
-		opts.MappingFile = conf.MappingFile
-	}
-	if opts.LimitTo == "" {
-		opts.LimitTo = conf.LimitTo
-	}
-	if opts.LimitToCacheBuffer == 0.0 {
-		opts.LimitToCacheBuffer = conf.LimitToCacheBuffer
-	}
-	if opts.CacheDir == defaultCacheDir {
-		opts.CacheDir = conf.CacheDir
-	}
-	return nil
-}
-
-func ParseDiffImport(args []string) []error {
-	err := DiffImportFlags.Parse(args)
+	err := DiffFlags.Parse(args)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	errs := updateBaseOpts(&DiffImportOptions.Base)
-	if errs != nil {
-		return errs
+	err = BaseOptions.updateFromConfig()
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	errs = checkOptions(&DiffImportOptions.Base)
-
-	return errs
+	errs := BaseOptions.check()
+	if len(errs) != 0 {
+		reportErrors(errs)
+		UsageDiff()
+	}
 }
 
-func checkOptions(opts *ImportBaseOptions) []error {
-	errs := []error{}
-	if opts.Srid != 3857 {
-		errs = append(errs, errors.New("srid!=3857 not implemented"))
+func reportErrors(errs []error) {
+	fmt.Println("errors in config/options:")
+	for _, err := range errs {
+		fmt.Printf("\t%s\n", err)
 	}
-	if opts.MappingFile == "" {
-		errs = append(errs, errors.New("missing mapping"))
-	}
-	if opts.Connection == "" {
-		errs = append(errs, errors.New("missing connection"))
-	}
-	return errs
+	os.Exit(1)
 }

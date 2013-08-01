@@ -26,7 +26,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, force bool) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	lastState, err := diffstate.ParseLastState(config.DiffImportOptions.Base.CacheDir)
+	lastState, err := diffstate.ParseLastState(config.BaseOptions.CacheDir)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -42,28 +42,28 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, force bool) {
 
 	elems, errc := parser.Parse(oscFile)
 
-	osmCache := cache.NewOSMCache(config.DiffImportOptions.Base.CacheDir)
+	osmCache := cache.NewOSMCache(config.BaseOptions.CacheDir)
 	err = osmCache.Open()
 	if err != nil {
 		log.Fatal("osm cache: ", err)
 	}
 
-	diffCache := cache.NewDiffCache(config.DiffImportOptions.Base.CacheDir)
+	diffCache := cache.NewDiffCache(config.BaseOptions.CacheDir)
 	err = diffCache.Open()
 	if err != nil {
 		log.Fatal("diff cache: ", err)
 	}
 
-	tagmapping, err := mapping.NewMapping(config.DiffImportOptions.Base.MappingFile)
+	tagmapping, err := mapping.NewMapping(config.BaseOptions.MappingFile)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	connType := database.ConnectionType(config.DiffImportOptions.Base.Connection)
+	connType := database.ConnectionType(config.BaseOptions.Connection)
 	dbConf := database.Config{
 		Type:             connType,
-		ConnectionParams: config.DiffImportOptions.Base.Connection,
-		Srid:             config.DiffImportOptions.Base.Srid,
+		ConnectionParams: config.BaseOptions.Connection,
+		Srid:             config.BaseOptions.Srid,
 	}
 	db, err := database.Open(dbConf, tagmapping)
 	if err != nil {
@@ -105,19 +105,19 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, force bool) {
 	nodes := make(chan *element.Node)
 
 	relWriter := writer.NewRelationWriter(osmCache, diffCache, relations,
-		db, polygonsTagMatcher, progress, config.DiffImportOptions.Base.Srid)
+		db, polygonsTagMatcher, progress, config.BaseOptions.Srid)
 	relWriter.SetLimiter(geometryLimiter)
 	relWriter.SetExpireTiles(expiredTiles)
 	relWriter.Start()
 
 	wayWriter := writer.NewWayWriter(osmCache, diffCache, ways, db,
-		lineStringsTagMatcher, polygonsTagMatcher, progress, config.DiffImportOptions.Base.Srid)
+		lineStringsTagMatcher, polygonsTagMatcher, progress, config.BaseOptions.Srid)
 	wayWriter.SetLimiter(geometryLimiter)
 	wayWriter.SetExpireTiles(expiredTiles)
 	wayWriter.Start()
 
 	nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
-		pointsTagMatcher, progress, config.DiffImportOptions.Base.Srid)
+		pointsTagMatcher, progress, config.BaseOptions.Srid)
 	nodeWriter.SetLimiter(geometryLimiter)
 	nodeWriter.Start()
 
@@ -283,7 +283,7 @@ For:
 	progress.Stop()
 
 	if state != nil {
-		err = diffstate.WriteLastState(config.DiffImportOptions.Base.CacheDir, state)
+		err = diffstate.WriteLastState(config.BaseOptions.CacheDir, state)
 		if err != nil {
 			log.Warn(err) // warn only
 		}

@@ -28,15 +28,6 @@ import (
 
 var log = logging.NewLogger("")
 
-func reportErrors(errs []error) {
-	fmt.Println("errors in config/options:")
-	for _, err := range errs {
-		fmt.Printf("\t%s\n", err)
-	}
-	logging.Shutdown()
-	os.Exit(1)
-}
-
 func printCmds() {
 	fmt.Fprintf(os.Stderr, "Usage: %s COMMAND [args]\n\n", os.Args[0])
 	fmt.Println("Available commands:")
@@ -60,27 +51,18 @@ func main() {
 
 	switch os.Args[1] {
 	case "import":
-		errs := config.ParseImport(os.Args[2:])
-		if len(errs) > 0 {
-			config.ImportFlags.PrintDefaults()
-			reportErrors(errs)
-			break
-		}
+		config.ParseImport(os.Args[2:])
 		mainimport()
 	case "diff":
-		errs := config.ParseDiffImport(os.Args[2:])
-		if len(errs) > 0 {
-			config.DiffImportFlags.PrintDefaults()
-			reportErrors(errs)
-			break
-		}
+		config.ParseDiffImport(os.Args[2:])
+
 		var geometryLimiter *limit.Limiter
-		if config.DiffImportOptions.Base.LimitTo != "" {
+		if config.BaseOptions.LimitTo != "" {
 			var err error
 			step := log.StartStep("Reading limitto geometries")
 			geometryLimiter, err = limit.NewFromOgrSourceWithBuffered(
-				config.DiffImportOptions.Base.LimitTo,
-				config.DiffImportOptions.Base.LimitToCacheBuffer,
+				config.BaseOptions.LimitTo,
+				config.BaseOptions.LimitToCacheBuffer,
 			)
 			if err != nil {
 				log.Fatal(err)
@@ -88,7 +70,7 @@ func main() {
 			log.StopStep(step)
 		}
 
-		for _, oscFile := range config.DiffImportFlags.Args() {
+		for _, oscFile := range config.DiffFlags.Args() {
 			diff.Update(oscFile, geometryLimiter, false)
 		}
 	case "query-cache":
@@ -145,17 +127,17 @@ func mainimport() {
 	}
 
 	var geometryLimiter *limit.Limiter
-	if config.ImportOptions.Write && config.ImportOptions.Base.LimitTo != "" {
+	if config.ImportOptions.Write && config.BaseOptions.LimitTo != "" {
 		var err error
 		step := log.StartStep("Reading limitto geometries")
-		geometryLimiter, err = limit.NewFromOgrSource(config.ImportOptions.Base.LimitTo)
+		geometryLimiter, err = limit.NewFromOgrSource(config.BaseOptions.LimitTo)
 		if err != nil {
 			log.Fatal(err)
 		}
 		log.StopStep(step)
 	}
 
-	tagmapping, err := mapping.NewMapping(config.ImportOptions.Base.MappingFile)
+	tagmapping, err := mapping.NewMapping(config.BaseOptions.MappingFile)
 	if err != nil {
 		log.Fatal("mapping file: ", err)
 	}
@@ -163,11 +145,14 @@ func mainimport() {
 	var db database.DB
 
 	if config.ImportOptions.Write || config.ImportOptions.DeployProduction || config.ImportOptions.RevertDeploy || config.ImportOptions.RemoveBackup || config.ImportOptions.Optimize {
-		connType := database.ConnectionType(config.ImportOptions.Base.Connection)
+		if config.BaseOptions.Connection == "" {
+			log.Fatal("missing connection option")
+		}
+		connType := database.ConnectionType(config.BaseOptions.Connection)
 		conf := database.Config{
 			Type:             connType,
-			ConnectionParams: config.ImportOptions.Base.Connection,
-			Srid:             config.ImportOptions.Base.Srid,
+			ConnectionParams: config.BaseOptions.Connection,
+			Srid:             config.BaseOptions.Srid,
 		}
 		db, err = database.Open(conf, tagmapping)
 		if err != nil {
@@ -175,11 +160,11 @@ func mainimport() {
 		}
 	}
 
-	osmCache := cache.NewOSMCache(config.ImportOptions.Base.CacheDir)
+	osmCache := cache.NewOSMCache(config.BaseOptions.CacheDir)
 
 	if config.ImportOptions.Read != "" && osmCache.Exists() {
 		if config.ImportOptions.Overwritecache {
-			log.Printf("removing existing cache %s", config.ImportOptions.Base.CacheDir)
+			log.Printf("removing existing cache %s", config.BaseOptions.CacheDir)
 			err := osmCache.Remove()
 			if err != nil {
 				log.Fatal("unable to remove cache:", err)
@@ -215,7 +200,7 @@ func mainimport() {
 		if config.ImportOptions.Diff {
 			diffstate := state.FromPbf(pbfFile)
 			if diffstate != nil {
-				diffstate.WriteToFile(path.Join(config.ImportOptions.Base.CacheDir, "last.state.txt"))
+				diffstate.WriteToFile(path.Join(config.BaseOptions.CacheDir, "last.state.txt"))
 			}
 		}
 	}
@@ -242,7 +227,7 @@ func mainimport() {
 
 		var diffCache *cache.DiffCache
 		if config.ImportOptions.Diff {
-			diffCache = cache.NewDiffCache(config.ImportOptions.Base.CacheDir)
+			diffCache = cache.NewDiffCache(config.BaseOptions.CacheDir)
 			if err = diffCache.Remove(); err != nil {
 				log.Fatal(err)
 			}
@@ -262,7 +247,7 @@ func mainimport() {
 
 		relations := osmCache.Relations.Iter()
 		relWriter := writer.NewRelationWriter(osmCache, diffCache, relations,
-			db, polygonsTagMatcher, progress, config.ImportOptions.Base.Srid)
+			db, polygonsTagMatcher, progress, config.BaseOptions.Srid)
 		relWriter.SetLimiter(geometryLimiter)
 		relWriter.Start()
 
@@ -272,7 +257,7 @@ func mainimport() {
 
 		ways := osmCache.Ways.Iter()
 		wayWriter := writer.NewWayWriter(osmCache, diffCache, ways, db,
-			lineStringsTagMatcher, polygonsTagMatcher, progress, config.ImportOptions.Base.Srid)
+			lineStringsTagMatcher, polygonsTagMatcher, progress, config.BaseOptions.Srid)
 		wayWriter.SetLimiter(geometryLimiter)
 		wayWriter.Start()
 
@@ -282,7 +267,7 @@ func mainimport() {
 
 		nodes := osmCache.Nodes.Iter()
 		nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
-			pointsTagMatcher, progress, config.ImportOptions.Base.Srid)
+			pointsTagMatcher, progress, config.BaseOptions.Srid)
 		nodeWriter.SetLimiter(geometryLimiter)
 		nodeWriter.Start()
 
