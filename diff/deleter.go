@@ -58,6 +58,7 @@ func (d *Deleter) deleteRelation(id int64) {
 		d.delDb.Delete(m.Table.Name, elem.Id)
 		deleted = true
 	}
+	d.osmCache.InsertedWays.DeleteMembers(elem.Members)
 	if deleted && d.expireTiles != nil {
 		for _, m := range elem.Members {
 			if m.Way == nil {

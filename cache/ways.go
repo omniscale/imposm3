@@ -133,6 +133,20 @@ func (p *InsertedWaysCache) PutMembers(members []element.Member) error {
 	return p.db.Write(p.wo, batch)
 }
 
+func (p *InsertedWaysCache) DeleteMembers(members []element.Member) error {
+	batch := levigo.NewWriteBatch()
+	defer batch.Close()
+
+	for _, m := range members {
+		if m.Type != element.WAY {
+			continue
+		}
+		keyBuf := idToKeyBuf(m.Id)
+		batch.Delete(keyBuf)
+	}
+	return p.db.Write(p.wo, batch)
+}
+
 func (p *InsertedWaysCache) IsInserted(id int64) (bool, error) {
 	keyBuf := idToKeyBuf(id)
 	data, err := p.db.Get(p.ro, keyBuf)
