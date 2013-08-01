@@ -179,7 +179,7 @@ For:
 				} else if elem.Way != nil {
 					// check if first coord is cached to avoid caching
 					// unneeded ways (typical outside of our coverage)
-					if coordIsCached(elem.Way.Nodes, osmCache.Coords) {
+					if coordIsCached(elem.Way.Refs, osmCache.Coords) {
 						osmCache.Ways.PutWay(elem.Way)
 						wayIds[elem.Way.Id] = true
 					}
@@ -303,11 +303,11 @@ func memberIsCached(members []element.Member, wayCache *cache.WaysCache) bool {
 	return false
 }
 
-func coordIsCached(nodes []element.Node, coordCache *cache.DeltaCoordsCache) bool {
-	if len(nodes) <= 0 {
+func coordIsCached(refs []int64, coordCache *cache.DeltaCoordsCache) bool {
+	if len(refs) <= 0 {
 		return false
 	}
-	_, err := coordCache.GetCoord(nodes[0].Id)
+	_, err := coordCache.GetCoord(refs[0])
 	if err != nil {
 		return false
 	}
