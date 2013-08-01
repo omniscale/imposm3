@@ -4,6 +4,7 @@ import (
 	"flag"
 	"goposm/cache"
 	"log"
+	"os"
 )
 
 var (
@@ -19,11 +20,11 @@ func printRelations(osmCache *cache.OSMCache, ids []int64, recurse bool) {
 	for _, id := range ids {
 		rel, err := osmCache.Relations.GetRelation(id)
 		if err == cache.NotFound {
-			log.Println("not found")
+			log.Println("rel:", id, "not found")
 		} else if err != nil {
 			log.Fatal(err)
 		} else {
-			log.Println(rel)
+			log.Println("rel:", rel)
 			if recurse {
 				oldPrefix := log.Prefix()
 				log.SetPrefix(oldPrefix + "        ")
@@ -40,11 +41,11 @@ func printWays(osmCache *cache.OSMCache, diffCache *cache.DiffCache, ids []int64
 	for _, id := range ids {
 		way, err := osmCache.Ways.GetWay(id)
 		if err == cache.NotFound {
-			log.Println(id, "not found")
+			log.Println("way:", id, "not found")
 		} else if err != nil {
 			log.Fatal(err)
 		} else {
-			log.Println(way)
+			log.Println("way:", way)
 			if recurse {
 				oldPrefix := log.Prefix()
 				log.SetPrefix(oldPrefix + "        ")
@@ -73,13 +74,13 @@ func printNodes(osmCache *cache.OSMCache, diffCache *cache.DiffCache, ids []int6
 		if node == nil {
 			node, err = osmCache.Coords.GetCoord(id)
 			if err == cache.NotFound {
-				log.Println(id, "not found")
+				log.Println("node:", id, "not found")
 			} else if err != nil {
 				log.Fatal(err)
 			}
 		}
 		if node != nil {
-			log.Println(node)
+			log.Println("node:", node)
 		}
 		if deps {
 			oldPrefix := log.Prefix()
@@ -96,6 +97,7 @@ func printNodes(osmCache *cache.OSMCache, diffCache *cache.DiffCache, ids []int6
 func main() {
 	flag.Parse()
 	log.SetFlags(0)
+	log.SetOutput(os.Stdout)
 
 	osmCache := cache.NewOSMCache(*cachedir)
 	err := osmCache.Open()
