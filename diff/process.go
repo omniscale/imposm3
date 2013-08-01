@@ -184,7 +184,7 @@ For:
 						wayIds[elem.Way.Id] = true
 					}
 				} else if elem.Node != nil {
-					if geometryLimiter.IntersectsBuffer(g, elem.Node.Long, elem.Node.Lat) {
+					if geometryLimiter == nil || geometryLimiter.IntersectsBuffer(g, elem.Node.Long, elem.Node.Lat) {
 						osmCache.Nodes.PutNode(elem.Node)
 						osmCache.Coords.PutCoords([]element.Node{*elem.Node})
 						nodeIds[elem.Node.Id] = true
