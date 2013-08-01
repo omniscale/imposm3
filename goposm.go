@@ -2,7 +2,16 @@ package main
 
 import (
 	"fmt"
+	golog "log"
+	"os"
+	"path"
+	"runtime"
+	"runtime/pprof"
+	"strings"
+	"time"
+
 	"goposm/cache"
+	"goposm/cache/query"
 	"goposm/config"
 	"goposm/database"
 	_ "goposm/database/postgis"
@@ -15,13 +24,6 @@ import (
 	"goposm/reader"
 	"goposm/stats"
 	"goposm/writer"
-	golog "log"
-	"os"
-	"path"
-	"runtime"
-	"runtime/pprof"
-	"strings"
-	"time"
 )
 
 var log = logging.NewLogger("")
@@ -36,9 +38,11 @@ func reportErrors(errs []error) {
 }
 
 func printCmds() {
-	fmt.Println("available commands:")
+	fmt.Fprintf(os.Stderr, "Usage: %s COMMAND [args]\n\n", os.Args[0])
+	fmt.Println("Available commands:")
 	fmt.Println("\timport")
 	fmt.Println("\tdiff")
+	fmt.Println("\tquery-cache")
 }
 
 func main() {
@@ -87,6 +91,8 @@ func main() {
 		for _, oscFile := range config.DiffImportFlags.Args() {
 			diff.Update(oscFile, geometryLimiter, false)
 		}
+	case "query-cache":
+		query.Query(os.Args[2:])
 	default:
 		log.Fatal("invalid command")
 	}
