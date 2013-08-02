@@ -7,21 +7,21 @@ import (
 type Tags map[string]string
 
 type OSMElem struct {
-	Id   int64
-	Tags Tags
-	Geom *Geometry
+	Id   int64     `json:"-"`
+	Tags Tags      `json:"tags,omitempty"`
+	Geom *Geometry `json:"-"`
 }
 
 type Node struct {
 	OSMElem
-	Lat  float64
-	Long float64
+	Lat  float64 `json:"lat"`
+	Long float64 `json:"lon"`
 }
 
 type Way struct {
 	OSMElem
-	Refs  []int64
-	Nodes []Node
+	Refs  []int64 `json:"refs"`
+	Nodes []Node  `json:"nodes,omitempty"`
 }
 
 type Geometry struct {
@@ -48,13 +48,13 @@ var MemberTypeValues = map[string]MemberType{
 }
 
 type Member struct {
-	Id   int64
-	Type MemberType
-	Role string
-	Way  *Way
+	Id   int64      `json:"id"`
+	Type MemberType `json:"type"`
+	Role string     `json:"role"`
+	Way  *Way       `json:"-"`
 }
 
 type Relation struct {
 	OSMElem
-	Members []Member
+	Members []Member `json:"members"`
 }

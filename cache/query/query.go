@@ -1,12 +1,15 @@
 package query
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 
 	"goposm/cache"
+	"goposm/element"
 )
 
 var flags = flag.NewFlagSet("query-cache", flag.ExitOnError)
@@ -20,82 +23,110 @@ var (
 	cachedir = flags.String("cachedir", "/tmp/goposm", "cache directory")
 )
 
-func printRelations(osmCache *cache.OSMCache, ids []int64, recurse bool) {
+type nodes map[string]*node
+type ways map[string]*way
+type relations map[string]*relation
+
+type node struct {
+	element.Node
+	Ways ways `json:"ways,omitempty"`
+}
+
+type way struct {
+	element.Way
+	Nodes     nodes     `json:"nodes,omitempty"`
+	Relations relations `json:"relations,omitempty"`
+}
+
+type relation struct {
+	element.Relation
+	Ways ways `json:"ways,omitempty"`
+}
+
+type result struct {
+	Nodes     nodes     `json:"nodes,omitempty"`
+	Ways      ways      `json:"ways,omitempty"`
+	Relations relations `json:"relations,omitempty"`
+}
+
+func collectRelations(osmCache *cache.OSMCache, ids []int64, recurse bool) relations {
+	rels := make(relations)
 	for _, id := range ids {
+		sid := strconv.FormatInt(id, 10)
 		rel, err := osmCache.Relations.GetRelation(id)
 		if err == cache.NotFound {
-			log.Println("rel:", id, "not found")
+			rels[sid] = nil
 		} else if err != nil {
 			log.Fatal(err)
 		} else {
-			log.Println("rel:", rel)
+			rels[sid] = &relation{*rel, nil}
 			if recurse {
-				oldPrefix := log.Prefix()
-				log.SetPrefix(oldPrefix + "        ")
+				memberWayIds := []int64{}
 				for _, m := range rel.Members {
-					printWays(osmCache, nil, []int64{m.Id}, true, false)
+					if m.Type == element.WAY {
+						memberWayIds = append(memberWayIds, m.Id)
+					}
 				}
-				log.SetPrefix(oldPrefix)
+				rels[sid].Ways = collectWays(osmCache, nil, memberWayIds, true, false)
+
 			}
 		}
 	}
+	return rels
 }
 
-func printWays(osmCache *cache.OSMCache, diffCache *cache.DiffCache, ids []int64, recurse, deps bool) {
+func collectWays(osmCache *cache.OSMCache, diffCache *cache.DiffCache, ids []int64, recurse, deps bool) ways {
+	ws := make(ways)
 	for _, id := range ids {
-		way, err := osmCache.Ways.GetWay(id)
+		sid := strconv.FormatInt(id, 10)
+		w, err := osmCache.Ways.GetWay(id)
 		if err == cache.NotFound {
-			log.Println("way:", id, "not found")
+			ws[sid] = nil
 		} else if err != nil {
 			log.Fatal(err)
 		} else {
-			log.Println("way:", way)
+			ws[sid] = &way{*w, nil, nil}
 			if recurse {
-				oldPrefix := log.Prefix()
-				log.SetPrefix(oldPrefix + "        ")
-				printNodes(osmCache, nil, way.Refs, false)
-				log.SetPrefix(oldPrefix)
+				ws[sid].Nodes = collectNodes(osmCache, nil, w.Refs, false)
 			}
-		}
-		if deps {
-			oldPrefix := log.Prefix()
-			log.SetPrefix(oldPrefix + "        ")
-			rels := diffCache.Ways.Get(id)
-			if len(rels) != 0 {
-				printRelations(osmCache, rels, false)
+			if deps {
+				rels := diffCache.Ways.Get(id)
+				if len(rels) != 0 {
+					ws[sid].Relations = collectRelations(osmCache, rels, false)
+				}
 			}
-			log.SetPrefix(oldPrefix)
 		}
 	}
+	return ws
 }
 
-func printNodes(osmCache *cache.OSMCache, diffCache *cache.DiffCache, ids []int64, deps bool) {
+func collectNodes(osmCache *cache.OSMCache, diffCache *cache.DiffCache, ids []int64, deps bool) nodes {
+	ns := make(nodes)
 	for _, id := range ids {
-		node, err := osmCache.Nodes.GetNode(id)
+		sid := strconv.FormatInt(id, 10)
+		n, err := osmCache.Nodes.GetNode(id)
 		if err != cache.NotFound && err != nil {
 			log.Fatal(err)
 		}
-		if node == nil {
-			node, err = osmCache.Coords.GetCoord(id)
+		if n == nil {
+			n, err = osmCache.Coords.GetCoord(id)
 			if err == cache.NotFound {
-				log.Println("node:", id, "not found")
+				ns[sid] = nil
 			} else if err != nil {
 				log.Fatal(err)
 			}
 		}
-		if node != nil {
-			log.Println("node:", node)
-		}
-		if deps {
-			oldPrefix := log.Prefix()
-			log.SetPrefix(oldPrefix + "        ")
-			ways := diffCache.Coords.Get(id)
-			if len(ways) != 0 {
-				printWays(osmCache, diffCache, ways, false, true)
+		if n != nil {
+			ns[sid] = &node{*n, nil}
+			if deps {
+				ways := diffCache.Coords.Get(id)
+				if len(ways) != 0 {
+					ns[sid].Ways = collectWays(osmCache, diffCache, ways, false, true)
+				}
 			}
-			log.SetPrefix(oldPrefix)
 		}
 	}
+	return ns
 }
 
 func Usage() {
@@ -103,6 +134,14 @@ func Usage() {
 	flags.PrintDefaults()
 	fmt.Fprintln(os.Stderr, "\nQuery cache for nodes/ways/relations.")
 	os.Exit(1)
+}
+
+func printJson(obj interface{}) {
+	bytes, err := json.MarshalIndent(obj, "", "  ")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(string(bytes))
 }
 
 func Query(args []string) {
@@ -134,16 +173,19 @@ func Query(args []string) {
 		log.Fatal("cannot use -full and -deps option together")
 	}
 
+	result := result{}
+
 	if *relId != -1 {
-		printRelations(osmCache, []int64{*relId}, *full)
+		result.Relations = collectRelations(osmCache, []int64{*relId}, *full)
 	}
 
 	if *wayId != -1 {
-		printWays(osmCache, diffCache, []int64{*wayId}, *full, *deps)
+		result.Ways = collectWays(osmCache, diffCache, []int64{*wayId}, *full, *deps)
 	}
 
 	if *nodeId != -1 {
-		printNodes(osmCache, diffCache, []int64{*nodeId}, *deps)
+		result.Nodes = collectNodes(osmCache, diffCache, []int64{*nodeId}, *deps)
 	}
 
+	printJson(result)
 }
