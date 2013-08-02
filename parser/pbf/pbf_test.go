@@ -14,7 +14,7 @@ import (
 
 func BenchmarkHello(b *testing.B) {
 	b.StopTimer()
-	pbf, err := open("../azores.osm.pbf")
+	pbf, err := Open("../azores.osm.pbf")
 	if err != nil {
 		panic(err)
 	}
