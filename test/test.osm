@@ -388,4 +388,17 @@
     <tag k="type" v="multipolygon"/>
   </relation>
 
+  <!-- test that node (n:20001) does not reference way (w:20001) after it was deleted -->
+  <node id="20001" version="1" timestamp="2011-11-11T00:11:11Z" lat="30" lon="10">
+    <tag k="name" v="way 14001"/>
+    <tag k="barrier" v="block"/>
+  </node>
+  <node id="20002" version="1" timestamp="2011-11-11T00:11:11Z" lat="30" lon="10.001"/>
+  <way id="20001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="20001"/>
+    <nd ref="20002"/>
+    <tag k="highway" v="residential"/>
+  </way>
+
+
 </osm>

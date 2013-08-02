@@ -78,4 +78,10 @@
     </relation>
   </modify>
 
+  <!-- test that node (n:20001) does not reference way (w:20001) after it was deleted -->
+  <delete>
+    <node id="20002" />
+    <way id="20001" />
+  </delete>
+
 </osmChange>

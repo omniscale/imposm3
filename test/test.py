@@ -89,15 +89,20 @@ def goposm_update(db_conf, osc):
         print ex.output
         raise
 
-def cache_query(nodes='', ways='', relations=''):
+def cache_query(nodes='', ways='', relations='', deps='', full=''):
     if nodes:
         nodes = '-node ' + ','.join(map(str, nodes))
     if ways:
         ways = '-way ' + ','.join(map(str, ways))
     if relations:
         relations = '-rel' + ','.join(map(str, relations))
+    if deps:
+        deps = '-deps'
+    if full:
+        full = '-full'
     out = subprocess.check_output(
-        "../goposm query-cache -cachedir %s %s %s %s" % (tmpdir, nodes, ways, relations),
+        "../goposm query-cache -cachedir %s %s %s %s %s %s" % (
+            tmpdir, nodes, ways, relations, deps, full),
         shell=True)
     print out
     return json.loads(out)
@@ -184,6 +189,15 @@ def test_changed_hole_tags_1():
     assert not query_row(db_conf, 'osm_waterareas', 14011)
     assert query_row(db_conf, 'osm_landusages', 14001)['type'] == 'park'
 
+def test_node_way_ref_after_delete_1():
+    """Nodes referece way"""
+    data = cache_query(nodes=[20001, 20002], deps=True)
+    assert '20001' in data['nodes']['20001']['ways']
+    assert '20001' in data['nodes']['20002']['ways']
+    assert query_row(db_conf, 'osm_roads', 20001)['type'] == 'residential'
+    assert query_row(db_conf, 'osm_barrierpoints', 20001)['type'] == 'block'
+
+
 #######################################################################
 def test_update():
     """Diff import applies"""
@@ -238,4 +252,12 @@ def test_changed_hole_tags_2():
     assert query_row(db_conf, 'osm_landusages', 14001)['type'] == 'park'
     assert_almost_equal(query_row(db_conf, 'osm_landusages', 14001)['geometry'].area, 10373600000, -6)
     assert_almost_equal(query_row(db_conf, 'osm_waterareas', 14011)['geometry'].area, 26672000000, -6)
+
+def test_node_way_ref_after_delete_2():
+    """Nodes does not referece deleted way"""
+    data = cache_query(nodes=[20001, 20002], deps=True)
+    assert 'ways' not in data['nodes']['20001']
+    assert '20002' not in data['nodes']
+    assert query_row(db_conf, 'osm_roads', 20001) == None
+    assert query_row(db_conf, 'osm_barrierpoints', 20001)['type'] == 'block'
 
