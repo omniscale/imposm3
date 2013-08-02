@@ -1,0 +1,391 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osm version="0.6" generator="Osmosis SNAPSHOT-r25240">
+  <node id="10000" version="1" timestamp="2011-11-11T00:11:11Z" lat="40.0" lon="10.0">
+    <tag k="name" v="Foo"/>
+    <tag k="place" v="village"/>
+  </node>
+  <node id="1001" version="1" timestamp="2011-11-11T00:11:11Z" lat="47.5" lon="13"/>
+  <node id="1002" version="1" timestamp="2011-11-11T00:11:11Z" lat="50" lon="14.5"/>
+  <node id="1003" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="16.5"/>
+  <node id="1004" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="17"/>
+  <node id="1005" version="1" timestamp="2011-11-11T00:11:11Z" lat="45.5" lon="14.5"/>
+  <node id="1006" version="1" timestamp="2011-11-11T00:11:11Z" lat="47.5" lon="14"/>
+  <node id="1007" version="1" timestamp="2011-11-11T00:11:11Z" lat="48.5" lon="14.5"/>
+  <node id="1008" version="1" timestamp="2011-11-11T00:11:11Z" lat="48" lon="15.5"/>
+  <node id="1009" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="15"/>
+  <node id="2001" version="1" timestamp="2011-11-11T00:11:11Z" lat="47.5" lon="23"/>
+  <node id="2002" version="1" timestamp="2011-11-11T00:11:11Z" lat="50" lon="24.5"/>
+  <node id="2003" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="26.5"/>
+  <node id="2004" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="27"/>
+  <node id="2005" version="1" timestamp="2011-11-11T00:11:11Z" lat="45.5" lon="24.5"/>
+  <node id="2006" version="1" timestamp="2011-11-11T00:11:11Z" lat="48.25" lon="24.2"/>
+  <node id="2007" version="1" timestamp="2011-11-11T00:11:11Z" lat="49.25" lon="24.7"/>
+  <node id="2008" version="1" timestamp="2011-11-11T00:11:11Z" lat="48.8" lon="25.7"/>
+  <node id="2009" version="1" timestamp="2011-11-11T00:11:11Z" lat="47.7" lon="25.25"/>
+  <node id="2010" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="24.5"/>
+  <node id="2011" version="1" timestamp="2011-11-11T00:11:11Z" lat="47.5" lon="25"/>
+  <node id="2012" version="1" timestamp="2011-11-11T00:11:11Z" lat="47.5" lon="26"/>
+  <node id="2013" version="1" timestamp="2011-11-11T00:11:11Z" lat="46.5" lon="25.5"/>
+  <node id="3001" version="1" timestamp="2011-11-11T00:11:11Z" lat="47.5" lon="33"/>
+  <node id="3002" version="1" timestamp="2011-11-11T00:11:11Z" lat="50" lon="34.5"/>
+  <node id="3003" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="36.5"/>
+  <node id="3004" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="37"/>
+  <node id="3005" version="1" timestamp="2011-11-11T00:11:11Z" lat="45.5" lon="34.5"/>
+  <node id="3006" version="1" timestamp="2011-11-11T00:11:11Z" lat="47.5" lon="34"/>
+  <node id="3007" version="1" timestamp="2011-11-11T00:11:11Z" lat="48.5" lon="34.5"/>
+  <node id="3008" version="1" timestamp="2011-11-11T00:11:11Z" lat="48" lon="35.5"/>
+  <node id="3009" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="35"/>
+  <node id="4001" version="1" timestamp="2011-11-11T00:11:11Z" lat="47.5" lon="41"/>
+  <node id="4002" version="1" timestamp="2011-11-11T00:11:11Z" lat="50" lon="42.5"/>
+  <node id="4003" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="44.5"/>
+  <node id="4004" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="45"/>
+  <node id="4005" version="1" timestamp="2011-11-11T00:11:11Z" lat="45.5" lon="42.5"/>
+  <node id="4006" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="45"/>
+  <node id="4007" version="1" timestamp="2011-11-11T00:11:11Z" lat="50" lon="46"/>
+  <node id="4008" version="1" timestamp="2011-11-11T00:11:11Z" lat="48.5" lon="48"/>
+  <node id="4009" version="1" timestamp="2011-11-11T00:11:11Z" lat="45.5" lon="46.5"/>
+  <node id="4010" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="45.5"/>
+  <node id="5001" version="1" timestamp="2011-11-11T00:11:11Z" lat="47.5" lon="51"/>
+  <node id="5002" version="1" timestamp="2011-11-11T00:11:11Z" lat="50" lon="52.5"/>
+  <node id="5003" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="54.5"/>
+  <node id="5004" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="55"/>
+  <node id="5005" version="1" timestamp="2011-11-11T00:11:11Z" lat="45.5" lon="52.5"/>
+  <node id="5006" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="55"/>
+  <node id="5007" version="1" timestamp="2011-11-11T00:11:11Z" lat="50" lon="56"/>
+  <node id="5008" version="1" timestamp="2011-11-11T00:11:11Z" lat="48.5" lon="58"/>
+  <node id="5009" version="1" timestamp="2011-11-11T00:11:11Z" lat="45.5" lon="56.5"/>
+  <node id="5010" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="55.5"/>
+  <node id="5011" version="1" timestamp="2011-11-11T00:11:11Z" lat="48" lon="52"/>
+  <node id="5012" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="53.5"/>
+  <node id="5013" version="1" timestamp="2011-11-11T00:11:11Z" lat="48" lon="54"/>
+  <node id="5014" version="1" timestamp="2011-11-11T00:11:11Z" lat="46.5" lon="53.5"/>
+  <node id="5015" version="1" timestamp="2011-11-11T00:11:11Z" lat="46.5" lon="52.5"/>
+  <node id="5016" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="55.5"/>
+  <node id="5017" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="56.5"/>
+  <node id="5018" version="1" timestamp="2011-11-11T00:11:11Z" lat="48" lon="57"/>
+  <node id="5019" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="56.5"/>
+  <node id="5020" version="1" timestamp="2011-11-11T00:11:11Z" lat="47.5" lon="55.7"/>
+  <node id="6001" version="1" timestamp="2011-11-11T00:11:11Z" lat="47.5" lon="61.5"/>
+  <node id="6002" version="1" timestamp="2011-11-11T00:11:11Z" lat="50.5" lon="63.5"/>
+  <node id="6003" version="1" timestamp="2011-11-11T00:11:11Z" lat="50" lon="67"/>
+  <node id="6004" version="1" timestamp="2011-11-11T00:11:11Z" lat="46.5" lon="67.5"/>
+  <node id="6005" version="1" timestamp="2011-11-11T00:11:11Z" lat="45" lon="65"/>
+  <node id="6006" version="1" timestamp="2011-11-11T00:11:11Z" lat="47.5" lon="63"/>
+  <node id="6007" version="1" timestamp="2011-11-11T00:11:11Z" lat="49.8" lon="64.5"/>
+  <node id="6008" version="1" timestamp="2011-11-11T00:11:11Z" lat="47.75" lon="66.6"/>
+  <node id="6009" version="1" timestamp="2011-11-11T00:11:11Z" lat="45.75" lon="65.3"/>
+  <node id="6010" version="1" timestamp="2011-11-11T00:11:11Z" lat="47.6" lon="63"/>
+  <node id="6011" version="1" timestamp="2011-11-11T00:11:11Z" lat="48.2" lon="64.5"/>
+  <node id="6012" version="1" timestamp="2011-11-11T00:11:11Z" lat="48.2" lon="65.5"/>
+  <node id="6013" version="1" timestamp="2011-11-11T00:11:11Z" lat="47.2" lon="65"/>
+  <node id="7001" version="1" timestamp="2011-11-11T00:11:11Z" lat="45" lon="72"/>
+  <node id="7002" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="72"/>
+  <node id="7003" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="74"/>
+  <node id="7004" version="1" timestamp="2011-11-11T00:11:11Z" lat="48" lon="74"/>
+  <node id="7005" version="1" timestamp="2011-11-11T00:11:11Z" lat="50" lon="73"/>
+  <node id="7006" version="1" timestamp="2011-11-11T00:11:11Z" lat="50" lon="75"/>
+  <node id="7007" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="76"/>
+  <node id="7008" version="1" timestamp="2011-11-11T00:11:11Z" lat="45" lon="76"/>
+  <way id="1001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="1001"/>
+    <nd ref="1002"/>
+    <nd ref="1003"/>
+    <nd ref="1004"/>
+    <nd ref="1005"/>
+    <nd ref="1001"/>
+    <tag k="name" v="way 1001"/>
+    <tag k="landuse" v="wood"/>
+  </way>
+  <way id="1002" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="1006"/>
+    <nd ref="1007"/>
+    <nd ref="1008"/>
+    <nd ref="1009"/>
+    <nd ref="1006"/>
+    <tag k="name" v="way 1002"/>
+    <tag k="landuse" v="wood"/>
+  </way>
+  <way id="2001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="2001"/>
+    <nd ref="2002"/>
+    <nd ref="2003"/>
+    <nd ref="2004"/>
+    <nd ref="2005"/>
+    <nd ref="2001"/>
+    <tag k="name" v="way 2001"/>
+  </way>
+  <way id="2002" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="2006"/>
+    <nd ref="2007"/>
+    <nd ref="2008"/>
+    <nd ref="2009"/>
+    <nd ref="2006"/>
+    <tag k="name" v="way 2002"/>
+    <tag k="landuse" v="wood"/>
+  </way>
+  <way id="2003" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="2010"/>
+    <nd ref="2011"/>
+    <nd ref="2012"/>
+    <nd ref="2013"/>
+    <nd ref="2010"/>
+    <tag k="name" v="way 2003"/>
+    <tag k="landuse" v="water"/>
+  </way>
+  <way id="3001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="3001"/>
+    <nd ref="3002"/>
+    <nd ref="3003"/>
+    <tag k="name" v="way 3001"/>
+    <tag k="landuse" v="park"/>
+  </way>
+  <way id="3002" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="3003"/>
+    <nd ref="3004"/>
+    <nd ref="3005"/>
+    <nd ref="3001"/>
+    <tag k="name" v="way 3002"/>
+    <tag k="landuse" v="park"/>
+  </way>
+  <way id="3003" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="3006"/>
+    <nd ref="3007"/>
+    <nd ref="3008"/>
+    <nd ref="3009"/>
+    <nd ref="3006"/>
+    <tag k="name" v="way 3003"/>
+    <tag k="landuse" v="water"/>
+  </way>
+  <way id="4001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="4001"/>
+    <nd ref="4002"/>
+    <nd ref="4003"/>
+    <nd ref="4004"/>
+    <nd ref="4005"/>
+    <nd ref="4001"/>
+    <tag k="name" v="way 4001"/>
+    <tag k="landuse" v="park"/>
+  </way>
+  <way id="4002" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="4006"/>
+    <nd ref="4007"/>
+    <nd ref="4008"/>
+    <nd ref="4009"/>
+    <nd ref="4010"/>
+    <nd ref="4006"/>
+    <tag k="name" v="way 4002"/>
+    <tag k="landuse" v="park"/>
+  </way>
+  <way id="5001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="5001"/>
+    <nd ref="5005"/>
+    <nd ref="5004"/>
+    <nd ref="5003"/>
+    <nd ref="5002"/>
+    <nd ref="5001"/>
+    <tag k="name" v="way 5001"/>
+    <tag k="landuse" v="park"/>
+  </way>
+  <way id="5002" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="5006"/>
+    <nd ref="5007"/>
+    <nd ref="5008"/>
+    <nd ref="5009"/>
+    <nd ref="5010"/>
+    <nd ref="5006"/>
+    <tag k="name" v="way 5002"/>
+    <tag k="landuse" v="park"/>
+  </way>
+  <way id="5003" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="5011"/>
+    <nd ref="5015"/>
+    <nd ref="5014"/>
+    <nd ref="5013"/>
+    <tag k="name" v="way 5003"/>
+    <tag k="landuse" v="water"/>
+  </way>
+  <way id="5004" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="5011"/>
+    <nd ref="5012"/>
+    <nd ref="5013"/>
+    <tag k="name" v="way 5004"/>
+    <tag k="landuse" v="water"/>
+  </way>
+  <way id="5005" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="5016"/>
+    <nd ref="5017"/>
+    <nd ref="5018"/>
+    <nd ref="5019"/>
+    <nd ref="5020"/>
+    <nd ref="5016"/>
+    <tag k="name" v="way 5005"/>
+    <tag k="landuse" v="wood"/>
+  </way>
+  <way id="6001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="6001"/>
+    <nd ref="6002"/>
+    <nd ref="6003"/>
+    <nd ref="6004"/>
+    <nd ref="6005"/>
+    <nd ref="6001"/>
+    <tag k="name" v="way 6001"/>
+    <tag k="landuse" v="wood"/>
+  </way>
+  <way id="6002" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="6006"/>
+    <nd ref="6007"/>
+    <nd ref="6008"/>
+    <nd ref="6009"/>
+    <nd ref="6006"/>
+    <tag k="name" v="way 6002"/>
+    <tag k="landuse" v="river"/>
+  </way>
+  <way id="6003" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="6010"/>
+    <nd ref="6011"/>
+    <nd ref="6012"/>
+    <nd ref="6013"/>
+    <nd ref="6010"/>
+    <tag k="name" v="way 6003"/>
+    <tag k="landuse" v="park"/>
+  </way>
+  <way id="7001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="7008"/>
+    <nd ref="7007"/>
+    <nd ref="7003"/>
+    <nd ref="7004"/>
+    <nd ref="7006"/>
+    <nd ref="7005"/>
+    <nd ref="7004"/>
+    <nd ref="7003"/>
+    <nd ref="7002"/>
+    <nd ref="7001"/>
+    <nd ref="7008"/>
+    <tag k="name" v="way 7001"/>
+    <tag k="landuse" v="none"/>
+  </way>
+  <relation id="1001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="1001" role="outer"/>
+    <member type="way" ref="1002" role="inner"/>
+    <tag k="type" v="multipolygon"/>
+  </relation>
+  <relation id="2001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="2001" role="outer"/>
+    <member type="way" ref="2002" role="inner"/>
+    <member type="way" ref="2003" role="inner"/>
+    <tag k="type" v="multipolygon"/>
+    <tag k="landuse" v="park"/>
+  </relation>
+  <relation id="3001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="3001" role="outer"/>
+    <member type="way" ref="3002" role="outer"/>
+    <member type="way" ref="3003" role="inner"/>
+    <tag k="type" v="multipolygon"/>
+  </relation>
+  <relation id="4001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="4001" role="outer"/>
+    <member type="way" ref="4002" role="outer"/>
+    <tag k="type" v="multipolygon"/>
+  </relation>
+  <relation id="5001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="5001" role="outer"/>
+    <member type="way" ref="5002" role="outer"/>
+    <member type="way" ref="5003" role="inner"/>
+    <member type="way" ref="5004" role="inner"/>
+    <member type="way" ref="5005" role="outer"/>
+    <tag k="type" v="multipolygon"/>
+  </relation>
+  <relation id="6001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="6001" role="outer"/>
+    <member type="way" ref="6002" role="inner"/>
+    <member type="way" ref="6003" role="outer"/>
+    <tag k="type" v="multipolygon"/>
+  </relation>
+
+  <!-- test for changed tags in way -->
+  <node id="11001" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="83"/>
+  <node id="11002" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="84"/>
+  <node id="11003" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="84"/>
+  <node id="11004" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="83"/>
+  <way id="11001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="11001"/>
+    <nd ref="11002"/>
+    <nd ref="11003"/>
+    <nd ref="11004"/>
+    <nd ref="11001"/>
+    <tag k="name" v="way 11001"/>
+    <tag k="landuse" v="park"/>
+  </way>
+
+  <!-- test for changed tags in way belonging to relation -->
+  <node id="12001" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="85"/>
+  <node id="12002" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="86"/>
+  <node id="12003" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="86"/>
+  <node id="12004" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="85"/>
+  <way id="12001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="12001"/>
+    <nd ref="12002"/>
+    <nd ref="12003"/>
+    <nd ref="12004"/>
+    <nd ref="12001"/>
+    <tag k="name" v="way 12001"/>
+    <tag k="landuse" v="park"/>
+  </way>
+  <relation id="12001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="12001" role="outer"/>
+    <tag k="type" v="multipolygon"/>
+  </relation>
+
+  <!-- test for changed tags in relation -->
+  <node id="13001" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="87"/>
+  <node id="13002" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="88"/>
+  <node id="13003" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="88"/>
+  <node id="13004" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="87"/>
+  <way id="13001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="13001"/>
+    <nd ref="13002"/>
+    <nd ref="13003"/>
+    <nd ref="13004"/>
+    <nd ref="13001"/>
+    <tag k="name" v="way 13001"/>
+  </way>
+  <relation id="13001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="13001" role="outer"/>
+    <tag k="landuse" v="park"/>
+    <tag k="type" v="multipolygon"/>
+  </relation>
+
+
+  <!-- test for changed tags from way to relation and added tag to contained way -->
+  <node id="14001" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="89"/>
+  <node id="14002" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="90"/>
+  <node id="14003" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="90"/>
+  <node id="14004" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="89"/>
+  <node id="14011" version="1" timestamp="2011-11-11T00:11:11Z" lat="47.1" lon="89.1"/>
+  <node id="14012" version="1" timestamp="2011-11-11T00:11:11Z" lat="47.1" lon="89.9"/>
+  <node id="14013" version="1" timestamp="2011-11-11T00:11:11Z" lat="48.9" lon="89.9"/>
+  <node id="14014" version="1" timestamp="2011-11-11T00:11:11Z" lat="48.9" lon="89.1"/>
+  <way id="14001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="14001"/>
+    <nd ref="14002"/>
+    <nd ref="14003"/>
+    <nd ref="14004"/>
+    <nd ref="14001"/>
+    <tag k="name" v="way 14001"/>
+    <tag k="landuse" v="park"/>
+  </way>
+  <way id="14011" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="14011"/>
+    <nd ref="14012"/>
+    <nd ref="14013"/>
+    <nd ref="14014"/>
+    <nd ref="14011"/>
+    <tag k="name" v="way 14011"/>
+  </way>
+  <relation id="14001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="14001" role="outer"/>
+    <member type="way" ref="14011" role="inner"/>
+    <tag k="type" v="multipolygon"/>
+  </relation>
+
+</osm>

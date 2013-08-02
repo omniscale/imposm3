@@ -1,0 +1,81 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osmChange version="0.6" generator="Osmosis 0.41">
+  <modify>
+    <node id="1001" version="2" lat="47.5" lon="13.5"/>
+  </modify>
+  <add>
+    <node id="10001" version="2" lat="40.0" lon="10.0">
+        <tag k="name" v="Bar"/>
+        <tag k="place" v="village"/>
+    </node>
+  </add>
+  <modify>
+    <!-- modify but not present in initial import -->
+    <node id="10002" version="2" lat="40.0" lon="10.1">
+        <tag k="name" v="Baz"/>
+        <tag k="place" v="city"/>
+    </node>
+  </modify>
+  <delete>
+    <node id="10000" version="2" lat="40.0" lon="10.1"/>
+  </delete>
+
+  <delete>
+    <relation id="2001"/>
+  </delete>
+
+  <modify>
+    <!-- change landuse=park to natural=water -->
+    <way id="11001" version="2" timestamp="2011-11-11T00:11:11Z">
+      <nd ref="11001"/>
+      <nd ref="11002"/>
+      <nd ref="11003"/>
+      <nd ref="11004"/>
+      <nd ref="11001"/>
+      <tag k="name" v="way 11001"/>
+      <tag k="natural" v="water"/>
+    </way>
+    <way id="12001" version="2" timestamp="2011-11-11T00:11:11Z">
+      <nd ref="12001"/>
+      <nd ref="12002"/>
+      <nd ref="12003"/>
+      <nd ref="12004"/>
+      <nd ref="12001"/>
+      <tag k="name" v="way 12001"/>
+      <tag k="natural" v="water"/>
+    </way>
+    <relation id="13001" version="2" timestamp="2011-11-11T00:11:11Z">
+      <member type="way" ref="13001" role="outer"/>
+      <tag k="natural" v="water"/>
+      <tag k="type" v="multipolygon"/>
+    </relation>
+  </modify>
+
+  <!-- test for changed tags from way to relation and added tag to contained way -->
+  <modify>
+    <way id="14001" version="2" timestamp="2011-11-11T00:11:11Z">
+      <nd ref="14001"/>
+      <nd ref="14002"/>
+      <nd ref="14003"/>
+      <nd ref="14004"/>
+      <nd ref="14001"/>
+      <tag k="name" v="way 14001"/>
+    </way>
+    <way id="14011" version="2" timestamp="2011-11-11T00:11:11Z">
+      <nd ref="14011"/>
+      <nd ref="14012"/>
+      <nd ref="14013"/>
+      <nd ref="14014"/>
+      <nd ref="14011"/>
+      <tag k="name" v="way 14011"/>
+      <tag k="natural" v="water"/>
+    </way>
+    <relation id="14001" version="2" timestamp="2011-11-11T00:11:11Z">
+      <member type="way" ref="14001" role="outer"/>
+      <member type="way" ref="14011" role="inner"/>
+      <tag k="type" v="multipolygon"/>
+      <tag k="landuse" v="park"/>
+    </relation>
+  </modify>
+
+</osmChange>
