@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 
 	"goposm/cache"
 	"goposm/element"
@@ -15,9 +16,9 @@ import (
 var flags = flag.NewFlagSet("query-cache", flag.ExitOnError)
 
 var (
-	nodeId   = flags.Int64("node", -1, "node")
-	wayId    = flags.Int64("way", -1, "way")
-	relId    = flags.Int64("rel", -1, "relation")
+	nodeIds  = flags.String("node", "", "node")
+	wayIds   = flags.String("way", "", "way")
+	relIds   = flags.String("rel", "", "relation")
 	full     = flags.Bool("full", false, "recurse into relations/ways")
 	deps     = flags.Bool("deps", false, "show dependent ways/relations")
 	cachedir = flags.String("cachedir", "/tmp/goposm", "cache directory")
@@ -144,6 +145,18 @@ func printJson(obj interface{}) {
 	fmt.Println(string(bytes))
 }
 
+func splitIds(ids string) []int64 {
+	result := []int64{}
+	for _, s := range strings.Split(ids, ",") {
+		id, err := strconv.ParseInt(s, 10, 64)
+		if err != nil {
+			log.Fatal(err)
+		}
+		result = append(result, id)
+	}
+	return result
+}
+
 func Query(args []string) {
 	flags.Usage = Usage
 
@@ -175,16 +188,19 @@ func Query(args []string) {
 
 	result := result{}
 
-	if *relId != -1 {
-		result.Relations = collectRelations(osmCache, []int64{*relId}, *full)
+	if *relIds != "" {
+		ids := splitIds(*relIds)
+		result.Relations = collectRelations(osmCache, ids, *full)
 	}
 
-	if *wayId != -1 {
-		result.Ways = collectWays(osmCache, diffCache, []int64{*wayId}, *full, *deps)
+	if *wayIds != "" {
+		ids := splitIds(*wayIds)
+		result.Ways = collectWays(osmCache, diffCache, ids, *full, *deps)
 	}
 
-	if *nodeId != -1 {
-		result.Nodes = collectNodes(osmCache, diffCache, []int64{*nodeId}, *deps)
+	if *nodeIds != "" {
+		ids := splitIds(*nodeIds)
+		result.Nodes = collectNodes(osmCache, diffCache, ids, *deps)
 	}
 
 	printJson(result)
