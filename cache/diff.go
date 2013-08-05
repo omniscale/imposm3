@@ -102,6 +102,16 @@ func insertRefs(refs []int64, ref int64) []int64 {
 	return refs
 }
 
+func deleteRefs(refs []int64, ref int64) []int64 {
+	i := sort.Search(len(refs), func(i int) bool {
+		return refs[i] >= ref
+	})
+	if i < len(refs) && refs[i] == ref {
+		refs = append(refs[:i], refs[i+1:]...)
+	}
+	return refs
+}
+
 type idRef struct {
 	id     int64
 	ref    int64
@@ -123,20 +133,56 @@ type idRefBunch struct {
 type idRefBunches map[int64]idRefBunch
 
 func (bunches *idRefBunches) add(bunchId, id, ref int64) {
-	idRefs := bunches.getIdRefsCreateMissing(bunchId, id)
+	idRefs := bunches.getCreate(bunchId, id)
 	idRefs.refs = insertRefs(idRefs.refs, ref)
 }
 
-func (bunches *idRefBunches) delete(bunchId, id int64) {
-	idRefs := bunches.getIdRefsCreateMissing(bunchId, id)
+func (bunches *idRefBunches) deleteAll(bunchId, id int64) {
+	idRefs := bunches.getCreate(bunchId, id)
 	idRefs.refs = nil
 }
 
-func (bunches *idRefBunches) getIdRefsCreateMissing(bunchId, id int64) *idRefs {
+func (bunches *idRefBunches) delete(bunchId, id, ref int64) {
+	idRefs := bunches.get(bunchId, id)
+	if idRefs != nil {
+		idRefs.refs = deleteRefs(idRefs.refs, ref)
+	}
+}
+
+func (bunches *idRefBunches) get(bunchId, id int64) *idRefs {
 	bunch, ok := (*bunches)[bunchId]
 	if !ok {
 		bunch = idRefBunch{id: bunchId}
 	}
+	result := bunch.get(id)
+	(*bunches)[bunchId] = bunch
+	return result
+}
+
+func (bunches *idRefBunches) getCreate(bunchId, id int64) *idRefs {
+	bunch, ok := (*bunches)[bunchId]
+	if !ok {
+		bunch = idRefBunch{id: bunchId}
+	}
+	result := bunch.getCreate(id)
+
+	(*bunches)[bunchId] = bunch
+	return result
+}
+
+func (bunch *idRefBunch) get(id int64) *idRefs {
+	var result *idRefs
+
+	i := sort.Search(len(bunch.idRefs), func(i int) bool {
+		return bunch.idRefs[i].id >= id
+	})
+	if i < len(bunch.idRefs) && bunch.idRefs[i].id == id {
+		result = &bunch.idRefs[i]
+	}
+	return result
+}
+
+func (bunch *idRefBunch) getCreate(id int64) *idRefs {
 	var result *idRefs
 
 	i := sort.Search(len(bunch.idRefs), func(i int) bool {
@@ -156,7 +202,6 @@ func (bunches *idRefBunches) getIdRefsCreateMissing(bunchId, id int64) *idRefs {
 		result = &bunch.idRefs[len(bunch.idRefs)-1]
 	}
 
-	(*bunches)[bunchId] = bunch
 	return result
 }
 
@@ -169,12 +214,13 @@ func init() {
 // bunchRefCache
 type bunchRefCache struct {
 	cache
-	buffer    idRefBunches
-	write     chan idRefBunches
-	add       chan idRef
-	mu        sync.Mutex
-	waitAdd   *sync.WaitGroup
-	waitWrite *sync.WaitGroup
+	linearImport bool
+	buffer       idRefBunches
+	write        chan idRefBunches
+	addc         chan idRef
+	mu           sync.Mutex
+	waitAdd      *sync.WaitGroup
+	waitWrite    *sync.WaitGroup
 }
 
 func newRefIndex(path string, opts *cacheOptions) (*bunchRefCache, error) {
@@ -186,16 +232,34 @@ func newRefIndex(path string, opts *cacheOptions) (*bunchRefCache, error) {
 	}
 	index.write = make(chan idRefBunches, 2)
 	index.buffer = make(idRefBunches, bufferSize)
-	index.add = make(chan idRef, 1024)
+	index.addc = make(chan idRef, 1024)
 
 	index.waitWrite = &sync.WaitGroup{}
 	index.waitAdd = &sync.WaitGroup{}
-	index.waitWrite.Add(1)
-	index.waitAdd.Add(1)
 
-	go index.writer()
-	go index.dispatch()
+	// index.SetLinearImport(true)
+
 	return &index, nil
+}
+
+func (index *bunchRefCache) SetLinearImport(val bool) {
+	if val != !index.linearImport {
+		panic("programming error, linear import already set")
+	}
+	if val {
+		index.waitWrite.Add(1)
+		index.waitAdd.Add(1)
+
+		go index.writer()
+		go index.dispatch()
+
+		index.linearImport = true
+	} else {
+		close(index.addc)
+		index.waitAdd.Wait()
+		close(index.write)
+		index.waitWrite.Wait()
+	}
 }
 
 type CoordsRefIndex struct {
@@ -221,16 +285,26 @@ func newWaysRefIndex(dir string) (*WaysRefIndex, error) {
 	return &WaysRefIndex{*cache}, nil
 }
 
-func (index *CoordsRefIndex) AddFromWay(way *element.Way) {
-	for _, node := range way.Nodes {
-		index.add <- idRef{id: node.Id, ref: way.Id}
-	}
-}
+// func (index *CoordsRefIndex) AddFromWay(way *element.Way) {
+// 	for _, node := range way.Nodes {
+// 		index.addc <- idRef{id: node.Id, ref: way.Id}
+// 	}
+// }
+
+// func (index *CoordsRefIndex) DeleteFromWay(way *element.Way) {
+// 	for _, node := range way.Nodes {
+// 		index.addc <- idRef{id: node.Id, ref: way.Id, delete: true}
+// 	}
+// }
 
 func (index *WaysRefIndex) AddFromMembers(relId int64, members []element.Member) {
 	for _, member := range members {
 		if member.Type == element.WAY {
-			index.add <- idRef{id: member.Id, ref: relId}
+			if index.linearImport {
+				index.addc <- idRef{id: member.Id, ref: relId}
+			} else {
+				index.add(member.Id, relId)
+			}
 		}
 	}
 }
@@ -245,17 +319,18 @@ func (index *bunchRefCache) writer() {
 }
 
 func (index *bunchRefCache) Close() {
-	close(index.add)
-	index.waitAdd.Wait()
-	close(index.write)
-	index.waitWrite.Wait()
+	if index.linearImport {
+		// disable linear import first to flush buffer
+		index.SetLinearImport(false)
+	}
+
 	index.cache.Close()
 }
 
 func (index *bunchRefCache) dispatch() {
-	for idRef := range index.add {
+	for idRef := range index.addc {
 		if idRef.delete {
-			index.buffer.delete(index.getBunchId(idRef.id), idRef.id)
+			index.buffer.deleteAll(index.getBunchId(idRef.id), idRef.id)
 		} else {
 			index.buffer.add(index.getBunchId(idRef.id), idRef.id, idRef.ref)
 		}
@@ -276,8 +351,14 @@ func (index *bunchRefCache) dispatch() {
 }
 
 func (index *bunchRefCache) AddFromWay(way *element.Way) {
-	for _, node := range way.Nodes {
-		index.add <- idRef{id: node.Id, ref: way.Id}
+	if index.linearImport {
+		for _, node := range way.Nodes {
+			index.addc <- idRef{id: node.Id, ref: way.Id}
+		}
+	} else {
+		for _, node := range way.Nodes {
+			index.add(node.Id, way.Id)
+		}
 	}
 }
 
@@ -422,8 +503,76 @@ func (index *bunchRefCache) Get(id int64) []int64 {
 	return nil
 }
 
+func (index *bunchRefCache) add(id, ref int64) error {
+	keyBuf := idToKeyBuf(index.getBunchId(id))
+
+	data, err := index.db.Get(index.ro, keyBuf)
+	if err != nil {
+		return err
+	}
+
+	var idRefs []idRefs
+	if data != nil {
+		idRefs = unmarshalBunch(data)
+	}
+
+	idRefBunch := idRefBunch{index.getBunchId(id), idRefs}
+	idRef := idRefBunch.getCreate(id)
+	idRef.refs = insertRefs(idRef.refs, ref)
+
+	data = marshalBunch(idRefBunch.idRefs)
+
+	return index.db.Put(index.wo, keyBuf, data)
+}
+
+func (index *bunchRefCache) DeleteRef(id, ref int64) error {
+	keyBuf := idToKeyBuf(index.getBunchId(id))
+
+	data, err := index.db.Get(index.ro, keyBuf)
+	if err != nil {
+		return err
+	}
+
+	if data != nil {
+		idRefs := unmarshalBunch(data)
+		idRefBunch := idRefBunch{index.getBunchId(id), idRefs}
+		idRef := idRefBunch.get(id)
+		if idRef != nil {
+			idRef.refs = deleteRefs(idRef.refs, ref)
+			data := marshalBunch(idRefs)
+			return index.db.Put(index.wo, keyBuf, data)
+		}
+	}
+	return nil
+}
+
+func (index *bunchRefCache) deleteAll(id int64) error {
+	keyBuf := idToKeyBuf(index.getBunchId(id))
+
+	data, err := index.db.Get(index.ro, keyBuf)
+	if err != nil {
+		return err
+	}
+
+	if data != nil {
+		idRefs := unmarshalBunch(data)
+		idRefBunch := idRefBunch{index.getBunchId(id), idRefs}
+		idRef := idRefBunch.get(id)
+		if idRef != nil {
+			idRef.refs = []int64{}
+			data := marshalBunch(idRefs)
+			return index.db.Put(index.wo, keyBuf, data)
+		}
+	}
+	return nil
+}
+
 func (index *bunchRefCache) Delete(id int64) {
-	index.add <- idRef{id: id, delete: true}
+	if index.linearImport {
+		index.addc <- idRef{id: id, delete: true}
+	} else {
+		index.deleteAll(id)
+	}
 }
 
 func marshalBunch(idRefs []idRefs) []byte {
