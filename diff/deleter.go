@@ -74,7 +74,7 @@ func (d *Deleter) deleteRelation(id int64) {
 	}
 }
 
-func (d *Deleter) deleteWay(id int64) {
+func (d *Deleter) deleteWay(id int64, forMod bool) {
 	elem, err := d.osmCache.Ways.GetWay(id)
 	if err != nil {
 		if err == cache.NotFound {
@@ -95,6 +95,11 @@ func (d *Deleter) deleteWay(id int64) {
 	for _, m := range d.tmLineStrings.Match(&elem.Tags) {
 		d.delDb.Delete(m.Table.Name, elem.Id)
 		deleted = true
+	}
+	if deleted && !forMod {
+		for _, n := range elem.Refs {
+			d.diffCache.Coords.DeleteRef(n, id)
+		}
 	}
 	if deleted && d.expireTiles != nil {
 		err := d.osmCache.Coords.FillWay(elem)
@@ -138,7 +143,7 @@ func (d *Deleter) Delete(delElem parser.DiffElem) {
 	if delElem.Rel != nil {
 		d.deleteRelation(delElem.Rel.Id)
 	} else if delElem.Way != nil {
-		d.deleteWay(delElem.Way.Id)
+		d.deleteWay(delElem.Way.Id, false)
 
 		if delElem.Mod {
 			dependers := d.diffCache.Ways.Get(delElem.Way.Id)
@@ -151,7 +156,7 @@ func (d *Deleter) Delete(delElem parser.DiffElem) {
 		if delElem.Mod {
 			dependers := d.diffCache.Coords.Get(delElem.Node.Id)
 			for _, way := range dependers {
-				d.deleteWay(way)
+				d.deleteWay(way, true)
 				dependers := d.diffCache.Ways.Get(way)
 				for _, rel := range dependers {
 					d.deleteRelation(rel)

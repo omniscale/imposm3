@@ -257,7 +257,7 @@ def test_node_way_ref_after_delete_2():
     """Nodes does not referece deleted way"""
     data = cache_query(nodes=[20001, 20002], deps=True)
     assert 'ways' not in data['nodes']['20001']
-    assert '20002' not in data['nodes']
+    assert data['nodes']['20002'] == None
     assert query_row(db_conf, 'osm_roads', 20001) == None
     assert query_row(db_conf, 'osm_barrierpoints', 20001)['type'] == 'block'
 
