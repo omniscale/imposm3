@@ -240,6 +240,10 @@ func mainimport() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		if diffCache != nil {
+			diffCache.Coords.SetLinearImport(true)
+			diffCache.Ways.SetLinearImport(true)
+		}
 		osmCache.Coords.SetReadOnly(true)
 		pointsTagMatcher := tagmapping.PointMatcher()
 		lineStringsTagMatcher := tagmapping.LineStringMatcher()

@@ -237,8 +237,6 @@ func newRefIndex(path string, opts *cacheOptions) (*bunchRefCache, error) {
 	index.waitWrite = &sync.WaitGroup{}
 	index.waitAdd = &sync.WaitGroup{}
 
-	// index.SetLinearImport(true)
-
 	return &index, nil
 }
 
@@ -259,6 +257,8 @@ func (index *bunchRefCache) SetLinearImport(val bool) {
 		index.waitAdd.Wait()
 		close(index.write)
 		index.waitWrite.Wait()
+
+		index.linearImport = false
 	}
 }
 

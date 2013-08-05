@@ -100,19 +100,16 @@ func TestWriteDiff(t *testing.T) {
 	if err != nil {
 		t.Fatal()
 	}
+	defer cache.Close()
+	cache.SetLinearImport(true)
 
 	for w := 0; w < 5; w++ {
 		for n := 0; n < 200; n++ {
 			cache.add(int64(n), int64(w))
 		}
 	}
-	cache.Close()
 
-	cache, err = newRefIndex(cache_dir, &globalCacheOptions.CoordsIndex)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer cache.Close()
+	cache.SetLinearImport(false)
 
 	for n := 0; n < 200; n++ {
 		refs := cache.Get(int64(n))
