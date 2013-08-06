@@ -8,46 +8,6 @@ import (
 	"goposm/element"
 )
 
-func TestInsertRefs(t *testing.T) {
-
-	refs := make([]int64, 0, 1)
-
-	refs = insertRefs(refs, 1)
-	if refs[0] != 1 {
-		t.Fatal(refs)
-	}
-
-	refs = insertRefs(refs, 10)
-	if refs[0] != 1 || refs[1] != 10 {
-		t.Fatal(refs)
-	}
-
-	// insert twice
-	refs = insertRefs(refs, 10)
-	if refs[0] != 1 || refs[1] != 10 || len(refs) != 2 {
-		t.Fatal(refs)
-	}
-
-	// insert before
-	refs = insertRefs(refs, 0)
-	if refs[0] != 0 || refs[1] != 1 || refs[2] != 10 {
-		t.Fatal(refs)
-	}
-
-	// insert after
-	refs = insertRefs(refs, 12)
-	if refs[0] != 0 || refs[1] != 1 || refs[2] != 10 || refs[3] != 12 {
-		t.Fatal(refs)
-	}
-
-	// insert between
-	refs = insertRefs(refs, 11)
-	if refs[0] != 0 || refs[1] != 1 || refs[2] != 10 || refs[3] != 11 || refs[4] != 12 {
-		t.Fatal(refs)
-	}
-
-}
-
 func TestDiffCache(t *testing.T) {
 
 	cache_dir, _ := ioutil.TempDir("", "goposm_test")

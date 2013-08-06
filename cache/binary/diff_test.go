@@ -30,7 +30,7 @@ func TestmarshalBunch(t *testing.T) {
 	if newBunch[1].Id != 123923133 || newBunch[1].Refs[0] != 1231237 {
 		t.Fatal(newBunch[1])
 	}
-	if newBunch[2].Id != 123924123 || newBunch[2].Refs[0] != 912412210 || newBunch[2].refs[1] != 912412213 {
+	if newBunch[2].Id != 123924123 || newBunch[2].Refs[0] != 912412210 || newBunch[2].Refs[1] != 912412213 {
 		t.Fatal(newBunch[2])
 	}
 	if newBunch[5].Id != 123924132 || newBunch[5].Refs[2] != 212412210 {
@@ -39,7 +39,7 @@ func TestmarshalBunch(t *testing.T) {
 }
 
 func BenchmarkMarshalBunch(b *testing.B) {
-	bunch := []idRefs{
+	bunch := []element.IdRefs{
 		{123923123, []int64{1213123}},
 		{123923133, []int64{1231237}},
 		{123924123, []int64{912412210, 912412213}},

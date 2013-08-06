@@ -86,32 +86,6 @@ func (c *DiffCache) Remove() error {
 
 const bufferSize = 64 * 1024
 
-func insertRefs(refs []int64, ref int64) []int64 {
-	i := sort.Search(len(refs), func(i int) bool {
-		return refs[i] >= ref
-	})
-	if i < len(refs) && refs[i] >= ref {
-		if refs[i] > ref {
-			refs = append(refs, 0)
-			copy(refs[i+1:], refs[i:])
-			refs[i] = ref
-		} // else already inserted
-	} else {
-		refs = append(refs, ref)
-	}
-	return refs
-}
-
-func deleteRefs(refs []int64, ref int64) []int64 {
-	i := sort.Search(len(refs), func(i int) bool {
-		return refs[i] >= ref
-	})
-	if i < len(refs) && refs[i] == ref {
-		refs = append(refs[:i], refs[i+1:]...)
-	}
-	return refs
-}
-
 type idRef struct {
 	id  int64
 	ref int64
@@ -128,7 +102,7 @@ type idRefBunches map[int64]idRefBunch
 
 func (bunches *idRefBunches) add(bunchId, id, ref int64) {
 	idRefs := bunches.getCreate(bunchId, id)
-	idRefs.Refs = insertRefs(idRefs.Refs, ref)
+	idRefs.Add(ref)
 }
 
 func (bunches *idRefBunches) getCreate(bunchId, id int64) *element.IdRefs {
@@ -212,28 +186,6 @@ func newRefIndex(path string, opts *cacheOptions) (*bunchRefCache, error) {
 	return &index, nil
 }
 
-func (index *bunchRefCache) SetLinearImport(val bool) {
-	if val != !index.linearImport {
-		panic("programming error, linear import already set")
-	}
-	if val {
-		index.waitWrite.Add(1)
-		index.waitAdd.Add(1)
-
-		go index.writer()
-		go index.dispatch()
-
-		index.linearImport = true
-	} else {
-		close(index.addc)
-		index.waitAdd.Wait()
-		close(index.write)
-		index.waitWrite.Wait()
-
-		index.linearImport = false
-	}
-}
-
 type CoordsRefIndex struct {
 	bunchRefCache
 }
@@ -268,6 +220,155 @@ func (index *bunchRefCache) Close() {
 	}
 
 	index.cache.Close()
+}
+
+func (index *bunchRefCache) Get(id int64) []int64 {
+	if index.linearImport {
+		panic("programming error: get not supported in linearImport mode")
+	}
+	keyBuf := idToKeyBuf(index.getBunchId(id))
+
+	data, err := index.db.Get(index.ro, keyBuf)
+	if err != nil {
+		panic(err)
+	}
+
+	if data != nil {
+		for _, idRef := range binary.UnmarshalIdRefsBunch(data) {
+			if idRef.Id == id {
+				return idRef.Refs
+			}
+		}
+	}
+	return nil
+}
+
+func (index *bunchRefCache) Add(id, ref int64) error {
+	keyBuf := idToKeyBuf(index.getBunchId(id))
+
+	data, err := index.db.Get(index.ro, keyBuf)
+	if err != nil {
+		return err
+	}
+
+	var idRefs []element.IdRefs
+	if data != nil {
+		idRefs = binary.UnmarshalIdRefsBunch(data)
+	}
+
+	idRefBunch := idRefBunch{index.getBunchId(id), idRefs}
+	idRef := idRefBunch.getCreate(id)
+	idRef.Add(ref)
+
+	data = binary.MarshalIdRefsBunch(idRefBunch.idRefs)
+
+	return index.db.Put(index.wo, keyBuf, data)
+}
+
+func (index *bunchRefCache) DeleteRef(id, ref int64) error {
+	if index.linearImport {
+		panic("programming error: delete not supported in linearImport mode")
+	}
+
+	keyBuf := idToKeyBuf(index.getBunchId(id))
+
+	data, err := index.db.Get(index.ro, keyBuf)
+	if err != nil {
+		return err
+	}
+
+	if data != nil {
+		idRefs := binary.UnmarshalIdRefsBunch(data)
+		idRefBunch := idRefBunch{index.getBunchId(id), idRefs}
+		idRef := idRefBunch.get(id)
+		if idRef != nil {
+			idRef.Delete(ref)
+			data := binary.MarshalIdRefsBunch(idRefs)
+			return index.db.Put(index.wo, keyBuf, data)
+		}
+	}
+	return nil
+}
+
+func (index *bunchRefCache) Delete(id int64) error {
+	if index.linearImport {
+		panic("programming error: delete not supported in linearImport mode")
+	}
+
+	keyBuf := idToKeyBuf(index.getBunchId(id))
+
+	data, err := index.db.Get(index.ro, keyBuf)
+	if err != nil {
+		return err
+	}
+
+	if data != nil {
+		idRefs := binary.UnmarshalIdRefsBunch(data)
+		idRefBunch := idRefBunch{index.getBunchId(id), idRefs}
+		idRef := idRefBunch.get(id)
+		if idRef != nil {
+			idRef.Refs = []int64{}
+			data := binary.MarshalIdRefsBunch(idRefs)
+			return index.db.Put(index.wo, keyBuf, data)
+		}
+	}
+	return nil
+}
+
+func (index *CoordsRefIndex) AddFromWay(way *element.Way) {
+	for _, node := range way.Nodes {
+		if index.linearImport {
+			index.addc <- idRef{id: node.Id, ref: way.Id}
+		} else {
+			index.Add(node.Id, way.Id)
+		}
+	}
+}
+
+func (index *CoordsRefIndex) DeleteFromWay(way *element.Way) {
+	if index.linearImport {
+		panic("programming error: delete not supported in linearImport mode")
+	}
+	for _, node := range way.Nodes {
+		index.DeleteRef(node.Id, way.Id)
+	}
+}
+
+func (index *WaysRefIndex) AddFromMembers(relId int64, members []element.Member) {
+	for _, member := range members {
+		if member.Type == element.WAY {
+			if index.linearImport {
+				index.addc <- idRef{id: member.Id, ref: relId}
+			} else {
+				index.Add(member.Id, relId)
+			}
+		}
+	}
+}
+
+// SetLinearImport optimizes the cache for write operations.
+// Get/Delete operations will panic during linear import.
+func (index *bunchRefCache) SetLinearImport(val bool) {
+	if val == index.linearImport {
+		// already in this mode
+		return
+	}
+	if val {
+		index.waitWrite.Add(1)
+		index.waitAdd.Add(1)
+
+		go index.writer()
+		go index.dispatch()
+
+		index.linearImport = true
+	} else {
+		close(index.addc)
+		index.waitAdd.Wait()
+		close(index.write)
+		index.waitWrite.Wait()
+
+		index.linearImport = false
+	}
 }
 
 func (index *bunchRefCache) writer() {
@@ -369,7 +470,7 @@ NextIdRef:
 					bunch = append(bunch[:i], bunch[i+1:]...)
 				} else { // otherwise add refs
 					for _, r := range newIdRefs.Refs {
-						bunch[i].Refs = insertRefs(bunch[i].Refs, r)
+						bunch[i].Add(r)
 					}
 				}
 				lastIdx = i
@@ -395,6 +496,8 @@ NextIdRef:
 	return bunch
 }
 
+// loadMergeMarshal loads an existing bunch, merges the IdRefs and
+// marshals the result again.
 func (index *bunchRefCache) loadMergeMarshal(keyBuf []byte, newBunch []element.IdRefs) []byte {
 	data, err := index.db.Get(index.ro, keyBuf)
 	if err != nil {
@@ -415,128 +518,4 @@ func (index *bunchRefCache) loadMergeMarshal(keyBuf []byte, newBunch []element.I
 
 	data = binary.MarshalIdRefsBunch(bunch)
 	return data
-}
-
-func (index *bunchRefCache) Get(id int64) []int64 {
-	if index.linearImport {
-		panic("programming error: get not supported in linearImport mode")
-	}
-	keyBuf := idToKeyBuf(index.getBunchId(id))
-
-	data, err := index.db.Get(index.ro, keyBuf)
-	if err != nil {
-		panic(err)
-	}
-
-	if data != nil {
-		for _, idRef := range binary.UnmarshalIdRefsBunch(data) {
-			if idRef.Id == id {
-				return idRef.Refs
-			}
-		}
-	}
-	return nil
-}
-
-func (index *bunchRefCache) Add(id, ref int64) error {
-	keyBuf := idToKeyBuf(index.getBunchId(id))
-
-	data, err := index.db.Get(index.ro, keyBuf)
-	if err != nil {
-		return err
-	}
-
-	var idRefs []element.IdRefs
-	if data != nil {
-		idRefs = binary.UnmarshalIdRefsBunch(data)
-	}
-
-	idRefBunch := idRefBunch{index.getBunchId(id), idRefs}
-	idRef := idRefBunch.getCreate(id)
-	idRef.Refs = insertRefs(idRef.Refs, ref)
-
-	data = binary.MarshalIdRefsBunch(idRefBunch.idRefs)
-
-	return index.db.Put(index.wo, keyBuf, data)
-}
-
-func (index *bunchRefCache) DeleteRef(id, ref int64) error {
-	if index.linearImport {
-		panic("programming error: delete not supported in linearImport mode")
-	}
-
-	keyBuf := idToKeyBuf(index.getBunchId(id))
-
-	data, err := index.db.Get(index.ro, keyBuf)
-	if err != nil {
-		return err
-	}
-
-	if data != nil {
-		idRefs := binary.UnmarshalIdRefsBunch(data)
-		idRefBunch := idRefBunch{index.getBunchId(id), idRefs}
-		idRef := idRefBunch.get(id)
-		if idRef != nil {
-			idRef.Refs = deleteRefs(idRef.Refs, ref)
-			data := binary.MarshalIdRefsBunch(idRefs)
-			return index.db.Put(index.wo, keyBuf, data)
-		}
-	}
-	return nil
-}
-
-func (index *bunchRefCache) Delete(id int64) error {
-	if index.linearImport {
-		panic("programming error: delete not supported in linearImport mode")
-	}
-
-	keyBuf := idToKeyBuf(index.getBunchId(id))
-
-	data, err := index.db.Get(index.ro, keyBuf)
-	if err != nil {
-		return err
-	}
-
-	if data != nil {
-		idRefs := binary.UnmarshalIdRefsBunch(data)
-		idRefBunch := idRefBunch{index.getBunchId(id), idRefs}
-		idRef := idRefBunch.get(id)
-		if idRef != nil {
-			idRef.Refs = []int64{}
-			data := binary.MarshalIdRefsBunch(idRefs)
-			return index.db.Put(index.wo, keyBuf, data)
-		}
-	}
-	return nil
-}
-
-func (index *CoordsRefIndex) AddFromWay(way *element.Way) {
-	for _, node := range way.Nodes {
-		if index.linearImport {
-			index.addc <- idRef{id: node.Id, ref: way.Id}
-		} else {
-			index.Add(node.Id, way.Id)
-		}
-	}
-}
-
-func (index *CoordsRefIndex) DeleteFromWay(way *element.Way) {
-	if index.linearImport {
-		panic("programming error: delete not supported in linearImport mode")
-	}
-	for _, node := range way.Nodes {
-		index.DeleteRef(node.Id, way.Id)
-	}
-}
-
-func (index *WaysRefIndex) AddFromMembers(relId int64, members []element.Member) {
-	for _, member := range members {
-		if member.Type == element.WAY {
-			if index.linearImport {
-				index.addc <- idRef{id: member.Id, ref: relId}
-			} else {
-				index.Add(member.Id, relId)
-			}
-		}
-	}
 }

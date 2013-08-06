@@ -1,6 +1,8 @@
 package element
 
 import (
+	"sort"
+
 	"goposm/geom/geos"
 )
 
@@ -62,4 +64,28 @@ type Relation struct {
 type IdRefs struct {
 	Id   int64
 	Refs []int64
+}
+
+func (idRefs *IdRefs) Add(ref int64) {
+	i := sort.Search(len(idRefs.Refs), func(i int) bool {
+		return idRefs.Refs[i] >= ref
+	})
+	if i < len(idRefs.Refs) && idRefs.Refs[i] >= ref {
+		if idRefs.Refs[i] > ref {
+			idRefs.Refs = append(idRefs.Refs, 0)
+			copy(idRefs.Refs[i+1:], idRefs.Refs[i:])
+			idRefs.Refs[i] = ref
+		} // else already inserted
+	} else {
+		idRefs.Refs = append(idRefs.Refs, ref)
+	}
+}
+
+func (idRefs *IdRefs) Delete(ref int64) {
+	i := sort.Search(len(idRefs.Refs), func(i int) bool {
+		return idRefs.Refs[i] >= ref
+	})
+	if i < len(idRefs.Refs) && idRefs.Refs[i] == ref {
+		idRefs.Refs = append(idRefs.Refs[:i], idRefs.Refs[i+1:]...)
+	}
 }
