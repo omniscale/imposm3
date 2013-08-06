@@ -100,7 +100,7 @@ func TestWriteDiff(t *testing.T) {
 
 	for w := 0; w < 5; w++ {
 		for n := 0; n < 200; n++ {
-			cache.add(int64(n), int64(w))
+			cache.Add(int64(n), int64(w))
 		}
 	}
 
