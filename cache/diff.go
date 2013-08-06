@@ -285,17 +285,26 @@ func newWaysRefIndex(dir string) (*WaysRefIndex, error) {
 	return &WaysRefIndex{*cache}, nil
 }
 
-// func (index *CoordsRefIndex) AddFromWay(way *element.Way) {
-// 	for _, node := range way.Nodes {
-// 		index.addc <- idRef{id: node.Id, ref: way.Id}
-// 	}
-// }
+func (index *CoordsRefIndex) AddFromWay(way *element.Way) {
+	if index.linearImport {
+		for _, node := range way.Nodes {
+			index.addc <- idRef{id: node.Id, ref: way.Id}
+		}
+	} else {
+		for _, node := range way.Nodes {
+			index.add(node.Id, way.Id)
+		}
+	}
+}
 
-// func (index *CoordsRefIndex) DeleteFromWay(way *element.Way) {
-// 	for _, node := range way.Nodes {
-// 		index.addc <- idRef{id: node.Id, ref: way.Id, delete: true}
-// 	}
-// }
+func (index *CoordsRefIndex) DeleteFromWay(way *element.Way) {
+	if index.linearImport {
+		panic("programming error: delete not supported in linearImport mode")
+	}
+	for _, node := range way.Nodes {
+		index.DeleteRef(node.Id, way.Id)
+	}
+}
 
 func (index *WaysRefIndex) AddFromMembers(relId int64, members []element.Member) {
 	for _, member := range members {
@@ -348,18 +357,6 @@ func (index *bunchRefCache) dispatch() {
 		index.buffer = nil
 	}
 	index.waitAdd.Done()
-}
-
-func (index *bunchRefCache) AddFromWay(way *element.Way) {
-	if index.linearImport {
-		for _, node := range way.Nodes {
-			index.addc <- idRef{id: node.Id, ref: way.Id}
-		}
-	} else {
-		for _, node := range way.Nodes {
-			index.add(node.Id, way.Id)
-		}
-	}
 }
 
 func (index *bunchRefCache) getBunchId(id int64) int64 {

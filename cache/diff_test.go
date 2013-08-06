@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"goposm/element"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -46,51 +47,45 @@ func TestInsertRefs(t *testing.T) {
 
 }
 
-// func TestDiffCache(t *testing.T) {
+func TestDiffCache(t *testing.T) {
 
-// 	cache_dir, _ := ioutil.TempDir("", "goposm_test")
-// 	defer os.RemoveAll(cache_dir)
+	cache_dir, _ := ioutil.TempDir("", "goposm_test")
+	defer os.RemoveAll(cache_dir)
 
-// 	cache, err := newRefIndex(cache_dir, &globalCacheOptions.CoordsIndex)
-// 	if err != nil {
-// 		t.Fatal()
-// 	}
+	cache, err := newCoordsRefIndex(cache_dir)
+	if err != nil {
+		t.Fatal()
+	}
+	defer cache.Close()
 
-// 	w1 := element.Way{}
-// 	w1.Id = 100
-// 	w1.Nodes = []element.Node{
-// 		{OSMElem: element.OSMElem{Id: 1000}},
-// 		{OSMElem: element.OSMElem{Id: 1001}},
-// 		{OSMElem: element.OSMElem{Id: 1002}},
-// 	}
-// 	cache.AddFromWay(&w1)
+	w1 := element.Way{}
+	w1.Id = 100
+	w1.Nodes = []element.Node{
+		{OSMElem: element.OSMElem{Id: 1000}},
+		{OSMElem: element.OSMElem{Id: 1001}},
+		{OSMElem: element.OSMElem{Id: 1002}},
+	}
+	cache.AddFromWay(&w1)
 
-// 	w2 := element.Way{}
-// 	w2.Id = 200
-// 	w2.Nodes = []element.Node{
-// 		{OSMElem: element.OSMElem{Id: 1002}},
-// 		{OSMElem: element.OSMElem{Id: 1003}},
-// 		{OSMElem: element.OSMElem{Id: 1004}},
-// 	}
-// 	cache.AddFromWay(&w2)
+	w2 := element.Way{}
+	w2.Id = 200
+	w2.Nodes = []element.Node{
+		{OSMElem: element.OSMElem{Id: 1002}},
+		{OSMElem: element.OSMElem{Id: 1003}},
+		{OSMElem: element.OSMElem{Id: 1004}},
+	}
+	cache.AddFromWay(&w2)
 
-// 	cache.DeleteFromWay(&w1)
+	cache.DeleteFromWay(&w1)
 
-// 	cache.Close()
-// 	cache, err = newRefIndex(cache_dir, &globalCacheOptions.CoordsIndex)
-// 	if err != nil {
-// 		t.Fatal()
-// 	}
-// 	defer cache.Close()
+	if ids := cache.Get(1000); len(ids) != 0 {
+		t.Fatal(ids)
+	}
+	if ids := cache.Get(1002); len(ids) != 1 {
+		t.Fatal(ids)
+	}
 
-// 	if ids := cache.Get(1000); len(ids) != 0 {
-// 		t.Fatal(ids)
-// 	}
-// 	if ids := cache.Get(1002); len(ids) != 1 {
-// 		t.Fatal(ids)
-// 	}
-
-// }
+}
 
 func TestWriteDiff(t *testing.T) {
 	cache_dir, _ := ioutil.TempDir("", "goposm_test")
