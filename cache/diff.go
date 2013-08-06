@@ -113,9 +113,8 @@ func deleteRefs(refs []int64, ref int64) []int64 {
 }
 
 type idRef struct {
-	id     int64
-	ref    int64
-	delete bool
+	id  int64
+	ref int64
 }
 
 type idRefs struct {
@@ -135,28 +134,6 @@ type idRefBunches map[int64]idRefBunch
 func (bunches *idRefBunches) add(bunchId, id, ref int64) {
 	idRefs := bunches.getCreate(bunchId, id)
 	idRefs.refs = insertRefs(idRefs.refs, ref)
-}
-
-func (bunches *idRefBunches) deleteAll(bunchId, id int64) {
-	idRefs := bunches.getCreate(bunchId, id)
-	idRefs.refs = nil
-}
-
-func (bunches *idRefBunches) delete(bunchId, id, ref int64) {
-	idRefs := bunches.get(bunchId, id)
-	if idRefs != nil {
-		idRefs.refs = deleteRefs(idRefs.refs, ref)
-	}
-}
-
-func (bunches *idRefBunches) get(bunchId, id int64) *idRefs {
-	bunch, ok := (*bunches)[bunchId]
-	if !ok {
-		bunch = idRefBunch{id: bunchId}
-	}
-	result := bunch.get(id)
-	(*bunches)[bunchId] = bunch
-	return result
 }
 
 func (bunches *idRefBunches) getCreate(bunchId, id int64) *idRefs {
@@ -286,12 +263,10 @@ func newWaysRefIndex(dir string) (*WaysRefIndex, error) {
 }
 
 func (index *CoordsRefIndex) AddFromWay(way *element.Way) {
-	if index.linearImport {
-		for _, node := range way.Nodes {
+	for _, node := range way.Nodes {
+		if index.linearImport {
 			index.addc <- idRef{id: node.Id, ref: way.Id}
-		}
-	} else {
-		for _, node := range way.Nodes {
+		} else {
 			index.add(node.Id, way.Id)
 		}
 	}
@@ -338,11 +313,7 @@ func (index *bunchRefCache) Close() {
 
 func (index *bunchRefCache) dispatch() {
 	for idRef := range index.addc {
-		if idRef.delete {
-			index.buffer.deleteAll(index.getBunchId(idRef.id), idRef.id)
-		} else {
-			index.buffer.add(index.getBunchId(idRef.id), idRef.id, idRef.ref)
-		}
+		index.buffer.add(index.getBunchId(idRef.id), idRef.id, idRef.ref)
 		if len(index.buffer) >= bufferSize {
 			index.write <- index.buffer
 			select {
@@ -523,6 +494,10 @@ func (index *bunchRefCache) add(id, ref int64) error {
 }
 
 func (index *bunchRefCache) DeleteRef(id, ref int64) error {
+	if index.linearImport {
+		panic("programming error: delete not supported in linearImport mode")
+	}
+
 	keyBuf := idToKeyBuf(index.getBunchId(id))
 
 	data, err := index.db.Get(index.ro, keyBuf)
@@ -543,7 +518,11 @@ func (index *bunchRefCache) DeleteRef(id, ref int64) error {
 	return nil
 }
 
-func (index *bunchRefCache) deleteAll(id int64) error {
+func (index *bunchRefCache) Delete(id int64) error {
+	if index.linearImport {
+		panic("programming error: delete not supported in linearImport mode")
+	}
+
 	keyBuf := idToKeyBuf(index.getBunchId(id))
 
 	data, err := index.db.Get(index.ro, keyBuf)
@@ -562,14 +541,6 @@ func (index *bunchRefCache) deleteAll(id int64) error {
 		}
 	}
 	return nil
-}
-
-func (index *bunchRefCache) Delete(id int64) {
-	if index.linearImport {
-		index.addc <- idRef{id: id, delete: true}
-	} else {
-		index.deleteAll(id)
-	}
 }
 
 func marshalBunch(idRefs []idRefs) []byte {
@@ -613,7 +584,6 @@ func marshalBunch(idRefs []idRefs) []byte {
 }
 
 func unmarshalBunch(buf []byte) []idRefs {
-
 	r := bytes.NewBuffer(buf)
 	n, err := binary.ReadUvarint(r)
 	if err != nil {
