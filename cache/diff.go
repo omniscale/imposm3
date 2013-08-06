@@ -1,16 +1,16 @@
 package cache
 
 import (
-	"bytes"
-	"encoding/binary"
 	"github.com/jmhodges/levigo"
-	"goposm/element"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sort"
 	"sync"
+
+	"goposm/cache/binary"
+	"goposm/element"
 )
 
 type byInt64 []int64
@@ -117,15 +117,10 @@ type idRef struct {
 	ref int64
 }
 
-type idRefs struct {
-	id   int64
-	refs []int64
-}
-
 // idRefBunch stores multiple IdRefs
 type idRefBunch struct {
 	id     int64 // the bunch id
-	idRefs []idRefs
+	idRefs []element.IdRefs
 }
 
 // idRefBunches can hold multiple idRefBunch
@@ -133,10 +128,10 @@ type idRefBunches map[int64]idRefBunch
 
 func (bunches *idRefBunches) add(bunchId, id, ref int64) {
 	idRefs := bunches.getCreate(bunchId, id)
-	idRefs.refs = insertRefs(idRefs.refs, ref)
+	idRefs.Refs = insertRefs(idRefs.Refs, ref)
 }
 
-func (bunches *idRefBunches) getCreate(bunchId, id int64) *idRefs {
+func (bunches *idRefBunches) getCreate(bunchId, id int64) *element.IdRefs {
 	bunch, ok := (*bunches)[bunchId]
 	if !ok {
 		bunch = idRefBunch{id: bunchId}
@@ -147,35 +142,35 @@ func (bunches *idRefBunches) getCreate(bunchId, id int64) *idRefs {
 	return result
 }
 
-func (bunch *idRefBunch) get(id int64) *idRefs {
-	var result *idRefs
+func (bunch *idRefBunch) get(id int64) *element.IdRefs {
+	var result *element.IdRefs
 
 	i := sort.Search(len(bunch.idRefs), func(i int) bool {
-		return bunch.idRefs[i].id >= id
+		return bunch.idRefs[i].Id >= id
 	})
-	if i < len(bunch.idRefs) && bunch.idRefs[i].id == id {
+	if i < len(bunch.idRefs) && bunch.idRefs[i].Id == id {
 		result = &bunch.idRefs[i]
 	}
 	return result
 }
 
-func (bunch *idRefBunch) getCreate(id int64) *idRefs {
-	var result *idRefs
+func (bunch *idRefBunch) getCreate(id int64) *element.IdRefs {
+	var result *element.IdRefs
 
 	i := sort.Search(len(bunch.idRefs), func(i int) bool {
-		return bunch.idRefs[i].id >= id
+		return bunch.idRefs[i].Id >= id
 	})
-	if i < len(bunch.idRefs) && bunch.idRefs[i].id >= id {
-		if bunch.idRefs[i].id == id {
+	if i < len(bunch.idRefs) && bunch.idRefs[i].Id >= id {
+		if bunch.idRefs[i].Id == id {
 			result = &bunch.idRefs[i]
 		} else {
-			bunch.idRefs = append(bunch.idRefs, idRefs{})
+			bunch.idRefs = append(bunch.idRefs, element.IdRefs{})
 			copy(bunch.idRefs[i+1:], bunch.idRefs[i:])
-			bunch.idRefs[i] = idRefs{id: id}
+			bunch.idRefs[i] = element.IdRefs{Id: id}
 			result = &bunch.idRefs[i]
 		}
 	} else {
-		bunch.idRefs = append(bunch.idRefs, idRefs{id: id})
+		bunch.idRefs = append(bunch.idRefs, element.IdRefs{Id: id})
 		result = &bunch.idRefs[len(bunch.idRefs)-1]
 	}
 
@@ -359,7 +354,7 @@ func (index *bunchRefCache) writeRefs(idRefs idRefBunches) error {
 	return index.db.Write(index.wo, batch)
 }
 
-func mergeBunch(bunch, newBunch []idRefs) []idRefs {
+func mergeBunch(bunch, newBunch []element.IdRefs) []element.IdRefs {
 	lastIdx := 0
 
 NextIdRef:
@@ -367,23 +362,23 @@ NextIdRef:
 	for _, newIdRefs := range newBunch {
 		// search place in bunch
 		for i := lastIdx; i < len(bunch); i++ {
-			if bunch[i].id == newIdRefs.id {
+			if bunch[i].Id == newIdRefs.Id {
 				// id already present
-				if len(newIdRefs.refs) == 0 {
+				if len(newIdRefs.Refs) == 0 {
 					// no new refs -> delete
 					bunch = append(bunch[:i], bunch[i+1:]...)
 				} else { // otherwise add refs
-					for _, r := range newIdRefs.refs {
-						bunch[i].refs = insertRefs(bunch[i].refs, r)
+					for _, r := range newIdRefs.Refs {
+						bunch[i].Refs = insertRefs(bunch[i].Refs, r)
 					}
 				}
 				lastIdx = i
 				continue NextIdRef
 			}
-			if bunch[i].id > newIdRefs.id {
+			if bunch[i].Id > newIdRefs.Id {
 				// insert before
-				if len(newIdRefs.refs) > 0 {
-					bunch = append(bunch, idRefs{})
+				if len(newIdRefs.Refs) > 0 {
+					bunch = append(bunch, element.IdRefs{})
 					copy(bunch[i+1:], bunch[i:])
 					bunch[i] = newIdRefs
 				}
@@ -392,7 +387,7 @@ NextIdRef:
 			}
 		}
 		// insert at the end
-		if len(newIdRefs.refs) > 0 {
+		if len(newIdRefs.Refs) > 0 {
 			bunch = append(bunch, newIdRefs)
 			lastIdx = len(bunch) - 1
 		}
@@ -400,16 +395,16 @@ NextIdRef:
 	return bunch
 }
 
-func (index *bunchRefCache) loadMergeMarshal(keyBuf []byte, newBunch []idRefs) []byte {
+func (index *bunchRefCache) loadMergeMarshal(keyBuf []byte, newBunch []element.IdRefs) []byte {
 	data, err := index.db.Get(index.ro, keyBuf)
 	if err != nil {
 		panic(err)
 	}
 
-	var bunch []idRefs
+	var bunch []element.IdRefs
 
 	if data != nil {
-		bunch = unmarshalBunch(data)
+		bunch = binary.UnmarshalIdRefsBunch(data)
 	}
 
 	if bunch == nil {
@@ -418,7 +413,7 @@ func (index *bunchRefCache) loadMergeMarshal(keyBuf []byte, newBunch []idRefs) [
 		bunch = mergeBunch(bunch, newBunch)
 	}
 
-	data = marshalBunch(bunch)
+	data = binary.MarshalIdRefsBunch(bunch)
 	return data
 }
 
@@ -434,9 +429,9 @@ func (index *bunchRefCache) Get(id int64) []int64 {
 	}
 
 	if data != nil {
-		for _, idRef := range unmarshalBunch(data) {
-			if idRef.id == id {
-				return idRef.refs
+		for _, idRef := range binary.UnmarshalIdRefsBunch(data) {
+			if idRef.Id == id {
+				return idRef.Refs
 			}
 		}
 	}
@@ -451,16 +446,16 @@ func (index *bunchRefCache) Add(id, ref int64) error {
 		return err
 	}
 
-	var idRefs []idRefs
+	var idRefs []element.IdRefs
 	if data != nil {
-		idRefs = unmarshalBunch(data)
+		idRefs = binary.UnmarshalIdRefsBunch(data)
 	}
 
 	idRefBunch := idRefBunch{index.getBunchId(id), idRefs}
 	idRef := idRefBunch.getCreate(id)
-	idRef.refs = insertRefs(idRef.refs, ref)
+	idRef.Refs = insertRefs(idRef.Refs, ref)
 
-	data = marshalBunch(idRefBunch.idRefs)
+	data = binary.MarshalIdRefsBunch(idRefBunch.idRefs)
 
 	return index.db.Put(index.wo, keyBuf, data)
 }
@@ -478,12 +473,12 @@ func (index *bunchRefCache) DeleteRef(id, ref int64) error {
 	}
 
 	if data != nil {
-		idRefs := unmarshalBunch(data)
+		idRefs := binary.UnmarshalIdRefsBunch(data)
 		idRefBunch := idRefBunch{index.getBunchId(id), idRefs}
 		idRef := idRefBunch.get(id)
 		if idRef != nil {
-			idRef.refs = deleteRefs(idRef.refs, ref)
-			data := marshalBunch(idRefs)
+			idRef.Refs = deleteRefs(idRef.Refs, ref)
+			data := binary.MarshalIdRefsBunch(idRefs)
 			return index.db.Put(index.wo, keyBuf, data)
 		}
 	}
@@ -503,12 +498,12 @@ func (index *bunchRefCache) Delete(id int64) error {
 	}
 
 	if data != nil {
-		idRefs := unmarshalBunch(data)
+		idRefs := binary.UnmarshalIdRefsBunch(data)
 		idRefBunch := idRefBunch{index.getBunchId(id), idRefs}
 		idRef := idRefBunch.get(id)
 		if idRef != nil {
-			idRef.refs = []int64{}
-			data := marshalBunch(idRefs)
+			idRef.Refs = []int64{}
+			data := binary.MarshalIdRefsBunch(idRefs)
 			return index.db.Put(index.wo, keyBuf, data)
 		}
 	}
@@ -544,84 +539,4 @@ func (index *WaysRefIndex) AddFromMembers(relId int64, members []element.Member)
 			}
 		}
 	}
-}
-
-func marshalBunch(idRefs []idRefs) []byte {
-	buf := make([]byte, len(idRefs)*(4+1+6)+binary.MaxVarintLen64)
-
-	lastRef := int64(0)
-	lastId := int64(0)
-	nextPos := 0
-
-	nextPos += binary.PutUvarint(buf[nextPos:], uint64(len(idRefs)))
-
-	for _, idRef := range idRefs {
-		if len(buf)-nextPos < binary.MaxVarintLen64 {
-			tmp := make([]byte, len(buf)*2)
-			copy(tmp, buf)
-			buf = tmp
-		}
-		nextPos += binary.PutVarint(buf[nextPos:], idRef.id-lastId)
-		lastId = idRef.id
-	}
-	for _, idRef := range idRefs {
-		if len(buf)-nextPos < binary.MaxVarintLen64 {
-			tmp := make([]byte, len(buf)*2)
-			copy(tmp, buf)
-			buf = tmp
-		}
-		nextPos += binary.PutUvarint(buf[nextPos:], uint64(len(idRef.refs)))
-	}
-	for _, idRef := range idRefs {
-		for _, ref := range idRef.refs {
-			if len(buf)-nextPos < binary.MaxVarintLen64 {
-				tmp := make([]byte, len(buf)*2)
-				copy(tmp, buf)
-				buf = tmp
-			}
-			nextPos += binary.PutVarint(buf[nextPos:], ref-lastRef)
-			lastRef = ref
-		}
-	}
-	return buf[:nextPos]
-}
-
-func unmarshalBunch(buf []byte) []idRefs {
-	r := bytes.NewBuffer(buf)
-	n, err := binary.ReadUvarint(r)
-	if err != nil {
-		return nil
-	}
-
-	idRefs := make([]idRefs, n)
-
-	last := int64(0)
-	for i := 0; uint64(i) < n; i++ {
-		idRefs[i].id, err = binary.ReadVarint(r)
-		if err != nil {
-			panic(err)
-		}
-		idRefs[i].id += last
-		last = idRefs[i].id
-	}
-	var numRefs uint64
-	for i := 0; uint64(i) < n; i++ {
-		numRefs, err = binary.ReadUvarint(r)
-		if err != nil {
-			panic(err)
-		}
-		idRefs[i].refs = make([]int64, numRefs)
-	}
-	last = 0
-	for idIdx := 0; uint64(idIdx) < n; idIdx++ {
-		for refIdx := 0; refIdx < len(idRefs[idIdx].refs); refIdx++ {
-			idRefs[idIdx].refs[refIdx], err = binary.ReadVarint(r)
-			if err != nil {
-				panic(err)
-			}
-			idRefs[idIdx].refs[refIdx] += last
-			last = idRefs[idIdx].refs[refIdx]
-		}
-	}
-	return idRefs
 }

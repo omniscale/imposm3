@@ -58,3 +58,8 @@ type Relation struct {
 	OSMElem
 	Members []Member `json:"members"`
 }
+
+type IdRefs struct {
+	Id   int64
+	Refs []int64
+}
