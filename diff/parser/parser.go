@@ -4,9 +4,12 @@ import (
 	"compress/gzip"
 	"encoding/xml"
 	"goposm/element"
+	"goposm/logging"
 	"os"
 	"strconv"
 )
+
+var log = logging.NewLogger("osc parser")
 
 type DiffElem struct {
 	Add  bool
@@ -137,6 +140,10 @@ NextToken:
 					}
 				}
 				tags[k] = v
+			case "osmChange":
+				// pass
+			default:
+				log.Warn("unhandled XML tag ", tok.Name.Local, " in OSC")
 			}
 		case xml.EndElement:
 			var e DiffElem
