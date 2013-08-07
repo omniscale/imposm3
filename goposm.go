@@ -76,7 +76,8 @@ func main() {
 	case "query-cache":
 		query.Query(os.Args[2:])
 	default:
-		log.Fatal("invalid command")
+		printCmds()
+		log.Fatalf("invalid command: '%s'", os.Args[1])
 	}
 	logging.Shutdown()
 	os.Exit(0)
