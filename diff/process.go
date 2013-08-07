@@ -164,7 +164,6 @@ For:
 						if err := osmCache.Coords.DeleteCoord(elem.Node.Id); err != nil {
 							log.Fatal(err)
 						}
-						diffCache.Coords.Delete(elem.Node.Id)
 					}
 				}
 			}

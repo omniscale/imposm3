@@ -40,7 +40,7 @@ func (d *Deleter) SetExpireTiles(expireTiles *expire.Tiles) {
 	d.expireTiles = expireTiles
 }
 
-func (d *Deleter) deleteRelation(id int64) {
+func (d *Deleter) deleteRelation(id int64, deleteRefs bool) {
 	elem, err := d.osmCache.Relations.GetRelation(id)
 	if err != nil {
 		if err == cache.NotFound {
@@ -58,6 +58,15 @@ func (d *Deleter) deleteRelation(id int64) {
 		d.delDb.Delete(m.Table.Name, elem.Id)
 		deleted = true
 	}
+
+	if deleted && deleteRefs {
+		for _, m := range elem.Members {
+			if m.Type == element.WAY {
+				d.diffCache.Ways.DeleteRef(m.Id, id)
+			}
+		}
+	}
+
 	d.osmCache.InsertedWays.DeleteMembers(elem.Members)
 	if deleted && d.expireTiles != nil {
 		for _, m := range elem.Members {
@@ -74,7 +83,7 @@ func (d *Deleter) deleteRelation(id int64) {
 	}
 }
 
-func (d *Deleter) deleteWay(id int64, forMod bool) {
+func (d *Deleter) deleteWay(id int64, deleteRefs bool) {
 	elem, err := d.osmCache.Ways.GetWay(id)
 	if err != nil {
 		if err == cache.NotFound {
@@ -96,7 +105,7 @@ func (d *Deleter) deleteWay(id int64, forMod bool) {
 		d.delDb.Delete(m.Table.Name, elem.Id)
 		deleted = true
 	}
-	if deleted && !forMod {
+	if deleted && deleteRefs {
 		for _, n := range elem.Refs {
 			d.diffCache.Coords.DeleteRef(n, id)
 		}
@@ -129,6 +138,7 @@ func (d *Deleter) deleteNode(id int64) {
 		d.delDb.Delete(m.Table.Name, elem.Id)
 		deleted = true
 	}
+
 	if deleted && d.expireTiles != nil {
 		d.expireTiles.ExpireFromNodes([]element.Node{*elem})
 	}
@@ -141,14 +151,14 @@ func (d *Deleter) Delete(delElem parser.DiffElem) {
 	}
 
 	if delElem.Rel != nil {
-		d.deleteRelation(delElem.Rel.Id)
+		d.deleteRelation(delElem.Rel.Id, true)
 	} else if delElem.Way != nil {
-		d.deleteWay(delElem.Way.Id, false)
+		d.deleteWay(delElem.Way.Id, true)
 
 		if delElem.Mod {
 			dependers := d.diffCache.Ways.Get(delElem.Way.Id)
 			for _, rel := range dependers {
-				d.deleteRelation(rel)
+				d.deleteRelation(rel, false)
 			}
 		}
 	} else if delElem.Node != nil {
@@ -156,12 +166,15 @@ func (d *Deleter) Delete(delElem parser.DiffElem) {
 		if delElem.Mod {
 			dependers := d.diffCache.Coords.Get(delElem.Node.Id)
 			for _, way := range dependers {
-				d.deleteWay(way, true)
+				d.deleteWay(way, false)
 				dependers := d.diffCache.Ways.Get(way)
 				for _, rel := range dependers {
-					d.deleteRelation(rel)
+					d.deleteRelation(rel, false)
 				}
 			}
+		}
+		if !delElem.Add {
+			d.diffCache.Coords.Delete(delElem.Node.Id)
 		}
 	}
 }

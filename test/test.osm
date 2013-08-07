@@ -388,6 +388,79 @@
     <tag k="type" v="multipolygon"/>
   </relation>
 
+
+  <!-- test split relation way -->
+  <node id="15001" version="1" timestamp="2011-11-11T00:11:11Z" lat="44" lon="89"/>
+  <node id="15002" version="1" timestamp="2011-11-11T00:11:11Z" lat="44" lon="90"/>
+  <node id="15003" version="1" timestamp="2011-11-11T00:11:11Z" lat="46" lon="90"/>
+  <node id="15004" version="1" timestamp="2011-11-11T00:11:11Z" lat="46" lon="89"/>
+  <node id="15011" version="1" timestamp="2011-11-11T00:11:11Z" lat="44.1" lon="89.1"/>
+  <node id="15012" version="1" timestamp="2011-11-11T00:11:11Z" lat="44.1" lon="89.9"/>
+  <node id="15013" version="1" timestamp="2011-11-11T00:11:11Z" lat="45.9" lon="89.9"/>
+  <node id="15014" version="1" timestamp="2011-11-11T00:11:11Z" lat="45.9" lon="89.1"/>
+  <way id="15001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="15001"/>
+    <nd ref="15002"/>
+    <nd ref="15003"/>
+    <nd ref="15004"/>
+    <nd ref="15001"/>
+    <tag k="name" v="way 15001"/>
+    <tag k="landuse" v="park"/>
+  </way>
+  <way id="15011" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="15011"/>
+    <nd ref="15012"/>
+    <nd ref="15013"/>
+    <nd ref="15014"/>
+    <nd ref="15011"/>
+    <tag k="name" v="way 15011"/>
+  </way>
+  <relation id="15001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="15001" role="outer"/>
+    <member type="way" ref="15011" role="inner"/>
+    <tag k="type" v="multipolygon"/>
+  </relation>
+
+
+  <!-- test merge relation way -->
+  <node id="16001" version="1" timestamp="2011-11-11T00:11:11Z" lat="41" lon="89"/>
+  <node id="16002" version="1" timestamp="2011-11-11T00:11:11Z" lat="41" lon="90"/>
+  <node id="16003" version="1" timestamp="2011-11-11T00:11:11Z" lat="44" lon="90"/>
+  <node id="16004" version="1" timestamp="2011-11-11T00:11:11Z" lat="44" lon="89"/>
+  <node id="16011" version="1" timestamp="2011-11-11T00:11:11Z" lat="41.1" lon="89.1"/>
+  <node id="16012" version="1" timestamp="2011-11-11T00:11:11Z" lat="41.1" lon="89.9"/>
+  <node id="16013" version="1" timestamp="2011-11-11T00:11:11Z" lat="43.9" lon="89.9"/>
+  <node id="16014" version="1" timestamp="2011-11-11T00:11:11Z" lat="43.9" lon="89.1"/>
+  <way id="16002" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="16003"/>
+    <nd ref="16004"/>
+    <nd ref="16001"/>
+    <tag k="name" v="way 16002"/>
+    <tag k="highway" v="residential"/>
+  </way>
+  <way id="16001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="16001"/>
+    <nd ref="16002"/>
+    <nd ref="16003"/>
+    <tag k="name" v="way 16001"/>
+  </way>
+  <way id="16011" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="16011"/>
+    <nd ref="16012"/>
+    <nd ref="16013"/>
+    <nd ref="16014"/>
+    <nd ref="16011"/>
+    <tag k="name" v="way 16011"/>
+  </way>
+  <relation id="16001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="16001" role="outer"/>
+    <member type="way" ref="16002" role="outer"/>
+    <member type="way" ref="16011" role="inner"/>
+    <tag k="type" v="multipolygon"/>
+    <tag k="landuse" v="park"/>
+  </relation>
+
+
   <!-- test that node (n:20001) does not reference way (w:20001) after it was deleted -->
   <node id="20001" version="1" timestamp="2011-11-11T00:11:11Z" lat="30" lon="10">
     <tag k="name" v="way 14001"/>
@@ -400,5 +473,24 @@
     <tag k="highway" v="residential"/>
   </way>
 
+
+  <!-- test that way (w:21001) does not reference way (r:21001) after it was deleted -->
+  <node id="21001" version="1" timestamp="2011-11-11T00:11:11Z" lat="32" lon="10"/>
+  <node id="21002" version="1" timestamp="2011-11-11T00:11:11Z" lat="32" lon="11"/>
+  <node id="21003" version="1" timestamp="2011-11-11T00:11:11Z" lat="34" lon="10"/>
+  <node id="21004" version="1" timestamp="2011-11-11T00:11:11Z" lat="34" lon="11"/>
+  <way id="21001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="21001"/>
+    <nd ref="21002"/>
+    <nd ref="21003"/>
+    <nd ref="21004"/>
+    <nd ref="21001"/>
+    <tag k="highway" v="residential"/>
+  </way>
+  <relation id="21001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="21001" role="outer"/>
+    <tag k="type" v="multipolygon"/>
+    <tag k="landuse" v="park"/>
+  </relation>
 
 </osm>

@@ -3,12 +3,12 @@
   <modify>
     <node id="1001" version="2" lat="47.5" lon="13.5"/>
   </modify>
-  <add>
+  <create>
     <node id="10001" version="2" lat="40.0" lon="10.0">
         <tag k="name" v="Bar"/>
         <tag k="place" v="village"/>
     </node>
-  </add>
+  </create>
   <modify>
     <!-- modify but not present in initial import -->
     <node id="10002" version="2" lat="40.0" lon="10.1">
@@ -78,10 +78,65 @@
     </relation>
   </modify>
 
+  <!-- test split relation way -->
+  <create>
+    <way id="15002" version="1" timestamp="2011-11-11T00:11:11Z">
+      <nd ref="15003"/>
+      <nd ref="15004"/>
+      <nd ref="15001"/>
+      <tag k="name" v="way 15002"/>
+      <tag k="highway" v="residential"/>
+    </way>
+  </create>
+  <modify>
+    <way id="15001" version="2" timestamp="2011-11-11T00:11:11Z">
+      <nd ref="15001"/>
+      <nd ref="15002"/>
+      <nd ref="15003"/>
+      <tag k="name" v="way 15001"/>
+    </way>
+    <relation id="15001" version="2" timestamp="2011-11-11T00:11:11Z">
+      <member type="way" ref="15001" role="outer"/>
+      <member type="way" ref="15002" role="outer"/>
+      <member type="way" ref="15011" role="inner"/>
+      <tag k="type" v="multipolygon"/>
+      <tag k="landuse" v="park"/>
+    </relation>
+  </modify>
+
+  <!-- test merge relation way -->
+  <delete>
+    <way id="16002" version="2" timestamp="2011-11-11T00:11:11Z"/>
+  </delete>
+  <modify>
+    <way id="16001" version="1" timestamp="2011-11-11T00:11:11Z">
+      <nd ref="16001"/>
+      <nd ref="16002"/>
+      <nd ref="16003"/>
+      <nd ref="16004"/>
+      <nd ref="16001"/>
+      <tag k="name" v="way 16001"/>
+    </way>
+    <relation id="16001" version="2" timestamp="2011-11-11T00:11:11Z">
+      <member type="way" ref="16001" role="outer"/>
+      <member type="way" ref="16011" role="inner"/>
+      <tag k="type" v="multipolygon"/>
+      <tag k="landuse" v="park"/>
+    </relation>
+  </modify>
+
+
   <!-- test that node (n:20001) does not reference way (w:20001) after it was deleted -->
   <delete>
     <node id="20002" />
     <way id="20001" />
   </delete>
+
+  <!-- test that way (w:21001) does not reference way (r:21001) after it was deleted -->
+  <delete>
+    <relation id="21001" />
+  </delete>
+
+
 
 </osmChange>

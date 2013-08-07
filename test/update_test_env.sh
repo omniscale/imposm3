@@ -1,5 +1,5 @@
 #!/bin/bash
-set -x
+set -x -e
 pushd ..
 go build
 popd

@@ -95,7 +95,7 @@ def cache_query(nodes='', ways='', relations='', deps='', full=''):
     if ways:
         ways = '-way ' + ','.join(map(str, ways))
     if relations:
-        relations = '-rel' + ','.join(map(str, relations))
+        relations = '-rel ' + ','.join(map(str, relations))
     if deps:
         deps = '-deps'
     if full:
@@ -189,13 +189,34 @@ def test_changed_hole_tags_1():
     assert not query_row(db_conf, 'osm_waterareas', 14011)
     assert query_row(db_conf, 'osm_landusages', 14001)['type'] == 'park'
 
+def test_split_outer_multipolygon_way_1():
+    """Single outer way of multipolygon was inserted."""
+    park_15001 = query_row(db_conf, 'osm_landusages', 15001)
+    assert park_15001['type'] == 'park'
+    assert_almost_equal(park_15001['geometry'].area, 9816216452, -1)
+    assert query_row(db_conf, 'osm_roads', 15002) == None
+
+def test_merge_outer_multipolygon_way_1():
+    """Splitted outer way of multipolygon was inserted."""
+    park_16001 = query_row(db_conf, 'osm_landusages', 16001)
+    assert park_16001['type'] == 'park'
+    assert_almost_equal(park_16001['geometry'].area, 12779350582, -1)
+    assert query_row(db_conf, 'osm_roads', 16002)['type'] == 'residential'
+
 def test_node_way_ref_after_delete_1():
-    """Nodes referece way"""
+    """Nodes refereces way"""
     data = cache_query(nodes=[20001, 20002], deps=True)
     assert '20001' in data['nodes']['20001']['ways']
     assert '20001' in data['nodes']['20002']['ways']
     assert query_row(db_conf, 'osm_roads', 20001)['type'] == 'residential'
     assert query_row(db_conf, 'osm_barrierpoints', 20001)['type'] == 'block'
+
+def test_way_rel_ref_after_delete_1():
+    """Ways refereces relation"""
+    data = cache_query(ways=[21001], deps=True)
+    assert data['ways']['21001']['relations'].keys() == ['21001']
+    assert query_row(db_conf, 'osm_roads', 21001)['type'] == 'residential'
+    assert query_row(db_conf, 'osm_landusages', 21001)['type'] == 'park'
 
 
 #######################################################################
@@ -225,8 +246,8 @@ def test_updated_nodes():
     assert_cached_node(10002, (10.1, 40.0))
     place_10001 = query_row(db_conf, 'osm_places', 10001)
     assert place_10001['name'] == 'Bar', place_10001
-    place_10001 = query_row(db_conf, 'osm_places', 10002)
-    assert place_10001['name'] == 'Baz', place_10001
+    place_10002 = query_row(db_conf, 'osm_places', 10002)
+    assert place_10002['name'] == 'Baz', place_10002
 
 def test_landusage_to_waterarea_2():
     """Parks converted to water moved from landusages to waterareas"""
@@ -253,11 +274,45 @@ def test_changed_hole_tags_2():
     assert_almost_equal(query_row(db_conf, 'osm_landusages', 14001)['geometry'].area, 10373600000, -6)
     assert_almost_equal(query_row(db_conf, 'osm_waterareas', 14011)['geometry'].area, 26672000000, -6)
 
+def test_split_outer_multipolygon_way_2():
+    """Splitted outer way of multipolygon was inserted"""
+    data = cache_query(ways=[15001, 15002], deps=True)
+    assert data['ways']['15001']['relations'].keys() == ['15001']
+    assert data['ways']['15002']['relations'].keys() == ['15001']
+
+    park_15001 = query_row(db_conf, 'osm_landusages', 15001)
+    assert park_15001['type'] == 'park'
+    assert_almost_equal(park_15001['geometry'].area, 9816216452, -1)
+    assert query_row(db_conf, 'osm_roads', 15002)['type'] == 'residential'
+
+def test_merge_outer_multipolygon_way_2():
+    """Merged outer way of multipolygon was inserted"""
+    data = cache_query(ways=[16001, 16002], deps=True)
+    assert data['ways']['16001']['relations'].keys() == ['16001']
+    assert data['ways']['16002'] == None
+
+    data = cache_query(relations=[16001], full=True)
+    assert sorted(data['relations']['16001']['ways'].keys()) == ['16001', '16011']
+
+    park_16001 = query_row(db_conf, 'osm_landusages', 16001)
+    assert park_16001['type'] == 'park'
+    assert_almost_equal(park_16001['geometry'].area, 12779350582, -1)
+    assert query_row(db_conf, 'osm_roads', 16002) == None
+
+
 def test_node_way_ref_after_delete_2():
-    """Nodes does not referece deleted way"""
+    """Node does not referece deleted way"""
     data = cache_query(nodes=[20001, 20002], deps=True)
     assert 'ways' not in data['nodes']['20001']
     assert data['nodes']['20002'] == None
     assert query_row(db_conf, 'osm_roads', 20001) == None
     assert query_row(db_conf, 'osm_barrierpoints', 20001)['type'] == 'block'
+
+
+def test_way_rel_ref_after_delete_2():
+    """Way does not referece deleted relation"""
+    data = cache_query(ways=[21001], deps=True)
+    assert 'relations' not in data['ways']['21001']
+    assert query_row(db_conf, 'osm_roads', 21001)['type'] == 'residential'
+    assert query_row(db_conf, 'osm_landusages', 21001) == None
 
