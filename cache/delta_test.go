@@ -20,12 +20,24 @@ func mknode(id int64) element.Node {
 }
 
 func TestReadWriteDeltaCoords(t *testing.T) {
+	checkReadWriteDeltaCoords(t, false)
+}
+
+func TestReadWriteDeltaCoordsLinearImport(t *testing.T) {
+	checkReadWriteDeltaCoords(t, true)
+}
+
+func checkReadWriteDeltaCoords(t *testing.T, withLinearImport bool) {
 	cache_dir, _ := ioutil.TempDir("", "goposm_test")
 	defer os.RemoveAll(cache_dir)
 
 	cache, err := newDeltaCoordsCache(cache_dir)
 	if err != nil {
 		t.Fatal()
+	}
+
+	if withLinearImport {
+		cache.SetLinearImport(true)
 	}
 
 	// create list with nodes from Id 0->999 in random order
@@ -42,11 +54,8 @@ func TestReadWriteDeltaCoords(t *testing.T) {
 		cache.PutCoords(nodes[i : i+10])
 	}
 
-	cache.Close()
-
-	cache, err = newDeltaCoordsCache(cache_dir)
-	if err != nil {
-		t.Fatal()
+	if withLinearImport {
+		cache.SetLinearImport(false)
 	}
 
 	for i := 0; i < len(nodes); i++ {
@@ -68,12 +77,6 @@ func TestReadWriteDeltaCoords(t *testing.T) {
 
 	// test delete
 	cache.PutCoords([]element.Node{mknode(999999)})
-	cache.Close()
-
-	cache, err = newDeltaCoordsCache(cache_dir)
-	if err != nil {
-		t.Fatal()
-	}
 
 	_, err = cache.GetCoord(999999)
 	if err == NotFound {
@@ -83,17 +86,4 @@ func TestReadWriteDeltaCoords(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cache.Close()
-
-	cache, err = newDeltaCoordsCache(cache_dir)
-	if err != nil {
-		t.Fatal()
-	}
-	defer cache.Close()
-
-	_, err = cache.GetCoord(999999)
-	if err != NotFound {
-		t.Fatal("deleted node returned not NotFound")
-	}
-
 }
