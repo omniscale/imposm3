@@ -3,12 +3,13 @@ package geos
 /*
 #cgo LDFLAGS: -lgeos_c
 #include "geos_c.h"
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 
 extern void goLogString(char *msg);
-extern void goSendQueryResult(size_t, void *);
 
 void debug_wrap(const char *fmt, ...) {
 	va_list a_list;
@@ -31,9 +32,33 @@ void initGEOS_debug() {
     return initGEOS(devnull, debug_wrap);
 }
 
-// wrap goIndexSendQueryResult
-void IndexQuerySendCallback(void *item, void *userdata) {
-    goIndexSendQueryResult((size_t)item, userdata);
+typedef struct {
+    uint32_t num;
+    uint32_t *arr;
+    uint32_t arrCap;
+} queryResult;
+
+void queryResultAppend(queryResult *r, int idx) {
+    r->num += 1;
+    if (r->num >= r->arrCap) {
+        uint32_t newCap = r->arrCap > 0 ? r->arrCap * 2 : 8;
+        uint32_t *newArr = malloc(sizeof(uint32_t) * newCap);
+        if (r->arrCap == 0) {
+            r->arr = newArr;
+        } else {
+            memcpy(newArr, r->arr, r->num-1);
+            free(r->arr);
+            r->arr = newArr;
+        }
+        r->arrCap = newCap;
+    }
+    r->arr[r->num] = idx;
+}
+
+void IndexQueryCallback(void *item, void *userdata) {
+    int idx = (size_t)item;
+    queryResult *result = (queryResult *)userdata;
+    queryResultAppend(result, idx);
 }
 
 void IndexAdd(
@@ -47,14 +72,18 @@ void IndexAdd(
     GEOSSTRtree_insert_r(handle, tree, g, (void *)id);
 }
 
+
 // query with our custom callback
-void IndexQuery(
+uint32_t *IndexQuery(
     GEOSContextHandle_t handle,
     GEOSSTRtree *tree,
     const GEOSGeometry *g,
-    void *userdata)
+    uint32_t *num)
 {
-    GEOSSTRtree_query_r(handle, tree, g, IndexQuerySendCallback, userdata);
-    }
+    queryResult result = {0};
+    GEOSSTRtree_query_r(handle, tree, g, IndexQueryCallback, &result);
+    *num = result.num;
+    return result.arr;
+}
 */
 import "C"

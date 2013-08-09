@@ -4,10 +4,11 @@ package geos
 #cgo LDFLAGS: -lgeos_c
 #include "geos_c.h"
 #include <stdlib.h>
+#include <stdint.h>
 
-extern void IndexQuerySendCallback(void *, void *);
+extern void IndexQueryCallback(void *, void *);
 extern void goIndexSendQueryResult(size_t, void *);
-extern void IndexQuery(GEOSContextHandle_t, GEOSSTRtree *, const GEOSGeometry *, void *);
+extern uint32_t *IndexQuery(GEOSContextHandle_t, GEOSSTRtree *, const GEOSGeometry *, uint32_t *);
 extern void IndexAdd(GEOSContextHandle_t, GEOSSTRtree *, const GEOSGeometry *, size_t);
 
 */
@@ -47,23 +48,17 @@ func (this *Geos) IndexAdd(index *Index, geom *Geom) {
 
 // IndexQuery queries the index for intersections with geom.
 func (this *Geos) IndexQuery(index *Index, geom *Geom) []IndexGeom {
-	hits := make(chan int)
-	go func() {
-		// using a pointer to our hits chan to pass it through
-		// C.IndexQuerySendCallback (in C.IndexQuery) back
-		// to goIndexSendQueryResult
-		C.IndexQuery(this.v, index.v, geom.v, unsafe.Pointer(&hits))
-		close(hits)
-	}()
+	var num C.uint32_t
+	r := C.IndexQuery(this.v, index.v, geom.v, &num)
+	if r == nil {
+		return nil
+	}
+	hits := (*[2 << 16]C.uint32_t)(unsafe.Pointer(r))[:num]
+	defer C.free(unsafe.Pointer(r))
+
 	var geoms []IndexGeom
 	for idx := range hits {
 		geoms = append(geoms, index.geoms[idx])
 	}
 	return geoms
-}
-
-//export goIndexSendQueryResult
-func goIndexSendQueryResult(id C.size_t, ptr unsafe.Pointer) {
-	results := *(*chan int)(ptr)
-	results <- int(id)
 }
