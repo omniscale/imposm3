@@ -27,6 +27,7 @@ type IndexGeom struct {
 }
 type Index struct {
 	v     *C.GEOSSTRtree
+	mu    *sync.Mutex
 	geoms []IndexGeom
 }
 
@@ -35,11 +36,13 @@ func (this *Geos) CreateIndex() *Index {
 	if tree == nil {
 		panic("unable to create tree")
 	}
-	return &Index{tree, []IndexGeom{}}
+	return &Index{tree, &sync.Mutex{}, []IndexGeom{}}
 }
 
 // IndexQuery adds a geom to the index with the id.
 func (this *Geos) IndexAdd(index *Index, geom *Geom) {
+	index.mu.Lock()
+	defer index.mu.Unlock()
 	id := len(index.geoms)
 	C.IndexAdd(this.v, index.v, geom.v, C.size_t(id))
 	prep := this.Prepare(geom)
@@ -48,6 +51,8 @@ func (this *Geos) IndexAdd(index *Index, geom *Geom) {
 
 // IndexQuery queries the index for intersections with geom.
 func (this *Geos) IndexQuery(index *Index, geom *Geom) []IndexGeom {
+	index.mu.Lock()
+	defer index.mu.Unlock()
 	var num C.uint32_t
 	r := C.IndexQuery(this.v, index.v, geom.v, &num)
 	if r == nil {
