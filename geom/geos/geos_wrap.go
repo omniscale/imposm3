@@ -39,20 +39,20 @@ typedef struct {
 } queryResult;
 
 void queryResultAppend(queryResult *r, int idx) {
-    r->num += 1;
-    if (r->num >= r->arrCap) {
-        uint32_t newCap = r->arrCap > 0 ? r->arrCap * 2 : 8;
+    if ((r->num+1) >= r->arrCap) {
+        uint32_t newCap = r->arrCap > 0 ? r->arrCap * 2 : 2;
         uint32_t *newArr = malloc(sizeof(uint32_t) * newCap);
         if (r->arrCap == 0) {
             r->arr = newArr;
         } else {
-            memcpy(newArr, r->arr, r->num-1);
+            memcpy(newArr, r->arr, sizeof(uint32_t) * r->arrCap);
             free(r->arr);
             r->arr = newArr;
         }
         r->arrCap = newCap;
     }
     r->arr[r->num] = idx;
+    r->num += 1;
 }
 
 void IndexQueryCallback(void *item, void *userdata) {
