@@ -44,20 +44,33 @@ func tileBounds(bounds geos.Bounds, width float64) []geos.Bounds {
 	return results
 }
 
+func splitParams(bounds geos.Bounds, maxGrids int, minGridWidth float64) (float64, float64) {
+	width := bounds.MaxX - bounds.MinX
+	height := bounds.MaxY - bounds.MinY
+
+	gridWidthX := minGridWidth
+	gridWidthY := minGridWidth
+	if width/gridWidthX > float64(maxGrids) {
+		gridWidthX = width / float64(maxGrids)
+	}
+	if height/gridWidthY > float64(maxGrids) {
+		gridWidthY = height / float64(maxGrids)
+	}
+
+	gridWidth := math.Max(gridWidthX, gridWidthY)
+	return gridWidth, gridWidth * 100
+}
+
+func SplitPolygonAtAutoGrid(g *geos.Geos, geom *geos.Geom) ([]*geos.Geom, error) {
+	geomBounds := geom.Bounds()
+	if geomBounds == geos.NilBounds {
+		return nil, errors.New("couldn't create bounds for geom")
+	}
+	gridWidth, currentGridWidth := splitParams(geomBounds, 64, 20000.0)
+	return SplitPolygonAtGrid(g, geom, gridWidth, currentGridWidth)
+}
+
 func SplitPolygonAtGrid(g *geos.Geos, geom *geos.Geom, gridWidth, currentGridWidth float64) ([]*geos.Geom, error) {
-	// >>> p = list(split_polygon_at_grid(geometry.box(-0.5, 1, 0.2, 2), 1))
-	// >>> p[0].contains(geometry.box(-0.5, 1, 0, 2))
-	// True
-	// >>> p[0].area == geometry.box(-0.5, 1, 0, 2).area
-	// True
-	// >>> p[1].contains(geometry.box(0, 1, 0.2, 2))
-	// True
-	// >>> p[1].area == geometry.box(0, 1, 0.2, 2).area
-	// True
-
-	// if not geom.is_valid:
-	//     geom = geom.buffer(0)
-
 	var result []*geos.Geom
 	geomBounds := geom.Bounds()
 	if geomBounds == geos.NilBounds {
@@ -135,7 +148,9 @@ func NewFromOgrSourceWithBuffered(source string, buffer float64) (*Limiter, erro
 			g.DestroyLater(buffered)
 			polygons = append(polygons, buffered)
 		}
-		parts, err := SplitPolygonAtGrid(g, geom, 20000, 20000*100)
+
+		parts, err := SplitPolygonAtAutoGrid(g, geom)
+
 		if err != nil {
 			return nil, err
 		}

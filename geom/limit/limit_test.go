@@ -314,6 +314,41 @@ func TestClipperWithBuffer(t *testing.T) {
 	}
 }
 
+func TestSplitParams(t *testing.T) {
+	var gridWidth float64
+
+	gridWidth, _ = splitParams(geos.Bounds{0, 0, 10000, 10000}, 10, 2000)
+	if gridWidth != 2000.0 {
+		t.Fatal(gridWidth)
+	}
+
+	gridWidth, _ = splitParams(geos.Bounds{0, 0, 10000, 10000}, 10, 1000)
+	if gridWidth != 1000.0 {
+		t.Fatal(gridWidth)
+	}
+
+	gridWidth, _ = splitParams(geos.Bounds{0, 0, 10000, 10000}, 10, 500)
+	if gridWidth != 1000.0 {
+		t.Fatal(gridWidth)
+	}
+
+	gridWidth, _ = splitParams(geos.Bounds{0, 0, 10000, 5000}, 10, 500)
+	if gridWidth != 1000.0 {
+		t.Fatal(gridWidth)
+	}
+
+	gridWidth, _ = splitParams(geos.Bounds{0, 0, 10000, 20000}, 10, 500)
+	if gridWidth != 2000.0 {
+		t.Fatal(gridWidth)
+	}
+
+	gridWidth, _ = splitParams(geos.Bounds{0, 0, 10000, 20000}, 50, 100)
+	if gridWidth != 400.0 {
+		t.Fatal(gridWidth)
+	}
+
+}
+
 func BenchmarkClipper(b *testing.B) {
 	g := geos.NewGeos()
 	defer g.Finish()
