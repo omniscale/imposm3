@@ -62,7 +62,7 @@ func (this *Geos) IndexQuery(index *Index, geom *Geom) []IndexGeom {
 	defer C.free(unsafe.Pointer(r))
 
 	var geoms []IndexGeom
-	for idx := range hits {
+	for _, idx := range hits {
 		geoms = append(geoms, index.geoms[idx])
 	}
 	return geoms
