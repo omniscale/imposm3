@@ -58,12 +58,12 @@ def query_row(db_conf, table, osmid):
     create_geom_in_row(row)
     return row
 
-def goposm_import(db_conf, pbf):
+def imposm3_import(db_conf, pbf):
     conn = pg_db_url(db_conf)
 
     try:
         print subprocess.check_output(
-            "../goposm import -connection %s -read %s"
+            "../imposm3 import -connection %s -read %s"
             " -write"
             " -cachedir %s"
             " -diff"
@@ -75,12 +75,12 @@ def goposm_import(db_conf, pbf):
         print ex.output
         raise
 
-def goposm_update(db_conf, osc):
+def imposm3_update(db_conf, osc):
     conn = pg_db_url(db_conf)
 
     try:
         print subprocess.check_output(
-            "../goposm diff -connection %s"
+            "../imposm3 diff -connection %s"
             " -cachedir %s"
             " -limitto clipping-3857.geojson"
             " -mapping test_mapping.json %s" % (
@@ -102,7 +102,7 @@ def cache_query(nodes='', ways='', relations='', deps='', full=''):
     if full:
         full = '-full'
     out = subprocess.check_output(
-        "../goposm query-cache -cachedir %s %s %s %s %s %s" % (
+        "../imposm3 query-cache -cachedir %s %s %s %s %s %s" % (
             tmpdir, nodes, ways, relations, deps, full),
         shell=True)
     print out
@@ -146,7 +146,7 @@ def test_import():
     """Import succeeds"""
     drop_import_schema()
     assert not table_exists('osm_roads')
-    goposm_import(db_conf, './test.pbf')
+    imposm3_import(db_conf, './test.pbf')
     assert table_exists('osm_roads')
 #######################################################################
 
@@ -223,7 +223,7 @@ def test_way_rel_ref_after_delete_1():
 #######################################################################
 def test_update():
     """Diff import applies"""
-    goposm_update(db_conf, './test.osc.gz')
+    imposm3_update(db_conf, './test.osc.gz')
 #######################################################################
 
 def test_updated_landusage():
