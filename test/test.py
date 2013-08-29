@@ -82,6 +82,7 @@ def goposm_update(db_conf, osc):
         print subprocess.check_output(
             "../goposm diff -connection %s"
             " -cachedir %s"
+            " -limitto clipping-3857.geojson"
             " -mapping test_mapping.json %s" % (
             conn, tmpdir, osc,
         ), shell=True)
