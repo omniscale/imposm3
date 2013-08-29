@@ -1,7 +1,7 @@
 package binary
 
 import (
-	"goposm/element"
+	"imposm3/element"
 	"testing"
 )
 

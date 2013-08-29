@@ -2,7 +2,7 @@ package binary
 
 import (
 	"code.google.com/p/goprotobuf/proto"
-	"goposm/element"
+	"imposm3/element"
 )
 
 const COORD_FACTOR float64 = 11930464.7083 // ((2<<31)-1)/360.0

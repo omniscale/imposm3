@@ -1,7 +1,7 @@
 package proj
 
 import (
-	"goposm/element"
+	"imposm3/element"
 	"math"
 )
 

@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"goposm/element"
+	"imposm3/element"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -28,7 +28,7 @@ func TestReadWriteDeltaCoordsLinearImport(t *testing.T) {
 }
 
 func checkReadWriteDeltaCoords(t *testing.T, withLinearImport bool) {
-	cache_dir, _ := ioutil.TempDir("", "goposm_test")
+	cache_dir, _ := ioutil.TempDir("", "imposm3_test")
 	defer os.RemoveAll(cache_dir)
 
 	cache, err := newDeltaCoordsCache(cache_dir)

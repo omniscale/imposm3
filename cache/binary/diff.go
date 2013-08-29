@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 
-	"goposm/element"
+	"imposm3/element"
 )
 
 func MarshalIdRefsBunch(idRefs []element.IdRefs) []byte {

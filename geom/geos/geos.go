@@ -13,7 +13,7 @@ extern void initGEOS_debug();
 import "C"
 
 import (
-	"goposm/logging"
+	"imposm3/logging"
 	"runtime"
 	"unsafe"
 )

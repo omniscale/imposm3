@@ -2,8 +2,8 @@ package mapping
 
 import (
 	"errors"
-	"goposm/element"
-	"goposm/logging"
+	"imposm3/element"
+	"imposm3/logging"
 	"regexp"
 	"strconv"
 	"strings"

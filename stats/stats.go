@@ -2,7 +2,7 @@ package stats
 
 import (
 	"fmt"
-	"goposm/logging"
+	"imposm3/logging"
 	"time"
 )
 

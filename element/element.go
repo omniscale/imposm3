@@ -3,7 +3,7 @@ package element
 import (
 	"sort"
 
-	"goposm/geom/geos"
+	"imposm3/geom/geos"
 )
 
 type Tags map[string]string

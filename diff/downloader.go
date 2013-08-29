@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"goposm/diff/state"
+	"imposm3/diff/state"
 	"io"
 	"io/ioutil"
 	"net/http"

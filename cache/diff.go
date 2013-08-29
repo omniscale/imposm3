@@ -9,8 +9,8 @@ import (
 	"sort"
 	"sync"
 
-	"goposm/cache/binary"
-	"goposm/element"
+	"imposm3/cache/binary"
+	"imposm3/element"
 )
 
 type byInt64 []int64

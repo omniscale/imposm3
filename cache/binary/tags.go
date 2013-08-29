@@ -15,7 +15,7 @@ package binary
 // etc.) are converted to a single ASCII control char (0x01-0x1f)
 
 import (
-	"goposm/element"
+	"imposm3/element"
 	"unicode/utf8"
 )
 

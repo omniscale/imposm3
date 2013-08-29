@@ -3,7 +3,7 @@ package binary
 import (
 	"testing"
 
-	"goposm/element"
+	"imposm3/element"
 )
 
 func TestmarshalBunch(t *testing.T) {

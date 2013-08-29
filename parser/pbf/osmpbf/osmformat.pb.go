@@ -417,7 +417,7 @@ type Relation struct {
 	Info             *Info                 `protobuf:"bytes,4,opt,name=info" json:"info,omitempty"`
 	RolesSid         []int32               `protobuf:"varint,8,rep,packed,name=roles_sid" json:"roles_sid,omitempty"`
 	Memids           []int64               `protobuf:"zigzag64,9,rep,packed,name=memids" json:"memids,omitempty"`
-	Types            []Relation_MemberType `protobuf:"varint,10,rep,packed,name=types,enum=goposm.Relation_MemberType" json:"types,omitempty"`
+	Types            []Relation_MemberType `protobuf:"varint,10,rep,packed,name=types,enum=imposm3.Relation_MemberType" json:"types,omitempty"`
 	XXX_unrecognized []byte                `json:"-"`
 }
 
@@ -440,5 +440,5 @@ func (this *Relation) GetInfo() *Info {
 }
 
 func init() {
-	proto.RegisterEnum("goposm.Relation_MemberType", Relation_MemberType_name, Relation_MemberType_value)
+	proto.RegisterEnum("imposm3.Relation_MemberType", Relation_MemberType_name, Relation_MemberType_value)
 }

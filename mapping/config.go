@@ -3,7 +3,7 @@ package mapping
 import (
 	"encoding/json"
 	"errors"
-	"goposm/element"
+	"imposm3/element"
 	"os"
 )
 

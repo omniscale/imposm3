@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
-	"goposm/element"
+	"imposm3/element"
 	"io"
 	"math"
 	"sort"

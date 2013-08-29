@@ -5,12 +5,12 @@ import (
 	"os"
 	"testing"
 
-	"goposm/element"
+	"imposm3/element"
 )
 
 func TestDiffCache(t *testing.T) {
 
-	cache_dir, _ := ioutil.TempDir("", "goposm_test")
+	cache_dir, _ := ioutil.TempDir("", "imposm3_test")
 	defer os.RemoveAll(cache_dir)
 
 	cache, err := newCoordsRefIndex(cache_dir)
@@ -49,7 +49,7 @@ func TestDiffCache(t *testing.T) {
 }
 
 func TestWriteDiff(t *testing.T) {
-	cache_dir, _ := ioutil.TempDir("", "goposm_test")
+	cache_dir, _ := ioutil.TempDir("", "imposm3_test")
 	defer os.RemoveAll(cache_dir)
 
 	cache, err := newRefIndex(cache_dir, &globalCacheOptions.CoordsIndex)
@@ -77,7 +77,7 @@ func TestWriteDiff(t *testing.T) {
 
 func BenchmarkWriteDiff(b *testing.B) {
 	b.StopTimer()
-	cache_dir, _ := ioutil.TempDir("", "goposm_test")
+	cache_dir, _ := ioutil.TempDir("", "imposm3_test")
 	defer os.RemoveAll(cache_dir)
 
 	cache, err := newRefIndex(cache_dir, &globalCacheOptions.CoordsIndex)

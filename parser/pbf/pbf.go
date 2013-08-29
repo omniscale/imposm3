@@ -1,8 +1,8 @@
 package pbf
 
 import (
-	"goposm/element"
-	"goposm/parser/pbf/osmpbf"
+	"imposm3/element"
+	"imposm3/parser/pbf/osmpbf"
 	"log"
 )
 

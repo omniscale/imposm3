@@ -2,7 +2,7 @@ package binary
 
 import (
 	"code.google.com/p/goprotobuf/proto"
-	"goposm/element"
+	"imposm3/element"
 	"math"
 	"math/rand"
 	"runtime"

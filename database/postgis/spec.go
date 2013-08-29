@@ -2,7 +2,7 @@ package postgis
 
 import (
 	"fmt"
-	"goposm/mapping"
+	"imposm3/mapping"
 	"strings"
 )
 

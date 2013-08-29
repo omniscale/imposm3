@@ -1,13 +1,13 @@
 package diff
 
 import (
-	"goposm/cache"
-	"goposm/database"
-	"goposm/diff/parser"
-	"goposm/element"
-	"goposm/expire"
-	"goposm/mapping"
-	"goposm/proj"
+	"imposm3/cache"
+	"imposm3/database"
+	"imposm3/diff/parser"
+	"imposm3/element"
+	"imposm3/expire"
+	"imposm3/mapping"
+	"imposm3/proj"
 )
 
 type Deleter struct {

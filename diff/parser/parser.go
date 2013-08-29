@@ -3,8 +3,8 @@ package parser
 import (
 	"compress/gzip"
 	"encoding/xml"
-	"goposm/element"
-	"goposm/logging"
+	"imposm3/element"
+	"imposm3/logging"
 	"os"
 	"strconv"
 )

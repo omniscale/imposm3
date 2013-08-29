@@ -2,7 +2,7 @@ package database
 
 import (
 	"errors"
-	"goposm/mapping"
+	"imposm3/mapping"
 	"strings"
 )
 

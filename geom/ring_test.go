@@ -1,7 +1,7 @@
 package geom
 
 import (
-	"goposm/element"
+	"imposm3/element"
 	"sort"
 	"testing"
 )

@@ -2,8 +2,8 @@ package cache
 
 import (
 	"github.com/jmhodges/levigo"
-	"goposm/cache/binary"
-	"goposm/element"
+	"imposm3/cache/binary"
+	"imposm3/element"
 )
 
 type NodesCache struct {

@@ -7,7 +7,7 @@ import (
 	structs "encoding/binary"
 	"errors"
 	"fmt"
-	"goposm/parser/pbf/osmpbf"
+	"imposm3/parser/pbf/osmpbf"
 	"io"
 	"log"
 	"os"

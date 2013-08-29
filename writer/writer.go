@@ -1,13 +1,13 @@
 package writer
 
 import (
-	"goposm/cache"
-	"goposm/database"
-	"goposm/element"
-	"goposm/expire"
-	"goposm/geom/limit"
-	"goposm/mapping"
-	"goposm/stats"
+	"imposm3/cache"
+	"imposm3/database"
+	"imposm3/element"
+	"imposm3/expire"
+	"imposm3/geom/limit"
+	"imposm3/mapping"
+	"imposm3/stats"
 	"runtime"
 	"sync"
 )

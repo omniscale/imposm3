@@ -1,7 +1,7 @@
 package mapping
 
 import (
-	"goposm/element"
+	"imposm3/element"
 	"testing"
 )
 

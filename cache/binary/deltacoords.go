@@ -3,7 +3,7 @@ package binary
 import (
 	"bytes"
 	"encoding/binary"
-	"goposm/element"
+	"imposm3/element"
 )
 
 func MarshalDeltaNodes(nodes []element.Node, buf []byte) []byte {

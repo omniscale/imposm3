@@ -1,14 +1,14 @@
 package writer
 
 import (
-	"goposm/cache"
-	"goposm/database"
-	"goposm/element"
-	"goposm/geom"
-	"goposm/geom/geos"
-	"goposm/mapping"
-	"goposm/proj"
-	"goposm/stats"
+	"imposm3/cache"
+	"imposm3/database"
+	"imposm3/element"
+	"imposm3/geom"
+	"imposm3/geom/geos"
+	"imposm3/mapping"
+	"imposm3/proj"
+	"imposm3/stats"
 	"log"
 	"sync"
 )

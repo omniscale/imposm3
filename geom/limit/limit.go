@@ -2,9 +2,9 @@ package limit
 
 import (
 	"errors"
-	"goposm/geom/geos"
-	"goposm/geom/ogr"
-	"goposm/logging"
+	"imposm3/geom/geos"
+	"imposm3/geom/ogr"
+	"imposm3/logging"
 	"math"
 	"strings"
 	"sync"

@@ -1,7 +1,7 @@
 package limit
 
 import (
-	"goposm/geom/geos"
+	"imposm3/geom/geos"
 	"testing"
 )
 

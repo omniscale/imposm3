@@ -2,8 +2,8 @@ package cache
 
 import (
 	"container/list"
-	"goposm/cache/binary"
-	"goposm/element"
+	"imposm3/cache/binary"
+	"imposm3/element"
 	"sort"
 	"sync"
 )

@@ -19,7 +19,7 @@ type Config struct {
 }
 
 const defaultSrid = 3857
-const defaultCacheDir = "/tmp/goposm"
+const defaultCacheDir = "/tmp/imposm3"
 
 var ImportFlags = flag.NewFlagSet("import", flag.ExitOnError)
 var DiffFlags = flag.NewFlagSet("diff", flag.ExitOnError)

@@ -1,12 +1,12 @@
 package reader
 
 import (
-	"goposm/cache"
-	"goposm/element"
-	"goposm/logging"
-	"goposm/mapping"
-	"goposm/parser/pbf"
-	"goposm/stats"
+	"imposm3/cache"
+	"imposm3/element"
+	"imposm3/logging"
+	"imposm3/mapping"
+	"imposm3/parser/pbf"
+	"imposm3/stats"
 	"os"
 	"runtime"
 	"strconv"

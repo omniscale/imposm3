@@ -3,8 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"goposm/geom/geos"
-	"goposm/geom/limit"
+	"imposm3/geom/geos"
+	"imposm3/geom/limit"
 	"log"
 )
 

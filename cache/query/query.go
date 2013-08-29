@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"goposm/cache"
-	"goposm/element"
+	"imposm3/cache"
+	"imposm3/element"
 )
 
 var flags = flag.NewFlagSet("query-cache", flag.ExitOnError)
@@ -21,7 +21,7 @@ var (
 	relIds   = flags.String("rel", "", "relation")
 	full     = flags.Bool("full", false, "recurse into relations/ways")
 	deps     = flags.Bool("deps", false, "show dependent ways/relations")
-	cachedir = flags.String("cachedir", "/tmp/goposm", "cache directory")
+	cachedir = flags.String("cachedir", "/tmp/imposm3", "cache directory")
 )
 
 type nodes map[string]*node

@@ -9,7 +9,7 @@ package ogr
 import "C"
 import (
 	"fmt"
-	"goposm/geom/geos"
+	"imposm3/geom/geos"
 	"strings"
 	"unsafe"
 )

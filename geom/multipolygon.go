@@ -2,8 +2,8 @@ package geom
 
 import (
 	"errors"
-	"goposm/element"
-	"goposm/geom/geos"
+	"imposm3/element"
+	"imposm3/geom/geos"
 	"sort"
 )
 

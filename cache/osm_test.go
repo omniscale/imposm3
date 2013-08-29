@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"goposm/element"
+	"imposm3/element"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -9,7 +9,7 @@ import (
 )
 
 func TestCreateCache(t *testing.T) {
-	cache_dir, _ := ioutil.TempDir("", "goposm_test")
+	cache_dir, _ := ioutil.TempDir("", "imposm3_test")
 	defer os.RemoveAll(cache_dir)
 
 	cache, err := newNodesCache(cache_dir)
@@ -24,7 +24,7 @@ func TestCreateCache(t *testing.T) {
 }
 
 func TestReadWriteNode(t *testing.T) {
-	cache_dir, _ := ioutil.TempDir("", "goposm_test")
+	cache_dir, _ := ioutil.TempDir("", "imposm3_test")
 	defer os.RemoveAll(cache_dir)
 
 	cache, err := newNodesCache(cache_dir)
@@ -58,7 +58,7 @@ func TestReadWriteNode(t *testing.T) {
 }
 
 func TestReadWriteWay(t *testing.T) {
-	cache_dir, _ := ioutil.TempDir("", "goposm_test")
+	cache_dir, _ := ioutil.TempDir("", "imposm3_test")
 	defer os.RemoveAll(cache_dir)
 
 	cache, err := newWaysCache(cache_dir)
@@ -93,7 +93,7 @@ func TestReadWriteWay(t *testing.T) {
 }
 
 func TestReadMissingWay(t *testing.T) {
-	cache_dir, _ := ioutil.TempDir("", "goposm_test")
+	cache_dir, _ := ioutil.TempDir("", "imposm3_test")
 	defer os.RemoveAll(cache_dir)
 
 	cache, err := newWaysCache(cache_dir)
@@ -111,7 +111,7 @@ func TestReadMissingWay(t *testing.T) {
 
 func BenchmarkWriteWay(b *testing.B) {
 	b.StopTimer()
-	cache_dir, _ := ioutil.TempDir("", "goposm_test")
+	cache_dir, _ := ioutil.TempDir("", "imposm3_test")
 	defer os.RemoveAll(cache_dir)
 
 	cache, err := newWaysCache(cache_dir)
@@ -133,7 +133,7 @@ func BenchmarkWriteWay(b *testing.B) {
 
 func BenchmarkReadWay(b *testing.B) {
 	b.StopTimer()
-	cache_dir, _ := ioutil.TempDir("", "goposm_test")
+	cache_dir, _ := ioutil.TempDir("", "imposm3_test")
 	defer os.RemoveAll(cache_dir)
 
 	cache, err := newWaysCache(cache_dir)
