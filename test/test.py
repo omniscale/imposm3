@@ -28,9 +28,6 @@ assert_almost_equal = _t.assertAlmostEqual
 tmpdir = '/tmp/testtest'
 
 db_conf = {
-    'database': 'olt',
-    'user': 'olt',
-    'password': 'olt',
     'host': 'localhost',
 }
 
@@ -43,7 +40,7 @@ def merc_point(lon, lat):
 
 
 def pg_db_url(db_conf):
-    return 'postgis://%(user)s:%(password)s@%(host)s/%(database)s' % db_conf
+    return 'postgis://%(host)s' % db_conf
 
 def create_geom_in_row(rowdict):
     if rowdict:
