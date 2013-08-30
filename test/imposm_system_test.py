@@ -1,6 +1,5 @@
 import math
 import tempfile
-import atexit
 import shutil
 import subprocess
 import psycopg2
@@ -18,14 +17,15 @@ class Dummy(unittest.TestCase):
 _t = Dummy('nop')
 assert_almost_equal = _t.assertAlmostEqual
 
-# tmpdir = tempfile.mkdtemp()
+tmpdir = None
 
-# def cleanup_tmpdir():
-#     shutil.rmtree(tmpdir)
+def setup():
+    global tmpdir
+    tmpdir = tempfile.mkdtemp()
 
-# atexit.register(cleanup_tmpdir)
+def teardown():
+    shutil.rmtree(tmpdir)
 
-tmpdir = '/tmp/testtest'
 
 db_conf = {
     'host': 'localhost',
@@ -143,7 +143,7 @@ def test_import():
     """Import succeeds"""
     drop_import_schema()
     assert not table_exists('osm_roads')
-    imposm3_import(db_conf, './test.pbf')
+    imposm3_import(db_conf, './build/test.pbf')
     assert table_exists('osm_roads')
 #######################################################################
 
@@ -220,7 +220,7 @@ def test_way_rel_ref_after_delete_1():
 #######################################################################
 def test_update():
     """Diff import applies"""
-    imposm3_update(db_conf, './test.osc.gz')
+    imposm3_update(db_conf, './build/test.osc.gz')
 #######################################################################
 
 def test_updated_landusage():
