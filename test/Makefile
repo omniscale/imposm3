@@ -24,5 +24,5 @@ build/test.osc.gz: test.osc
 test: .lasttestrun
 
 .lasttestrun: $(IMPOSM_BIN) imposm_system_test.py build/test.osc.gz build/test.pbf
+	nosetests imposm_system_test.py -v
 	@touch .lasttestrun
-	nosetests imposm_system_test.py
