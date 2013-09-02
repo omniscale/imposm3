@@ -59,9 +59,10 @@ Features
 - Support for table namespace (PostgreSQL schema)
 
 
-### Performance ###
+Performance
+-----------
 
-Imposm 3 is much faster then Imposm 2 and osm2pgsql.
+Imposm 3 is much faster than Imposm 2 and osm2pgsql:
 
 * Makes full use of all available CPU cores
 * Bulk inserts into PostgreSQL with `COPY FROM`
@@ -73,13 +74,13 @@ Some import times from a Hetzner EX 4S server (Intel i7-2600 CPU @ 3.40GHz, 32GB
 * 6:30h in normal-mode
 * 13h in diff-mode
 
-osm2pgsql required between 2-8 days in a [similar benchmark (slide 7)](http://www.geofabrik.de/media/2012-09-08-osm2pgsql-performance.pdf) with a smaller PBF file (~15GB).
-
-Import of Europe 11GB PBF with generalized tables on the same server:
-
-* 2:20h in normal-mode
+osm2pgsql required between 2-8 days in a [similar benchmark (slide 7)](http://www.geofabrik.de/media/2012-09-08-osm2pgsql-performance.pdf) with a smaller planet PBF file (~15GB).
 
 Benchmarks with SSD are TBD.
+
+Import of Europe 11GB PBF with generalized tables:
+
+* 2:20h in normal-mode
 
 
 Current status
