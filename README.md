@@ -160,13 +160,15 @@ Usage
 
 For a simple import:
 
-    imposm3 import -connection postgis://user:password@host/database -mapping mapping.json -read /path/to/osm.pbf -write
+    imposm3 import -connection postgis://user:password@host/database \
+        -mapping mapping.json -read /path/to/osm.pbf -write
 
 You need a JSON file with the target database mapping. See `example-mapping.json` to get an idea what is possible with the mapping.
 
 Imposm creates all new tables inside the `import` table schema. So you'll have `import.osm_roads` etc. You can change the tables to the `public` schema:
 
-    imposm3 import -connection postgis://user:passwd@host/database -mapping mapping.json -deployproduction
+    imposm3 import -connection postgis://user:passwd@host/database \
+        -mapping mapping.json -deployproduction
 
 
 You can write some options into a JSON configuration file:
