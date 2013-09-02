@@ -20,13 +20,13 @@ var skipCoords, skipNodes, skipWays bool
 var nParser, nWays, nRels, nNodes, nCoords int64
 
 func init() {
-	if os.Getenv("GOPOSM_SKIP_COORDS") != "" {
+	if os.Getenv("IMPOSM_SKIP_COORDS") != "" {
 		skipCoords = true
 	}
-	if os.Getenv("GOPOSM_SKIP_NODES") != "" {
+	if os.Getenv("IMPOSM_SKIP_NODES") != "" {
 		skipNodes = true
 	}
-	if os.Getenv("GOPOSM_SKIP_WAYS") != "" {
+	if os.Getenv("IMPOSM_SKIP_WAYS") != "" {
 		skipWays = true
 	}
 	nParser = int64(runtime.NumCPU())
@@ -34,7 +34,7 @@ func init() {
 	nRels = int64(runtime.NumCPU())
 	nNodes = int64(runtime.NumCPU())
 	nCoords = int64(runtime.NumCPU())
-	if procConf := os.Getenv("GOPOSM_READ_PROCS"); procConf != "" {
+	if procConf := os.Getenv("IMPOSM_READ_PROCS"); procConf != "" {
 		parts := strings.Split(procConf, ":")
 		nParser, _ = strconv.ParseInt(parts[0], 10, 32)
 		nRels, _ = strconv.ParseInt(parts[1], 10, 32)

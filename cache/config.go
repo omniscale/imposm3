@@ -94,7 +94,7 @@ func init() {
 		panic(err)
 	}
 
-	cacheConfFile := os.Getenv("GOPOSM_CACHE_CONFIG")
+	cacheConfFile := os.Getenv("IMPOSM_CACHE_CONFIG")
 	if cacheConfFile != "" {
 		data, err := ioutil.ReadFile(cacheConfFile)
 		if err != nil {
