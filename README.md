@@ -91,13 +91,19 @@ The import itself is working however and it was already used for production data
 
 ### Missing ###
 
+Compared to Imposm 2:
+
 * Documentation
+* Support for other projections than EPSG:3857
+* Import of XML files
+
+Other missing features:
+
 * Updating generalized tables in diff-mode
 * Automatic download of diff files
 * Tile expire list for re-rendering updated areas
 * Background mode for diff-import (update DB in background)
 * Diff import into custom PG schemas
-* Support for other projections than EPSG:3857
 * Improve parallelization of diff import
 
 Installation
@@ -143,8 +149,9 @@ Create a new `GOPATH`
 
 Get Imposm 3 and all dependencies:
 
-    mkdir src
     git clone https://github.com/omniscale/imposm3 src/imposm3
+    cd src/imposm3
+    go get imposm3
     go install imposm3
 
 Done. You should now have an imposm3 binary in `$GOPATH/bin`.
@@ -215,9 +222,9 @@ You can report any issues at: <https://github.com/omniscale/imposm3/issues>
 #### System tests ####
 
 There is a system test that imports and updates OSM data and verifies the database content.
-This test is written in Python and requires `nose`, `shapely` and `psycopg2`.
+This test is written in Python and requires `nose`, `shapely` and `psycopg2`. You also need `osmosis` to create test PBF files.
+There is a Makefile that (re)builds `imposm3` and creates all test files if necessary and then runs the test itself.
+
+    make test
 
 WARNING: It uses your local PostgeSQL database (`import` schema), if you have one. Change the database with the standard PGXXX environment variables.
-
-    cd test
-    nosetests test.py
