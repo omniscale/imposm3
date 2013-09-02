@@ -7,8 +7,7 @@ all: build test
 build:
 	cd ..; make build
 
-$(IMPOSM_BIN):
-	build
+$(IMPOSM_BIN): build
 
 clean:
 	rm -rf build

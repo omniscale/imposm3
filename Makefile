@@ -18,9 +18,10 @@ build: imposm3
 
 clean:
 	rm -f imposm3
+	(cd test && make clean)
 
 test:
-	(cd test && nosetests -v test.py)
+	(cd test && make test)
 
 %.pb.go: %.proto
 	protoc --go_out=. $^
