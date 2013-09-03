@@ -131,7 +131,7 @@ For best performance use [HyperLevelDB][libhyperleveldb] as an in-place replacem
 
 #### Go libraries
 
-Imposm3 uses the following libraries. `go install` will fetch these:
+Imposm3 uses the following libraries. `go get` will fetch these:
 
 - <https://github.com/jmhodges/levigo>
 - <https://github.com/mattn/go-sqlite3>
@@ -139,9 +139,17 @@ Imposm3 uses the following libraries. `go install` will fetch these:
 - <https://code.google.com/p/goprotobuf/protoc-gen-go>
 - <https://github.com/olt/pq>
 
+#### Other
+
+Fetching Imposm and the Go libraries requires [mercurial][] and [git][].
+
+[mercurial]: http://mercurial.selenic.com/
+[git]: http://git-scm.com/
+
+
 ### Installation ###
 
-Create a new `GOPATH`
+Create a new [Go workspace](http://golang.org/doc/code.html):
 
     mkdir imposm
     cd imposm
@@ -150,7 +158,6 @@ Create a new `GOPATH`
 Get Imposm 3 and all dependencies:
 
     git clone https://github.com/omniscale/imposm3 src/imposm3
-    cd src/imposm3
     go get imposm3
     go install imposm3
 
