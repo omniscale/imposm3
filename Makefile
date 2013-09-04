@@ -7,7 +7,7 @@ GOFILES=$(shell find . \( -name \*.go ! -name version.go \) )
 # for protoc-gen-go
 export PATH := $(GOPATH)/bin:$(PATH)
 
-GOLDFLAGS=-ldflags '-r ${ORIGIN}:${ORIGIN}/../lib'
+GOLDFLAGS=-ldflags '-r $${ORIGIN}/lib'
 
 
 BUILD_DATE=$(shell date +%Y%m%d)
