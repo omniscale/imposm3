@@ -34,6 +34,7 @@ func printCmds() {
 	fmt.Println("\timport")
 	fmt.Println("\tdiff")
 	fmt.Println("\tquery-cache")
+	fmt.Println("\tversion")
 }
 
 func main() {
@@ -75,6 +76,9 @@ func main() {
 		}
 	case "query-cache":
 		query.Query(os.Args[2:])
+	case "version":
+		fmt.Println(imposmVersion)
+		os.Exit(0)
 	default:
 		printCmds()
 		log.Fatalf("invalid command: '%s'", os.Args[1])
