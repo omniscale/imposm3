@@ -109,7 +109,14 @@ Other missing features:
 Installation
 ------------
 
-### Dependencies ###
+### Binary
+
+There are no official releases, but you find development builds at <http://imposm.org/static/rel/>.
+These builds are for x86 64bit Linux and require *no* further depedecies. Download, untar and start `imposm3`.
+
+### Source
+
+There are some dependencies:
 
 #### Compiler
 
@@ -147,7 +154,7 @@ Fetching Imposm and the Go libraries requires [mercurial][] and [git][].
 [git]: http://git-scm.com/
 
 
-### Installation ###
+#### Compile
 
 Create a new [Go workspace](http://golang.org/doc/code.html):
 
