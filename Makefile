@@ -17,9 +17,9 @@ BUILD_VERSION=dev-$(BUILD_DATE)-$(BUILD_REV)
 all: build test
 
 imposm3: $(GOFILES) $(PROTOFILES)
-	@sed -i '' 's/buildVersion = ".*"/buildVersion = "$(BUILD_VERSION)"/' version.go
+	@sed -i='' 's/buildVersion = ".*"/buildVersion = "$(BUILD_VERSION)"/' version.go
 	go build $(GOLDFLAGS)
-	@sed -i '' 's/buildVersion = ".*"/buildVersion = ""/' version.go
+	@sed -i='' 's/buildVersion = ".*"/buildVersion = ""/' version.go
 
 build: imposm3
 
