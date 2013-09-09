@@ -302,6 +302,46 @@
     <tag k="type" v="multipolygon"/>
   </relation>
 
+  <!-- test multipolygon way was _not_ inserted -->
+  <node id="9001" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="80"/>
+  <node id="9002" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="82"/>
+  <node id="9003" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="82"/>
+  <node id="9004" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="80"/>
+  <way id="9009" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="9001"/>
+    <nd ref="9002"/>
+    <nd ref="9003"/>
+    <nd ref="9004"/>
+    <nd ref="9001"/>
+    <tag k="landuse" v="park"/>
+  </way>
+  <relation id="9001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="9009" role="outer"/>
+    <tag k="name" v="rel 9001"/>
+    <tag k="landuse" v="park"/>
+    <tag k="type" v="multipolygon"/>
+  </relation>
+
+  <!-- test multipolygon way was inserted -->
+  <node id="8001" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="80"/>
+  <node id="8002" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="82"/>
+  <node id="8003" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="82"/>
+  <node id="8004" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="80"/>
+  <way id="8009" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="8001"/>
+    <nd ref="8002"/>
+    <nd ref="8003"/>
+    <nd ref="8004"/>
+    <nd ref="8001"/>
+    <tag k="highway" v="residential"/>
+  </way>
+  <relation id="8001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="8009" role="outer"/>
+    <tag k="name" v="rel 8001"/>
+    <tag k="landuse" v="park"/>
+    <tag k="type" v="multipolygon"/>
+  </relation>
+
   <!-- test for changed tags in way -->
   <node id="11001" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="83"/>
   <node id="11002" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="84"/>

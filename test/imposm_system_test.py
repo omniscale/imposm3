@@ -216,6 +216,20 @@ def test_way_rel_ref_after_delete_1():
     assert query_row(db_conf, 'osm_roads', 21001)['type'] == 'residential'
     assert query_row(db_conf, 'osm_landusages', 21001)['type'] == 'park'
 
+def test_relation_way_not_inserted():
+    """Part of relation was inserted only once."""
+    park = query_row(db_conf, 'osm_landusages', 9001)
+    assert park['type'] == 'park'
+    assert park['name'] == 'rel 9001'
+    assert query_row(db_conf, 'osm_landusages', 9009) == None
+
+def test_relation_way_inserted():
+    """Part of relation was inserted twice."""
+    park = query_row(db_conf, 'osm_landusages', 8001)
+    assert park['type'] == 'park'
+    assert park['name'] == 'rel 8001'
+    assert query_row(db_conf, 'osm_roads', 8009)["type"] == 'residential'
+
 
 #######################################################################
 def test_update():
