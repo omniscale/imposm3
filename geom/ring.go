@@ -36,11 +36,17 @@ func tagsSameOrEmpty(a, b element.Tags) bool {
 		return true
 	}
 	for k, v := range a {
+		if k == "name" {
+			continue
+		}
 		if cmp, ok := b[k]; !ok || v != cmp {
 			return false
 		}
 	}
 	for k, v := range b {
+		if k == "name" {
+			continue
+		}
 		if cmp, ok := a[k]; !ok || v != cmp {
 			return false
 		}
