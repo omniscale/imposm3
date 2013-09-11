@@ -90,3 +90,57 @@ func BenchmarkLineString(b *testing.B) {
 		LineString(g, nodes)
 	}
 }
+
+func TestUnduplicateNodes(t *testing.T) {
+	var nodes []element.Node
+
+	nodes = []element.Node{
+		element.Node{Lat: 0, Long: 0},
+	}
+	if res := unduplicateNodes(nodes); len(res) != 1 {
+		t.Fatal(res)
+	}
+	nodes = []element.Node{
+		element.Node{Lat: 47.0, Long: 80.0},
+		element.Node{Lat: 47.0, Long: 80.0},
+	}
+	if res := unduplicateNodes(nodes); len(res) != 1 {
+		t.Fatal(res)
+	}
+
+	nodes = []element.Node{
+		element.Node{Lat: 0, Long: -10},
+		element.Node{Lat: 0, Long: -10},
+		element.Node{Lat: 0, Long: -10},
+		element.Node{Lat: 10, Long: 10},
+		element.Node{Lat: 10, Long: 10},
+		element.Node{Lat: 10, Long: 10},
+	}
+	if res := unduplicateNodes(nodes); len(res) != 2 {
+		t.Fatal(res)
+	}
+
+	nodes = []element.Node{
+		element.Node{Lat: 10, Long: 10},
+		element.Node{Lat: 0, Long: 10},
+		element.Node{Lat: 10, Long: 10},
+		element.Node{Lat: 10, Long: 10},
+		element.Node{Lat: 0, Long: 10},
+		element.Node{Lat: 0, Long: 10},
+	}
+	if res := unduplicateNodes(nodes); len(res) != 4 {
+		t.Fatal(res)
+	}
+
+	nodes = []element.Node{
+		element.Node{Lat: 0, Long: 0},
+		element.Node{Lat: 0, Long: -10},
+		element.Node{Lat: 10, Long: -10},
+		element.Node{Lat: 10, Long: 0},
+		element.Node{Lat: 0, Long: 0},
+	}
+	if res := unduplicateNodes(nodes); len(res) != 5 {
+		t.Fatal(res)
+	}
+
+}

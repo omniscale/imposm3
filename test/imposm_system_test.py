@@ -230,6 +230,23 @@ def test_relation_way_inserted():
     assert park['name'] == 'rel 8001'
     assert query_row(db_conf, 'osm_roads', 8009)["type"] == 'residential'
 
+def test_single_node_ways_not_inserted():
+    """Ways with single/duplicate nodes are not inserted."""
+    assert not query_row(db_conf, 'osm_roads', 30001)
+    assert not query_row(db_conf, 'osm_roads', 30002)
+    assert not query_row(db_conf, 'osm_roads', 30003)
+
+def test_polygon_with_duplicate_nodes_is_valid():
+    """Polygon with duplicate nodes is valid."""
+    geom = query_row(db_conf, 'osm_landusages', 30005)['geometry']
+    assert geom.is_valid
+    assert len(geom.exterior.coords) == 4
+
+def test_incomplete_polygons():
+    """Non-closed/incomplete polygons are not inserted."""
+    assert not query_row(db_conf, 'osm_landusages', 30004)
+    assert not query_row(db_conf, 'osm_landusages', 30006)
+
 
 #######################################################################
 def test_update():
