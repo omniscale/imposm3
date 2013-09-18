@@ -1,6 +1,7 @@
 package reader
 
 import (
+	"math"
 	"os"
 	"runtime"
 	"strconv"
@@ -34,11 +35,6 @@ func init() {
 	if os.Getenv("IMPOSM_SKIP_WAYS") != "" {
 		skipWays = true
 	}
-	nParser = int64(runtime.NumCPU())
-	nWays = int64(runtime.NumCPU())
-	nRels = int64(runtime.NumCPU())
-	nNodes = int64(runtime.NumCPU())
-	nCoords = int64(runtime.NumCPU())
 	if procConf := os.Getenv("IMPOSM_READ_PROCS"); procConf != "" {
 		parts := strings.Split(procConf, ":")
 		nParser, _ = strconv.ParseInt(parts[0], 10, 32)
@@ -46,8 +42,14 @@ func init() {
 		nWays, _ = strconv.ParseInt(parts[2], 10, 32)
 		nNodes, _ = strconv.ParseInt(parts[3], 10, 32)
 		nCoords, _ = strconv.ParseInt(parts[3], 10, 32)
+	} else {
+		nParser, nRels, nWays, nNodes, nCoords = readersForCpus(runtime.NumCPU())
 	}
+}
 
+func readersForCpus(cpus int) (int64, int64, int64, int64, int64) {
+	cpuf := float64(cpus)
+	return int64(math.Ceil(cpuf * 0.75)), int64(math.Ceil(cpuf * 0.25)), int64(math.Ceil(cpuf * 0.25)), int64(math.Ceil(cpuf * 0.25)), int64(math.Ceil(cpuf * 0.25))
 }
 
 func ReadPbf(cache *osmcache.OSMCache, progress *stats.Statistics,
