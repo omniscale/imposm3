@@ -113,6 +113,8 @@ Installation
 
 There are no official releases, but you find development builds at <http://imposm.org/static/rel/>.
 These builds are for x86 64bit Linux and require *no* further depedecies. Download, untar and start `imposm3`.
+(Note: These binaries require glibc >= 2.15 at the moment.
+Ubuntu 12.04 is recent enough, Debian 7 not. Future binary releases will work on older versions as well.)
 
 ### Source
 
