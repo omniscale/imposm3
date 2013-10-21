@@ -104,17 +104,6 @@ func (this *Geos) SetHandleSrid(srid int) {
 	this.srid = srid
 }
 
-func (this *Geos) CreatePolygon(shell *Geom, holes []*Geom) *Geom {
-	if len(holes) > 0 {
-		panic("holes not implemented")
-	}
-	polygon := C.GEOSGeom_createPolygon_r(this.v, shell.v, nil, 0)
-	if polygon == nil {
-		return nil
-	}
-	return &Geom{polygon}
-}
-
 func (this *Geos) NumGeoms(geom *Geom) int32 {
 	count := int32(C.GEOSGetNumGeometries_r(this.v, geom.v))
 	return count
@@ -170,7 +159,7 @@ func (this *Geos) BoundsPolygon(bounds Bounds) *Geom {
 	}
 	// geom inherited by Polygon, no destroy
 
-	geom = this.CreatePolygon(geom, nil)
+	geom = this.Polygon(geom, nil)
 	this.DestroyLater(geom)
 	return geom
 

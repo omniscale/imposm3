@@ -25,9 +25,9 @@ func TestSplitPolygonAtGrids(t *testing.T) {
 	expected := []geos.Bounds{
 		{0, 0, 0.05, 0.05},
 		{0, 0.05, 0.05, 0.1},
-		{0, 0.1, 0.05, 0.11},
 		{0.05, 0, 0.1, 0.05},
 		{0.05, 0.05, 0.1, 0.1},
+		{0, 0.1, 0.05, 0.11},
 		{0.05, 0.1, 0.1, 0.11},
 		{0.1, 0, 0.15, 0.05},
 		{0.1, 0.05, 0.15, 0.1},
@@ -39,7 +39,10 @@ func TestSplitPolygonAtGrids(t *testing.T) {
 
 	geom := g.BoundsPolygon(geos.Bounds{0, 0, 0.15, 0.11})
 
-	geoms, _ := SplitPolygonAtGrid(g, geom, 0.05, 5.0)
+	geoms, _ := SplitPolygonAtGrid(g, geom, 0.05, 0.2)
+	for _, geom := range geoms {
+		t.Log(geom.Bounds())
+	}
 	for i, geom := range geoms {
 		if expected[i] != geom.Bounds() {
 			t.Fatalf("%v != %v\n", expected[i], geom.Bounds())
@@ -315,36 +318,54 @@ func TestClipperWithBuffer(t *testing.T) {
 }
 
 func TestSplitParams(t *testing.T) {
-	var gridWidth float64
+	var gridWidth, startWidth float64
 
-	gridWidth, _ = splitParams(geos.Bounds{0, 0, 10000, 10000}, 10, 2000)
+	gridWidth, startWidth = splitParams(geos.Bounds{0, 0, 10000, 10000}, 10, 2000)
 	if gridWidth != 2000.0 {
 		t.Fatal(gridWidth)
 	}
+	if startWidth != 8000.0 {
+		t.Fatal(startWidth)
+	}
 
-	gridWidth, _ = splitParams(geos.Bounds{0, 0, 10000, 10000}, 10, 1000)
+	gridWidth, startWidth = splitParams(geos.Bounds{0, 0, 10000, 10000}, 10, 1000)
 	if gridWidth != 1000.0 {
 		t.Fatal(gridWidth)
 	}
+	if startWidth != 8000.0 {
+		t.Fatal(startWidth)
+	}
 
-	gridWidth, _ = splitParams(geos.Bounds{0, 0, 10000, 10000}, 10, 500)
+	gridWidth, startWidth = splitParams(geos.Bounds{0, 0, 10000, 10000}, 10, 500)
 	if gridWidth != 1000.0 {
 		t.Fatal(gridWidth)
 	}
+	if startWidth != 8000.0 {
+		t.Fatal(startWidth)
+	}
 
-	gridWidth, _ = splitParams(geos.Bounds{0, 0, 10000, 5000}, 10, 500)
+	gridWidth, startWidth = splitParams(geos.Bounds{0, 0, 10000, 5000}, 10, 500)
 	if gridWidth != 1000.0 {
 		t.Fatal(gridWidth)
 	}
+	if startWidth != 8000.0 {
+		t.Fatal(startWidth)
+	}
 
-	gridWidth, _ = splitParams(geos.Bounds{0, 0, 10000, 20000}, 10, 500)
+	gridWidth, startWidth = splitParams(geos.Bounds{0, 0, 10000, 20000}, 10, 500)
 	if gridWidth != 2000.0 {
 		t.Fatal(gridWidth)
 	}
+	if startWidth != 8000.0 {
+		t.Fatal(startWidth)
+	}
 
-	gridWidth, _ = splitParams(geos.Bounds{0, 0, 10000, 20000}, 50, 100)
+	gridWidth, startWidth = splitParams(geos.Bounds{0, 0, 10000, 20000}, 50, 100)
 	if gridWidth != 400.0 {
 		t.Fatal(gridWidth)
+	}
+	if startWidth != 6400.0 {
+		t.Fatal(startWidth)
 	}
 
 }
