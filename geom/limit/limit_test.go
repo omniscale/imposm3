@@ -263,7 +263,7 @@ func TestFilterGeometryByType(t *testing.T) {
 func TestClipper(t *testing.T) {
 	g := geos.NewGeos()
 	defer g.Finish()
-	limiter, err := NewFromOgrSource("./hamburg_clip.geojson")
+	limiter, err := NewFromGeoJson("./hamburg_clip.geojson")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -305,7 +305,7 @@ func TestClipper(t *testing.T) {
 func TestClipperWithBuffer(t *testing.T) {
 	g := geos.NewGeos()
 	defer g.Finish()
-	limiter, err := NewFromOgrSourceWithBuffered("./hamburg_clip.geojson", 10000.0)
+	limiter, err := NewFromGeoJsonWithBuffered("./hamburg_clip.geojson", 10000.0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -373,7 +373,7 @@ func TestSplitParams(t *testing.T) {
 func BenchmarkClipper(b *testing.B) {
 	g := geos.NewGeos()
 	defer g.Finish()
-	limiter, err := NewFromOgrSource("./hamburg_clip.geojson")
+	limiter, err := NewFromGeoJson("./hamburg_clip.geojson")
 	if err != nil {
 		b.Fatal(err)
 	}
