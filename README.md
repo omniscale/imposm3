@@ -200,7 +200,7 @@ You can write some options into a JSON configuration file:
     {
         "cachedir": "/var/local/imposm3",
         "mapping": "mapping.json",
-        "connection": "postgis://user:password@localhost:port/database",
+        "connection": "postgis://user:password@localhost:port/database"
     }
 
 To use that config:
