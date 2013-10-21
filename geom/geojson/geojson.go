@@ -3,11 +3,8 @@ package geojson
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"imposm3/geom/geos"
 	"io"
-	"log"
-	"os"
 )
 
 type object struct {
@@ -23,34 +20,32 @@ type geometry struct {
 	Coordinates []interface{} `json:"coordinates"`
 }
 
-type Point struct {
-	Long float64
-	Lat  float64
+type point struct {
+	long float64
+	lat  float64
 }
 
-func newPointFromCoords(coords []interface{}) (Point, error) {
-	p := Point{}
+func newPointFromCoords(coords []interface{}) (point, error) {
+	p := point{}
 	if len(coords) != 2 {
 		return p, errors.New("point list length not 2")
 	}
 	var ok bool
-	p.Long, ok = coords[0].(float64)
+	p.long, ok = coords[0].(float64)
 	if !ok {
 		return p, errors.New("invalid lon")
 	}
-	p.Lat, ok = coords[1].(float64)
+	p.lat, ok = coords[1].(float64)
 	if !ok {
 		return p, errors.New("invalid lat")
 	}
 	return p, nil
 }
 
-type LineString struct {
-	Points []Point
-}
+type lineString []point
 
-func newLineStringFromCoords(coords []interface{}) (LineString, error) {
-	ls := LineString{}
+func newLineStringFromCoords(coords []interface{}) (lineString, error) {
+	ls := lineString{}
 
 	for _, part := range coords {
 		coord, ok := part.([]interface{})
@@ -61,34 +56,32 @@ func newLineStringFromCoords(coords []interface{}) (LineString, error) {
 		if err != nil {
 			return ls, err
 		}
-		ls.Points = append(ls.Points, p)
+		ls = append(ls, p)
 	}
 	return ls, nil
 }
 
-type Polygon struct {
-	LineStrings []LineString
-}
+type polygon []lineString
 
-func newPolygonFromCoords(coords []interface{}) (Polygon, error) {
-	poly := Polygon{}
+func newPolygonFromCoords(coords []interface{}) (polygon, error) {
+	poly := polygon{}
 
 	for _, part := range coords {
 		lsCoords, ok := part.([]interface{})
 		if !ok {
-			return poly, errors.New("polygon linestring not a list")
+			return poly, errors.New("polygon lineString not a list")
 		}
 		ls, err := newLineStringFromCoords(lsCoords)
 		if err != nil {
 			return poly, err
 		}
-		poly.LineStrings = append(poly.LineStrings, ls)
+		poly = append(poly, ls)
 	}
 	return poly, nil
 }
 
-func newMultiPolygonFromCoords(coords []interface{}) ([]Polygon, error) {
-	mp := []Polygon{}
+func newMultiPolygonFromCoords(coords []interface{}) ([]polygon, error) {
+	mp := []polygon{}
 
 	for _, part := range coords {
 		polyCoords, ok := part.([]interface{})
@@ -104,18 +97,7 @@ func newMultiPolygonFromCoords(coords []interface{}) ([]Polygon, error) {
 	return mp, nil
 }
 
-func ParseGeoJson(geojson string) (interface{}, error) {
-	obj := &object{}
-	err := json.Unmarshal([]byte(geojson), obj)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return constructPolygons(obj)
-}
-
-func ParseGeoJsonReader(r io.Reader) (interface{}, error) {
+func ParseGeoJson(r io.Reader) ([]*geos.Geom, error) {
 	decoder := json.NewDecoder(r)
 
 	obj := &object{}
@@ -124,38 +106,36 @@ func ParseGeoJsonReader(r io.Reader) (interface{}, error) {
 		return nil, err
 	}
 
-	return constructPolygons(obj)
-}
+	polygons, err := constructPolygons(obj)
 
-func newFeatureFromObj(obj *object) (interface{}, error) {
-	switch obj.Geometry.Type {
-	case "Point":
-		p, err := newPointFromCoords(obj.Geometry.Coordinates)
-		return p, err
-	case "LineString":
-		ls, err := newLineStringFromCoords(obj.Geometry.Coordinates)
-		return ls, err
-	case "Polygon":
-		poly, err := newPolygonFromCoords(obj.Geometry.Coordinates)
-		return poly, err
-	case "MultiPolygon":
-		poly, err := newMultiPolygonFromCoords(obj.Geometry.Coordinates)
-		return poly, err
-	default:
-		return nil, errors.New("unknown geometry type: " + obj.Geometry.Type)
+	if err != nil {
+		return nil, err
 	}
-	return nil, nil
+
+	g := geos.NewGeos()
+	defer g.Finish()
+	result := []*geos.Geom{}
+
+	for _, p := range polygons {
+		geom, err := geosPolygon(g, p)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, geom)
+
+	}
+	return result, err
 }
 
-func constructPolygons(obj *object) ([]Polygon, error) {
+func constructPolygons(obj *object) ([]polygon, error) {
 	switch obj.Type {
 	case "Point":
-		return nil, errors.New("only Polygon or MultiPolygon are supported")
+		return nil, errors.New("only polygon or MultiPolygon are supported")
 	case "LineString":
-		return nil, errors.New("only Polygon or MultiPolygon are supported")
+		return nil, errors.New("only polygon or MultiPolygon are supported")
 	case "Polygon":
 		poly, err := newPolygonFromCoords(obj.Coordinates)
-		return []Polygon{poly}, err
+		return []polygon{poly}, err
 	case "MultiPolygon":
 		poly, err := newMultiPolygonFromCoords(obj.Coordinates)
 		return poly, err
@@ -163,7 +143,7 @@ func constructPolygons(obj *object) ([]Polygon, error) {
 		geom, err := constructPolygons(obj.Geometry)
 		return geom, err
 	case "FeatureCollection":
-		features := make([]Polygon, 0)
+		features := make([]polygon, 0)
 
 		for _, obj := range obj.Features {
 			geom, err := constructPolygons(&obj)
@@ -218,15 +198,15 @@ func (gj *GeoJson) Geoms() ([]*geos.Geom, error) {
 	return result, err
 }
 
-func geosRing(g *geos.Geos, ls LineString) (*geos.Geom, error) {
-	coordSeq, err := g.CreateCoordSeq(uint32(len(ls.Points)), 2)
+func geosRing(g *geos.Geos, ls lineString) (*geos.Geom, error) {
+	coordSeq, err := g.CreateCoordSeq(uint32(len(ls)), 2)
 	if err != nil {
 		return nil, err
 	}
 
 	// coordSeq inherited by LinearRing, no destroy
-	for i, p := range ls.Points {
-		err := coordSeq.SetXY(g, uint32(i), p.Long, p.Lat)
+	for i, p := range ls {
+		err := coordSeq.SetXY(g, uint32(i), p.long, p.lat)
 		if err != nil {
 			return nil, err
 		}
@@ -240,15 +220,19 @@ func geosRing(g *geos.Geos, ls LineString) (*geos.Geom, error) {
 	return ring, nil
 }
 
-func geosPolygon(g *geos.Geos, polygon Polygon) (*geos.Geom, error) {
-	shell, err := geosRing(g, polygon.LineStrings[0])
+func geosPolygon(g *geos.Geos, polygon polygon) (*geos.Geom, error) {
+	if len(polygon) == 0 {
+		return nil, errors.New("empty polygon")
+	}
+
+	shell, err := geosRing(g, polygon[0])
 	if err != nil {
 		return nil, err
 	}
 
-	holes := make([]*geos.Geom, len(polygon.LineStrings)-1)
+	holes := make([]*geos.Geom, len(polygon)-1)
 
-	for i, ls := range polygon.LineStrings[1:] {
+	for i, ls := range polygon[1:] {
 		hole, err := geosRing(g, ls)
 		if err != nil {
 			return nil, err
@@ -266,44 +250,4 @@ func geosPolygon(g *geos.Geos, polygon Polygon) (*geos.Geom, error) {
 	}
 	g.DestroyLater(geom)
 	return geom, nil
-}
-
-var tests = []string{
-	// `{"type": "Point", "coordinates": [102.0, 0.5]}`,
-	// `{"type": "LineString", "coordinates": [[102.1, 0.0], [103.0, 1.0], [104.0, 0.0], [105.0, 1.0]]}`,
-	`{"type": "Polygon", "coordinates": [[[102.1, 0.0], [103.0, 1.0], [104.0, 0.0], [105.0, 1.0]], [[0, 0]]]}`,
-	`{"type": "MultiPolygon", "coordinates": [[[[102.1, 0.0], [103.0, 1.0], [104.0, 0.0], [105.0, 1.0]], [[0, 0]]]]}`,
-}
-
-func main() {
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	for _, test := range tests {
-		fmt.Println("parsing: ", test)
-		geo, err := ParseGeoJson(test)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println(geo)
-	}
-
-	fmt.Println("parsing file")
-	f, err := os.Open("/Users/olt/dev/cust/server/mapnik/conf/imposm/polygons/germany_clip_boundary_3857.geojson")
-	// f, err := os.Open("/Users/olt/dev/cust/server/mapnik/conf/imposm/polygons/germany_buffer.geojson")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	gj, err := NewGeoJson(f)
-	if err != nil {
-		log.Fatal(err)
-	}
-	polygons, err := gj.Geoms()
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, p := range polygons {
-		fmt.Println(p.Area())
-	}
-	// fmt.Println(geo)
-
 }
