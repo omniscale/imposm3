@@ -54,7 +54,7 @@ Features
   Limit imported geometries to polygons from Shapefiles or GeoJSON, for city/state/country imports.
 
 - Easy deployment:
-  Single binary with only runtime dependencies to common libs (GEOS, GDAL, SQLite and LevelDB)
+  Single binary with only runtime dependencies to common libs (GEOS, SQLite and LevelDB)
 
 - Support for table namespace (PostgreSQL schema)
 
@@ -126,7 +126,7 @@ You need [Go >=1.1](http://golang.org).
 
 #### C/C++ libraries
 
-Other dependencies are [libleveldb][], [libgeos][], [libgdal with OGR][libgdal] and [libsqlite3][].
+Other dependencies are [libleveldb][], [libgeos][] and [libsqlite3][].
 Imposm 3 was tested with recent versions of these libraries, but you might succeed with older versions.
 GEOS >=3.2 is recommended, since it became much more robust when handling invalid geometries.
 For best performance use [HyperLevelDB][libhyperleveldb] as an in-place replacement for libleveldb.
@@ -135,7 +135,6 @@ For best performance use [HyperLevelDB][libhyperleveldb] as an in-place replacem
 [libleveldb]: https://code.google.com/p/leveldb/
 [libhyperleveldb]: https://github.com/rescrv/HyperLevelDB
 [libgeos]: http://trac.osgeo.org/geos/
-[libgdal]: http://www.gdal.org/
 [libsqlite3]: http://www.sqlite.org/
 
 #### Go libraries
