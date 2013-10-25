@@ -121,7 +121,7 @@ func Polygon(g *geos.Geos, nodes []element.Node) (*geos.Geom, error) {
 	}
 	// ring inherited by Polygon, no destroy
 
-	geom := g.CreatePolygon(ring, nil)
+	geom := g.Polygon(ring, nil)
 	if geom == nil {
 		g.Destroy(ring)
 		return nil, errors.New("unable to create polygon")

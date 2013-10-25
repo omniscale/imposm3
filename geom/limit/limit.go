@@ -2,10 +2,11 @@ package limit
 
 import (
 	"errors"
+	"imposm3/geom/geojson"
 	"imposm3/geom/geos"
-	"imposm3/geom/ogr"
 	"imposm3/logging"
 	"math"
+	"os"
 	"strings"
 	"sync"
 )
@@ -58,7 +59,12 @@ func splitParams(bounds geos.Bounds, maxGrids int, minGridWidth float64) (float6
 	}
 
 	gridWidth := math.Max(gridWidthX, gridWidthY)
-	return gridWidth, gridWidth * 100
+	currentWidth := gridWidth
+
+	for currentWidth <= width/2 {
+		currentWidth *= 2
+	}
+	return gridWidth, currentWidth
 }
 
 func SplitPolygonAtAutoGrid(g *geos.Geos, geom *geos.Geom) ([]*geos.Geom, error) {
@@ -89,7 +95,7 @@ func SplitPolygonAtGrid(g *geos.Geos, geom *geos.Geom, gridWidth, currentGridWid
 			if gridWidth >= currentGridWidth {
 				result = append(result, part)
 			} else {
-				moreParts, err := SplitPolygonAtGrid(g, part, gridWidth, currentGridWidth/10.0)
+				moreParts, err := SplitPolygonAtGrid(g, part, gridWidth, currentGridWidth/2.0)
 				if err != nil {
 					return nil, err
 				}
@@ -107,23 +113,28 @@ type Limiter struct {
 	bufferedBbox   geos.Bounds
 }
 
-func NewFromOgrSource(source string) (*Limiter, error) {
-	return NewFromOgrSourceWithBuffered(source, 0.0)
+func NewFromGeoJson(source string) (*Limiter, error) {
+	return NewFromGeoJsonWithBuffered(source, 0.0)
 }
 
-func NewFromOgrSourceWithBuffered(source string, buffer float64) (*Limiter, error) {
-	ds, err := ogr.Open(source)
+func NewFromGeoJsonWithBuffered(source string, buffer float64) (*Limiter, error) {
+
+	f, err := os.Open(source)
+	if err != nil {
+		return nil, err
+	}
+
+	gj, err := geojson.NewGeoJson(f)
+	if err != nil {
+		return nil, err
+	}
+	geoms, err := gj.Geoms()
 	if err != nil {
 		return nil, err
 	}
 
 	g := geos.NewGeos()
 	defer g.Finish()
-
-	layer, err := ds.Layer()
-	if err != nil {
-		return nil, err
-	}
 
 	index := g.CreateIndex()
 
@@ -134,7 +145,7 @@ func NewFromOgrSourceWithBuffered(source string, buffer float64) (*Limiter, erro
 		withBuffer = true
 	}
 
-	for geom := range layer.Geoms() {
+	for _, geom := range geoms {
 		if withBuffer {
 			simplified := g.SimplifyPreserveTopology(geom, 1000)
 			if simplified == nil {

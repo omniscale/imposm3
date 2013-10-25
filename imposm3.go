@@ -61,7 +61,7 @@ func main() {
 		if config.BaseOptions.LimitTo != "" {
 			var err error
 			step := log.StartStep("Reading limitto geometries")
-			geometryLimiter, err = limit.NewFromOgrSourceWithBuffered(
+			geometryLimiter, err = limit.NewFromGeoJsonWithBuffered(
 				config.BaseOptions.LimitTo,
 				config.BaseOptions.LimitToCacheBuffer,
 			)
@@ -135,7 +135,7 @@ func mainimport() {
 	if config.ImportOptions.Write && config.BaseOptions.LimitTo != "" {
 		var err error
 		step := log.StartStep("Reading limitto geometries")
-		geometryLimiter, err = limit.NewFromOgrSource(config.BaseOptions.LimitTo)
+		geometryLimiter, err = limit.NewFromGeoJson(config.BaseOptions.LimitTo)
 		if err != nil {
 			log.Fatal(err)
 		}
