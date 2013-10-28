@@ -28,6 +28,8 @@ clean:
 	(cd test && make clean)
 
 test:
+	go test imposm3/... -i
+	go test imposm3/...
 	(cd test && make test)
 
 %.pb.go: %.proto
