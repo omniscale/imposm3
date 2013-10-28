@@ -1,20 +1,11 @@
 package postgis
 
-type InsertElement struct {
-	Table string
-	Row   []interface{}
-}
-type DeleteElement struct {
-	Table string
-	Id    int64
-}
-
-type InsertBuffer struct {
+type TxRouter struct {
 	Tables map[string]*TableTx
 }
 
-func NewInsertBuffer(pg *PostGIS, bulkImport bool) *InsertBuffer {
-	ib := InsertBuffer{
+func newTxRouter(pg *PostGIS, bulkImport bool) *TxRouter {
+	ib := TxRouter{
 		Tables: make(map[string]*TableTx),
 	}
 	for tableName, table := range pg.Tables {
@@ -29,7 +20,7 @@ func NewInsertBuffer(pg *PostGIS, bulkImport bool) *InsertBuffer {
 	return &ib
 }
 
-func (ib *InsertBuffer) End() error {
+func (ib *TxRouter) End() error {
 	for _, tt := range ib.Tables {
 		if err := tt.Commit(); err != nil {
 			return err
@@ -38,14 +29,14 @@ func (ib *InsertBuffer) End() error {
 	return nil
 }
 
-func (ib *InsertBuffer) Abort() error {
+func (ib *TxRouter) Abort() error {
 	for _, tt := range ib.Tables {
 		tt.Rollback()
 	}
 	return nil
 }
 
-func (ib *InsertBuffer) Insert(table string, row []interface{}) {
+func (ib *TxRouter) Insert(table string, row []interface{}) {
 	tt, ok := ib.Tables[table]
 	if !ok {
 		panic("unknown table " + table)
@@ -53,7 +44,7 @@ func (ib *InsertBuffer) Insert(table string, row []interface{}) {
 	tt.Insert(row)
 }
 
-func (ib *InsertBuffer) Delete(table string, id int64) {
+func (ib *TxRouter) Delete(table string, id int64) {
 	tt, ok := ib.Tables[table]
 	if !ok {
 		panic("unknown table " + table)

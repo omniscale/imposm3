@@ -412,7 +412,7 @@ type PostGIS struct {
 	Tables            map[string]*TableSpec
 	GeneralizedTables map[string]*GeneralizedTableSpec
 	Prefix            string
-	InputBuffer       *InsertBuffer
+	txRouter          *TxRouter
 }
 
 func (pg *PostGIS) Open() error {
@@ -432,30 +432,30 @@ func (pg *PostGIS) Open() error {
 
 func (pg *PostGIS) Insert(elem element.OSMElem, match mapping.Match) {
 	row := match.Row(&elem)
-	pg.InputBuffer.Insert(match.Table.Name, row)
+	pg.txRouter.Insert(match.Table.Name, row)
 }
 
 func (pg *PostGIS) Delete(table string, id int64) error {
-	pg.InputBuffer.Delete(table, id)
+	pg.txRouter.Delete(table, id)
 	return nil
 }
 
 func (pg *PostGIS) Begin() error {
-	pg.InputBuffer = NewInsertBuffer(pg, false)
+	pg.txRouter = newTxRouter(pg, false)
 	return nil
 }
 
 func (pg *PostGIS) BeginBulk() error {
-	pg.InputBuffer = NewInsertBuffer(pg, true)
+	pg.txRouter = newTxRouter(pg, true)
 	return nil
 }
 
 func (pg *PostGIS) Abort() error {
-	return pg.InputBuffer.Abort()
+	return pg.txRouter.Abort()
 }
 
 func (pg *PostGIS) End() error {
-	return pg.InputBuffer.End()
+	return pg.txRouter.End()
 }
 
 func (pg *PostGIS) Close() error {
