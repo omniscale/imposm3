@@ -2,7 +2,6 @@ package diff
 
 import (
 	"testing"
-	"time"
 )
 
 func TestDiffPath(t *testing.T) {
@@ -26,11 +25,10 @@ func TestDiffPath(t *testing.T) {
 // 	t.Fatal("")
 // }
 
-func TestDownloadDiffs(t *testing.T) {
-	diffs := &diffDownload{"http://planet.openstreetmap.org/replication/minute/", "/tmp/diffs", 0}
-	err := diffs.DownloadSince(time.Now().Add(-5 * time.Minute))
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Fatal("")
-}
+// func TestDownloadDiffs(t *testing.T) {
+// 	diffs := &diffDownload{"http://planet.openstreetmap.org/replication/minute/", "/tmp/diffs", 0}
+// 	err := diffs.DownloadSince(time.Now().Add(-5 * time.Minute))
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+// }
