@@ -86,8 +86,8 @@ NextRel:
 		}
 
 		// check for matches befor building the geometry
-		matches := rw.tagMatcher.Match(&r.Tags)
-		if len(matches) == 0 {
+		ok, matches := rw.inserter.ProbePolygon(r.OSMElem)
+		if !ok {
 			continue NextRel
 		}
 
@@ -116,10 +116,10 @@ NextRel:
 			for _, g := range parts {
 				rel := element.Relation(*r)
 				rel.Geom = &element.Geometry{g, geos.AsEwkbHex(g)}
-				rw.insertMatches(&rel.OSMElem, matches)
+				rw.inserter.InsertPolygon(rel.OSMElem, matches)
 			}
 		} else {
-			rw.insertMatches(&r.OSMElem, matches)
+			rw.inserter.InsertPolygon(r.OSMElem, matches)
 		}
 		err = rw.osmCache.InsertedWays.PutMembers(r.Members)
 		if err != nil {

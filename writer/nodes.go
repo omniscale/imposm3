@@ -44,7 +44,7 @@ func (nw *NodeWriter) loop() {
 
 	for n := range nw.nodes {
 		nw.progress.AddNodes(1)
-		if matches := nw.tagMatcher.Match(&n.Tags); len(matches) > 0 {
+		if ok, matches := nw.inserter.ProbePoint(n.OSMElem); ok {
 			proj.NodeToMerc(n)
 			if nw.expireTiles != nil {
 				nw.expireTiles.ExpireFromNodes([]element.Node{*n})
@@ -73,10 +73,10 @@ func (nw *NodeWriter) loop() {
 					continue
 				}
 				if len(parts) >= 1 {
-					nw.insertMatches(&n.OSMElem, matches)
+					nw.inserter.InsertPoint(n.OSMElem, matches)
 				}
 			} else {
-				nw.insertMatches(&n.OSMElem, matches)
+				nw.inserter.InsertPoint(n.OSMElem, matches)
 			}
 
 		}

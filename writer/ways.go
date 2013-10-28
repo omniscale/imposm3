@@ -65,13 +65,13 @@ func (ww *WayWriter) loop() {
 		proj.NodesToMerc(w.Nodes)
 
 		inserted = false
-		if matches := ww.lineStringTagMatcher.Match(&w.Tags); len(matches) > 0 {
-			ww.buildAndInsert(geos, w, matches, geom.LineString)
+		if ok, matches := ww.inserter.ProbeLineString(w.OSMElem); ok {
+			ww.buildAndInsert(geos, w, matches, false)
 			inserted = true
 		}
 		if w.IsClosed() {
-			if matches := ww.polygonTagMatcher.Match(&w.Tags); len(matches) > 0 {
-				ww.buildAndInsert(geos, w, matches, geom.Polygon)
+			if ok, matches := ww.inserter.ProbePolygon(w.OSMElem); ok {
+				ww.buildAndInsert(geos, w, matches, true)
 				inserted = true
 			}
 		}
@@ -86,13 +86,17 @@ func (ww *WayWriter) loop() {
 	ww.wg.Done()
 }
 
-type geomBuilder func(*geos.Geos, []element.Node) (*geos.Geom, error)
-
-func (ww *WayWriter) buildAndInsert(geos *geos.Geos, w *element.Way, matches []mapping.Match, builder geomBuilder) {
+func (ww *WayWriter) buildAndInsert(g *geos.Geos, w *element.Way, matches interface{}, isPolygon bool) {
 	var err error
+	var geosgeom *geos.Geom
 	// make copy to avoid interference with polygon/linestring matches
 	way := element.Way(*w)
-	geosgeom, err := builder(geos, way.Nodes)
+
+	if isPolygon {
+		geosgeom, err = geom.Polygon(g, way.Nodes)
+	} else {
+		geosgeom, err = geom.LineString(g, way.Nodes)
+	}
 	if err != nil {
 		if err, ok := err.(ErrorLevel); ok {
 			if err.Level() <= 0 {
@@ -103,7 +107,7 @@ func (ww *WayWriter) buildAndInsert(geos *geos.Geos, w *element.Way, matches []m
 		return
 	}
 
-	way.Geom, err = geom.AsGeomElement(geos, geosgeom)
+	way.Geom, err = geom.AsGeomElement(g, geosgeom)
 	if err != nil {
 		log.Println(err)
 		return
@@ -115,12 +119,20 @@ func (ww *WayWriter) buildAndInsert(geos *geos.Geos, w *element.Way, matches []m
 			log.Println(err)
 			return
 		}
-		for _, g := range parts {
+		for _, p := range parts {
 			way := element.Way(*w)
-			way.Geom = &element.Geometry{g, geos.AsEwkbHex(g)}
-			ww.insertMatches(&way.OSMElem, matches)
+			way.Geom = &element.Geometry{p, g.AsEwkbHex(p)}
+			if isPolygon {
+				ww.inserter.InsertPolygon(way.OSMElem, matches)
+			} else {
+				ww.inserter.InsertLineString(way.OSMElem, matches)
+			}
 		}
 	} else {
-		ww.insertMatches(&way.OSMElem, matches)
+		if isPolygon {
+			ww.inserter.InsertPolygon(way.OSMElem, matches)
+		} else {
+			ww.inserter.InsertLineString(way.OSMElem, matches)
+		}
 	}
 }

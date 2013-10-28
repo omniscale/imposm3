@@ -3,10 +3,8 @@ package writer
 import (
 	"imposm3/cache"
 	"imposm3/database"
-	"imposm3/element"
 	"imposm3/expire"
 	"imposm3/geom/limit"
-	"imposm3/mapping"
 	"imposm3/stats"
 	"runtime"
 	"sync"
@@ -49,10 +47,4 @@ func (writer *OsmElemWriter) SetExpireTiles(expireTiles *expire.Tiles) {
 
 func (writer *OsmElemWriter) Close() {
 	writer.wg.Wait()
-}
-
-func (writer *OsmElemWriter) insertMatches(elem *element.OSMElem, matches []mapping.Match) {
-	for _, match := range matches {
-		writer.inserter.Insert(*elem, match)
-	}
 }

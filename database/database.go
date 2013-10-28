@@ -27,7 +27,12 @@ type BulkBeginner interface {
 }
 
 type Inserter interface {
-	Insert(element.OSMElem, mapping.Match)
+	ProbePoint(element.OSMElem) (bool, interface{})
+	ProbeLineString(element.OSMElem) (bool, interface{})
+	ProbePolygon(element.OSMElem) (bool, interface{})
+	InsertPoint(element.OSMElem, interface{})
+	InsertLineString(element.OSMElem, interface{})
+	InsertPolygon(element.OSMElem, interface{})
 }
 
 type Deployer interface {
@@ -82,12 +87,17 @@ func ConnectionType(param string) string {
 
 type NullDb struct{}
 
-func (n *NullDb) Init() error                           { return nil }
-func (n *NullDb) Begin() error                          { return nil }
-func (n *NullDb) End() error                            { return nil }
-func (n *NullDb) Close() error                          { return nil }
-func (n *NullDb) Abort() error                          { return nil }
-func (n *NullDb) Insert(element.OSMElem, mapping.Match) {}
+func (n *NullDb) Init() error                                         { return nil }
+func (n *NullDb) Begin() error                                        { return nil }
+func (n *NullDb) End() error                                          { return nil }
+func (n *NullDb) Close() error                                        { return nil }
+func (n *NullDb) Abort() error                                        { return nil }
+func (n *NullDb) InsertPoint(element.OSMElem, interface{})            {}
+func (n *NullDb) InsertLineString(element.OSMElem, interface{})       {}
+func (n *NullDb) InsertPolygon(element.OSMElem, interface{})          {}
+func (n *NullDb) ProbePoint(element.OSMElem) (bool, interface{})      { return true, nil }
+func (n *NullDb) ProbeLineString(element.OSMElem) (bool, interface{}) { return true, nil }
+func (n *NullDb) ProbePolygon(element.OSMElem) (bool, interface{})    { return true, nil }
 
 func NewNullDb(conf Config, m *mapping.Mapping) (DB, error) {
 	return &NullDb{}, nil

@@ -404,15 +404,18 @@ func clusterTable(pg *PostGIS, tableName string, srid int, columns []ColumnSpec)
 }
 
 type PostGIS struct {
-	Db                *sql.DB
-	Params            string
-	Schema            string
-	BackupSchema      string
-	Config            database.Config
-	Tables            map[string]*TableSpec
-	GeneralizedTables map[string]*GeneralizedTableSpec
-	Prefix            string
-	txRouter          *TxRouter
+	Db                   *sql.DB
+	Params               string
+	Schema               string
+	BackupSchema         string
+	Config               database.Config
+	Tables               map[string]*TableSpec
+	GeneralizedTables    map[string]*GeneralizedTableSpec
+	Prefix               string
+	txRouter             *TxRouter
+	pointTagMatcher      *mapping.TagMatcher
+	lineStringTagMatcher *mapping.TagMatcher
+	polygonTagMatcher    *mapping.TagMatcher
 }
 
 func (pg *PostGIS) Open() error {
@@ -430,9 +433,52 @@ func (pg *PostGIS) Open() error {
 	return nil
 }
 
-func (pg *PostGIS) Insert(elem element.OSMElem, match mapping.Match) {
-	row := match.Row(&elem)
-	pg.txRouter.Insert(match.Table.Name, row)
+func (pg *PostGIS) InsertPoint(elem element.OSMElem, matches interface{}) {
+	if matches, ok := matches.([]mapping.Match); ok {
+		for _, match := range matches {
+			row := match.Row(&elem)
+			pg.txRouter.Insert(match.Table.Name, row)
+		}
+	}
+}
+
+func (pg *PostGIS) InsertLineString(elem element.OSMElem, matches interface{}) {
+	if matches, ok := matches.([]mapping.Match); ok {
+		for _, match := range matches {
+			row := match.Row(&elem)
+			pg.txRouter.Insert(match.Table.Name, row)
+		}
+	}
+}
+
+func (pg *PostGIS) InsertPolygon(elem element.OSMElem, matches interface{}) {
+	if matches, ok := matches.([]mapping.Match); ok {
+		for _, match := range matches {
+			row := match.Row(&elem)
+			pg.txRouter.Insert(match.Table.Name, row)
+		}
+	}
+}
+
+func (pg *PostGIS) ProbePoint(elem element.OSMElem) (bool, interface{}) {
+	if matches := pg.pointTagMatcher.Match(&elem.Tags); len(matches) > 0 {
+		return true, matches
+	}
+	return false, nil
+}
+
+func (pg *PostGIS) ProbeLineString(elem element.OSMElem) (bool, interface{}) {
+	if matches := pg.lineStringTagMatcher.Match(&elem.Tags); len(matches) > 0 {
+		return true, matches
+	}
+	return false, nil
+}
+
+func (pg *PostGIS) ProbePolygon(elem element.OSMElem) (bool, interface{}) {
+	if matches := pg.polygonTagMatcher.Match(&elem.Tags); len(matches) > 0 {
+		return true, matches
+	}
+	return false, nil
 }
 
 func (pg *PostGIS) Delete(table string, id int64) error {
@@ -608,6 +654,10 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 		db.GeneralizedTables[name] = NewGeneralizedTableSpec(db, table)
 	}
 	db.prepareGeneralizedTableSources()
+
+	db.pointTagMatcher = m.PointMatcher()
+	db.lineStringTagMatcher = m.LineStringMatcher()
+	db.polygonTagMatcher = m.PolygonMatcher()
 
 	db.Params = params
 	err = db.Open()
