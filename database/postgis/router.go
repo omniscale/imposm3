@@ -9,7 +9,7 @@ func newTxRouter(pg *PostGIS, bulkImport bool) *TxRouter {
 		Tables: make(map[string]*TableTx),
 	}
 	for tableName, table := range pg.Tables {
-		tt := pg.NewTableTx(table, bulkImport)
+		tt := NewTableTx(pg, table, bulkImport)
 		err := tt.Begin()
 		if err != nil {
 			panic(err) // TODO
