@@ -2,6 +2,7 @@ package database
 
 import (
 	"errors"
+	"imposm3/element"
 	"imposm3/mapping"
 	"strings"
 )
@@ -18,15 +19,15 @@ type DB interface {
 	Abort() error
 	Init() error
 	Close() error
-	RowInserter
+	Inserter
 }
 
 type BulkBeginner interface {
 	BeginBulk() error
 }
 
-type RowInserter interface {
-	Insert(string, []interface{})
+type Inserter interface {
+	Insert(element.OSMElem, mapping.Match)
 }
 
 type Deployer interface {
@@ -81,12 +82,12 @@ func ConnectionType(param string) string {
 
 type NullDb struct{}
 
-func (n *NullDb) Init() error                  { return nil }
-func (n *NullDb) Begin() error                 { return nil }
-func (n *NullDb) End() error                   { return nil }
-func (n *NullDb) Close() error                 { return nil }
-func (n *NullDb) Abort() error                 { return nil }
-func (n *NullDb) Insert(string, []interface{}) {}
+func (n *NullDb) Init() error                           { return nil }
+func (n *NullDb) Begin() error                          { return nil }
+func (n *NullDb) End() error                            { return nil }
+func (n *NullDb) Close() error                          { return nil }
+func (n *NullDb) Abort() error                          { return nil }
+func (n *NullDb) Insert(element.OSMElem, mapping.Match) {}
 
 func NewNullDb(conf Config, m *mapping.Mapping) (DB, error) {
 	return &NullDb{}, nil

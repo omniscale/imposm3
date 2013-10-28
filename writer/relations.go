@@ -21,16 +21,16 @@ type RelationWriter struct {
 }
 
 func NewRelationWriter(osmCache *cache.OSMCache, diffCache *cache.DiffCache, rel chan *element.Relation,
-	insertBuffer database.RowInserter, tagMatcher *mapping.TagMatcher, progress *stats.Statistics,
+	inserter database.Inserter, tagMatcher *mapping.TagMatcher, progress *stats.Statistics,
 	srid int) *OsmElemWriter {
 	rw := RelationWriter{
 		OsmElemWriter: OsmElemWriter{
-			osmCache:     osmCache,
-			diffCache:    diffCache,
-			progress:     progress,
-			wg:           &sync.WaitGroup{},
-			insertBuffer: insertBuffer,
-			srid:         srid,
+			osmCache:  osmCache,
+			diffCache: diffCache,
+			progress:  progress,
+			wg:        &sync.WaitGroup{},
+			inserter:  inserter,
+			srid:      srid,
 		},
 		rel:        rel,
 		tagMatcher: tagMatcher,

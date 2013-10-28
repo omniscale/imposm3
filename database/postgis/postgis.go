@@ -6,6 +6,7 @@ import (
 	"fmt"
 	pq "github.com/olt/pq"
 	"imposm3/database"
+	"imposm3/element"
 	"imposm3/logging"
 	"imposm3/mapping"
 	"runtime"
@@ -429,8 +430,9 @@ func (pg *PostGIS) Open() error {
 	return nil
 }
 
-func (pg *PostGIS) Insert(table string, row []interface{}) {
-	pg.InputBuffer.Insert(table, row)
+func (pg *PostGIS) Insert(elem element.OSMElem, match mapping.Match) {
+	row := match.Row(&elem)
+	pg.InputBuffer.Insert(match.Table.Name, row)
 }
 
 func (pg *PostGIS) Delete(table string, id int64) error {

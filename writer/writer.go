@@ -21,15 +21,15 @@ type looper interface {
 }
 
 type OsmElemWriter struct {
-	osmCache     *cache.OSMCache
-	diffCache    *cache.DiffCache
-	progress     *stats.Statistics
-	insertBuffer database.RowInserter
-	wg           *sync.WaitGroup
-	limiter      *limit.Limiter
-	writer       looper
-	srid         int
-	expireTiles  *expire.Tiles
+	osmCache    *cache.OSMCache
+	diffCache   *cache.DiffCache
+	progress    *stats.Statistics
+	inserter    database.Inserter
+	wg          *sync.WaitGroup
+	limiter     *limit.Limiter
+	writer      looper
+	srid        int
+	expireTiles *expire.Tiles
 }
 
 func (writer *OsmElemWriter) SetLimiter(limiter *limit.Limiter) {
@@ -53,7 +53,6 @@ func (writer *OsmElemWriter) Close() {
 
 func (writer *OsmElemWriter) insertMatches(elem *element.OSMElem, matches []mapping.Match) {
 	for _, match := range matches {
-		row := match.Row(elem)
-		writer.insertBuffer.Insert(match.Table.Name, row)
+		writer.inserter.Insert(*elem, match)
 	}
 }

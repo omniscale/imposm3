@@ -21,16 +21,16 @@ type WayWriter struct {
 }
 
 func NewWayWriter(osmCache *cache.OSMCache, diffCache *cache.DiffCache, ways chan *element.Way,
-	insertBuffer database.RowInserter, lineStringTagMatcher *mapping.TagMatcher,
+	inserter database.Inserter, lineStringTagMatcher *mapping.TagMatcher,
 	polygonTagMatcher *mapping.TagMatcher, progress *stats.Statistics, srid int) *OsmElemWriter {
 	ww := WayWriter{
 		OsmElemWriter: OsmElemWriter{
-			osmCache:     osmCache,
-			diffCache:    diffCache,
-			progress:     progress,
-			wg:           &sync.WaitGroup{},
-			insertBuffer: insertBuffer,
-			srid:         srid,
+			osmCache:  osmCache,
+			diffCache: diffCache,
+			progress:  progress,
+			wg:        &sync.WaitGroup{},
+			inserter:  inserter,
+			srid:      srid,
 		},
 		ways:                 ways,
 		lineStringTagMatcher: lineStringTagMatcher,

@@ -20,15 +20,15 @@ type NodeWriter struct {
 }
 
 func NewNodeWriter(osmCache *cache.OSMCache, nodes chan *element.Node,
-	insertBuffer database.RowInserter, tagMatcher *mapping.TagMatcher, progress *stats.Statistics,
+	inserter database.Inserter, tagMatcher *mapping.TagMatcher, progress *stats.Statistics,
 	srid int) *OsmElemWriter {
 	nw := NodeWriter{
 		OsmElemWriter: OsmElemWriter{
-			osmCache:     osmCache,
-			progress:     progress,
-			wg:           &sync.WaitGroup{},
-			insertBuffer: insertBuffer,
-			srid:         srid,
+			osmCache: osmCache,
+			progress: progress,
+			wg:       &sync.WaitGroup{},
+			inserter: inserter,
+			srid:     srid,
 		},
 		nodes:      nodes,
 		tagMatcher: tagMatcher,
