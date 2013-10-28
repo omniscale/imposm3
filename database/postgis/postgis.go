@@ -241,6 +241,15 @@ func createIndex(pg *PostGIS, tableName string, columns []ColumnSpec) error {
 	return nil
 }
 
+func (pg *PostGIS) GeneralizeUpdates() error {
+	for _, table := range pg.sortedGeneralizedTables() {
+		if ids, ok := pg.updatedIds[table]; ok {
+			fmt.Println(ids)
+		}
+	}
+	return nil
+}
+
 func (pg *PostGIS) Generalize() error {
 	defer log.StopStep(log.StartStep(fmt.Sprintf("Creating generalized tables")))
 
@@ -404,18 +413,20 @@ func clusterTable(pg *PostGIS, tableName string, srid int, columns []ColumnSpec)
 }
 
 type PostGIS struct {
-	Db                   *sql.DB
-	Params               string
-	Schema               string
-	BackupSchema         string
-	Config               database.Config
-	Tables               map[string]*TableSpec
-	GeneralizedTables    map[string]*GeneralizedTableSpec
-	Prefix               string
-	txRouter             *TxRouter
-	pointTagMatcher      *mapping.TagMatcher
-	lineStringTagMatcher *mapping.TagMatcher
-	polygonTagMatcher    *mapping.TagMatcher
+	Db                      *sql.DB
+	Params                  string
+	Schema                  string
+	BackupSchema            string
+	Config                  database.Config
+	Tables                  map[string]*TableSpec
+	GeneralizedTables       map[string]*GeneralizedTableSpec
+	Prefix                  string
+	txRouter                *TxRouter
+	pointTagMatcher         *mapping.TagMatcher
+	lineStringTagMatcher    *mapping.TagMatcher
+	polygonTagMatcher       *mapping.TagMatcher
+	updateGeneralizedTables bool
+	updatedIds              map[string][]int64
 }
 
 func (pg *PostGIS) Open() error {
@@ -448,6 +459,12 @@ func (pg *PostGIS) InsertLineString(elem element.OSMElem, matches interface{}) {
 			row := match.Row(&elem)
 			pg.txRouter.Insert(match.Table.Name, row)
 		}
+		if pg.updateGeneralizedTables {
+			for _, generalizedTable := range pg.generalizedFromMatches(matches) {
+				pg.updatedIds[generalizedTable.Name] = append(pg.updatedIds[generalizedTable.Name], elem.Id)
+			}
+		}
+
 	}
 }
 
@@ -457,6 +474,14 @@ func (pg *PostGIS) InsertPolygon(elem element.OSMElem, matches interface{}) {
 			row := match.Row(&elem)
 			pg.txRouter.Insert(match.Table.Name, row)
 		}
+		if pg.updateGeneralizedTables {
+			for _, generalizedTable := range pg.generalizedFromMatches(matches) {
+				fmt.Println("INSERT! GEN", generalizedTable)
+
+				pg.updatedIds[generalizedTable.Name] = append(pg.updatedIds[generalizedTable.Name], elem.Id)
+			}
+		}
+
 	}
 }
 
@@ -486,8 +511,44 @@ func (pg *PostGIS) Delete(id int64, matches interface{}) error {
 		for _, match := range matches {
 			pg.txRouter.Delete(match.Table.Name, id)
 		}
+		if pg.updateGeneralizedTables {
+			for _, generalizedTable := range pg.generalizedFromMatches(matches) {
+				pg.txRouter.Delete(generalizedTable.Name, id)
+			}
+		}
 	}
 	return nil
+}
+
+func (pg *PostGIS) generalizedFromMatches(matches []mapping.Match) []*GeneralizedTableSpec {
+	generalizedTables := []*GeneralizedTableSpec{}
+	for _, match := range matches {
+		tbl := pg.Tables[match.Table.Name]
+		generalizedTables = append(generalizedTables, tbl.Generalizations...)
+	}
+	return generalizedTables
+}
+
+func (pg *PostGIS) sortedGeneralizedTables() []string {
+	added := map[string]bool{}
+	sorted := []string{}
+
+	for len(pg.GeneralizedTables) > len(sorted) {
+		for _, tbl := range pg.GeneralizedTables {
+			if _, ok := added[tbl.Name]; !ok {
+				if tbl.Source != nil || added[tbl.SourceGeneralized.Name] {
+					added[tbl.Name] = true
+					sorted = append(sorted, tbl.Name)
+				}
+			}
+		}
+	}
+	return sorted
+}
+
+func (pg *PostGIS) EnableGeneralizeUpdates() {
+	pg.updateGeneralizedTables = true
+	pg.updatedIds = make(map[string][]int64)
 }
 
 func (pg *PostGIS) Begin() error {
@@ -658,6 +719,7 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 		db.GeneralizedTables[name] = NewGeneralizedTableSpec(db, table)
 	}
 	db.prepareGeneralizedTableSources()
+	db.prepareGeneralizations()
 
 	db.pointTagMatcher = m.PointMatcher()
 	db.lineStringTagMatcher = m.LineStringMatcher()
@@ -696,6 +758,15 @@ func (pg *PostGIS) prepareGeneralizedTableSources() {
 				}
 				filled = true
 			}
+		}
+	}
+}
+
+func (pg *PostGIS) prepareGeneralizations() {
+	for _, table := range pg.GeneralizedTables {
+		table.Source.Generalizations = append(table.Source.Generalizations, table)
+		if source, ok := pg.GeneralizedTables[table.SourceName]; ok {
+			source.Generalizations = append(source.Generalizations, table)
 		}
 	}
 }

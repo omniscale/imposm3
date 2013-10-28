@@ -12,11 +12,12 @@ type ColumnSpec struct {
 	Type      ColumnType
 }
 type TableSpec struct {
-	Name         string
-	Schema       string
-	Columns      []ColumnSpec
-	GeometryType string
-	Srid         int
+	Name            string
+	Schema          string
+	Columns         []ColumnSpec
+	GeometryType    string
+	Srid            int
+	Generalizations []*GeneralizedTableSpec
 }
 
 type GeneralizedTableSpec struct {
@@ -27,6 +28,7 @@ type GeneralizedTableSpec struct {
 	Tolerance         float64
 	Where             string
 	created           bool
+	Generalizations   []*GeneralizedTableSpec
 }
 
 func (col *ColumnSpec) AsSQL() string {

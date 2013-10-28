@@ -79,6 +79,12 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, force bool) {
 	if !ok {
 		log.Fatal("database not deletable")
 	}
+
+	genDb, ok := db.(database.Generalizer)
+	if ok {
+		genDb.EnableGeneralizeUpdates()
+	}
+
 	deleter := NewDeleter(
 		delDb,
 		osmCache,
@@ -255,6 +261,10 @@ For:
 	nodeWriter.Close()
 	relWriter.Close()
 	wayWriter.Close()
+
+	if genDb != nil {
+		genDb.GeneralizeUpdates()
+	}
 
 	err = db.End()
 	if err != nil {

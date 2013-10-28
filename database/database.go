@@ -43,6 +43,8 @@ type Deployer interface {
 
 type Generalizer interface {
 	Generalize() error
+	EnableGeneralizeUpdates()
+	GeneralizeUpdates() error
 }
 
 type Finisher interface {

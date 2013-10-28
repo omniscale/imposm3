@@ -46,8 +46,8 @@ func (ib *TxRouter) Insert(table string, row []interface{}) {
 
 func (ib *TxRouter) Delete(table string, id int64) {
 	tt, ok := ib.Tables[table]
-	if !ok {
-		panic("unknown table " + table)
+	if ok {
+		// panic("unknown table " + table)
+		tt.Delete(id)
 	}
-	tt.Delete(id)
 }
