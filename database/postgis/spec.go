@@ -111,7 +111,7 @@ func NewTableSpec(pg *PostGIS, t *mapping.Table) *TableSpec {
 	spec := TableSpec{
 		Name:         pg.Prefix + t.Name,
 		Schema:       pg.Schema,
-		GeometryType: t.Type,
+		GeometryType: string(t.Type),
 		Srid:         pg.Config.Srid,
 	}
 	for _, field := range t.Fields {

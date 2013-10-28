@@ -16,7 +16,7 @@ type Field struct {
 
 type Table struct {
 	Name     string
-	Type     string                `json:"type"`
+	Type     TableType             `json:"type"`
 	Mapping  map[string][]string   `json:"mapping"`
 	Mappings map[string]SubMapping `json:"mappings"`
 	Fields   []*Field              `json:"fields"`
@@ -55,6 +55,14 @@ type DestTable struct {
 	Name       string
 	SubMapping string
 }
+
+type TableType string
+
+const (
+	PolygonTable    TableType = "polygon"
+	LineStringTable TableType = "linestring"
+	PointTable      TableType = "point"
+)
 
 func NewMapping(filename string) (*Mapping, error) {
 	f, err := os.Open(filename)
@@ -98,7 +106,7 @@ func (m *Mapping) prepare() error {
 		case "linestring":
 		case "polygon":
 		default:
-			return errors.New("unknown type " + t.Type + " for table " + name)
+			return errors.New("unknown type " + string(t.Type) + " for table " + name)
 		}
 	}
 	for name, t := range m.GeneralizedTables {
@@ -122,7 +130,7 @@ func (tt TagTables) addFromMapping(mapping map[string][]string, table DestTable)
 
 }
 
-func (m *Mapping) mappings(tableType string, mappings TagTables) {
+func (m *Mapping) mappings(tableType TableType, mappings TagTables) {
 	for name, t := range m.Tables {
 		if t.Type != tableType {
 			continue
@@ -135,7 +143,7 @@ func (m *Mapping) mappings(tableType string, mappings TagTables) {
 	}
 }
 
-func (m *Mapping) tables(tableType string) map[string]*TableFields {
+func (m *Mapping) tables(tableType TableType) map[string]*TableFields {
 	result := make(map[string]*TableFields)
 	for name, t := range m.Tables {
 		if t.Type == tableType {
@@ -145,7 +153,7 @@ func (m *Mapping) tables(tableType string) map[string]*TableFields {
 	return result
 }
 
-func (m *Mapping) extraTags(tableType string, tags map[string]bool) {
+func (m *Mapping) extraTags(tableType TableType, tags map[string]bool) {
 	for _, t := range m.Tables {
 		if t.Type != tableType {
 			continue
