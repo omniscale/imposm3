@@ -6,7 +6,6 @@ import (
 	"imposm3/element"
 	"imposm3/geom"
 	"imposm3/geom/geos"
-	"imposm3/mapping"
 	"imposm3/proj"
 	"imposm3/stats"
 	"log"
@@ -15,14 +14,12 @@ import (
 
 type WayWriter struct {
 	OsmElemWriter
-	ways                 chan *element.Way
-	lineStringTagMatcher *mapping.TagMatcher
-	polygonTagMatcher    *mapping.TagMatcher
+	ways chan *element.Way
 }
 
 func NewWayWriter(osmCache *cache.OSMCache, diffCache *cache.DiffCache, ways chan *element.Way,
-	inserter database.Inserter, lineStringTagMatcher *mapping.TagMatcher,
-	polygonTagMatcher *mapping.TagMatcher, progress *stats.Statistics, srid int) *OsmElemWriter {
+	inserter database.Inserter,
+	progress *stats.Statistics, srid int) *OsmElemWriter {
 	ww := WayWriter{
 		OsmElemWriter: OsmElemWriter{
 			osmCache:  osmCache,
@@ -32,9 +29,7 @@ func NewWayWriter(osmCache *cache.OSMCache, diffCache *cache.DiffCache, ways cha
 			inserter:  inserter,
 			srid:      srid,
 		},
-		ways:                 ways,
-		lineStringTagMatcher: lineStringTagMatcher,
-		polygonTagMatcher:    polygonTagMatcher,
+		ways: ways,
 	}
 	ww.OsmElemWriter.writer = &ww
 	return &ww.OsmElemWriter

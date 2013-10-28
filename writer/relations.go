@@ -7,7 +7,6 @@ import (
 	"imposm3/element"
 	"imposm3/geom"
 	"imposm3/geom/geos"
-	"imposm3/mapping"
 	"imposm3/proj"
 	"imposm3/stats"
 	"log"
@@ -16,12 +15,11 @@ import (
 
 type RelationWriter struct {
 	OsmElemWriter
-	rel        chan *element.Relation
-	tagMatcher *mapping.TagMatcher
+	rel chan *element.Relation
 }
 
 func NewRelationWriter(osmCache *cache.OSMCache, diffCache *cache.DiffCache, rel chan *element.Relation,
-	inserter database.Inserter, tagMatcher *mapping.TagMatcher, progress *stats.Statistics,
+	inserter database.Inserter, progress *stats.Statistics,
 	srid int) *OsmElemWriter {
 	rw := RelationWriter{
 		OsmElemWriter: OsmElemWriter{
@@ -32,8 +30,7 @@ func NewRelationWriter(osmCache *cache.OSMCache, diffCache *cache.DiffCache, rel
 			inserter:  inserter,
 			srid:      srid,
 		},
-		rel:        rel,
-		tagMatcher: tagMatcher,
+		rel: rel,
 	}
 	rw.OsmElemWriter.writer = &rw
 	return &rw.OsmElemWriter

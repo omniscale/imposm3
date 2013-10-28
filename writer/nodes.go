@@ -6,7 +6,6 @@ import (
 	"imposm3/element"
 	"imposm3/geom"
 	"imposm3/geom/geos"
-	"imposm3/mapping"
 	"imposm3/proj"
 	"imposm3/stats"
 	"log"
@@ -15,12 +14,11 @@ import (
 
 type NodeWriter struct {
 	OsmElemWriter
-	nodes      chan *element.Node
-	tagMatcher *mapping.TagMatcher
+	nodes chan *element.Node
 }
 
 func NewNodeWriter(osmCache *cache.OSMCache, nodes chan *element.Node,
-	inserter database.Inserter, tagMatcher *mapping.TagMatcher, progress *stats.Statistics,
+	inserter database.Inserter, progress *stats.Statistics,
 	srid int) *OsmElemWriter {
 	nw := NodeWriter{
 		OsmElemWriter: OsmElemWriter{
@@ -30,8 +28,7 @@ func NewNodeWriter(osmCache *cache.OSMCache, nodes chan *element.Node,
 			inserter: inserter,
 			srid:     srid,
 		},
-		nodes:      nodes,
-		tagMatcher: tagMatcher,
+		nodes: nodes,
 	}
 	nw.OsmElemWriter.writer = &nw
 	return &nw.OsmElemWriter
