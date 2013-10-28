@@ -1,12 +1,12 @@
 package postgis
 
 type TxRouter struct {
-	Tables map[string]*TableTx
+	Tables map[string]TableTx
 }
 
 func newTxRouter(pg *PostGIS, bulkImport bool) *TxRouter {
 	ib := TxRouter{
-		Tables: make(map[string]*TableTx),
+		Tables: make(map[string]TableTx),
 	}
 	for tableName, table := range pg.Tables {
 		tt := NewTableTx(pg, table, bulkImport)
@@ -16,7 +16,17 @@ func newTxRouter(pg *PostGIS, bulkImport bool) *TxRouter {
 		}
 		ib.Tables[tableName] = tt
 	}
+	if !bulkImport {
+		for tableName, table := range pg.GeneralizedTables {
+			tt := NewGeneralizedTableTx(pg, table)
+			err := tt.Begin()
+			if err != nil {
+				panic(err) // TODO
+			}
+			ib.Tables[tableName] = tt
+		}
 
+	}
 	return &ib
 }
 
@@ -46,8 +56,8 @@ func (ib *TxRouter) Insert(table string, row []interface{}) {
 
 func (ib *TxRouter) Delete(table string, id int64) {
 	tt, ok := ib.Tables[table]
-	if ok {
-		// panic("unknown table " + table)
-		tt.Delete(id)
+	if !ok {
+		panic("unknown table " + table)
 	}
+	tt.Delete(id)
 }

@@ -6,7 +6,15 @@ import (
 	"sync"
 )
 
-type TableTx struct {
+type TableTx interface {
+	Begin() error
+	Insert(row []interface{}) error
+	Delete(id int64) error
+	Commit() error
+	Rollback()
+}
+
+type tableTx struct {
 	Pg         *PostGIS
 	Tx         *sql.Tx
 	Table      string
@@ -20,10 +28,10 @@ type TableTx struct {
 	rows       chan []interface{}
 }
 
-func NewTableTx(pg *PostGIS, spec *TableSpec, bulkImport bool) *TableTx {
-	tt := &TableTx{
+func NewTableTx(pg *PostGIS, spec *TableSpec, bulkImport bool) TableTx {
+	tt := &tableTx{
 		Pg:         pg,
-		Table:      spec.Name,
+		Table:      spec.Prefix + spec.Name,
 		Spec:       spec,
 		wg:         &sync.WaitGroup{},
 		rows:       make(chan []interface{}, 64),
@@ -34,7 +42,7 @@ func NewTableTx(pg *PostGIS, spec *TableSpec, bulkImport bool) *TableTx {
 	return tt
 }
 
-func (tt *TableTx) Begin() error {
+func (tt *tableTx) Begin() error {
 	tx, err := tt.Pg.Db.Begin()
 	if err != nil {
 		return err
@@ -74,12 +82,12 @@ func (tt *TableTx) Begin() error {
 	return nil
 }
 
-func (tt *TableTx) Insert(row []interface{}) error {
+func (tt *tableTx) Insert(row []interface{}) error {
 	tt.rows <- row
 	return nil
 }
 
-func (tt *TableTx) loop() {
+func (tt *tableTx) loop() {
 	for row := range tt.rows {
 		_, err := tt.InsertStmt.Exec(row...)
 		if err != nil {
@@ -90,7 +98,7 @@ func (tt *TableTx) loop() {
 	tt.wg.Done()
 }
 
-func (tt *TableTx) Delete(id int64) error {
+func (tt *tableTx) Delete(id int64) error {
 	if tt.bulkImport {
 		panic("unable to delete in bulkImport mode")
 	}
@@ -101,7 +109,7 @@ func (tt *TableTx) Delete(id int64) error {
 	return nil
 }
 
-func (tt *TableTx) Commit() error {
+func (tt *tableTx) Commit() error {
 	close(tt.rows)
 	tt.wg.Wait()
 	if tt.bulkImport && tt.InsertStmt != nil {
@@ -118,6 +126,96 @@ func (tt *TableTx) Commit() error {
 	return nil
 }
 
-func (tt *TableTx) Rollback() {
+func (tt *tableTx) Rollback() {
+	rollbackIfTx(&tt.Tx)
+}
+
+type generalizedTableTx struct {
+	Pg         *PostGIS
+	Tx         *sql.Tx
+	Table      string
+	Spec       *GeneralizedTableSpec
+	InsertStmt *sql.Stmt
+	DeleteStmt *sql.Stmt
+	InsertSql  string
+	DeleteSql  string
+	wg         *sync.WaitGroup
+	rows       chan []interface{}
+}
+
+func NewGeneralizedTableTx(pg *PostGIS, spec *GeneralizedTableSpec) TableTx {
+	tt := &generalizedTableTx{
+		Pg:    pg,
+		Table: spec.Prefix + spec.Name,
+		Spec:  spec,
+		wg:    &sync.WaitGroup{},
+		rows:  make(chan []interface{}, 64),
+	}
+	tt.wg.Add(1)
+	go tt.loop()
+	return tt
+}
+
+func (tt *generalizedTableTx) Begin() error {
+	tx, err := tt.Pg.Db.Begin()
+	if err != nil {
+		return err
+	}
+	tt.Tx = tx
+
+	tt.InsertSql = tt.Spec.InsertSQL()
+
+	stmt, err := tt.Tx.Prepare(tt.InsertSql)
+	if err != nil {
+		return &SQLError{tt.InsertSql, err}
+	}
+	tt.InsertStmt = stmt
+
+	tt.DeleteSql = tt.Spec.DeleteSQL()
+	stmt, err = tt.Tx.Prepare(tt.DeleteSql)
+	if err != nil {
+		return &SQLError{tt.DeleteSql, err}
+	}
+	tt.DeleteStmt = stmt
+
+	return nil
+}
+
+func (tt *generalizedTableTx) Insert(row []interface{}) error {
+	tt.rows <- row
+	return nil
+}
+
+func (tt *generalizedTableTx) loop() {
+	for row := range tt.rows {
+		_, err := tt.InsertStmt.Exec(row[0])
+		if err != nil {
+			// TODO
+			log.Fatal(&SQLInsertError{SQLError{tt.InsertSql, err}, row})
+		}
+	}
+	tt.wg.Done()
+}
+
+func (tt *generalizedTableTx) Delete(id int64) error {
+	_, err := tt.DeleteStmt.Exec(id)
+	if err != nil {
+		return &SQLInsertError{SQLError{tt.DeleteSql, err}, id}
+	}
+	return nil
+}
+
+func (tt *generalizedTableTx) Commit() error {
+	close(tt.rows)
+	tt.wg.Wait()
+	err := tt.Tx.Commit()
+	if err != nil {
+		return err
+	}
+	tt.Tx = nil
+	return nil
+}
+
+func (tt *generalizedTableTx) Rollback() {
 	rollbackIfTx(&tt.Tx)
 }

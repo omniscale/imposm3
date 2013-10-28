@@ -38,7 +38,7 @@ func createTable(tx *sql.Tx, spec TableSpec) error {
 	var sql string
 	var err error
 
-	err = dropTableIfExists(tx, spec.Schema, spec.Name)
+	err = dropTableIfExists(tx, spec.Schema, spec.Prefix+spec.Name)
 	if err != nil {
 		return err
 	}
@@ -49,7 +49,7 @@ func createTable(tx *sql.Tx, spec TableSpec) error {
 		return &SQLError{sql, err}
 	}
 
-	err = addGeometryColumn(tx, spec.Name, spec)
+	err = addGeometryColumn(tx, spec.Prefix+spec.Name, spec)
 	if err != nil {
 		return err
 	}
@@ -61,13 +61,13 @@ func addGeometryColumn(tx *sql.Tx, tableName string, spec TableSpec) error {
 	if geomType == "POLYGON" {
 		geomType = "GEOMETRY" // for multipolygon support
 	}
-	sql := fmt.Sprintf("SELECT AddGeometryColumn('%s', '%s', 'geometry', '%d', '%s', 2);",
+	stmt := fmt.Sprintf("SELECT AddGeometryColumn('%s', '%s', 'geometry', '%d', '%s', 2);",
 		spec.Schema, tableName, spec.Srid, geomType)
-	row := tx.QueryRow(sql)
+	row := tx.QueryRow(stmt)
 	var void interface{}
 	err := row.Scan(&void)
-	if err != nil {
-		return &SQLError{sql, err}
+	if err != nil && err != sql.ErrNoRows {
+		return &SQLError{stmt, err}
 	}
 	return nil
 }
@@ -241,9 +241,12 @@ func createIndex(pg *PostGIS, tableName string, columns []ColumnSpec) error {
 }
 
 func (pg *PostGIS) GeneralizeUpdates() error {
+	defer log.StopStep(log.StartStep(fmt.Sprintf("Updating generalized tables")))
 	for _, table := range pg.sortedGeneralizedTables() {
 		if ids, ok := pg.updatedIds[table]; ok {
-			fmt.Println(ids)
+			for _, id := range ids {
+				pg.txRouter.Insert(table, []interface{}{id})
+			}
 		}
 	}
 	return nil
@@ -324,13 +327,13 @@ func (pg *PostGIS) generalizeTable(table *GeneralizedTableSpec) error {
 		cols = append(cols, col.Type.GeneralizeSql(&col, table))
 	}
 
-	if err := dropTableIfExists(tx, pg.Schema, table.Name); err != nil {
+	if err := dropTableIfExists(tx, pg.Schema, table.Prefix+table.Name); err != nil {
 		return err
 	}
 
 	columnSQL := strings.Join(cols, ",\n")
 	sql := fmt.Sprintf(`CREATE TABLE "%s"."%s" AS (SELECT %s FROM "%s"."%s"%s)`,
-		pg.Schema, table.Name, columnSQL, pg.Schema,
+		pg.Schema, pg.Prefix+table.Name, columnSQL, pg.Schema,
 		pg.Prefix+table.SourceName, where)
 
 	_, err = tx.Exec(sql)
@@ -338,7 +341,7 @@ func (pg *PostGIS) generalizeTable(table *GeneralizedTableSpec) error {
 		return &SQLError{sql, err}
 	}
 
-	err = populateGeometryColumn(tx, table.Name, *table.Source)
+	err = populateGeometryColumn(tx, table.Prefix+table.Name, *table.Source)
 	if err != nil {
 		return err
 	}
@@ -475,8 +478,6 @@ func (pg *PostGIS) InsertPolygon(elem element.OSMElem, matches interface{}) {
 		}
 		if pg.updateGeneralizedTables {
 			for _, generalizedTable := range pg.generalizedFromMatches(matches) {
-				fmt.Println("INSERT! GEN", generalizedTable)
-
 				pg.updatedIds[generalizedTable.Name] = append(pg.updatedIds[generalizedTable.Name], elem.Id)
 			}
 		}

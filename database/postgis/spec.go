@@ -13,6 +13,7 @@ type ColumnSpec struct {
 }
 type TableSpec struct {
 	Name            string
+	Prefix          string
 	Schema          string
 	Columns         []ColumnSpec
 	GeometryType    string
@@ -22,6 +23,8 @@ type TableSpec struct {
 
 type GeneralizedTableSpec struct {
 	Name              string
+	Prefix            string
+	Schema            string
 	SourceName        string
 	Source            *TableSpec
 	SourceGeneralized *GeneralizedTableSpec
@@ -51,7 +54,7 @@ func (spec *TableSpec) CreateTableSQL() string {
             %s
         );`,
 		spec.Schema,
-		spec.Name,
+		spec.Prefix+spec.Name,
 		columnSQL,
 	)
 }
@@ -69,7 +72,7 @@ func (spec *TableSpec) InsertSQL() string {
 
 	return fmt.Sprintf(`INSERT INTO "%s"."%s" (%s) VALUES (%s)`,
 		spec.Schema,
-		spec.Name,
+		spec.Prefix+spec.Name,
 		columns,
 		placeholders,
 	)
@@ -84,34 +87,35 @@ func (spec *TableSpec) CopySQL() string {
 
 	return fmt.Sprintf(`COPY "%s"."%s" (%s) FROM STDIN`,
 		spec.Schema,
-		spec.Name,
+		spec.Prefix+spec.Name,
 		columns,
 	)
 }
 
 func (spec *TableSpec) DeleteSQL() string {
-	var idColumName string
+	var idColumnName string
 	for _, col := range spec.Columns {
 		if col.FieldType.Name == "id" {
-			idColumName = col.Name
+			idColumnName = col.Name
 			break
 		}
 	}
 
-	if idColumName == "" {
+	if idColumnName == "" {
 		panic("missing id column")
 	}
 
 	return fmt.Sprintf(`DELETE FROM "%s"."%s" WHERE "%s" = $1`,
 		spec.Schema,
-		spec.Name,
-		idColumName,
+		spec.Prefix+spec.Name,
+		idColumnName,
 	)
 }
 
 func NewTableSpec(pg *PostGIS, t *mapping.Table) *TableSpec {
 	spec := TableSpec{
-		Name:         pg.Prefix + t.Name,
+		Name:         t.Name,
+		Prefix:       pg.Prefix,
 		Schema:       pg.Schema,
 		GeometryType: string(t.Type),
 		Srid:         pg.Config.Srid,
@@ -134,10 +138,63 @@ func NewTableSpec(pg *PostGIS, t *mapping.Table) *TableSpec {
 
 func NewGeneralizedTableSpec(pg *PostGIS, t *mapping.GeneralizedTable) *GeneralizedTableSpec {
 	spec := GeneralizedTableSpec{
-		Name:       pg.Prefix + t.Name,
+		Name:       t.Name,
+		Prefix:     pg.Prefix,
+		Schema:     pg.Schema,
 		Tolerance:  t.Tolerance,
 		Where:      t.SqlFilter,
 		SourceName: t.SourceTableName,
 	}
 	return &spec
+}
+
+func (spec *GeneralizedTableSpec) DeleteSQL() string {
+	var idColumnName string
+	for _, col := range spec.Source.Columns {
+		if col.FieldType.Name == "id" {
+			idColumnName = col.Name
+			break
+		}
+	}
+
+	if idColumnName == "" {
+		panic("missing id column")
+	}
+
+	return fmt.Sprintf(`DELETE FROM "%s"."%s" WHERE "%s" = $1`,
+		spec.Schema,
+		spec.Prefix+spec.Name,
+		idColumnName,
+	)
+}
+
+func (spec *GeneralizedTableSpec) InsertSQL() string {
+	var idColumnName string
+	for _, col := range spec.Source.Columns {
+		if col.FieldType.Name == "id" {
+			idColumnName = col.Name
+			break
+		}
+	}
+
+	if idColumnName == "" {
+		panic("missing id column")
+	}
+
+	var cols []string
+	for _, col := range spec.Source.Columns {
+		cols = append(cols, col.Type.GeneralizeSql(&col, spec))
+	}
+
+	where := fmt.Sprintf(` WHERE "%s" = $1`, idColumnName)
+	if spec.Where != "" {
+		where += " AND (" + spec.Where + ")"
+	}
+
+	columnSQL := strings.Join(cols, ",\n")
+	sql := fmt.Sprintf(`INSERT INTO "%s"."%s" (SELECT %s FROM "%s"."%s"%s)`,
+		spec.Schema, spec.Prefix+spec.Name, columnSQL, spec.Source.Schema,
+		spec.Source.Prefix+spec.Source.Name, where)
+	return sql
+
 }
