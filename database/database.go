@@ -50,7 +50,8 @@ type Finisher interface {
 }
 
 type Deleter interface {
-	Delete(string, int64) error
+	Inserter
+	Delete(int64, interface{}) error
 }
 
 type Optimizer interface {

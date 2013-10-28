@@ -481,8 +481,12 @@ func (pg *PostGIS) ProbePolygon(elem element.OSMElem) (bool, interface{}) {
 	return false, nil
 }
 
-func (pg *PostGIS) Delete(table string, id int64) error {
-	pg.txRouter.Delete(table, id)
+func (pg *PostGIS) Delete(id int64, matches interface{}) error {
+	if matches, ok := matches.([]mapping.Match); ok {
+		for _, match := range matches {
+			pg.txRouter.Delete(match.Table.Name, id)
+		}
+	}
 	return nil
 }
 

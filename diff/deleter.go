@@ -54,8 +54,8 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool) {
 		return
 	}
 	deleted := false
-	for _, m := range d.tmPolygons.Match(&elem.Tags) {
-		d.delDb.Delete(m.Table.Name, elem.Id)
+	if ok, matches := d.delDb.ProbePolygon(elem.OSMElem); ok {
+		d.delDb.Delete(elem.Id, matches)
 		deleted = true
 	}
 
@@ -97,12 +97,12 @@ func (d *Deleter) deleteWay(id int64, deleteRefs bool) {
 		return
 	}
 	deleted := false
-	for _, m := range d.tmPolygons.Match(&elem.Tags) {
-		d.delDb.Delete(m.Table.Name, elem.Id)
+	if ok, matches := d.delDb.ProbePolygon(elem.OSMElem); ok {
+		d.delDb.Delete(elem.Id, matches)
 		deleted = true
 	}
-	for _, m := range d.tmLineStrings.Match(&elem.Tags) {
-		d.delDb.Delete(m.Table.Name, elem.Id)
+	if ok, matches := d.delDb.ProbeLineString(elem.OSMElem); ok {
+		d.delDb.Delete(elem.Id, matches)
 		deleted = true
 	}
 	if deleted && deleteRefs {
@@ -134,8 +134,8 @@ func (d *Deleter) deleteNode(id int64) {
 	}
 	deleted := false
 
-	for _, m := range d.tmPoints.Match(&elem.Tags) {
-		d.delDb.Delete(m.Table.Name, elem.Id)
+	if ok, matches := d.delDb.ProbePoint(elem.OSMElem); ok {
+		d.delDb.Delete(elem.Id, matches)
 		deleted = true
 	}
 
