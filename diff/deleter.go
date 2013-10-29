@@ -11,13 +11,15 @@ import (
 )
 
 type Deleter struct {
-	delDb         database.Deleter
-	osmCache      *cache.OSMCache
-	diffCache     *cache.DiffCache
-	tmPoints      *mapping.TagMatcher
-	tmLineStrings *mapping.TagMatcher
-	tmPolygons    *mapping.TagMatcher
-	expireTiles   *expire.Tiles
+	delDb            database.Deleter
+	osmCache         *cache.OSMCache
+	diffCache        *cache.DiffCache
+	tmPoints         *mapping.TagMatcher
+	tmLineStrings    *mapping.TagMatcher
+	tmPolygons       *mapping.TagMatcher
+	expireTiles      *expire.Tiles
+	deletedRelations map[int64]struct{}
+	deletedWays      map[int64]struct{}
 }
 
 func NewDeleter(db database.Deleter, osmCache *cache.OSMCache, diffCache *cache.DiffCache,
@@ -33,6 +35,8 @@ func NewDeleter(db database.Deleter, osmCache *cache.OSMCache, diffCache *cache.
 		tmLineStrings,
 		tmPolygons,
 		nil,
+		make(map[int64]struct{}),
+		make(map[int64]struct{}),
 	}
 }
 
@@ -41,6 +45,8 @@ func (d *Deleter) SetExpireTiles(expireTiles *expire.Tiles) {
 }
 
 func (d *Deleter) deleteRelation(id int64, deleteRefs bool) {
+	d.deletedRelations[id] = struct{}{}
+
 	elem, err := d.osmCache.Relations.GetRelation(id)
 	if err != nil {
 		if err == cache.NotFound {
@@ -84,6 +90,8 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool) {
 }
 
 func (d *Deleter) deleteWay(id int64, deleteRefs bool) {
+	d.deletedWays[id] = struct{}{}
+
 	elem, err := d.osmCache.Ways.GetWay(id)
 	if err != nil {
 		if err == cache.NotFound {
@@ -158,6 +166,9 @@ func (d *Deleter) Delete(delElem parser.DiffElem) {
 		if delElem.Mod {
 			dependers := d.diffCache.Ways.Get(delElem.Way.Id)
 			for _, rel := range dependers {
+				if _, ok := d.deletedRelations[rel]; ok {
+					continue
+				}
 				d.deleteRelation(rel, false)
 			}
 		}
@@ -166,9 +177,15 @@ func (d *Deleter) Delete(delElem parser.DiffElem) {
 		if delElem.Mod {
 			dependers := d.diffCache.Coords.Get(delElem.Node.Id)
 			for _, way := range dependers {
+				if _, ok := d.deletedWays[way]; ok {
+					continue
+				}
 				d.deleteWay(way, false)
 				dependers := d.diffCache.Ways.Get(way)
 				for _, rel := range dependers {
+					if _, ok := d.deletedRelations[rel]; ok {
+						continue
+					}
 					d.deleteRelation(rel, false)
 				}
 			}
