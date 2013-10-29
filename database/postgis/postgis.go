@@ -343,7 +343,6 @@ func (pg *PostGIS) generalizeTable(table *GeneralizedTableSpec) error {
 		pg.Schema, table.FullName, columnSQL, pg.Schema,
 		sourceTable, where)
 
-	fmt.Println(sql)
 	_, err = tx.Exec(sql)
 	if err != nil {
 		return &SQLError{sql, err}
