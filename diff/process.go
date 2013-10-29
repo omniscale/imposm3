@@ -214,6 +214,7 @@ For:
 		}
 		if node != nil {
 			// insert new node
+			progress.AddNodes(1)
 			nodes <- node
 		}
 		dependers := diffCache.Coords.Get(nodeId)
@@ -232,6 +233,7 @@ For:
 			continue
 		}
 		// insert new way
+		progress.AddWays(1)
 		ways <- way
 		dependers := diffCache.Ways.Get(wayId)
 		// mark depending relations for (re)insert
@@ -249,6 +251,7 @@ For:
 			continue
 		}
 		// insert new relation
+		progress.AddRelations(1)
 		relations <- rel
 	}
 
