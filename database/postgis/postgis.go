@@ -332,10 +332,18 @@ func (pg *PostGIS) generalizeTable(table *GeneralizedTableSpec) error {
 	}
 
 	columnSQL := strings.Join(cols, ",\n")
+
+	var sourceTable string
+	if table.SourceGeneralized != nil {
+		sourceTable = table.SourceGeneralized.FullName
+	} else {
+		sourceTable = table.Source.FullName
+	}
 	sql := fmt.Sprintf(`CREATE TABLE "%s"."%s" AS (SELECT %s FROM "%s"."%s"%s)`,
 		pg.Schema, table.FullName, columnSQL, pg.Schema,
-		table.Source.FullName, where)
+		sourceTable, where)
 
+	fmt.Println(sql)
 	_, err = tx.Exec(sql)
 	if err != nil {
 		return &SQLError{sql, err}
