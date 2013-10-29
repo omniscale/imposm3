@@ -1,4 +1,4 @@
-.PHONY: test all build clean
+.PHONY: test all build clean test test-system test-unit
 
 PROTOFILES=$(shell find . -name \*.proto)
 PBGOFILES=$(patsubst %.proto,%.pb.go,$(PROTOFILES))
@@ -27,9 +27,13 @@ clean:
 	rm -f imposm3
 	(cd test && make clean)
 
-test:
+test: test-unit test-system
+
+test-unit: imposm3
 	go test imposm3/... -i
 	go test imposm3/...
+
+test-system: imposm3
 	(cd test && make test)
 
 %.pb.go: %.proto
