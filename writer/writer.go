@@ -45,6 +45,6 @@ func (writer *OsmElemWriter) SetExpireTiles(expireTiles *expire.Tiles) {
 	writer.expireTiles = expireTiles
 }
 
-func (writer *OsmElemWriter) Close() {
+func (writer *OsmElemWriter) Wait() {
 	writer.wg.Wait()
 }

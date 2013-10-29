@@ -153,9 +153,7 @@ func mainimport() {
 		if config.BaseOptions.Connection == "" {
 			log.Fatal("missing connection option")
 		}
-		connType := database.ConnectionType(config.BaseOptions.Connection)
 		conf := database.Config{
-			Type:             connType,
 			ConnectionParams: config.BaseOptions.Connection,
 			Srid:             config.BaseOptions.Srid,
 		}
@@ -256,9 +254,7 @@ func mainimport() {
 			db, progress, config.BaseOptions.Srid)
 		relWriter.SetLimiter(geometryLimiter)
 		relWriter.Start()
-
-		// blocks till the Relations.Iter() finishes
-		relWriter.Close()
+		relWriter.Wait() // blocks till the Relations.Iter() finishes
 		osmCache.Relations.Close()
 
 		ways := osmCache.Ways.Iter()
@@ -266,9 +262,7 @@ func mainimport() {
 			progress, config.BaseOptions.Srid)
 		wayWriter.SetLimiter(geometryLimiter)
 		wayWriter.Start()
-
-		// blocks till the Ways.Iter() finishes
-		wayWriter.Close()
+		wayWriter.Wait() // blocks till the Ways.Iter() finishes
 		osmCache.Ways.Close()
 
 		nodes := osmCache.Nodes.Iter()
@@ -276,9 +270,7 @@ func mainimport() {
 			progress, config.BaseOptions.Srid)
 		nodeWriter.SetLimiter(geometryLimiter)
 		nodeWriter.Start()
-
-		// blocks till the Nodes.Iter() finishes
-		nodeWriter.Close()
+		nodeWriter.Wait() // blocks till the Nodes.Iter() finishes
 		osmCache.Close()
 
 		err = db.End()

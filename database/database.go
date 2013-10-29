@@ -8,7 +8,6 @@ import (
 )
 
 type Config struct {
-	Type             string
 	ConnectionParams string
 	Srid             int
 }
@@ -27,9 +26,14 @@ type BulkBeginner interface {
 }
 
 type Inserter interface {
+	// ProbeXxx returns true if the element should be inserted.
+	// The interface{} value is passed to InsertXxx when that element
+	// gets inserted (can be used to pass a match object to the insert call).
 	ProbePoint(element.OSMElem) (bool, interface{})
 	ProbeLineString(element.OSMElem) (bool, interface{})
 	ProbePolygon(element.OSMElem) (bool, interface{})
+	// InsertXxx inserts element of that type into the database.
+	// element.Geom is set to that type.
 	InsertPoint(element.OSMElem, interface{})
 	InsertLineString(element.OSMElem, interface{})
 	InsertPolygon(element.OSMElem, interface{})
@@ -71,9 +75,12 @@ func Register(name string, f func(Config, *mapping.Mapping) (DB, error)) {
 }
 
 func Open(conf Config, m *mapping.Mapping) (DB, error) {
-	newFunc, ok := databases[conf.Type]
+	parts := strings.SplitN(conf.ConnectionParams, ":", 2)
+	connectionType := parts[0]
+
+	newFunc, ok := databases[connectionType]
 	if !ok {
-		return nil, errors.New("unsupported database type: " + conf.Type)
+		return nil, errors.New("unsupported database type: " + connectionType)
 	}
 
 	db, err := newFunc(conf, m)
@@ -83,29 +90,25 @@ func Open(conf Config, m *mapping.Mapping) (DB, error) {
 	return db, nil
 }
 
-func ConnectionType(param string) string {
-	parts := strings.SplitN(param, ":", 2)
-	return parts[0]
-}
+// nullDb is a dummy database that imports into /dev/null
+type nullDb struct{}
 
-type NullDb struct{}
+func (n *nullDb) Init() error                                         { return nil }
+func (n *nullDb) Begin() error                                        { return nil }
+func (n *nullDb) End() error                                          { return nil }
+func (n *nullDb) Close() error                                        { return nil }
+func (n *nullDb) Abort() error                                        { return nil }
+func (n *nullDb) InsertPoint(element.OSMElem, interface{})            {}
+func (n *nullDb) InsertLineString(element.OSMElem, interface{})       {}
+func (n *nullDb) InsertPolygon(element.OSMElem, interface{})          {}
+func (n *nullDb) ProbePoint(element.OSMElem) (bool, interface{})      { return true, nil }
+func (n *nullDb) ProbeLineString(element.OSMElem) (bool, interface{}) { return true, nil }
+func (n *nullDb) ProbePolygon(element.OSMElem) (bool, interface{})    { return true, nil }
 
-func (n *NullDb) Init() error                                         { return nil }
-func (n *NullDb) Begin() error                                        { return nil }
-func (n *NullDb) End() error                                          { return nil }
-func (n *NullDb) Close() error                                        { return nil }
-func (n *NullDb) Abort() error                                        { return nil }
-func (n *NullDb) InsertPoint(element.OSMElem, interface{})            {}
-func (n *NullDb) InsertLineString(element.OSMElem, interface{})       {}
-func (n *NullDb) InsertPolygon(element.OSMElem, interface{})          {}
-func (n *NullDb) ProbePoint(element.OSMElem) (bool, interface{})      { return true, nil }
-func (n *NullDb) ProbeLineString(element.OSMElem) (bool, interface{}) { return true, nil }
-func (n *NullDb) ProbePolygon(element.OSMElem) (bool, interface{})    { return true, nil }
-
-func NewNullDb(conf Config, m *mapping.Mapping) (DB, error) {
-	return &NullDb{}, nil
+func newNullDb(conf Config, m *mapping.Mapping) (DB, error) {
+	return &nullDb{}, nil
 }
 
 func init() {
-	Register("null", NewNullDb)
+	Register("null", newNullDb)
 }

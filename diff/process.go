@@ -59,9 +59,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, force bool) {
 		log.Fatal(err)
 	}
 
-	connType := database.ConnectionType(config.BaseOptions.Connection)
 	dbConf := database.Config{
-		Type:             connType,
 		ConnectionParams: config.BaseOptions.Connection,
 		Srid:             config.BaseOptions.Srid,
 	}
@@ -258,9 +256,9 @@ For:
 	close(ways)
 	close(nodes)
 
-	nodeWriter.Close()
-	relWriter.Close()
-	wayWriter.Close()
+	nodeWriter.Wait()
+	relWriter.Wait()
+	wayWriter.Wait()
 
 	if genDb != nil {
 		genDb.GeneralizeUpdates()
