@@ -4,13 +4,14 @@ import (
 	"database/sql"
 )
 
+// TxRouter routes inserts/deletes to TableTx
 type TxRouter struct {
 	Tables map[string]TableTx
 	tx     *sql.Tx
 }
 
 func newTxRouter(pg *PostGIS, bulkImport bool) *TxRouter {
-	ib := TxRouter{
+	txr := TxRouter{
 		Tables: make(map[string]TableTx),
 	}
 
@@ -21,7 +22,7 @@ func newTxRouter(pg *PostGIS, bulkImport bool) *TxRouter {
 		if err != nil {
 			panic(err) // TODO
 		}
-		ib.tx = tx
+		txr.tx = tx
 	}
 	for tableName, table := range pg.Tables {
 		tt := NewTableTx(pg, table, bulkImport)
@@ -29,7 +30,7 @@ func newTxRouter(pg *PostGIS, bulkImport bool) *TxRouter {
 		if err != nil {
 			panic(err) // TODO
 		}
-		ib.Tables[tableName] = tt
+		txr.Tables[tableName] = tt
 	}
 	if !bulkImport {
 		for tableName, table := range pg.GeneralizedTables {
@@ -38,22 +39,22 @@ func newTxRouter(pg *PostGIS, bulkImport bool) *TxRouter {
 			if err != nil {
 				panic(err) // TODO
 			}
-			ib.Tables[tableName] = tt
+			txr.Tables[tableName] = tt
 		}
 
 	}
-	return &ib
+	return &txr
 }
 
-func (ib *TxRouter) End() error {
-	if ib.tx != nil {
-		for _, tt := range ib.Tables {
+func (txr *TxRouter) End() error {
+	if txr.tx != nil {
+		for _, tt := range txr.Tables {
 			tt.End()
 		}
-		return ib.tx.Commit()
+		return txr.tx.Commit()
 	}
 
-	for _, tt := range ib.Tables {
+	for _, tt := range txr.Tables {
 		if err := tt.Commit(); err != nil {
 			return err
 		}
@@ -61,23 +62,29 @@ func (ib *TxRouter) End() error {
 	return nil
 }
 
-func (ib *TxRouter) Abort() error {
-	for _, tt := range ib.Tables {
+func (txr *TxRouter) Abort() error {
+	if txr.tx != nil {
+		for _, tt := range txr.Tables {
+			tt.End()
+		}
+		return txr.tx.Rollback()
+	}
+	for _, tt := range txr.Tables {
 		tt.Rollback()
 	}
 	return nil
 }
 
-func (ib *TxRouter) Insert(table string, row []interface{}) {
-	tt, ok := ib.Tables[table]
+func (txr *TxRouter) Insert(table string, row []interface{}) {
+	tt, ok := txr.Tables[table]
 	if !ok {
 		panic("unknown table " + table)
 	}
 	tt.Insert(row)
 }
 
-func (ib *TxRouter) Delete(table string, id int64) {
-	tt, ok := ib.Tables[table]
+func (txr *TxRouter) Delete(table string, id int64) {
+	tt, ok := txr.Tables[table]
 	if !ok {
 		panic("unknown table " + table)
 	}
