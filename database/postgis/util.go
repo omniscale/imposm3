@@ -106,6 +106,7 @@ func dropTableIfExists(tx *sql.Tx, schema, table string) error {
 	return nil
 }
 
+// rollbackIfTx rollsback transaction if tx is not nil.
 func rollbackIfTx(tx **sql.Tx) {
 	if *tx != nil {
 		if err := tx.Rollback(); err != nil {

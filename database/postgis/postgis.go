@@ -111,6 +111,7 @@ func (pg *PostGIS) createSchema(schema string) error {
 	return nil
 }
 
+// Init creates schema and tables, drops existing data.
 func (pg *PostGIS) Init() error {
 	if err := pg.createSchema(pg.Schema); err != nil {
 		return err
@@ -134,6 +135,7 @@ func (pg *PostGIS) Init() error {
 	return nil
 }
 
+// TableNames returns a list of all tables (without prefix).
 func (pg *PostGIS) TableNames() []string {
 	var names []string
 	for name, _ := range pg.Tables {
