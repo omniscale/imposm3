@@ -60,13 +60,13 @@ func addGeometryColumn(tx *sql.Tx, tableName string, spec TableSpec) error {
 	if geomType == "POLYGON" {
 		geomType = "GEOMETRY" // for multipolygon support
 	}
-	stmt := fmt.Sprintf("SELECT AddGeometryColumn('%s', '%s', 'geometry', '%d', '%s', 2);",
+	sql := fmt.Sprintf("SELECT AddGeometryColumn('%s', '%s', 'geometry', '%d', '%s', 2);",
 		spec.Schema, tableName, spec.Srid, geomType)
-	row := tx.QueryRow(stmt)
+	row := tx.QueryRow(sql)
 	var void interface{}
 	err := row.Scan(&void)
-	if err != nil && err != sql.ErrNoRows {
-		return &SQLError{stmt, err}
+	if err != nil {
+		return &SQLError{sql, err}
 	}
 	return nil
 }
