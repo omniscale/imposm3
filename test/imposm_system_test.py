@@ -174,9 +174,25 @@ def test_landusage_to_waterarea_1():
     assert not query_row(db_conf, 'osm_waterareas', 12001)
     assert not query_row(db_conf, 'osm_waterareas', 13001)
 
+    assert not query_row(db_conf, 'osm_waterareas_gen0', 11001)
+    assert not query_row(db_conf, 'osm_waterareas_gen0', 12001)
+    assert not query_row(db_conf, 'osm_waterareas_gen0', 13001)
+
+    assert not query_row(db_conf, 'osm_waterareas_gen1', 11001)
+    assert not query_row(db_conf, 'osm_waterareas_gen1', 12001)
+    assert not query_row(db_conf, 'osm_waterareas_gen1', 13001)
+
     assert query_row(db_conf, 'osm_landusages', 11001)['type'] == 'park'
     assert query_row(db_conf, 'osm_landusages', 12001)['type'] == 'park'
     assert query_row(db_conf, 'osm_landusages', 13001)['type'] == 'park'
+
+    assert query_row(db_conf, 'osm_landusages_gen0', 11001)['type'] == 'park'
+    assert query_row(db_conf, 'osm_landusages_gen0', 12001)['type'] == 'park'
+    assert query_row(db_conf, 'osm_landusages_gen0', 13001)['type'] == 'park'
+
+    assert query_row(db_conf, 'osm_landusages_gen1', 11001)['type'] == 'park'
+    assert query_row(db_conf, 'osm_landusages_gen1', 12001)['type'] == 'park'
+    assert query_row(db_conf, 'osm_landusages_gen1', 13001)['type'] == 'park'
 
 
 def test_changed_hole_tags_1():
@@ -288,10 +304,25 @@ def test_landusage_to_waterarea_2():
     assert not query_row(db_conf, 'osm_landusages', 12001)
     assert not query_row(db_conf, 'osm_landusages', 13001)
 
+    assert not query_row(db_conf, 'osm_landusages_gen0', 11001)
+    assert not query_row(db_conf, 'osm_landusages_gen0', 12001)
+    assert not query_row(db_conf, 'osm_landusages_gen0', 13001)
+
+    assert not query_row(db_conf, 'osm_landusages_gen1', 11001)
+    assert not query_row(db_conf, 'osm_landusages_gen1', 12001)
+    assert not query_row(db_conf, 'osm_landusages_gen1', 13001)
+
     assert query_row(db_conf, 'osm_waterareas', 11001)['type'] == 'water'
     assert query_row(db_conf, 'osm_waterareas', 12001)['type'] == 'water'
     assert query_row(db_conf, 'osm_waterareas', 13001)['type'] == 'water'
 
+    assert query_row(db_conf, 'osm_waterareas_gen0', 11001)['type'] == 'water'
+    assert query_row(db_conf, 'osm_waterareas_gen0', 12001)['type'] == 'water'
+    assert query_row(db_conf, 'osm_waterareas_gen0', 13001)['type'] == 'water'
+
+    assert query_row(db_conf, 'osm_waterareas_gen1', 11001)['type'] == 'water'
+    assert query_row(db_conf, 'osm_waterareas_gen1', 12001)['type'] == 'water'
+    assert query_row(db_conf, 'osm_waterareas_gen1', 13001)['type'] == 'water'
 
 def test_changed_hole_tags_2():
     """Newly tagged hole is inserted"""
