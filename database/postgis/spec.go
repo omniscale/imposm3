@@ -13,7 +13,7 @@ type ColumnSpec struct {
 }
 type TableSpec struct {
 	Name            string
-	Prefix          string
+	FullName        string
 	Schema          string
 	Columns         []ColumnSpec
 	GeometryType    string
@@ -23,7 +23,7 @@ type TableSpec struct {
 
 type GeneralizedTableSpec struct {
 	Name              string
-	Prefix            string
+	FullName          string
 	Schema            string
 	SourceName        string
 	Source            *TableSpec
@@ -54,7 +54,7 @@ func (spec *TableSpec) CreateTableSQL() string {
             %s
         );`,
 		spec.Schema,
-		spec.Prefix+spec.Name,
+		spec.FullName,
 		columnSQL,
 	)
 }
@@ -72,7 +72,7 @@ func (spec *TableSpec) InsertSQL() string {
 
 	return fmt.Sprintf(`INSERT INTO "%s"."%s" (%s) VALUES (%s)`,
 		spec.Schema,
-		spec.Prefix+spec.Name,
+		spec.FullName,
 		columns,
 		placeholders,
 	)
@@ -87,7 +87,7 @@ func (spec *TableSpec) CopySQL() string {
 
 	return fmt.Sprintf(`COPY "%s"."%s" (%s) FROM STDIN`,
 		spec.Schema,
-		spec.Prefix+spec.Name,
+		spec.FullName,
 		columns,
 	)
 }
@@ -107,7 +107,7 @@ func (spec *TableSpec) DeleteSQL() string {
 
 	return fmt.Sprintf(`DELETE FROM "%s"."%s" WHERE "%s" = $1`,
 		spec.Schema,
-		spec.Prefix+spec.Name,
+		spec.FullName,
 		idColumnName,
 	)
 }
@@ -115,7 +115,7 @@ func (spec *TableSpec) DeleteSQL() string {
 func NewTableSpec(pg *PostGIS, t *mapping.Table) *TableSpec {
 	spec := TableSpec{
 		Name:         t.Name,
-		Prefix:       pg.Prefix,
+		FullName:     pg.Prefix + t.Name,
 		Schema:       pg.Schema,
 		GeometryType: string(t.Type),
 		Srid:         pg.Config.Srid,
@@ -139,7 +139,7 @@ func NewTableSpec(pg *PostGIS, t *mapping.Table) *TableSpec {
 func NewGeneralizedTableSpec(pg *PostGIS, t *mapping.GeneralizedTable) *GeneralizedTableSpec {
 	spec := GeneralizedTableSpec{
 		Name:       t.Name,
-		Prefix:     pg.Prefix,
+		FullName:   pg.Prefix + t.Name,
 		Schema:     pg.Schema,
 		Tolerance:  t.Tolerance,
 		Where:      t.SqlFilter,
@@ -163,7 +163,7 @@ func (spec *GeneralizedTableSpec) DeleteSQL() string {
 
 	return fmt.Sprintf(`DELETE FROM "%s"."%s" WHERE "%s" = $1`,
 		spec.Schema,
-		spec.Prefix+spec.Name,
+		spec.FullName,
 		idColumnName,
 	)
 }
@@ -193,8 +193,8 @@ func (spec *GeneralizedTableSpec) InsertSQL() string {
 
 	columnSQL := strings.Join(cols, ",\n")
 	sql := fmt.Sprintf(`INSERT INTO "%s"."%s" (SELECT %s FROM "%s"."%s"%s)`,
-		spec.Schema, spec.Prefix+spec.Name, columnSQL, spec.Source.Schema,
-		spec.Source.Prefix+spec.Source.Name, where)
+		spec.Schema, spec.FullName, columnSQL, spec.Source.Schema,
+		spec.Source.FullName, where)
 	return sql
 
 }

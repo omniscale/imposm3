@@ -38,7 +38,7 @@ func createTable(tx *sql.Tx, spec TableSpec) error {
 	var sql string
 	var err error
 
-	err = dropTableIfExists(tx, spec.Schema, spec.Prefix+spec.Name)
+	err = dropTableIfExists(tx, spec.Schema, spec.FullName)
 	if err != nil {
 		return err
 	}
@@ -49,7 +49,7 @@ func createTable(tx *sql.Tx, spec TableSpec) error {
 		return &SQLError{sql, err}
 	}
 
-	err = addGeometryColumn(tx, spec.Prefix+spec.Name, spec)
+	err = addGeometryColumn(tx, spec.FullName, spec)
 	if err != nil {
 		return err
 	}
@@ -190,16 +190,16 @@ func (pg *PostGIS) Finish() error {
 	}
 
 	p := newWorkerPool(worker, len(pg.Tables)+len(pg.GeneralizedTables))
-	for tableName, tbl := range pg.Tables {
-		tableName := pg.Prefix + tableName
+	for _, tbl := range pg.Tables {
+		tableName := tbl.FullName
 		table := tbl
 		p.in <- func() error {
 			return createIndex(pg, tableName, table.Columns)
 		}
 	}
 
-	for tableName, tbl := range pg.GeneralizedTables {
-		tableName := pg.Prefix + tableName
+	for _, tbl := range pg.GeneralizedTables {
+		tableName := tbl.FullName
 		table := tbl
 		p.in <- func() error {
 			return createIndex(pg, tableName, table.Source.Columns)
@@ -309,7 +309,7 @@ func (pg *PostGIS) Generalize() error {
 
 func (pg *PostGIS) generalizeTable(table *GeneralizedTableSpec) error {
 	defer log.StopStep(log.StartStep(fmt.Sprintf("Generalizing %s into %s",
-		pg.Prefix+table.SourceName, pg.Prefix+table.Name)))
+		table.Source.FullName, table.FullName)))
 
 	tx, err := pg.Db.Begin()
 	if err != nil {
@@ -327,21 +327,21 @@ func (pg *PostGIS) generalizeTable(table *GeneralizedTableSpec) error {
 		cols = append(cols, col.Type.GeneralizeSql(&col, table))
 	}
 
-	if err := dropTableIfExists(tx, pg.Schema, table.Prefix+table.Name); err != nil {
+	if err := dropTableIfExists(tx, pg.Schema, table.FullName); err != nil {
 		return err
 	}
 
 	columnSQL := strings.Join(cols, ",\n")
 	sql := fmt.Sprintf(`CREATE TABLE "%s"."%s" AS (SELECT %s FROM "%s"."%s"%s)`,
-		pg.Schema, pg.Prefix+table.Name, columnSQL, pg.Schema,
-		pg.Prefix+table.SourceName, where)
+		pg.Schema, table.FullName, columnSQL, pg.Schema,
+		table.Source.FullName, where)
 
 	_, err = tx.Exec(sql)
 	if err != nil {
 		return &SQLError{sql, err}
 	}
 
-	err = populateGeometryColumn(tx, table.Prefix+table.Name, *table.Source)
+	err = populateGeometryColumn(tx, table.FullName, *table.Source)
 	if err != nil {
 		return err
 	}
@@ -365,15 +365,15 @@ func (pg *PostGIS) Optimize() error {
 
 	p := newWorkerPool(worker, len(pg.Tables)+len(pg.GeneralizedTables))
 
-	for tableName, tbl := range pg.Tables {
-		tableName := pg.Prefix + tableName
+	for _, tbl := range pg.Tables {
+		tableName := tbl.FullName
 		table := tbl
 		p.in <- func() error {
 			return clusterTable(pg, tableName, table.Srid, table.Columns)
 		}
 	}
-	for tableName, tbl := range pg.GeneralizedTables {
-		tableName := pg.Prefix + tableName
+	for _, tbl := range pg.GeneralizedTables {
+		tableName := tbl.FullName
 		table := tbl
 		p.in <- func() error {
 			return clusterTable(pg, tableName, table.Source.Srid, table.Source.Columns)
