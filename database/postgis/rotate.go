@@ -17,7 +17,7 @@ func (pg *PostGIS) rotate(source, dest, backup string) error {
 	}
 	defer rollbackIfTx(&tx)
 
-	for _, tableName := range pg.TableNames() {
+	for _, tableName := range pg.tableNames() {
 		tableName = pg.Prefix + tableName
 
 		log.Printf("Rotating %s from %s -> %s -> %s", tableName, source, dest, backup)
@@ -87,7 +87,7 @@ func (pg *PostGIS) RemoveBackup() error {
 
 	backup := pg.BackupSchema
 
-	for _, tableName := range pg.TableNames() {
+	for _, tableName := range pg.tableNames() {
 		tableName = pg.Prefix + tableName
 
 		backupExists, err := tableExists(tx, backup, tableName)
@@ -110,4 +110,16 @@ func (pg *PostGIS) RemoveBackup() error {
 	}
 	tx = nil // set nil to prevent rollback
 	return nil
+}
+
+// tableNames returns a list of all tables (without prefix).
+func (pg *PostGIS) tableNames() []string {
+	var names []string
+	for name, _ := range pg.Tables {
+		names = append(names, name)
+	}
+	for name, _ := range pg.GeneralizedTables {
+		names = append(names, name)
+	}
+	return names
 }

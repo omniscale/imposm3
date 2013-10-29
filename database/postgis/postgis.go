@@ -135,18 +135,6 @@ func (pg *PostGIS) Init() error {
 	return nil
 }
 
-// TableNames returns a list of all tables (without prefix).
-func (pg *PostGIS) TableNames() []string {
-	var names []string
-	for name, _ := range pg.Tables {
-		names = append(names, name)
-	}
-	for name, _ := range pg.GeneralizedTables {
-		names = append(names, name)
-	}
-	return names
-}
-
 // Finish creates spatial indices on all tables.
 func (pg *PostGIS) Finish() error {
 	defer log.StopStep(log.StartStep(fmt.Sprintf("Creating geometry indices")))
