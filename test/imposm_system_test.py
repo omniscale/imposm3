@@ -263,6 +263,12 @@ def test_incomplete_polygons():
     assert not query_row(db_conf, 'osm_landusages', 30004)
     assert not query_row(db_conf, 'osm_landusages', 30006)
 
+def test_residential_to_secondary():
+    """Residential road is not in roads_gen0/1."""
+    assert query_row(db_conf, 'osm_roads', 40001)['type'] == 'residential'
+    assert not query_row(db_conf, 'osm_roads_gen0', 40001)
+    assert not query_row(db_conf, 'osm_roads_gen1', 40001)
+
 
 #######################################################################
 def test_update():
@@ -375,4 +381,11 @@ def test_way_rel_ref_after_delete_2():
     assert 'relations' not in data['ways']['21001']
     assert query_row(db_conf, 'osm_roads', 21001)['type'] == 'residential'
     assert query_row(db_conf, 'osm_landusages', 21001) == None
+
+def test_residential_to_secondary2():
+    """New secondary (from residential) is now in roads_gen0/1."""
+
+    assert query_row(db_conf, 'osm_roads', 40001)['type'] == 'secondary'
+    assert query_row(db_conf, 'osm_roads_gen0', 40001)['type'] == 'secondary'
+    assert query_row(db_conf, 'osm_roads_gen1', 40001)['type'] == 'secondary'
 

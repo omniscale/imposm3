@@ -137,6 +137,15 @@
     <relation id="21001" />
   </delete>
 
-
+  <!-- test that way (w:40001) gets added to gen0/1 after tag changed -->
+  <modify>
+      <way id="40001" version="2" timestamp="2011-11-11T00:11:11Z">
+        <nd ref="40001"/>
+        <nd ref="40002"/>
+        <nd ref="40003"/>
+        <nd ref="40004"/>
+        <tag k="highway" v="secondary"/>
+      </way>
+  </modify>
 
 </osmChange>
