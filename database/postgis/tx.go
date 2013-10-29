@@ -7,9 +7,10 @@ import (
 )
 
 type TableTx interface {
-	Begin() error
+	Begin(*sql.Tx) error
 	Insert(row []interface{}) error
 	Delete(id int64) error
+	End()
 	Commit() error
 	Rollback()
 }
@@ -42,10 +43,13 @@ func NewTableTx(pg *PostGIS, spec *TableSpec, bulkImport bool) TableTx {
 	return tt
 }
 
-func (tt *tableTx) Begin() error {
-	tx, err := tt.Pg.Db.Begin()
-	if err != nil {
-		return err
+func (tt *tableTx) Begin(tx *sql.Tx) error {
+	var err error
+	if tx == nil {
+		tx, err = tt.Pg.Db.Begin()
+		if err != nil {
+			return err
+		}
 	}
 	tt.Tx = tx
 
@@ -109,9 +113,13 @@ func (tt *tableTx) Delete(id int64) error {
 	return nil
 }
 
-func (tt *tableTx) Commit() error {
+func (tt *tableTx) End() {
 	close(tt.rows)
 	tt.wg.Wait()
+}
+
+func (tt *tableTx) Commit() error {
+	tt.End()
 	if tt.bulkImport && tt.InsertStmt != nil {
 		_, err := tt.InsertStmt.Exec()
 		if err != nil {
@@ -150,10 +158,13 @@ func NewGeneralizedTableTx(pg *PostGIS, spec *GeneralizedTableSpec) TableTx {
 	return tt
 }
 
-func (tt *generalizedTableTx) Begin() error {
-	tx, err := tt.Pg.Db.Begin()
-	if err != nil {
-		return err
+func (tt *generalizedTableTx) Begin(tx *sql.Tx) error {
+	var err error
+	if tx == nil {
+		tx, err = tt.Pg.Db.Begin()
+		if err != nil {
+			return err
+		}
 	}
 	tt.Tx = tx
 
@@ -189,6 +200,9 @@ func (tt *generalizedTableTx) Delete(id int64) error {
 		return &SQLInsertError{SQLError{tt.DeleteSql, err}, id}
 	}
 	return nil
+}
+
+func (tt *generalizedTableTx) End() {
 }
 
 func (tt *generalizedTableTx) Commit() error {
