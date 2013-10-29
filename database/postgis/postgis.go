@@ -2,7 +2,6 @@ package postgis
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	pq "github.com/olt/pq"
 	"imposm3/database"
@@ -109,40 +108,6 @@ func (pg *PostGIS) createSchema(schema string) error {
 	if err != nil {
 		return &SQLError{sql, err}
 	}
-	return nil
-}
-
-func (pg *PostGIS) InsertBatch(table string, rows [][]interface{}) error {
-	spec, ok := pg.Tables[table]
-	if !ok {
-		return errors.New("unkown table: " + table)
-	}
-
-	tx, err := pg.Db.Begin()
-	if err != nil {
-		return err
-	}
-	defer rollbackIfTx(&tx)
-
-	sql := spec.InsertSQL()
-	stmt, err := tx.Prepare(sql)
-	if err != nil {
-		return &SQLError{sql, err}
-	}
-	defer stmt.Close()
-
-	for _, row := range rows {
-		_, err := stmt.Exec(row...)
-		if err != nil {
-			return &SQLInsertError{SQLError{sql, err}, row}
-		}
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return err
-	}
-	tx = nil // set nil to prevent rollback
 	return nil
 }
 
