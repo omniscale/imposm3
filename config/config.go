@@ -32,6 +32,7 @@ type _BaseOptions struct {
 	LimitTo            string
 	LimitToCacheBuffer float64
 	ConfigFile         string
+	Httpprofile        string
 }
 
 func (o *_BaseOptions) updateFromConfig() error {
@@ -88,9 +89,6 @@ func (o *_BaseOptions) check() []error {
 }
 
 type _ImportOptions struct {
-	Cpuprofile       string
-	Httpprofile      string
-	Memprofile       string
 	Overwritecache   bool
 	Appendcache      bool
 	Read             string
@@ -113,6 +111,7 @@ func addBaseFlags(flags *flag.FlagSet) {
 	flags.IntVar(&BaseOptions.Srid, "srid", defaultSrid, "srs id")
 	flags.StringVar(&BaseOptions.LimitTo, "limitto", "", "limit to geometries")
 	flags.StringVar(&BaseOptions.ConfigFile, "config", "", "config (json)")
+	flags.StringVar(&BaseOptions.Httpprofile, "httpprofile", "", "bind address for profile server")
 }
 
 func UsageImport() {
@@ -133,9 +132,6 @@ func init() {
 
 	addBaseFlags(DiffFlags)
 	addBaseFlags(ImportFlags)
-	ImportFlags.StringVar(&ImportOptions.Cpuprofile, "cpuprofile", "", "filename of cpu profile output")
-	ImportFlags.StringVar(&ImportOptions.Httpprofile, "httpprofile", "", "bind address for profile server")
-	ImportFlags.StringVar(&ImportOptions.Memprofile, "memprofile", "", "dir name of mem profile output and interval (fname:interval)")
 	ImportFlags.BoolVar(&ImportOptions.Overwritecache, "overwritecache", false, "overwritecache")
 	ImportFlags.BoolVar(&ImportOptions.Appendcache, "appendcache", false, "append cache")
 	ImportFlags.StringVar(&ImportOptions.Read, "read", "", "read")

@@ -42,13 +42,15 @@ func main() {
 	switch os.Args[1] {
 	case "import":
 		config.ParseImport(os.Args[2:])
-		if config.ImportOptions.Httpprofile != "" {
-			stats.StartHttpPProf(config.ImportOptions.Httpprofile)
+		if config.BaseOptions.Httpprofile != "" {
+			stats.StartHttpPProf(config.BaseOptions.Httpprofile)
 		}
 		import_.Import()
 	case "diff":
 		config.ParseDiffImport(os.Args[2:])
-
+		if config.BaseOptions.Httpprofile != "" {
+			stats.StartHttpPProf(config.BaseOptions.Httpprofile)
+		}
 		var geometryLimiter *limit.Limiter
 		if config.BaseOptions.LimitTo != "" {
 			var err error
