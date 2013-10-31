@@ -107,10 +107,23 @@ func SplitPolygonAtGrid(g *geos.Geos, geom *geos.Geom, gridWidth, currentGridWid
 }
 
 type Limiter struct {
-	index          *geos.Index
+	// for quick intersections of small geometries
+	index *geos.Index
+	// for direct intersections of large geometries
+	geom *geos.Geom
+	// for quick contains checks
+	geomPrep   *geos.PreparedGeom
+	geomPrepMu *sync.Mutex
+
+	// bufferedXxx for diff elements
+	// (we keep more data at the boundary to be able to build
+	// geometries that intersects the limitto geometry)
+
+	// for quick coarse contains checks
+	bufferedBbox geos.Bounds
+	// for quick contains checks
 	bufferedPrep   *geos.PreparedGeom
 	bufferedPrepMu *sync.Mutex
-	bufferedBbox   geos.Bounds
 }
 
 func NewFromGeoJson(source string) (*Limiter, error) {
@@ -138,6 +151,7 @@ func NewFromGeoJsonWithBuffered(source string, buffer float64) (*Limiter, error)
 
 	index := g.CreateIndex()
 
+	var bufferedPolygons []*geos.Geom
 	var polygons []*geos.Geom
 
 	withBuffer := false
@@ -157,8 +171,9 @@ func NewFromGeoJsonWithBuffered(source string, buffer float64) (*Limiter, error)
 				return nil, errors.New("couldn't buffer limitto")
 			}
 			g.DestroyLater(buffered)
-			polygons = append(polygons, buffered)
+			bufferedPolygons = append(bufferedPolygons, buffered)
 		}
+		polygons = append(polygons, geom)
 
 		parts, err := SplitPolygonAtAutoGrid(g, geom)
 
@@ -170,10 +185,10 @@ func NewFromGeoJsonWithBuffered(source string, buffer float64) (*Limiter, error)
 		}
 	}
 
-	var bbox geos.Bounds
-	var prep *geos.PreparedGeom
-	if len(polygons) > 0 {
-		union := g.UnionPolygons(polygons)
+	var bufferedBbox geos.Bounds
+	var bufferedPrep *geos.PreparedGeom
+	if len(bufferedPolygons) > 0 {
+		union := g.UnionPolygons(bufferedPolygons)
 		if union == nil {
 			return nil, errors.New("unable to union limitto polygons")
 		}
@@ -182,14 +197,24 @@ func NewFromGeoJsonWithBuffered(source string, buffer float64) (*Limiter, error)
 			return nil, errors.New("unable to simplify limitto polygons")
 		}
 		g.Destroy(union)
-		bbox = simplified.Bounds()
-		prep = g.Prepare(simplified)
+		bufferedBbox = simplified.Bounds()
+		bufferedPrep = g.Prepare(simplified)
 		// keep simplified around for prepared geometry
-		if prep == nil {
+		if bufferedPrep == nil {
 			return nil, errors.New("unable to prepare limitto polygons")
 		}
 	}
-	return &Limiter{index, prep, &sync.Mutex{}, bbox}, nil
+	var geomPrep *geos.PreparedGeom
+	union := g.UnionPolygons(polygons)
+	if union == nil {
+		return nil, errors.New("unable to union limitto polygons")
+	}
+	geomPrep = g.Prepare(union)
+	if geomPrep == nil {
+		return nil, errors.New("unable to prepare limitto polygons")
+	}
+
+	return &Limiter{index, union, geomPrep, &sync.Mutex{}, bufferedBbox, bufferedPrep, &sync.Mutex{}}, nil
 }
 
 func filterGeometryByType(g *geos.Geos, geom *geos.Geom, targetType string) []*geos.Geom {
@@ -234,22 +259,34 @@ func (l *Limiter) Clip(geom *geos.Geom) ([]*geos.Geom, error) {
 	g := geos.NewGeos()
 	defer g.Finish()
 
+	// check if geom is completely contained
+	l.geomPrepMu.Lock()
+	if g.PreparedContains(l.geomPrep, geom) {
+		l.geomPrepMu.Unlock()
+		return []*geos.Geom{geom}, nil
+	}
+	l.geomPrepMu.Unlock()
+
+	// we have intersections, query index to get intersecting parts
 	hits := g.IndexQuery(l.index, geom)
 
-	if len(hits) == 0 {
-		return nil, nil
-	}
 	geomType := g.Type(geom)
 
-	var intersections []*geos.Geom
+	// too many intersecting parts, it probably faster to
+	// intersect with the original geometry
+	if len(hits) > 25 {
+		newPart := g.Intersection(l.geom, geom)
+		if newPart == nil {
+			return nil, nil
+		}
+		newParts := filterGeometryByType(g, newPart, geomType)
+		return mergeGeometries(g, newParts, geomType), nil
+	}
 
+	var intersections []*geos.Geom
+	// intersect with each part...
 	for _, hit := range hits {
 		hit.Lock()
-		if g.PreparedContains(hit.Prepared, geom) {
-			hit.Unlock()
-			return []*geos.Geom{geom}, nil
-		}
-
 		if g.PreparedIntersects(hit.Prepared, geom) {
 			hit.Unlock()
 			newPart := g.Intersection(hit.Geom, geom)
@@ -264,6 +301,7 @@ func (l *Limiter) Clip(geom *geos.Geom) ([]*geos.Geom, error) {
 			hit.Unlock()
 		}
 	}
+	// and merge parts back to our clipped intersection
 	return mergeGeometries(g, intersections, geomType), nil
 }
 

@@ -248,6 +248,5 @@ func geosPolygon(g *geos.Geos, polygon polygon) (*geos.Geom, error) {
 		}
 		return nil, errors.New("unable to create polygon")
 	}
-	g.DestroyLater(geom)
 	return geom, nil
 }
