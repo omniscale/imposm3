@@ -15,34 +15,39 @@ func newTxRouter(pg *PostGIS, bulkImport bool) *TxRouter {
 		Tables: make(map[string]TableTx),
 	}
 
-	var tx *sql.Tx
-	var err error
-	if !bulkImport {
-		tx, err = pg.Db.Begin()
+	if bulkImport {
+		for tableName, table := range pg.Tables {
+			tt := NewBulkTableTx(pg, table)
+			err := tt.Begin(nil)
+			if err != nil {
+				panic(err) // TODO
+			}
+			txr.Tables[tableName] = tt
+		}
+	} else {
+		tx, err := pg.Db.Begin()
 		if err != nil {
 			panic(err) // TODO
 		}
 		txr.tx = tx
-	}
-	for tableName, table := range pg.Tables {
-		tt := NewTableTx(pg, table, bulkImport)
-		err := tt.Begin(tx)
-		if err != nil {
-			panic(err) // TODO
-		}
-		txr.Tables[tableName] = tt
-	}
-	if !bulkImport {
-		for tableName, table := range pg.GeneralizedTables {
-			tt := NewGeneralizedTableTx(pg, table)
+		for tableName, table := range pg.Tables {
+			tt := NewSynchronousTableTx(pg, table.FullName, table)
 			err := tt.Begin(tx)
 			if err != nil {
 				panic(err) // TODO
 			}
 			txr.Tables[tableName] = tt
 		}
-
+		for tableName, table := range pg.GeneralizedTables {
+			tt := NewSynchronousTableTx(pg, table.FullName, table)
+			err := tt.Begin(tx)
+			if err != nil {
+				panic(err) // TODO
+			}
+			txr.Tables[tableName] = tt
+		}
 	}
+
 	return &txr
 }
 
