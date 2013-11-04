@@ -167,6 +167,7 @@ func Import() {
 		relWriter := writer.NewRelationWriter(osmCache, diffCache, relations,
 			db, progress, config.BaseOptions.Srid)
 		relWriter.SetLimiter(geometryLimiter)
+		relWriter.EnableConcurrent()
 		relWriter.Start()
 		relWriter.Wait() // blocks till the Relations.Iter() finishes
 		osmCache.Relations.Close()
@@ -175,6 +176,7 @@ func Import() {
 		wayWriter := writer.NewWayWriter(osmCache, diffCache, ways, db,
 			progress, config.BaseOptions.Srid)
 		wayWriter.SetLimiter(geometryLimiter)
+		wayWriter.EnableConcurrent()
 		wayWriter.Start()
 		wayWriter.Wait() // blocks till the Ways.Iter() finishes
 		osmCache.Ways.Close()
@@ -183,6 +185,7 @@ func Import() {
 		nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
 			progress, config.BaseOptions.Srid)
 		nodeWriter.SetLimiter(geometryLimiter)
+		nodeWriter.EnableConcurrent()
 		nodeWriter.Start()
 		nodeWriter.Wait() // blocks till the Nodes.Iter() finishes
 		osmCache.Close()

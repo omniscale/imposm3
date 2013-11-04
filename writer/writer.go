@@ -28,14 +28,23 @@ type OsmElemWriter struct {
 	writer      looper
 	srid        int
 	expireTiles *expire.Tiles
+	concurrent  bool
 }
 
 func (writer *OsmElemWriter) SetLimiter(limiter *limit.Limiter) {
 	writer.limiter = limiter
 }
 
+func (writer *OsmElemWriter) EnableConcurrent() {
+	writer.concurrent = true
+}
+
 func (writer *OsmElemWriter) Start() {
-	for i := 0; i < runtime.NumCPU(); i++ {
+	concurrency := 1
+	if writer.concurrent {
+		concurrency = runtime.NumCPU()
+	}
+	for i := 0; i < concurrency; i++ {
 		writer.wg.Add(1)
 		go writer.writer.loop()
 	}
