@@ -67,6 +67,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, force bool) {
 	if err != nil {
 		log.Fatal("database open: ", err)
 	}
+	defer db.Close()
 
 	err = db.Begin()
 	if err != nil {

@@ -68,6 +68,7 @@ func Import() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		defer db.Close()
 	}
 
 	osmCache := cache.NewOSMCache(config.BaseOptions.CacheDir)
