@@ -36,12 +36,14 @@ func parse(diff string, elems chan DiffElem, errc chan error) {
 		errc <- err
 		return
 	}
+	defer file.Close()
 
 	reader, err := gzip.NewReader(file)
 	if err != nil {
 		errc <- err
 		return
 	}
+
 	decoder := xml.NewDecoder(reader)
 
 	add := false
