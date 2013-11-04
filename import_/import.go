@@ -36,10 +36,13 @@ func Import() {
 	}
 
 	var geometryLimiter *limit.Limiter
-	if config.ImportOptions.Write && config.BaseOptions.LimitTo != "" {
+	if (config.ImportOptions.Write || config.ImportOptions.Read != "") && config.BaseOptions.LimitTo != "" {
 		var err error
 		step := log.StartStep("Reading limitto geometries")
-		geometryLimiter, err = limit.NewFromGeoJson(config.BaseOptions.LimitTo)
+		geometryLimiter, err = limit.NewFromGeoJsonWithBuffered(
+			config.BaseOptions.LimitTo,
+			config.BaseOptions.LimitToDiffBuffer,
+		)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -99,7 +102,13 @@ func Import() {
 		}
 
 		osmCache.Coords.SetLinearImport(true)
-		reader.ReadPbf(osmCache, progress, tagmapping, pbfFile)
+		readLimiter := geometryLimiter
+		if config.BaseOptions.LimitToDiffBuffer == 0.0 {
+			readLimiter = nil
+		}
+		reader.ReadPbf(osmCache, progress, tagmapping,
+			pbfFile, readLimiter)
+
 		osmCache.Coords.SetLinearImport(false)
 		elementCounts = progress.Stop()
 		osmCache.Close()

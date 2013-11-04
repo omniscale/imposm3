@@ -21,6 +21,9 @@ func newNodesCache(path string) (*NodesCache, error) {
 }
 
 func (p *NodesCache) PutNode(node *element.Node) error {
+	if node.Id == SKIP {
+		return nil
+	}
 	if node.Tags == nil {
 		return nil
 	}
@@ -38,6 +41,9 @@ func (p *NodesCache) PutNodes(nodes []element.Node) (int, error) {
 
 	var n int
 	for _, node := range nodes {
+		if node.Id == SKIP {
+			continue
+		}
 		if len(node.Tags) == 0 {
 			continue
 		}

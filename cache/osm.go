@@ -12,6 +12,8 @@ var (
 	NotFound = errors.New("not found")
 )
 
+const SKIP int64 = -1
+
 type OSMCache struct {
 	dir          string
 	Coords       *DeltaCoordsCache

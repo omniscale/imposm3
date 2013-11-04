@@ -10,12 +10,12 @@ import (
 )
 
 type Config struct {
-	CacheDir           string  `json:"cachedir"`
-	Connection         string  `json:"connection"`
-	MappingFile        string  `json:"mapping"`
-	LimitTo            string  `json:"limitto"`
-	LimitToCacheBuffer float64 `json:"limitto_cache_buffer"`
-	Srid               int     `json:"srid"`
+	CacheDir          string  `json:"cachedir"`
+	Connection        string  `json:"connection"`
+	MappingFile       string  `json:"mapping"`
+	LimitTo           string  `json:"limitto"`
+	LimitToDiffBuffer float64 `json:"limitto_cache_buffer"`
+	Srid              int     `json:"srid"`
 }
 
 const defaultSrid = 3857
@@ -25,14 +25,14 @@ var ImportFlags = flag.NewFlagSet("import", flag.ExitOnError)
 var DiffFlags = flag.NewFlagSet("diff", flag.ExitOnError)
 
 type _BaseOptions struct {
-	Connection         string
-	CacheDir           string
-	MappingFile        string
-	Srid               int
-	LimitTo            string
-	LimitToCacheBuffer float64
-	ConfigFile         string
-	Httpprofile        string
+	Connection        string
+	CacheDir          string
+	MappingFile       string
+	Srid              int
+	LimitTo           string
+	LimitToDiffBuffer float64
+	ConfigFile        string
+	Httpprofile       string
 }
 
 func (o *_BaseOptions) updateFromConfig() error {
@@ -68,8 +68,8 @@ func (o *_BaseOptions) updateFromConfig() error {
 	if o.LimitTo == "" {
 		o.LimitTo = conf.LimitTo
 	}
-	if o.LimitToCacheBuffer == 0.0 {
-		o.LimitToCacheBuffer = conf.LimitToCacheBuffer
+	if o.LimitToDiffBuffer == 0.0 {
+		o.LimitToDiffBuffer = conf.LimitToDiffBuffer
 	}
 	if o.CacheDir == defaultCacheDir {
 		o.CacheDir = conf.CacheDir
@@ -110,6 +110,7 @@ func addBaseFlags(flags *flag.FlagSet) {
 	flags.StringVar(&BaseOptions.MappingFile, "mapping", "", "mapping file")
 	flags.IntVar(&BaseOptions.Srid, "srid", defaultSrid, "srs id")
 	flags.StringVar(&BaseOptions.LimitTo, "limitto", "", "limit to geometries")
+	flags.Float64Var(&BaseOptions.LimitToDiffBuffer, "limittodiffbuffer", 0.0, "limit to buffer for cache")
 	flags.StringVar(&BaseOptions.ConfigFile, "config", "", "config (json)")
 	flags.StringVar(&BaseOptions.Httpprofile, "httpprofile", "", "bind address for profile server")
 }

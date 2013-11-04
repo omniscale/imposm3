@@ -211,6 +211,9 @@ func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) error {
 	start = 0
 	totalNodes := len(nodes)
 	for i, node := range nodes {
+		if node.Id == SKIP {
+			continue
+		}
 		bunchId := self.getBunchId(node.Id)
 		if bunchId != currentBunchId {
 			if self.linearImport && int64(i) > self.bunchSize && int64(i) < int64(totalNodes)-self.bunchSize {

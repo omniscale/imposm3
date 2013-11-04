@@ -1,8 +1,10 @@
 package reader
 
 import (
-	"imposm3/cache"
+	osmcache "imposm3/cache"
 	"imposm3/element"
+	"imposm3/geom/geos"
+	"imposm3/geom/limit"
 	"imposm3/logging"
 	"imposm3/mapping"
 	"imposm3/parser/pbf"
@@ -45,11 +47,19 @@ func init() {
 
 }
 
-func ReadPbf(cache *cache.OSMCache, progress *stats.Statistics, tagmapping *mapping.Mapping, pbfFile *pbf.Pbf) {
+func ReadPbf(cache *osmcache.OSMCache, progress *stats.Statistics,
+	tagmapping *mapping.Mapping, pbfFile *pbf.Pbf,
+	limiter *limit.Limiter,
+) {
 	nodes := make(chan []element.Node, 4)
 	coords := make(chan []element.Node, 4)
 	ways := make(chan []element.Way, 4)
 	relations := make(chan []element.Relation, 4)
+
+	withLimiter := false
+	if limiter != nil {
+		withLimiter = true
+	}
 
 	if pbfFile.Header.Time.Unix() != 0 {
 		log.Printf("reading %s with data till %v", pbfFile.Filename, pbfFile.Header.Time.Local())
@@ -86,6 +96,7 @@ func ReadPbf(cache *cache.OSMCache, progress *stats.Statistics, tagmapping *mapp
 				for i, _ := range ws {
 					m.Filter(&ws[i].Tags)
 				}
+				// TODO check withLimiter
 				cache.Ways.PutWays(ws)
 				progress.AddWays(len(ws))
 			}
@@ -105,6 +116,7 @@ func ReadPbf(cache *cache.OSMCache, progress *stats.Statistics, tagmapping *mapp
 						numWithTags += 1
 					}
 				}
+				// TODO check withLimiter
 				cache.Relations.PutRelations(rels)
 				progress.AddRelations(numWithTags)
 			}
@@ -115,9 +127,18 @@ func ReadPbf(cache *cache.OSMCache, progress *stats.Statistics, tagmapping *mapp
 	for i := 0; int64(i) < nCoords; i++ {
 		waitWriter.Add(1)
 		go func() {
+			g := geos.NewGeos()
+			defer g.Finish()
 			for nds := range coords {
 				if skipCoords {
 					continue
+				}
+				if withLimiter {
+					for i, _ := range nds {
+						if !limiter.IntersectsBuffer(g, nds[i].Long, nds[i].Lat) {
+							nds[i].Id = osmcache.SKIP
+						}
+					}
 				}
 				cache.Coords.PutCoords(nds)
 				progress.AddCoords(len(nds))
@@ -129,6 +150,8 @@ func ReadPbf(cache *cache.OSMCache, progress *stats.Statistics, tagmapping *mapp
 	for i := 0; int64(i) < nNodes; i++ {
 		waitWriter.Add(1)
 		go func() {
+			g := geos.NewGeos()
+			defer g.Finish()
 			m := tagmapping.NodeTagFilter()
 			for nds := range nodes {
 				numWithTags := 0
@@ -136,6 +159,9 @@ func ReadPbf(cache *cache.OSMCache, progress *stats.Statistics, tagmapping *mapp
 					m.Filter(&nds[i].Tags)
 					if len(nds[i].Tags) > 0 {
 						numWithTags += 1
+					}
+					if withLimiter && !limiter.IntersectsBuffer(g, nds[i].Long, nds[i].Lat) {
+						nds[i].Id = osmcache.SKIP
 					}
 				}
 				cache.Nodes.PutNodes(nds)
