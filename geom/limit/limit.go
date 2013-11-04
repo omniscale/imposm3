@@ -171,7 +171,7 @@ func NewFromGeoJsonWithBuffered(source string, buffer float64) (*Limiter, error)
 			if buffered == nil {
 				return nil, errors.New("couldn't buffer limitto")
 			}
-			g.DestroyLater(buffered)
+			// buffered gets destroyed in UnionPolygons
 			bufferedPolygons = append(bufferedPolygons, buffered)
 		}
 		polygons = append(polygons, geom)
