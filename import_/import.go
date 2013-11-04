@@ -114,11 +114,9 @@ func Import() {
 		elementCounts = progress.Stop()
 		osmCache.Close()
 		log.StopStep(step)
-		if config.ImportOptions.Diff {
-			diffstate := state.FromPbf(pbfFile)
-			if diffstate != nil {
-				diffstate.WriteToFile(path.Join(config.BaseOptions.CacheDir, "last.state.txt"))
-			}
+		diffstate := state.FromPbf(pbfFile)
+		if diffstate != nil {
+			diffstate.WriteToFile(path.Join(config.BaseOptions.CacheDir, "last.state.txt"))
 		}
 	}
 
