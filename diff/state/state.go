@@ -7,6 +7,7 @@ import (
 	"imposm3/logging"
 	"imposm3/parser/pbf"
 	"io"
+	"net/http"
 	"os"
 	"path"
 	"strconv"
@@ -89,7 +90,15 @@ func FromPbf(pbfFile *pbf.Pbf) *DiffState {
 		}
 		timestamp = fstat.ModTime()
 	}
-	return &DiffState{Time: timestamp}
+
+	replicationUrl := "http://planet.openstreetmap.org/replication/minute/"
+
+	seq := estimateSequence(replicationUrl, timestamp)
+	if seq != 0 {
+		// start a two hours earlier
+		seq -= 120
+	}
+	return &DiffState{Time: timestamp, Url: replicationUrl, Sequence: seq}
 }
 
 func ParseFile(stateFile string) (*DiffState, error) {
@@ -123,8 +132,7 @@ func Parse(f io.Reader) (*DiffState, error) {
 func ParseLastState(cacheDir string) (*DiffState, error) {
 	stateFile := path.Join(cacheDir, "last.state.txt")
 	if _, err := os.Stat(stateFile); os.IsNotExist(err) {
-		log.Warn("cannot find state file ", stateFile)
-		return nil, nil
+		return nil, err
 	}
 	return ParseFile(stateFile)
 }
@@ -165,4 +173,26 @@ func parseSequence(value string) (int32, error) {
 	}
 	val, err := strconv.ParseInt(value, 10, 32)
 	return int32(val), err
+}
+
+func currentState(url string) (*DiffState, error) {
+	resp, err := http.Get(url + "state.txt")
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != 200 {
+		return nil, errors.New(fmt.Sprintf("invalid repsonse: %v", resp))
+	}
+	defer resp.Body.Close()
+	return Parse(resp.Body)
+}
+
+func estimateSequence(url string, timestamp time.Time) int32 {
+	state, err := currentState(url)
+	if err != nil {
+		log.Warn("unabnle to fetch current state from ", url, ":", err)
+		return 0
+	}
+	behind := state.Time.Sub(timestamp)
+	return state.Sequence - int32(behind.Minutes())
 }
