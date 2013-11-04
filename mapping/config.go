@@ -69,6 +69,7 @@ func NewMapping(filename string) (*Mapping, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer f.Close()
 	decoder := json.NewDecoder(f)
 
 	mapping := Mapping{}
