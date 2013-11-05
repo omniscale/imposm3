@@ -148,4 +148,23 @@
       </way>
   </modify>
 
+
+  <!-- test removing of relation (r:50021) -->
+  <delete>
+    <relation id="50021" />
+  </delete>
+
+  <!-- test removing of relation (r:50121) without tags -->
+  <delete>
+    <relation id="50121" />
+  </delete>
+
+  <!-- test removing of duplicate ids -->
+  <delete>
+    <relation id="51001" />
+    <way id="51101" />
+  </delete>
+
+
+
 </osmChange>

@@ -65,14 +65,15 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 	if elem.Tags == nil {
 		return
 	}
-	deleted := false
-	// TODO handle relations with tags from members
 	if ok, matches := d.delDb.ProbePolygon(elem.OSMElem); ok {
 		d.delDb.Delete(elem.Id, matches)
-		deleted = true
+	} else {
+		// handle relations with tags from members by deleting
+		// from all tables
+		d.delDb.DeleteElem(elem.OSMElem)
 	}
 
-	if deleted && deleteRefs {
+	if deleteRefs {
 		for _, m := range elem.Members {
 			if m.Type == element.WAY {
 				d.diffCache.Ways.DeleteRef(m.Id, id)
@@ -95,7 +96,7 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 	}
 
 	d.osmCache.InsertedWays.DeleteMembers(elem.Members)
-	if deleted && d.expireTiles != nil {
+	if d.expireTiles != nil {
 		for _, m := range elem.Members {
 			if m.Way == nil {
 				continue
@@ -203,6 +204,10 @@ func (d *Deleter) Delete(delElem parser.DiffElem) {
 				}
 				d.deleteWay(way, false)
 				dependers := d.diffCache.Ways.Get(way)
+				if len(dependers) >= 1 {
+					// mark member ways from deleted relations for re-insert
+					d.deletedMembers[way] = struct{}{}
+				}
 				for _, rel := range dependers {
 					if _, ok := d.deletedRelations[rel]; ok {
 						continue

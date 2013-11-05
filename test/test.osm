@@ -595,4 +595,95 @@
     <tag k="highway" v="residential"/>
   </way>
 
+  <!-- test removing of relation (r:50021) -->
+  <node id="50001" version="1" timestamp="2011-11-11T00:11:11Z" lat="42" lon="10"/>
+  <node id="50002" version="1" timestamp="2011-11-11T00:11:11Z" lat="42" lon="11"/>
+  <node id="50003" version="1" timestamp="2011-11-11T00:11:11Z" lat="44" lon="10"/>
+  <node id="50004" version="1" timestamp="2011-11-11T00:11:11Z" lat="44" lon="11"/>
+  <way id="50011" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="50001"/>
+    <nd ref="50002"/>
+    <nd ref="50003"/>
+    <nd ref="50004"/>
+    <nd ref="50001"/>
+    <tag k="building" v="yes"/>
+  </way>
+  <relation id="50021" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="50011" role="outer"/>
+    <tag k="type" v="multipolygon"/>
+    <tag k="landuse" v="park"/>
+  </relation>
+
+  <!-- test removing of relation (r:50121) without tags -->
+  <node id="50101" version="1" timestamp="2011-11-11T00:11:11Z" lat="42" lon="10"/>
+  <node id="50102" version="1" timestamp="2011-11-11T00:11:11Z" lat="42" lon="11"/>
+  <node id="50103" version="1" timestamp="2011-11-11T00:11:11Z" lat="44" lon="10"/>
+  <node id="50104" version="1" timestamp="2011-11-11T00:11:11Z" lat="44" lon="11"/>
+  <way id="50111" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="50101"/>
+    <nd ref="50102"/>
+    <nd ref="50103"/>
+    <nd ref="50104"/>
+    <nd ref="50101"/>
+    <tag k="building" v="yes"/>
+  </way>
+  <relation id="50121" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="50111" role="outer"/>
+    <tag k="type" v="multipolygon"/>
+  </relation>
+
+
+  <!-- test removal of duplicate IDs -->
+  <node id="51001" version="1" timestamp="2011-11-11T00:11:11Z" lat="32" lon="20"/>
+  <node id="51002" version="1" timestamp="2011-11-11T00:11:11Z" lat="32" lon="21"/>
+  <node id="51003" version="1" timestamp="2011-11-11T00:11:11Z" lat="34" lon="20"/>
+  <node id="51004" version="1" timestamp="2011-11-11T00:11:11Z" lat="34" lon="21"/>
+  <node id="51011" version="1" timestamp="2011-11-11T00:11:11Z" lat="32" lon="20.00001"/>
+  <node id="51012" version="1" timestamp="2011-11-11T00:11:11Z" lat="32" lon="21.00001"/>
+  <node id="51013" version="1" timestamp="2011-11-11T00:11:11Z" lat="34" lon="20.00001"/>
+  <node id="51014" version="1" timestamp="2011-11-11T00:11:11Z" lat="34" lon="21.00001"/>
+
+  <way id="51001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="51001"/>
+    <nd ref="51002"/>
+    <nd ref="51003"/>
+    <nd ref="51004"/>
+    <nd ref="51001"/>
+    <tag k="building" v="yes"/>
+  </way>
+  <way id="51002" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="51011"/>
+    <nd ref="51012"/>
+    <nd ref="51013"/>
+    <nd ref="51014"/>
+    <nd ref="51011"/>
+  </way>
+  <way id="51011" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="51001"/>
+    <nd ref="51002"/>
+    <nd ref="51003"/>
+    <nd ref="51004"/>
+    <nd ref="51001"/>
+    <tag k="building" v="yes"/>
+  </way>
+  <way id="51012" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="51011"/>
+    <nd ref="51012"/>
+    <nd ref="51013"/>
+    <nd ref="51014"/>
+    <nd ref="51011"/>
+  </way>
+
+  <relation id="51001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="51002" role="outer"/>
+    <tag k="type" v="multipolygon"/>
+    <tag k="building" v="mp"/>
+  </relation>
+
+  <relation id="51011" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="51012" role="outer"/>
+    <tag k="type" v="multipolygon"/>
+    <tag k="building" v="mp"/>
+  </relation>
+
 </osm>

@@ -210,38 +210,16 @@ For:
 
 	progress = stats.NewStatsReporter()
 
+	// mark depending ways for (re)insert
 	for nodeId, _ := range nodeIds {
-		node, err := osmCache.Nodes.GetNode(nodeId)
-		if err != nil {
-			if err != cache.NotFound {
-				log.Print(node, err)
-			}
-			// missing nodes can still be Coords
-			// no `continue` here
-		}
-		if node != nil {
-			// insert new node
-			progress.AddNodes(1)
-			nodes <- node
-		}
 		dependers := diffCache.Coords.Get(nodeId)
-		// mark depending ways for (re)insert
 		for _, way := range dependers {
 			wayIds[way] = true
 		}
 	}
 
+	// mark depending relations for (re)insert
 	for wayId, _ := range wayIds {
-		way, err := osmCache.Ways.GetWay(wayId)
-		if err != nil {
-			if err != cache.NotFound {
-				log.Print(way, err)
-			}
-			continue
-		}
-		// insert new way
-		progress.AddWays(1)
-		ways <- way
 		dependers := diffCache.Ways.Get(wayId)
 		// mark depending relations for (re)insert
 		for _, rel := range dependers {
@@ -260,6 +238,35 @@ For:
 		// insert new relation
 		progress.AddRelations(1)
 		relations <- rel
+	}
+
+	for wayId, _ := range wayIds {
+		way, err := osmCache.Ways.GetWay(wayId)
+		if err != nil {
+			if err != cache.NotFound {
+				log.Print(way, err)
+			}
+			continue
+		}
+		// insert new way
+		progress.AddWays(1)
+		ways <- way
+	}
+
+	for nodeId, _ := range nodeIds {
+		node, err := osmCache.Nodes.GetNode(nodeId)
+		if err != nil {
+			if err != cache.NotFound {
+				log.Print(node, err)
+			}
+			// missing nodes can still be Coords
+			// no `continue` here
+		}
+		if node != nil {
+			// insert new node
+			progress.AddNodes(1)
+			nodes <- node
+		}
 	}
 
 	close(relations)

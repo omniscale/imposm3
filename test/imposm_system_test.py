@@ -51,9 +51,16 @@ def query_row(db_conf, table, osmid):
     conn = psycopg2.connect(**db_conf)
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     cur.execute('select * from import.%s where osm_id = %%s' % table, [osmid])
-    row = cur.fetchone()
-    create_geom_in_row(row)
-    return row
+    results = []
+    for row in cur.fetchall():
+        create_geom_in_row(row)
+        results.append(row)
+
+    if not results:
+        return None
+    if len(results) == 1:
+        return results[0]
+    return results
 
 def imposm3_import(db_conf, pbf):
     conn = pg_db_url(db_conf)
@@ -269,6 +276,20 @@ def test_residential_to_secondary():
     assert not query_row(db_conf, 'osm_roads_gen0', 40001)
     assert not query_row(db_conf, 'osm_roads_gen1', 40001)
 
+def test_relation_before_remove():
+    """Relation and way is inserted."""
+    assert query_row(db_conf, 'osm_buildings', 50011)['type'] == 'yes'
+    assert query_row(db_conf, 'osm_landusages', 50021)['type'] == 'park'
+
+def test_relation_without_tags():
+    """Relation without tags is inserted."""
+    assert query_row(db_conf, 'osm_buildings', 50111) == None
+    assert query_row(db_conf, 'osm_buildings', 50121)['type'] == 'yes'
+
+def test_duplicate_ids():
+    """Relation/way with same ID is inserted."""
+    assert len(query_row(db_conf, 'osm_buildings', 51001)) == 2
+    assert len(query_row(db_conf, 'osm_buildings', 51011)) == 2
 
 #######################################################################
 def test_update():
@@ -389,3 +410,15 @@ def test_residential_to_secondary2():
     assert query_row(db_conf, 'osm_roads_gen0', 40001)['type'] == 'secondary'
     assert query_row(db_conf, 'osm_roads_gen1', 40001)['type'] == 'secondary'
 
+def test_relation_after_remove():
+    """Relation is deleted and way is still present."""
+    assert query_row(db_conf, 'osm_buildings', 50011)['type'] == 'yes'
+    assert query_row(db_conf, 'osm_landusages', 50021) == None
+
+def test_relation_without_tags2():
+    """Relation without tags is removed."""
+    cache_query(ways=[50111], deps=True)
+    assert cache_query(relations=[50121], deps=True)['relations']["50121"] == None
+
+    assert query_row(db_conf, 'osm_buildings', 50111)['type'] == 'yes'
+    assert query_row(db_conf, 'osm_buildings', 50121) == None

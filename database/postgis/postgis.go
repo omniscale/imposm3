@@ -482,6 +482,27 @@ func (pg *PostGIS) Delete(id int64, matches interface{}) error {
 	return nil
 }
 
+func (pg *PostGIS) DeleteElem(elem element.OSMElem) error {
+	// handle deletes of geometries that did not match in ProbeXxx.
+	// we have to handle multipolygon relations that took the tags of the
+	// main-member. those tags are not avail. during delete. just try to
+	// delete from each polygon table.
+	if v, ok := elem.Tags["type"]; ok && (v == "multipolygon" || v == "boundary") {
+		for _, tableSpec := range pg.Tables {
+			if tableSpec.GeometryType != "polygon" {
+				continue
+			}
+			pg.txRouter.Delete(tableSpec.Name, elem.Id)
+			if pg.updateGeneralizedTables {
+				for _, genTable := range tableSpec.Generalizations {
+					pg.txRouter.Delete(genTable.Name, elem.Id)
+				}
+			}
+		}
+	}
+	return nil
+}
+
 func (pg *PostGIS) generalizedFromMatches(matches []mapping.Match) []*GeneralizedTableSpec {
 	generalizedTables := []*GeneralizedTableSpec{}
 	for _, match := range matches {
