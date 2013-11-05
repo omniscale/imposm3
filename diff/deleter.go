@@ -20,6 +20,7 @@ type Deleter struct {
 	expireTiles      *expire.Tiles
 	deletedRelations map[int64]struct{}
 	deletedWays      map[int64]struct{}
+	deletedMembers   map[int64]struct{}
 }
 
 func NewDeleter(db database.Deleter, osmCache *cache.OSMCache, diffCache *cache.DiffCache,
@@ -37,6 +38,7 @@ func NewDeleter(db database.Deleter, osmCache *cache.OSMCache, diffCache *cache.
 		nil,
 		make(map[int64]struct{}),
 		make(map[int64]struct{}),
+		make(map[int64]struct{}),
 	}
 }
 
@@ -44,7 +46,11 @@ func (d *Deleter) SetExpireTiles(expireTiles *expire.Tiles) {
 	d.expireTiles = expireTiles
 }
 
-func (d *Deleter) deleteRelation(id int64, deleteRefs bool) {
+func (d *Deleter) DeletedMemberWays() map[int64]struct{} {
+	return d.deletedMembers
+}
+
+func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) {
 	d.deletedRelations[id] = struct{}{}
 
 	elem, err := d.osmCache.Relations.GetRelation(id)
@@ -60,6 +66,7 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool) {
 		return
 	}
 	deleted := false
+	// TODO handle relations with tags from members
 	if ok, matches := d.delDb.ProbePolygon(elem.OSMElem); ok {
 		d.delDb.Delete(elem.Id, matches)
 		deleted = true
@@ -69,6 +76,20 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool) {
 		for _, m := range elem.Members {
 			if m.Type == element.WAY {
 				d.diffCache.Ways.DeleteRef(m.Id, id)
+			}
+		}
+	}
+
+	if deleteMembers {
+		// delete members from db and force reinsert of members
+		// use case: relation is deleted and member now stands for its own
+		for _, member := range elem.Members {
+			if member.Type == element.WAY {
+				d.deletedMembers[member.Id] = struct{}{}
+				if _, ok := d.deletedWays[member.Id]; ok {
+					continue
+				}
+				d.deleteWay(member.Id, false)
 			}
 		}
 	}
@@ -159,7 +180,7 @@ func (d *Deleter) Delete(delElem parser.DiffElem) {
 	}
 
 	if delElem.Rel != nil {
-		d.deleteRelation(delElem.Rel.Id, true)
+		d.deleteRelation(delElem.Rel.Id, true, true)
 	} else if delElem.Way != nil {
 		d.deleteWay(delElem.Way.Id, true)
 
@@ -169,7 +190,7 @@ func (d *Deleter) Delete(delElem parser.DiffElem) {
 				if _, ok := d.deletedRelations[rel]; ok {
 					continue
 				}
-				d.deleteRelation(rel, false)
+				d.deleteRelation(rel, false, false)
 			}
 		}
 	} else if delElem.Node != nil {
@@ -186,7 +207,7 @@ func (d *Deleter) Delete(delElem parser.DiffElem) {
 					if _, ok := d.deletedRelations[rel]; ok {
 						continue
 					}
-					d.deleteRelation(rel, false)
+					d.deleteRelation(rel, false, false)
 				}
 			}
 		}

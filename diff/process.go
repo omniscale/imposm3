@@ -198,6 +198,12 @@ For:
 			break For
 		}
 	}
+
+	// mark member ways from deleted relations for re-insert
+	for id, _ := range deleter.DeletedMemberWays() {
+		wayIds[id] = true
+	}
+
 	progress.Stop()
 	log.StopStep(step)
 	step = log.StartStep("Writing added/modified elements")
