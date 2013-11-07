@@ -649,7 +649,7 @@
     <nd ref="51003"/>
     <nd ref="51004"/>
     <nd ref="51001"/>
-    <tag k="building" v="yes"/>
+    <tag k="building" v="way"/>
   </way>
   <way id="51002" version="1" timestamp="2011-11-11T00:11:11Z">
     <nd ref="51011"/>
@@ -664,7 +664,7 @@
     <nd ref="51003"/>
     <nd ref="51004"/>
     <nd ref="51001"/>
-    <tag k="building" v="yes"/>
+    <tag k="building" v="way"/>
   </way>
   <way id="51012" version="1" timestamp="2011-11-11T00:11:11Z">
     <nd ref="51011"/>

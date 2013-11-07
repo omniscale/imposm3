@@ -162,7 +162,7 @@
   <!-- test removing of duplicate ids -->
   <delete>
     <relation id="51001" />
-    <way id="51101" />
+    <way id="51011" />
   </delete>
 
 

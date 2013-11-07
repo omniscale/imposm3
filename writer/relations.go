@@ -115,11 +115,14 @@ NextRel:
 			}
 			for _, g := range parts {
 				rel := element.Relation(*r)
+				rel.Id = -r.Id
 				rel.Geom = &element.Geometry{g, geos.AsEwkbHex(g)}
 				rw.inserter.InsertPolygon(rel.OSMElem, matches)
 			}
 		} else {
-			rw.inserter.InsertPolygon(r.OSMElem, matches)
+			rel := element.Relation(*r)
+			rel.Id = -r.Id
+			rw.inserter.InsertPolygon(rel.OSMElem, matches)
 		}
 		err = rw.osmCache.InsertedWays.PutMembers(r.Members)
 		if err != nil {

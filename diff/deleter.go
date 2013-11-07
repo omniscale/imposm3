@@ -66,11 +66,13 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 		return
 	}
 	if ok, matches := d.delDb.ProbePolygon(elem.OSMElem); ok {
-		d.delDb.Delete(elem.Id, matches)
+		d.delDb.Delete(-elem.Id, matches)
 	} else {
 		// handle relations with tags from members by deleting
 		// from all tables
-		d.delDb.DeleteElem(elem.OSMElem)
+		e := element.OSMElem(elem.OSMElem)
+		e.Id = -e.Id
+		d.delDb.DeleteElem(e)
 	}
 
 	if deleteRefs {
