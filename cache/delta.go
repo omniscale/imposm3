@@ -203,6 +203,19 @@ func (self *DeltaCoordsCache) FillWay(way *element.Way) error {
 	return nil
 }
 
+func removeSkippedNodes(nodes []element.Node) []element.Node {
+	insertPoint := 0
+	for i := 0; i < len(nodes); i++ {
+		if i != insertPoint {
+			nodes[insertPoint] = nodes[i]
+		}
+		if nodes[i].Id != SKIP {
+			insertPoint += 1
+		}
+	}
+	return nodes[:insertPoint]
+}
+
 // PutCoords puts nodes into cache.
 // nodes need to be sorted by Id.
 func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) error {
@@ -210,10 +223,8 @@ func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) error {
 	currentBunchId = self.getBunchId(nodes[0].Id)
 	start = 0
 	totalNodes := len(nodes)
+	nodes = removeSkippedNodes(nodes)
 	for i, node := range nodes {
-		if node.Id == SKIP {
-			continue
-		}
 		bunchId := self.getBunchId(node.Id)
 		if bunchId != currentBunchId {
 			if self.linearImport && int64(i) > self.bunchSize && int64(i) < int64(totalNodes)-self.bunchSize {
