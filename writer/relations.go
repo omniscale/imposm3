@@ -9,6 +9,7 @@ import (
 	"imposm3/proj"
 	"imposm3/stats"
 	"sync"
+	"time"
 )
 
 type RelationWriter struct {
@@ -103,10 +104,14 @@ NextRel:
 		}
 
 		if rw.limiter != nil {
+			start := time.Now()
 			parts, err := rw.limiter.Clip(r.Geom.Geom)
 			if err != nil {
 				log.Warn(err)
 				continue NextRel
+			}
+			if duration := time.Now().Sub(start); duration > time.Minute {
+				log.Warnf("clipping relation %d to -limitto took %s", r.Id, duration)
 			}
 			for _, g := range parts {
 				rel := element.Relation(*r)
