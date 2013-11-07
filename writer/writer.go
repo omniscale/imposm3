@@ -5,10 +5,13 @@ import (
 	"imposm3/database"
 	"imposm3/expire"
 	"imposm3/geom/limit"
+	"imposm3/logging"
 	"imposm3/stats"
 	"runtime"
 	"sync"
 )
+
+var log = logging.NewLogger("writer")
 
 type ErrorLevel interface {
 	Level() int

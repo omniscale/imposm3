@@ -8,7 +8,6 @@ import (
 	"imposm3/geom/geos"
 	"imposm3/proj"
 	"imposm3/stats"
-	"log"
 	"sync"
 )
 
@@ -53,20 +52,20 @@ func (nw *NodeWriter) loop() {
 						continue
 					}
 				}
-				log.Println(err)
+				log.Warn(err)
 				continue
 			}
 
 			n.Geom, err = geom.AsGeomElement(geos, point)
 			if err != nil {
-				log.Println(err)
+				log.Warn(err)
 				continue
 			}
 
 			if nw.limiter != nil {
 				parts, err := nw.limiter.Clip(n.Geom.Geom)
 				if err != nil {
-					log.Println(err)
+					log.Warn(err)
 					continue
 				}
 				if len(parts) >= 1 {

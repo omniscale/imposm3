@@ -1,7 +1,6 @@
 package writer
 
 import (
-	"fmt"
 	"imposm3/cache"
 	"imposm3/database"
 	"imposm3/element"
@@ -9,7 +8,6 @@ import (
 	"imposm3/geom/geos"
 	"imposm3/proj"
 	"imposm3/stats"
-	"log"
 	"sync"
 )
 
@@ -47,7 +45,7 @@ NextRel:
 		err := rw.osmCache.Ways.FillMembers(r.Members)
 		if err != nil {
 			if err != cache.NotFound {
-				fmt.Println(err)
+				log.Warn(err)
 			}
 			continue NextRel
 		}
@@ -58,7 +56,7 @@ NextRel:
 			err := rw.osmCache.Coords.FillWay(m.Way)
 			if err != nil {
 				if err != cache.NotFound {
-					fmt.Println(err)
+					log.Warn(err)
 				}
 				continue NextRel
 			}
@@ -78,7 +76,7 @@ NextRel:
 					continue NextRel
 				}
 			}
-			log.Println(err)
+			log.Warn(err)
 			continue NextRel
 		}
 
@@ -100,14 +98,14 @@ NextRel:
 
 				}
 			}
-			log.Println(err)
+			log.Warn(err)
 			continue NextRel
 		}
 
 		if rw.limiter != nil {
 			parts, err := rw.limiter.Clip(r.Geom.Geom)
 			if err != nil {
-				log.Println(err)
+				log.Warn(err)
 				continue NextRel
 			}
 			for _, g := range parts {
@@ -120,7 +118,7 @@ NextRel:
 		}
 		err = rw.osmCache.InsertedWays.PutMembers(r.Members)
 		if err != nil {
-			fmt.Println(err)
+			log.Warn(err)
 		}
 		if rw.diffCache != nil {
 			rw.diffCache.Ways.AddFromMembers(r.Id, allMembers)

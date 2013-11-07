@@ -8,7 +8,6 @@ import (
 	"imposm3/geom/geos"
 	"imposm3/proj"
 	"imposm3/stats"
-	"log"
 	"sync"
 )
 
@@ -46,7 +45,7 @@ func (ww *WayWriter) loop() {
 		}
 		inserted, err := ww.osmCache.InsertedWays.IsInserted(w.Id)
 		if err != nil {
-			log.Println(err)
+			log.Warn(err)
 			continue
 		}
 		if inserted {
@@ -98,20 +97,20 @@ func (ww *WayWriter) buildAndInsert(g *geos.Geos, w *element.Way, matches interf
 				return
 			}
 		}
-		log.Println(err)
+		log.Warn(err)
 		return
 	}
 
 	way.Geom, err = geom.AsGeomElement(g, geosgeom)
 	if err != nil {
-		log.Println(err)
+		log.Warn(err)
 		return
 	}
 
 	if ww.limiter != nil {
 		parts, err := ww.limiter.Clip(way.Geom.Geom)
 		if err != nil {
-			log.Println(err)
+			log.Warn(err)
 			return
 		}
 		for _, p := range parts {
