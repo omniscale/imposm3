@@ -53,6 +53,10 @@ func (p *RelationsCache) Iter() chan *element.Relation {
 		ro := levigo.NewReadOptions()
 		ro.SetFillCache(false)
 		it := p.db.NewIterator(ro)
+		// we need to Close the iter before closing the
+		// chan (and thus signaling that we are done)
+		// to avoid race where db is closed before the iterator
+		defer close(rels)
 		defer it.Close()
 		it.SeekToFirst()
 		for ; it.Valid(); it.Next() {
@@ -64,7 +68,6 @@ func (p *RelationsCache) Iter() chan *element.Relation {
 
 			rels <- rel
 		}
-		close(rels)
 	}()
 	return rels
 }

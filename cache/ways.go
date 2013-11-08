@@ -72,6 +72,10 @@ func (p *WaysCache) Iter() chan *element.Way {
 		ro := levigo.NewReadOptions()
 		ro.SetFillCache(false)
 		it := p.db.NewIterator(ro)
+		// we need to Close the iter before closing the
+		// chan (and thus signaling that we are done)
+		// to avoid race where db is closed before the iterator
+		defer close(ways)
 		defer it.Close()
 		it.SeekToFirst()
 		for ; it.Valid(); it.Next() {
@@ -82,7 +86,6 @@ func (p *WaysCache) Iter() chan *element.Way {
 			way.Id = idFromKeyBuf(it.Key())
 			ways <- way
 		}
-		close(ways)
 	}()
 	return ways
 }

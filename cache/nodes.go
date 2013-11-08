@@ -86,6 +86,10 @@ func (p *NodesCache) Iter() chan *element.Node {
 		ro := levigo.NewReadOptions()
 		ro.SetFillCache(false)
 		it := p.db.NewIterator(ro)
+		// we need to Close the iter before closing the
+		// chan (and thus signaling that we are done)
+		// to avoid race where db is closed before the iterator
+		close(nodes)
 		defer it.Close()
 		it.SeekToFirst()
 		for ; it.Valid(); it.Next() {
@@ -97,7 +101,6 @@ func (p *NodesCache) Iter() chan *element.Node {
 
 			nodes <- node
 		}
-		close(nodes)
 	}()
 	return nodes
 }
