@@ -303,6 +303,9 @@ For:
 	progress.Stop()
 
 	if state != nil {
+		if lastState != nil {
+			state.Url = lastState.Url
+		}
 		err = diffstate.WriteLastState(config.BaseOptions.CacheDir, state)
 		if err != nil {
 			log.Warn(err) // warn only
