@@ -220,10 +220,14 @@ func removeSkippedNodes(nodes []element.Node) []element.Node {
 // nodes need to be sorted by Id.
 func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) error {
 	var start, currentBunchId int64
+	nodes = removeSkippedNodes(nodes)
+	if len(nodes) == 0 {
+		// skipped all nodes
+		return nil
+	}
 	currentBunchId = self.getBunchId(nodes[0].Id)
 	start = 0
 	totalNodes := len(nodes)
-	nodes = removeSkippedNodes(nodes)
 	for i, node := range nodes {
 		bunchId := self.getBunchId(node.Id)
 		if bunchId != currentBunchId {
