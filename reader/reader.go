@@ -8,6 +8,7 @@ import (
 	"imposm3/logging"
 	"imposm3/mapping"
 	"imposm3/parser/pbf"
+	"imposm3/proj"
 	"imposm3/stats"
 	"os"
 	"runtime"
@@ -135,7 +136,9 @@ func ReadPbf(cache *osmcache.OSMCache, progress *stats.Statistics,
 				}
 				if withLimiter {
 					for i, _ := range nds {
-						if !limiter.IntersectsBuffer(g, nds[i].Long, nds[i].Lat) {
+						nd := element.Node{Long: nds[i].Long, Lat: nds[i].Lat}
+						proj.NodeToMerc(&nd)
+						if !limiter.IntersectsBuffer(g, nd.Long, nd.Lat) {
 							nds[i].Id = osmcache.SKIP
 						}
 					}
