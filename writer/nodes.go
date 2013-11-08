@@ -42,8 +42,8 @@ func (nw *NodeWriter) loop() {
 		nw.progress.AddNodes(1)
 		if ok, matches := nw.inserter.ProbePoint(n.OSMElem); ok {
 			proj.NodeToMerc(n)
-			if nw.expireTiles != nil {
-				nw.expireTiles.ExpireFromNodes([]element.Node{*n})
+			if nw.expireor != nil {
+				nw.expireor.Expire(n.Long, n.Lat)
 			}
 			point, err := geom.Point(geos, *n)
 			if err != nil {

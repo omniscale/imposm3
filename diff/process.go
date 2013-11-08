@@ -21,14 +21,14 @@ import (
 
 var log = logging.NewLogger("diff")
 
-func Update(oscFile string, geometryLimiter *limit.Limiter, force bool) {
+func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expireor, force bool) {
 	state, err := diffstate.ParseFromOsc(oscFile)
 	if err != nil {
 		log.Fatal(err)
 	}
 	lastState, err := diffstate.ParseLastState(config.BaseOptions.CacheDir)
 	if err != nil {
-		log.Fatal(err)
+		log.Warn(err)
 	}
 
 	if lastState != nil && lastState.Sequence != 0 && state != nil && state.Sequence <= lastState.Sequence {
@@ -95,8 +95,6 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, force bool) {
 
 	progress := stats.NewStatsReporter()
 
-	expiredTiles := expire.NewTiles(14)
-
 	relTagFilter := tagmapping.RelationTagFilter()
 	wayTagFilter := tagmapping.WayTagFilter()
 	nodeTagFilter := tagmapping.NodeTagFilter()
@@ -108,18 +106,19 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, force bool) {
 	relWriter := writer.NewRelationWriter(osmCache, diffCache, relations,
 		db, progress, config.BaseOptions.Srid)
 	relWriter.SetLimiter(geometryLimiter)
-	relWriter.SetExpireTiles(expiredTiles)
+	relWriter.SetExpireor(expireor)
 	relWriter.Start()
 
 	wayWriter := writer.NewWayWriter(osmCache, diffCache, ways, db,
 		progress, config.BaseOptions.Srid)
 	wayWriter.SetLimiter(geometryLimiter)
-	wayWriter.SetExpireTiles(expiredTiles)
+	wayWriter.SetExpireor(expireor)
 	wayWriter.Start()
 
 	nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
 		progress, config.BaseOptions.Srid)
 	nodeWriter.SetLimiter(geometryLimiter)
+	nodeWriter.SetExpireor(expireor)
 	nodeWriter.Start()
 
 	nodeIds := make(map[int64]bool)
@@ -294,12 +293,6 @@ For:
 	diffCache.Close()
 	log.StopStep(step)
 
-	step = log.StartStep("Updating expired tiles db")
-	expire.WriteTileExpireDb(
-		expiredTiles.SortedTiles(),
-		"/tmp/expire_tiles.db",
-	)
-	log.StopStep(step)
 	progress.Stop()
 
 	if state != nil {

@@ -22,16 +22,16 @@ type looper interface {
 }
 
 type OsmElemWriter struct {
-	osmCache    *cache.OSMCache
-	diffCache   *cache.DiffCache
-	progress    *stats.Statistics
-	inserter    database.Inserter
-	wg          *sync.WaitGroup
-	limiter     *limit.Limiter
-	writer      looper
-	srid        int
-	expireTiles *expire.Tiles
-	concurrent  bool
+	osmCache   *cache.OSMCache
+	diffCache  *cache.DiffCache
+	progress   *stats.Statistics
+	inserter   database.Inserter
+	wg         *sync.WaitGroup
+	limiter    *limit.Limiter
+	writer     looper
+	srid       int
+	expireor   expire.Expireor
+	concurrent bool
 }
 
 func (writer *OsmElemWriter) SetLimiter(limiter *limit.Limiter) {
@@ -53,8 +53,8 @@ func (writer *OsmElemWriter) Start() {
 	}
 }
 
-func (writer *OsmElemWriter) SetExpireTiles(expireTiles *expire.Tiles) {
-	writer.expireTiles = expireTiles
+func (writer *OsmElemWriter) SetExpireor(exp expire.Expireor) {
+	writer.expireor = exp
 }
 
 func (writer *OsmElemWriter) Wait() {

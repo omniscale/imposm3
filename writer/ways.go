@@ -4,6 +4,7 @@ import (
 	"imposm3/cache"
 	"imposm3/database"
 	"imposm3/element"
+	"imposm3/expire"
 	"imposm3/geom"
 	"imposm3/geom/geos"
 	"imposm3/proj"
@@ -70,8 +71,8 @@ func (ww *WayWriter) loop() {
 			}
 		}
 
-		if inserted && ww.expireTiles != nil {
-			ww.expireTiles.ExpireFromNodes(w.Nodes)
+		if inserted && ww.expireor != nil {
+			expire.ExpireNodes(ww.expireor, w.Nodes)
 		}
 		if ww.diffCache != nil {
 			ww.diffCache.Coords.AddFromWay(w)

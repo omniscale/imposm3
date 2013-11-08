@@ -4,6 +4,7 @@ import (
 	"imposm3/cache"
 	"imposm3/database"
 	"imposm3/element"
+	"imposm3/expire"
 	"imposm3/geom"
 	"imposm3/geom/geos"
 	"imposm3/proj"
@@ -136,10 +137,10 @@ NextRel:
 				}
 			}
 		}
-		if rw.expireTiles != nil {
+		if rw.expireor != nil {
 			for _, m := range allMembers {
 				if m.Way != nil {
-					rw.expireTiles.ExpireFromNodes(m.Way.Nodes)
+					expire.ExpireNodes(rw.expireor, m.Way.Nodes)
 				}
 			}
 		}

@@ -17,7 +17,7 @@ type Deleter struct {
 	tmPoints         *mapping.TagMatcher
 	tmLineStrings    *mapping.TagMatcher
 	tmPolygons       *mapping.TagMatcher
-	expireTiles      *expire.Tiles
+	expireor         expire.Expireor
 	deletedRelations map[int64]struct{}
 	deletedWays      map[int64]struct{}
 	deletedMembers   map[int64]struct{}
@@ -42,8 +42,8 @@ func NewDeleter(db database.Deleter, osmCache *cache.OSMCache, diffCache *cache.
 	}
 }
 
-func (d *Deleter) SetExpireTiles(expireTiles *expire.Tiles) {
-	d.expireTiles = expireTiles
+func (d *Deleter) SetExpireor(exp expire.Expireor) {
+	d.expireor = exp
 }
 
 func (d *Deleter) DeletedMemberWays() map[int64]struct{} {
@@ -98,7 +98,7 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 	}
 
 	d.osmCache.InsertedWays.DeleteMembers(elem.Members)
-	if d.expireTiles != nil {
+	if d.expireor != nil {
 		for _, m := range elem.Members {
 			if m.Way == nil {
 				continue
@@ -108,7 +108,7 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 				continue
 			}
 			proj.NodesToMerc(m.Way.Nodes)
-			d.expireTiles.ExpireFromNodes(m.Way.Nodes)
+			expire.ExpireNodes(d.expireor, m.Way.Nodes)
 		}
 	}
 }
@@ -142,12 +142,12 @@ func (d *Deleter) deleteWay(id int64, deleteRefs bool) {
 			d.diffCache.Coords.DeleteRef(n, id)
 		}
 	}
-	if deleted && d.expireTiles != nil {
+	if deleted && d.expireor != nil {
 		err := d.osmCache.Coords.FillWay(elem)
 		if err != nil {
 			return
 		}
-		d.expireTiles.ExpireFromNodes(elem.Nodes)
+		expire.ExpireNodes(d.expireor, elem.Nodes)
 	}
 }
 
@@ -171,8 +171,8 @@ func (d *Deleter) deleteNode(id int64) {
 		deleted = true
 	}
 
-	if deleted && d.expireTiles != nil {
-		d.expireTiles.ExpireFromNodes([]element.Node{*elem})
+	if deleted && d.expireor != nil {
+		d.expireor.Expire(elem.Long, elem.Lat)
 	}
 
 }

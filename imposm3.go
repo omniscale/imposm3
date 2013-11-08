@@ -66,7 +66,7 @@ func main() {
 		}
 
 		for _, oscFile := range config.DiffFlags.Args() {
-			diff.Update(oscFile, geometryLimiter, false)
+			diff.Update(oscFile, geometryLimiter, nil, false)
 		}
 	case "query-cache":
 		query.Query(os.Args[2:])
