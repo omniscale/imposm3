@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"imposm3/cache"
 	golog "log"
 	"os"
 	"runtime"
@@ -64,9 +65,22 @@ func main() {
 			}
 			log.StopStep(step)
 		}
+		osmCache := cache.NewOSMCache(config.BaseOptions.CacheDir)
+		err := osmCache.Open()
+		if err != nil {
+			log.Fatal("osm cache: ", err)
+		}
+		defer osmCache.Close()
+
+		diffCache := cache.NewDiffCache(config.BaseOptions.CacheDir)
+		err = diffCache.Open()
+		if err != nil {
+			log.Fatal("diff cache: ", err)
+		}
+		defer diffCache.Close()
 
 		for _, oscFile := range config.DiffFlags.Args() {
-			diff.Update(oscFile, geometryLimiter, nil, false)
+			diff.Update(oscFile, geometryLimiter, nil, osmCache, diffCache, false)
 		}
 	case "query-cache":
 		query.Query(os.Args[2:])

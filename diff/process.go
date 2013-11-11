@@ -21,7 +21,7 @@ import (
 
 var log = logging.NewLogger("diff")
 
-func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expireor, force bool) {
+func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expireor, osmCache *cache.OSMCache, diffCache *cache.DiffCache, force bool) {
 	state, err := diffstate.ParseFromOsc(oscFile)
 	if err != nil {
 		log.Fatal(err)
@@ -41,18 +41,6 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 	defer log.StopStep(log.StartStep(fmt.Sprintf("Processing %s", oscFile)))
 
 	elems, errc := parser.Parse(oscFile)
-
-	osmCache := cache.NewOSMCache(config.BaseOptions.CacheDir)
-	err = osmCache.Open()
-	if err != nil {
-		log.Fatal("osm cache: ", err)
-	}
-
-	diffCache := cache.NewDiffCache(config.BaseOptions.CacheDir)
-	err = diffCache.Open()
-	if err != nil {
-		log.Fatal("diff cache: ", err)
-	}
 
 	tagmapping, err := mapping.NewMapping(config.BaseOptions.MappingFile)
 	if err != nil {
@@ -289,8 +277,6 @@ For:
 		log.Fatal(err)
 	}
 
-	osmCache.Close()
-	diffCache.Close()
 	log.StopStep(step)
 
 	progress.Stop()
