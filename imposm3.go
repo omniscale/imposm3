@@ -83,11 +83,14 @@ func main() {
 		if err != nil {
 			log.Fatal("diff cache: ", err)
 		}
-		defer diffCache.Close()
 
 		for _, oscFile := range config.DiffFlags.Args() {
 			diff.Update(oscFile, geometryLimiter, nil, osmCache, diffCache, false)
 		}
+		// explicitly Close since os.Exit prevents defers
+		osmCache.Close()
+		diffCache.Close()
+
 	case "query-cache":
 		query.Query(os.Args[2:])
 	case "version":
