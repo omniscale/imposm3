@@ -287,19 +287,13 @@ func (l *Limiter) Clip(geom *geos.Geom) ([]*geos.Geom, error) {
 	var intersections []*geos.Geom
 	// intersect with each part...
 	for _, hit := range hits {
-		hit.Lock()
-		if g.PreparedIntersects(hit.Prepared, geom) {
-			hit.Unlock()
-			newPart := g.Intersection(hit.Geom, geom)
-			if newPart == nil {
-				continue
-			}
-			newParts := filterGeometryByType(g, newPart, geomType)
-			for _, p := range newParts {
-				intersections = append(intersections, p)
-			}
-		} else {
-			hit.Unlock()
+		newPart := g.Intersection(hit.Geom, geom)
+		if newPart == nil {
+			continue
+		}
+		newParts := filterGeometryByType(g, newPart, geomType)
+		for _, p := range newParts {
+			intersections = append(intersections, p)
 		}
 	}
 	// and merge parts back to our clipped intersection

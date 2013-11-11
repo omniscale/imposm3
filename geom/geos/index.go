@@ -19,11 +19,9 @@ import (
 )
 
 // IndexGeom is a struct for indexed geometries used by Index
-// and returned by IndexQuery. Access to Prepared requires acquiring .Lock()
+// and returned by IndexQuery.
 type IndexGeom struct {
-	*sync.Mutex // Mutex for Prepared
-	Geom        *Geom
-	Prepared    *PreparedGeom
+	Geom *Geom
 }
 type Index struct {
 	v     *C.GEOSSTRtree
@@ -45,8 +43,7 @@ func (this *Geos) IndexAdd(index *Index, geom *Geom) {
 	defer index.mu.Unlock()
 	id := len(index.geoms)
 	C.IndexAdd(this.v, index.v, geom.v, C.size_t(id))
-	prep := this.Prepare(geom)
-	index.geoms = append(index.geoms, IndexGeom{&sync.Mutex{}, geom, prep})
+	index.geoms = append(index.geoms, IndexGeom{geom})
 }
 
 // IndexQuery queries the index for intersections with geom.
