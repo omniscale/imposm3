@@ -49,9 +49,15 @@ func main() {
 		import_.Import()
 	case "diff":
 		config.ParseDiffImport(os.Args[2:])
+
 		if config.BaseOptions.Httpprofile != "" {
 			stats.StartHttpPProf(config.BaseOptions.Httpprofile)
 		}
+
+		if config.BaseOptions.Quiet {
+			logging.SetQuiet(true)
+		}
+
 		var geometryLimiter *limit.Limiter
 		if config.BaseOptions.LimitTo != "" {
 			var err error

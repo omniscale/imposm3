@@ -10,12 +10,12 @@ import (
 )
 
 type Config struct {
-	CacheDir          string  `json:"cachedir"`
-	Connection        string  `json:"connection"`
-	MappingFile       string  `json:"mapping"`
-	LimitTo           string  `json:"limitto"`
+	CacheDir           string  `json:"cachedir"`
+	Connection         string  `json:"connection"`
+	MappingFile        string  `json:"mapping"`
+	LimitTo            string  `json:"limitto"`
 	LimitToCacheBuffer float64 `json:"limitto_cache_buffer"`
-	Srid              int     `json:"srid"`
+	Srid               int     `json:"srid"`
 }
 
 const defaultSrid = 3857
@@ -25,14 +25,15 @@ var ImportFlags = flag.NewFlagSet("import", flag.ExitOnError)
 var DiffFlags = flag.NewFlagSet("diff", flag.ExitOnError)
 
 type _BaseOptions struct {
-	Connection        string
-	CacheDir          string
-	MappingFile       string
-	Srid              int
-	LimitTo           string
+	Connection         string
+	CacheDir           string
+	MappingFile        string
+	Srid               int
+	LimitTo            string
 	LimitToCacheBuffer float64
-	ConfigFile        string
-	Httpprofile       string
+	ConfigFile         string
+	Httpprofile        string
+	Quiet              bool
 }
 
 func (o *_BaseOptions) updateFromConfig() error {
@@ -98,7 +99,6 @@ type _ImportOptions struct {
 	DeployProduction bool
 	RevertDeploy     bool
 	RemoveBackup     bool
-	Quiet            bool
 }
 
 var BaseOptions = _BaseOptions{}
@@ -113,6 +113,8 @@ func addBaseFlags(flags *flag.FlagSet) {
 	flags.Float64Var(&BaseOptions.LimitToCacheBuffer, "limittocachebuffer", 0.0, "limit to buffer for cache")
 	flags.StringVar(&BaseOptions.ConfigFile, "config", "", "config (json)")
 	flags.StringVar(&BaseOptions.Httpprofile, "httpprofile", "", "bind address for profile server")
+	flags.BoolVar(&BaseOptions.Quiet, "quiet", false, "quiet log output")
+
 }
 
 func UsageImport() {
@@ -142,7 +144,6 @@ func init() {
 	ImportFlags.BoolVar(&ImportOptions.DeployProduction, "deployproduction", false, "deploy production")
 	ImportFlags.BoolVar(&ImportOptions.RevertDeploy, "revertdeploy", false, "revert deploy to production")
 	ImportFlags.BoolVar(&ImportOptions.RemoveBackup, "removebackup", false, "remove backups from deploy")
-	ImportFlags.BoolVar(&ImportOptions.Quiet, "quiet", false, "quiet log output")
 }
 
 func ParseImport(args []string) {

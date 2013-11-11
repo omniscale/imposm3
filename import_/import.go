@@ -23,7 +23,7 @@ import (
 var log = logging.NewLogger("")
 
 func Import() {
-	if config.ImportOptions.Quiet {
+	if config.BaseOptions.Quiet {
 		logging.SetQuiet(true)
 	}
 
