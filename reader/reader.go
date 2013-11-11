@@ -66,23 +66,8 @@ func ReadPbf(cache *osmcache.OSMCache, progress *stats.Statistics,
 		log.Printf("reading %s with data till %v", pbfFile.Filename, pbfFile.Header.Time.Local())
 	}
 
-	blocks := pbfFile.BlockPositions()
-
-	waitParser := sync.WaitGroup{}
-	for i := 0; int64(i) < nParser; i++ {
-		waitParser.Add(1)
-		go func() {
-			for block := range blocks {
-				block.Parse(
-					coords,
-					nodes,
-					ways,
-					relations,
-				)
-			}
-			waitParser.Done()
-		}()
-	}
+	parser := pbf.NewParser(pbfFile, coords, nodes, ways, relations)
+	parser.Start()
 
 	waitWriter := sync.WaitGroup{}
 
@@ -174,7 +159,7 @@ func ReadPbf(cache *osmcache.OSMCache, progress *stats.Statistics,
 		}()
 	}
 
-	waitParser.Wait()
+	parser.Close()
 	close(coords)
 	close(nodes)
 	close(ways)
