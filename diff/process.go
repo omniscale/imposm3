@@ -14,6 +14,7 @@ import (
 	"imposm3/geom/limit"
 	"imposm3/logging"
 	"imposm3/mapping"
+	"imposm3/proj"
 	"imposm3/stats"
 	"imposm3/writer"
 	"io"
@@ -171,7 +172,15 @@ For:
 						wayIds[elem.Way.Id] = true
 					}
 				} else if elem.Node != nil {
-					if geometryLimiter == nil || geometryLimiter.IntersectsBuffer(g, elem.Node.Long, elem.Node.Lat) {
+					addNode := true
+					if geometryLimiter != nil {
+						nd := element.Node{Long: elem.Node.Long, Lat: elem.Node.Lat}
+						proj.NodeToMerc(&nd)
+						if !geometryLimiter.IntersectsBuffer(g, nd.Long, nd.Lat) {
+							addNode = false
+						}
+					}
+					if addNode {
 						osmCache.Nodes.PutNode(elem.Node)
 						osmCache.Coords.PutCoords([]element.Node{*elem.Node})
 						nodeIds[elem.Node.Id] = true
