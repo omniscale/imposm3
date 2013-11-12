@@ -379,6 +379,7 @@ func mergeGeometries(g *geos.Geos, geoms []*geos.Geom, geomType string) []*geos.
 		if polygon == nil {
 			return nil
 		}
+		g.DestroyLater(polygon)
 		return []*geos.Geom{polygon}
 	} else if strings.HasSuffix(geomType, "LineString") {
 		linestrings := flattenLineStrings(g, geoms)
@@ -387,9 +388,15 @@ func mergeGeometries(g *geos.Geos, geoms []*geos.Geom, geomType string) []*geos.
 			return nil
 		}
 		union := g.LineMerge(linestrings)
+		for _, l := range union {
+			g.DestroyLater(l)
+		}
 		return union
 	} else if geomType == "Point" {
 		if len(geoms) >= 1 {
+			for _, p := range geoms {
+				g.DestroyLater(p)
+			}
 			return geoms[0:1]
 		}
 		return nil
