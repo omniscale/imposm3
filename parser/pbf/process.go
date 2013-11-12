@@ -2,6 +2,7 @@ package pbf
 
 import (
 	"imposm3/element"
+	"imposm3/util"
 	"runtime"
 	"sync"
 )
@@ -14,10 +15,20 @@ type parser struct {
 	relations chan []element.Relation
 	nParser   int
 	wg        sync.WaitGroup
+	waySync   *util.SyncPoint
+	relSync   *util.SyncPoint
 }
 
 func NewParser(pbf *Pbf, coords chan []element.Node, nodes chan []element.Node, ways chan []element.Way, relations chan []element.Relation) *parser {
-	return &parser{pbf, coords, nodes, ways, relations, runtime.NumCPU(), sync.WaitGroup{}}
+	return &parser{
+		pbf:       pbf,
+		coords:    coords,
+		nodes:     nodes,
+		ways:      ways,
+		relations: relations,
+		nParser:   runtime.NumCPU(),
+		wg:        sync.WaitGroup{},
+	}
 }
 
 func (p *parser) Start() {
@@ -28,6 +39,12 @@ func (p *parser) Start() {
 			for block := range blocks {
 				p.parseBlock(block)
 			}
+			if p.waySync != nil {
+				p.waySync.Sync()
+			}
+			if p.relSync != nil {
+				p.relSync.Sync()
+			}
 			p.wg.Done()
 		}()
 	}
@@ -35,6 +52,14 @@ func (p *parser) Start() {
 
 func (p *parser) Close() {
 	p.wg.Wait()
+}
+
+func (p *parser) NotifyWays(cb func()) {
+	p.waySync = util.NewSyncPoint(p.nParser, cb)
+}
+
+func (p *parser) NotifyRelations(cb func()) {
+	p.relSync = util.NewSyncPoint(p.nParser, cb)
 }
 
 func (p *parser) parseBlock(pos Block) {
@@ -61,10 +86,19 @@ func (p *parser) parseBlock(pos Block) {
 		}
 		parsedWays := readWays(group.Ways, block, stringtable)
 		if len(parsedWays) > 0 {
+			if p.waySync != nil {
+				p.waySync.Sync()
+			}
 			p.ways <- parsedWays
 		}
 		parsedRelations := readRelations(group.Relations, block, stringtable)
 		if len(parsedRelations) > 0 {
+			if p.waySync != nil {
+				p.waySync.Sync()
+			}
+			if p.relSync != nil {
+				p.relSync.Sync()
+			}
 			p.relations <- parsedRelations
 		}
 	}

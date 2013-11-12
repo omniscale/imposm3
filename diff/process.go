@@ -159,14 +159,14 @@ For:
 				if elem.Rel != nil {
 					// check if first member is cached to avoid caching
 					// unneeded relations (typical outside of our coverage)
-					if memberIsCached(elem.Rel.Members, osmCache.Ways) {
+					if osmCache.Ways.FirstMemberIsCached(elem.Rel.Members) {
 						osmCache.Relations.PutRelation(elem.Rel)
 						relIds[elem.Rel.Id] = true
 					}
 				} else if elem.Way != nil {
 					// check if first coord is cached to avoid caching
 					// unneeded ways (typical outside of our coverage)
-					if coordIsCached(elem.Way.Refs, osmCache.Coords) {
+					if osmCache.Coords.FirstRefIsCached(elem.Way.Refs) {
 						osmCache.Ways.PutWay(elem.Way)
 						wayIds[elem.Way.Id] = true
 					}
@@ -290,28 +290,4 @@ For:
 			log.Warn(err) // warn only
 		}
 	}
-}
-
-func memberIsCached(members []element.Member, wayCache *cache.WaysCache) bool {
-	for _, m := range members {
-		if m.Type == element.WAY {
-			_, err := wayCache.GetWay(m.Id)
-			if err != nil {
-				return false
-			}
-			return true
-		}
-	}
-	return false
-}
-
-func coordIsCached(refs []int64, coordCache *cache.DeltaCoordsCache) bool {
-	if len(refs) <= 0 {
-		return false
-	}
-	_, err := coordCache.GetCoord(refs[0])
-	if err != nil {
-		return false
-	}
-	return true
 }

@@ -368,3 +368,14 @@ func (self *DeltaCoordsCache) CheckCapacity() {
 		delete(self.table, bunchId)
 	}
 }
+
+func (self *DeltaCoordsCache) FirstRefIsCached(refs []int64) bool {
+	if len(refs) <= 0 {
+		return false
+	}
+	_, err := self.GetCoord(refs[0])
+	if err != nil {
+		return false
+	}
+	return true
+}

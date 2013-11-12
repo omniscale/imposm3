@@ -21,6 +21,9 @@ func newWaysCache(path string) (*WaysCache, error) {
 }
 
 func (p *WaysCache) PutWay(way *element.Way) error {
+	if way.Id == SKIP {
+		return nil
+	}
 	keyBuf := idToKeyBuf(way.Id)
 	data, err := binary.MarshalWay(way)
 	if err != nil {
@@ -34,6 +37,9 @@ func (p *WaysCache) PutWays(ways []element.Way) error {
 	defer batch.Close()
 
 	for _, way := range ways {
+		if way.Id == SKIP {
+			continue
+		}
 		keyBuf := idToKeyBuf(way.Id)
 		data, err := binary.MarshalWay(&way)
 		if err != nil {
@@ -105,6 +111,19 @@ func (self *WaysCache) FillMembers(members []element.Member) error {
 		members[i].Way = way
 	}
 	return nil
+}
+
+func (self *WaysCache) FirstMemberIsCached(members []element.Member) bool {
+	for _, m := range members {
+		if m.Type == element.WAY {
+			_, err := self.GetWay(m.Id)
+			if err != nil {
+				return false
+			}
+			return true
+		}
+	}
+	return false
 }
 
 type InsertedWaysCache struct {

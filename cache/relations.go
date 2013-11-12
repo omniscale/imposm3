@@ -21,6 +21,9 @@ func newRelationsCache(path string) (*RelationsCache, error) {
 }
 
 func (p *RelationsCache) PutRelation(relation *element.Relation) error {
+	if relation.Id == SKIP {
+		return nil
+	}
 	keyBuf := idToKeyBuf(relation.Id)
 	data, err := binary.MarshalRelation(relation)
 	if err != nil {
@@ -34,6 +37,9 @@ func (p *RelationsCache) PutRelations(rels []element.Relation) error {
 	defer batch.Close()
 
 	for _, rel := range rels {
+		if rel.Id == SKIP {
+			continue
+		}
 		if len(rel.Tags) == 0 {
 			continue
 		}

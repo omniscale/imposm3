@@ -1,6 +1,12 @@
 package reader
 
 import (
+	"os"
+	"runtime"
+	"strconv"
+	"strings"
+	"sync"
+
 	osmcache "imposm3/cache"
 	"imposm3/element"
 	"imposm3/geom/geos"
@@ -10,11 +16,7 @@ import (
 	"imposm3/parser/pbf"
 	"imposm3/proj"
 	"imposm3/stats"
-	"os"
-	"runtime"
-	"strconv"
-	"strings"
-	"sync"
+	"imposm3/util"
 )
 
 var log = logging.NewLogger("reader")
@@ -67,6 +69,32 @@ func ReadPbf(cache *osmcache.OSMCache, progress *stats.Statistics,
 	}
 
 	parser := pbf.NewParser(pbfFile, coords, nodes, ways, relations)
+
+	coordsSynced := make(chan bool)
+	coordsSync := util.NewSyncPoint(int(nCoords+nNodes), func() {
+		coordsSynced <- true
+	})
+	parser.NotifyWays(func() {
+		for i := 0; int64(i) < nCoords; i++ {
+			coords <- nil
+		}
+		for i := 0; int64(i) < nNodes; i++ {
+			nodes <- nil
+		}
+		<-coordsSynced
+	})
+
+	waysSynced := make(chan bool)
+	waysSync := util.NewSyncPoint(int(nWays), func() {
+		waysSynced <- true
+	})
+	parser.NotifyRelations(func() {
+		for i := 0; int64(i) < nWays; i++ {
+			ways <- nil
+		}
+		<-waysSynced
+	})
+
 	parser.Start()
 
 	waitWriter := sync.WaitGroup{}
@@ -74,18 +102,33 @@ func ReadPbf(cache *osmcache.OSMCache, progress *stats.Statistics,
 	for i := 0; int64(i) < nWays; i++ {
 		waitWriter.Add(1)
 		go func() {
+			var skip, hit int
+
 			m := tagmapping.WayTagFilter()
 			for ws := range ways {
+				if ws == nil {
+					waysSync.Sync()
+					continue
+				}
 				if skipWays {
 					continue
 				}
 				for i, _ := range ws {
 					m.Filter(&ws[i].Tags)
+					if withLimiter {
+						if !cache.Coords.FirstRefIsCached(ws[i].Refs) {
+							ws[i].Id = osmcache.SKIP
+							skip += 1
+
+						} else {
+							hit += 1
+						}
+					}
 				}
-				// TODO check withLimiter
 				cache.Ways.PutWays(ws)
 				progress.AddWays(len(ws))
 			}
+
 			waitWriter.Done()
 		}()
 	}
@@ -93,6 +136,8 @@ func ReadPbf(cache *osmcache.OSMCache, progress *stats.Statistics,
 	for i := 0; int64(i) < nRels; i++ {
 		waitWriter.Add(1)
 		go func() {
+			var skip, hit int
+
 			m := tagmapping.RelationTagFilter()
 			for rels := range relations {
 				numWithTags := 0
@@ -101,11 +146,21 @@ func ReadPbf(cache *osmcache.OSMCache, progress *stats.Statistics,
 					if len(rels[i].Tags) > 0 {
 						numWithTags += 1
 					}
+					if withLimiter {
+						if !cache.Ways.FirstMemberIsCached(rels[i].Members) {
+							skip += 1
+
+							rels[i].Id = osmcache.SKIP
+						} else {
+							hit += 1
+
+						}
+					}
 				}
-				// TODO check withLimiter
 				cache.Relations.PutRelations(rels)
 				progress.AddRelations(numWithTags)
 			}
+
 			waitWriter.Done()
 		}()
 	}
@@ -113,10 +168,12 @@ func ReadPbf(cache *osmcache.OSMCache, progress *stats.Statistics,
 	for i := 0; int64(i) < nCoords; i++ {
 		waitWriter.Add(1)
 		go func() {
+			var skip, hit int
 			g := geos.NewGeos()
 			defer g.Finish()
 			for nds := range coords {
-				if skipCoords {
+				if nds == nil {
+					coordsSync.Sync()
 					continue
 				}
 				if withLimiter {
@@ -124,7 +181,10 @@ func ReadPbf(cache *osmcache.OSMCache, progress *stats.Statistics,
 						nd := element.Node{Long: nds[i].Long, Lat: nds[i].Lat}
 						proj.NodeToMerc(&nd)
 						if !limiter.IntersectsBuffer(g, nd.Long, nd.Lat) {
+							skip += 1
 							nds[i].Id = osmcache.SKIP
+						} else {
+							hit += 1
 						}
 					}
 				}
@@ -142,14 +202,22 @@ func ReadPbf(cache *osmcache.OSMCache, progress *stats.Statistics,
 			defer g.Finish()
 			m := tagmapping.NodeTagFilter()
 			for nds := range nodes {
+				if nds == nil {
+					coordsSync.Sync()
+					continue
+				}
 				numWithTags := 0
 				for i, _ := range nds {
 					m.Filter(&nds[i].Tags)
 					if len(nds[i].Tags) > 0 {
 						numWithTags += 1
 					}
-					if withLimiter && !limiter.IntersectsBuffer(g, nds[i].Long, nds[i].Lat) {
-						nds[i].Id = osmcache.SKIP
+					if withLimiter {
+						nd := element.Node{Long: nds[i].Long, Lat: nds[i].Lat}
+						proj.NodeToMerc(&nd)
+						if !limiter.IntersectsBuffer(g, nd.Long, nd.Lat) {
+							nds[i].Id = osmcache.SKIP
+						}
 					}
 				}
 				cache.Nodes.PutNodes(nds)
@@ -160,9 +228,9 @@ func ReadPbf(cache *osmcache.OSMCache, progress *stats.Statistics,
 	}
 
 	parser.Close()
-	close(coords)
-	close(nodes)
-	close(ways)
 	close(relations)
+	close(ways)
+	close(nodes)
+	close(coords)
 	waitWriter.Wait()
 }
