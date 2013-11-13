@@ -328,10 +328,11 @@ func (self *DeltaCoordsCache) getBunch(bunchId int64) (*coordsBunch, error) {
 		elem := self.lruList.PushFront(bunchId)
 		select {
 		case nodes = <-freeNodes:
+			nodes = nodes[:0]
 		default:
 			nodes = make([]element.Node, 0, self.bunchSize)
 		}
-		bunch = &coordsBunch{id: bunchId, coords: nil, elem: elem}
+		bunch = &coordsBunch{id: bunchId, coords: nodes, elem: elem}
 		needsGet = true
 		self.table[bunchId] = bunch
 	} else {
