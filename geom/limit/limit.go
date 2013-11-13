@@ -35,10 +35,10 @@ func tileBounds(bounds geos.Bounds, width float64) []geos.Bounds {
 	for x := 0; x < int(xSteps); x++ {
 		for y := 0; y < int(ySteps); y++ {
 			results = append(results, geos.Bounds{
-				minX + float64(x)*width,
-				minY + float64(y)*width,
-				minX + float64(x+1)*width,
-				minY + float64(y+1)*width,
+				MinX: minX + float64(x)*width,
+				MinY: minY + float64(y)*width,
+				MaxX: minX + float64(x+1)*width,
+				MaxY: minY + float64(y+1)*width,
 			})
 		}
 	}

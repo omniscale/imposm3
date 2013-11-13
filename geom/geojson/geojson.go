@@ -156,7 +156,6 @@ func constructPolygons(obj *object) ([]polygon, error) {
 	default:
 		return nil, errors.New("unknown type: " + obj.Type)
 	}
-	return nil, nil
 }
 
 type GeoJson struct {

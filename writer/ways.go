@@ -116,7 +116,7 @@ func (ww *WayWriter) buildAndInsert(g *geos.Geos, w *element.Way, matches interf
 		}
 		for _, p := range parts {
 			way := element.Way(*w)
-			way.Geom = &element.Geometry{p, g.AsEwkbHex(p)}
+			way.Geom = &element.Geometry{Geom: p, Wkb: g.AsEwkbHex(p)}
 			if isPolygon {
 				ww.inserter.InsertPolygon(way.OSMElem, matches)
 			} else {

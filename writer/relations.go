@@ -117,7 +117,7 @@ NextRel:
 			for _, g := range parts {
 				rel := element.Relation(*r)
 				rel.Id = -r.Id
-				rel.Geom = &element.Geometry{g, geos.AsEwkbHex(g)}
+				rel.Geom = &element.Geometry{Geom: g, Wkb: geos.AsEwkbHex(g)}
 				rw.inserter.InsertPolygon(rel.OSMElem, matches)
 			}
 		} else {
