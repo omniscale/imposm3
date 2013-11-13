@@ -113,9 +113,9 @@ func newDeltaCoordsCache(path string) (*DeltaCoordsCache, error) {
 	}
 	coordsCache.bunchSize = int64(globalCacheOptions.Coords.BunchSize)
 	coordsCache.lruList = list.New()
-	coordsCache.table = make(map[int64]*coordsBunch)
 	// mem req for cache approx. capacity*bunchSize*40
 	coordsCache.capacity = int64(globalCacheOptions.Coords.BunchCacheCapacity)
+	coordsCache.table = make(map[int64]*coordsBunch, coordsCache.capacity)
 	return &coordsCache, nil
 }
 
