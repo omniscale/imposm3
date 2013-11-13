@@ -85,7 +85,12 @@ func main() {
 		}
 
 		for _, oscFile := range config.DiffFlags.Args() {
-			diff.Update(oscFile, geometryLimiter, nil, osmCache, diffCache, false)
+			err := diff.Update(oscFile, geometryLimiter, nil, osmCache, diffCache, false)
+			if err != nil {
+				osmCache.Close()
+				diffCache.Close()
+				log.Fatal(err)
+			}
 		}
 		// explicitly Close since os.Exit prevents defers
 		osmCache.Close()

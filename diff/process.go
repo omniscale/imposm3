@@ -1,7 +1,10 @@
 package diff
 
 import (
+	"errors"
 	"fmt"
+	"io"
+
 	"imposm3/cache"
 	"imposm3/config"
 	"imposm3/database"
@@ -17,15 +20,14 @@ import (
 	"imposm3/proj"
 	"imposm3/stats"
 	"imposm3/writer"
-	"io"
 )
 
 var log = logging.NewLogger("diff")
 
-func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expireor, osmCache *cache.OSMCache, diffCache *cache.DiffCache, force bool) {
+func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expireor, osmCache *cache.OSMCache, diffCache *cache.DiffCache, force bool) error {
 	state, err := diffstate.ParseFromOsc(oscFile)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	lastState, err := diffstate.ParseLastState(config.BaseOptions.CacheDir)
 	if err != nil {
@@ -35,7 +37,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 	if lastState != nil && lastState.Sequence != 0 && state != nil && state.Sequence <= lastState.Sequence {
 		if !force {
 			log.Warn(state, " already imported")
-			return
+			return nil
 		}
 	}
 
@@ -45,7 +47,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 
 	tagmapping, err := mapping.NewMapping(config.BaseOptions.MappingFile)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	dbConf := database.Config{
@@ -54,18 +56,18 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 	}
 	db, err := database.Open(dbConf, tagmapping)
 	if err != nil {
-		log.Fatal("database open: ", err)
+		return errors.New("database open: " + err.Error())
 	}
 	defer db.Close()
 
 	err = db.Begin()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	delDb, ok := db.(database.Deleter)
 	if !ok {
-		log.Fatal("database not deletable")
+		return errors.New("database not deletable")
 	}
 
 	genDb, ok := db.(database.Generalizer)
@@ -139,19 +141,19 @@ For:
 				if !elem.Add {
 					if elem.Rel != nil {
 						if err := osmCache.Relations.DeleteRelation(elem.Rel.Id); err != nil {
-							log.Fatal(err)
+							return err
 						}
 					} else if elem.Way != nil {
 						if err := osmCache.Ways.DeleteWay(elem.Way.Id); err != nil {
-							log.Fatal(err)
+							return err
 						}
 						diffCache.Ways.Delete(elem.Way.Id)
 					} else if elem.Node != nil {
 						if err := osmCache.Nodes.DeleteNode(elem.Node.Id); err != nil {
-							log.Fatal(err)
+							return err
 						}
 						if err := osmCache.Coords.DeleteCoord(elem.Node.Id); err != nil {
-							log.Fatal(err)
+							return err
 						}
 					}
 				}
@@ -189,7 +191,7 @@ For:
 			}
 		case err := <-errc:
 			if err != io.EOF {
-				log.Fatal(err)
+				return err
 			}
 			break For
 		}
@@ -279,11 +281,11 @@ For:
 
 	err = db.End()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	err = db.Close()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	log.StopStep(step)
@@ -299,4 +301,5 @@ For:
 			log.Warn(err) // warn only
 		}
 	}
+	return nil
 }
