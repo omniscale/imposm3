@@ -373,6 +373,16 @@ func clusterTable(pg *PostGIS, tableName string, srid int, columns []ColumnSpec)
 			break
 		}
 	}
+
+	step := log.StartStep(fmt.Sprintf("Analysing %s", tableName))
+	sql := fmt.Sprintf(`ANALYSE "%s"."%s"`,
+		pg.Schema, tableName)
+	_, err := pg.Db.Exec(sql)
+	log.StopStep(step)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
