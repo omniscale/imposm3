@@ -81,6 +81,10 @@ func (l *Logger) Fatalf(msg string, args ...interface{}) {
 	os.Exit(1)
 }
 
+func (l *Logger) Error(args ...interface{}) {
+	defaultLogBroker.Records <- Record{ERROR, l.Component, fmt.Sprint(args...)}
+}
+
 func (l *Logger) Errorf(msg string, args ...interface{}) {
 	defaultLogBroker.Records <- Record{ERROR, l.Component, fmt.Sprintf(msg, args...)}
 }
@@ -150,6 +154,7 @@ For:
 			startTime := steps[step]
 			delete(steps, step)
 			duration := time.Since(startTime)
+			l.lastProgress = ""
 			l.printRecord(Record{INFO, step.Component, step.Name + " took: " + duration.String()})
 		case <-l.quit:
 			break For
@@ -177,11 +182,23 @@ func (l *LogBroker) printComponent(component string) {
 	}
 }
 
+func (l *LogBroker) printLevel(level Level) {
+	switch level {
+	case INFO:
+		fmt.Print("[INFO] ")
+	case WARNING:
+		fmt.Print("[WARN] ")
+	case ERROR:
+		fmt.Print("[ERR] ")
+	}
+}
+
 func (l *LogBroker) printRecord(record Record) {
 	if !l.newline {
 		fmt.Print(CLEARLINE)
 	}
 	l.printPrefix()
+	l.printLevel(record.Level)
 	l.printComponent(record.Component)
 	fmt.Println(record.Message)
 	l.newline = true
