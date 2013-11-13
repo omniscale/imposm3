@@ -72,6 +72,7 @@ def imposm3_import(db_conf, pbf):
             " -cachedir %s"
             " -diff"
             " -overwritecache"
+            " -optimize"
             " -mapping test_mapping.json " % (
             conn, pbf, tmpdir,
         ), shell=True)
