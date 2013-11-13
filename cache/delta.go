@@ -124,10 +124,17 @@ func (self *DeltaCoordsCache) SetLinearImport(v bool) {
 }
 
 func (self *DeltaCoordsCache) Flush() {
+	self.mu.Lock()
+	defer self.mu.Unlock()
 	for bunchId, bunch := range self.table {
 		if bunch.needsWrite {
 			self.putCoordsPacked(bunchId, bunch.coords)
 		}
+	}
+
+	self.lruList.Init()
+	for k, _ := range self.table {
+		delete(self.table, k)
 	}
 }
 func (self *DeltaCoordsCache) Close() {
