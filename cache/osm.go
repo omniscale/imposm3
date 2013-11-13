@@ -154,7 +154,7 @@ func (c *cache) open(path string) error {
 		opts.SetWriteBufferSize(c.options.WriteBufferSizeM * 1024 * 1024)
 	}
 	if c.options.BlockSizeK > 0 {
-		opts.SetBlockSize(c.options.BlockSizeK * 1024 * 1024)
+		opts.SetBlockSize(c.options.BlockSizeK * 1024)
 	}
 
 	db, err := levigo.Open(path, opts)
