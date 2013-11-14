@@ -3,7 +3,7 @@ package postgis
 import (
 	"database/sql"
 	"fmt"
-	pq "github.com/olt/pq"
+	pq "github.com/lib/pq"
 	"imposm3/database"
 	"imposm3/element"
 	"imposm3/logging"

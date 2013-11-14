@@ -145,7 +145,15 @@ Imposm3 uses the following libraries. `go get` will fetch these:
 - <https://github.com/mattn/go-sqlite3>
 - <https://code.google.com/p/goprotobuf/proto>
 - <https://code.google.com/p/goprotobuf/protoc-gen-go>
-- <https://github.com/olt/pq>
+- <https://github.com/lib/pq>
+
+For now you need to upgrade lib/pq to the bulk branch:
+
+    cd $GOPATH/src/github.com/lib/pq
+    git remote add olt https://github.com/olt/libpq.git
+    git fetch olt
+    git checkout olt/bulk
+
 
 #### Other
 
