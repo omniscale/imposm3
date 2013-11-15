@@ -18,7 +18,7 @@ import (
 
 var log = logging.NewLogger("")
 
-func printCmds() {
+func PrintCmds() {
 	fmt.Fprintf(os.Stderr, "Usage: %s COMMAND [args]\n\n", os.Args[0])
 	fmt.Println("Available commands:")
 	fmt.Println("\timport")
@@ -28,14 +28,17 @@ func printCmds() {
 }
 
 func main() {
+	Main(PrintCmds)
+}
 
+func Main(usage func()) {
 	golog.SetFlags(golog.LstdFlags | golog.Lshortfile)
 	if os.Getenv("GOMAXPROCS") == "" {
 		runtime.GOMAXPROCS(runtime.NumCPU())
 	}
 
 	if len(os.Args) <= 1 {
-		printCmds()
+		usage()
 		logging.Shutdown()
 		os.Exit(1)
 	}
@@ -102,7 +105,7 @@ func main() {
 		fmt.Println(imposmVersion)
 		os.Exit(0)
 	default:
-		printCmds()
+		usage()
 		log.Fatalf("invalid command: '%s'", os.Args[1])
 	}
 	logging.Shutdown()
