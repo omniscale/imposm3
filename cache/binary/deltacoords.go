@@ -1,8 +1,8 @@
 package binary
 
 import (
-	"bytes"
 	"encoding/binary"
+	"errors"
 	"imposm3/element"
 )
 
@@ -56,12 +56,14 @@ func MarshalDeltaNodes(nodes []element.Node, buf []byte) []byte {
 	return buf[:nextPos]
 }
 
+var varintErr = errors.New("unmarshal delta coords: missing data for varint or overflow")
+
 func UnmarshalDeltaNodes(buf []byte, nodes []element.Node) ([]element.Node, error) {
-	r := bytes.NewBuffer(buf)
-	length, err := binary.ReadVarint(r)
-	if err != nil {
-		return nil, err
+	length, n := binary.Varint(buf)
+	if n <= 0 {
+		return nil, varintErr
 	}
+	var offset = n
 
 	if int64(cap(nodes)) < length {
 		nodes = make([]element.Node, length)
@@ -71,10 +73,11 @@ func UnmarshalDeltaNodes(buf []byte, nodes []element.Node) ([]element.Node, erro
 
 	lastId := int64(0)
 	for i := 0; int64(i) < length; i++ {
-		id, err := binary.ReadVarint(r)
-		if err != nil {
-			return nil, err
+		id, n := binary.Varint(buf[offset:])
+		if n <= 0 {
+			return nil, varintErr
 		}
+		offset += n
 		id = lastId + id
 		nodes[i].Id = id
 		lastId = id
@@ -82,10 +85,11 @@ func UnmarshalDeltaNodes(buf []byte, nodes []element.Node) ([]element.Node, erro
 
 	lastLong := int64(0)
 	for i := 0; int64(i) < length; i++ {
-		long, err := binary.ReadVarint(r)
-		if err != nil {
-			return nil, err
+		long, n := binary.Varint(buf[offset:])
+		if n <= 0 {
+			return nil, varintErr
 		}
+		offset += n
 		long = lastLong + long
 		nodes[i].Long = IntToCoord(uint32(long))
 		lastLong = long
@@ -93,10 +97,11 @@ func UnmarshalDeltaNodes(buf []byte, nodes []element.Node) ([]element.Node, erro
 
 	lastLat := int64(0)
 	for i := 0; int64(i) < length; i++ {
-		lat, err := binary.ReadVarint(r)
-		if err != nil {
-			return nil, err
+		lat, n := binary.Varint(buf[offset:])
+		if n <= 0 {
+			return nil, varintErr
 		}
+		offset += n
 		lat = lastLat + lat
 		nodes[i].Lat = IntToCoord(uint32(lat))
 		lastLat = lat
