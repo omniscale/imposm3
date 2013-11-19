@@ -45,11 +45,9 @@ func (c *DiffCache) Close() {
 func (c *DiffCache) Flush() {
 	if c.Coords != nil {
 		c.Coords.Flush()
-		c.Coords = nil
 	}
 	if c.Ways != nil {
 		c.Ways.Flush()
-		c.Ways = nil
 	}
 }
 
