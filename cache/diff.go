@@ -251,7 +251,9 @@ func (index *bunchRefCache) Get(id int64) []int64 {
 	}
 
 	if data != nil {
-		for _, idRef := range binary.UnmarshalIdRefsBunch(data) {
+		idRefs := idRefsPool.get()
+		defer idRefsPool.release(idRefs)
+		for _, idRef := range binary.UnmarshalIdRefsBunch2(data, idRefs) {
 			if idRef.Id == id {
 				return idRef.Refs
 			}
@@ -270,14 +272,18 @@ func (index *bunchRefCache) Add(id, ref int64) error {
 
 	var idRefs []element.IdRefs
 	if data != nil {
-		idRefs = binary.UnmarshalIdRefsBunch(data)
+		idRefs = idRefsPool.get()
+		defer idRefsPool.release(idRefs)
+		idRefs = binary.UnmarshalIdRefsBunch2(data, idRefs)
 	}
 
 	idRefBunch := idRefBunch{index.getBunchId(id), idRefs}
 	idRef := idRefBunch.getCreate(id)
 	idRef.Add(ref)
 
-	data = binary.MarshalIdRefsBunch(idRefBunch.idRefs)
+	data = bytePool.get()
+	defer bytePool.release(data)
+	data = binary.MarshalIdRefsBunch2(idRefBunch.idRefs, data)
 
 	return index.db.Put(index.wo, keyBuf, data)
 }
@@ -295,12 +301,16 @@ func (index *bunchRefCache) DeleteRef(id, ref int64) error {
 	}
 
 	if data != nil {
-		idRefs := binary.UnmarshalIdRefsBunch(data)
+		idRefs := idRefsPool.get()
+		defer idRefsPool.release(idRefs)
+		idRefs = binary.UnmarshalIdRefsBunch2(data, idRefs)
 		idRefBunch := idRefBunch{index.getBunchId(id), idRefs}
 		idRef := idRefBunch.get(id)
 		if idRef != nil {
 			idRef.Delete(ref)
-			data := binary.MarshalIdRefsBunch(idRefs)
+			data := bytePool.get()
+			defer bytePool.release(data)
+			data = binary.MarshalIdRefsBunch2(idRefs, data)
 			return index.db.Put(index.wo, keyBuf, data)
 		}
 	}
@@ -320,12 +330,16 @@ func (index *bunchRefCache) Delete(id int64) error {
 	}
 
 	if data != nil {
-		idRefs := binary.UnmarshalIdRefsBunch(data)
+		idRefs := idRefsPool.get()
+		defer idRefsPool.release(idRefs)
+		idRefs = binary.UnmarshalIdRefsBunch2(data, idRefs)
 		idRefBunch := idRefBunch{index.getBunchId(id), idRefs}
 		idRef := idRefBunch.get(id)
 		if idRef != nil {
 			idRef.Refs = []int64{}
-			data := binary.MarshalIdRefsBunch(idRefs)
+			data := bytePool.get()
+			defer bytePool.release(data)
+			data = binary.MarshalIdRefsBunch2(idRefs, data)
 			return index.db.Put(index.wo, keyBuf, data)
 		}
 	}
@@ -459,6 +473,7 @@ func (index *bunchRefCache) writeRefs(idRefs idRefBunches) error {
 
 	for item := range putc {
 		batch.Put(item.bunchIdBuf, item.data)
+		bytePool.release(item.data)
 	}
 
 	go func() {
@@ -524,7 +539,9 @@ func (index *bunchRefCache) loadMergeMarshal(keyBuf []byte, newBunch []element.I
 	var bunch []element.IdRefs
 
 	if data != nil {
-		bunch = binary.UnmarshalIdRefsBunch(data)
+		bunch = idRefsPool.get()
+		defer idRefsPool.release(bunch)
+		bunch = binary.UnmarshalIdRefsBunch2(data, bunch)
 	}
 
 	if bunch == nil {
@@ -533,6 +550,47 @@ func (index *bunchRefCache) loadMergeMarshal(keyBuf []byte, newBunch []element.I
 		bunch = mergeBunch(bunch, newBunch)
 	}
 
-	data = binary.MarshalIdRefsBunch(bunch)
+	data = bytePool.get()
+	data = binary.MarshalIdRefsBunch2(bunch, data)
 	return data
+}
+
+// pools to reuse memory
+var idRefsPool = make(idRefsPoolWrapper, 8)
+var bytePool = make(bytePoolWrapper, 8)
+
+type bytePoolWrapper chan []byte
+
+func (p *bytePoolWrapper) get() []byte {
+	select {
+	case buf := <-(*p):
+		return buf
+	default:
+		return nil
+	}
+}
+
+func (p *bytePoolWrapper) release(buf []byte) {
+	select {
+	case (*p) <- buf:
+	default:
+	}
+}
+
+type idRefsPoolWrapper chan []element.IdRefs
+
+func (p *idRefsPoolWrapper) get() []element.IdRefs {
+	select {
+	case idRefs := <-(*p):
+		return idRefs
+	default:
+		return nil
+	}
+}
+
+func (p *idRefsPoolWrapper) release(idRefs []element.IdRefs) {
+	select {
+	case (*p) <- idRefs:
+	default:
+	}
 }

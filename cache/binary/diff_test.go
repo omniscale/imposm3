@@ -16,8 +16,8 @@ func TestmarshalBunch(t *testing.T) {
 		{123924132, []int64{912412210, 9124213, 212412210}},
 	}
 
-	buf := MarshalIdRefsBunch(bunch)
-	newBunch := UnmarshalIdRefsBunch(buf)
+	buf := MarshalIdRefsBunch2(bunch, nil)
+	newBunch := UnmarshalIdRefsBunch2(buf, nil)
 
 	t.Log(len(buf), float64(len(buf))/6.0)
 
@@ -47,9 +47,10 @@ func BenchmarkMarshalBunch(b *testing.B) {
 		{123924130, []int64{91241213}},
 		{123924132, []int64{912412210, 9124213, 212412210}},
 	}
-
+	idRefs := []element.IdRefs{}
+	buf := []byte{}
 	for i := 0; i < b.N; i++ {
-		buf := MarshalIdRefsBunch(bunch)
-		UnmarshalIdRefsBunch(buf)
+		buf = MarshalIdRefsBunch2(bunch, buf)
+		idRefs = UnmarshalIdRefsBunch2(buf, idRefs)
 	}
 }
