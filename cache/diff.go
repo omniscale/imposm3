@@ -42,6 +42,17 @@ func (c *DiffCache) Close() {
 	}
 }
 
+func (c *DiffCache) Flush() {
+	if c.Coords != nil {
+		c.Coords.Flush()
+		c.Coords = nil
+	}
+	if c.Ways != nil {
+		c.Ways.Flush()
+		c.Ways = nil
+	}
+}
+
 func (c *DiffCache) Open() error {
 	var err error
 	c.Coords, err = newCoordsRefIndex(filepath.Join(c.Dir, "coords_index"))
@@ -211,6 +222,14 @@ func newWaysRefIndex(dir string) (*WaysRefIndex, error) {
 
 func (index *bunchRefCache) getBunchId(id int64) int64 {
 	return id / 64
+}
+
+func (index *bunchRefCache) Flush() {
+	if index.linearImport {
+		// disable linear import flushes buffer
+		index.SetLinearImport(false)
+		index.SetLinearImport(true)
+	}
 }
 
 func (index *bunchRefCache) Close() {
