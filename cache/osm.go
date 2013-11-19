@@ -178,6 +178,14 @@ func idFromKeyBuf(buf []byte) int64 {
 }
 
 func (c *cache) Close() {
+	if c.ro != nil {
+		c.ro.Close()
+		c.ro = nil
+	}
+	if c.wo != nil {
+		c.wo.Close()
+		c.wo = nil
+	}
 	if c.db != nil {
 		c.db.Close()
 		c.db = nil
@@ -186,4 +194,5 @@ func (c *cache) Close() {
 		c.cache.Close()
 		c.cache = nil
 	}
+
 }
