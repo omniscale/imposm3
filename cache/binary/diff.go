@@ -1,7 +1,6 @@
 package binary
 
 import (
-	"bytes"
 	"encoding/binary"
 
 	"imposm3/element"
@@ -48,38 +47,42 @@ func MarshalIdRefsBunch(idRefs []element.IdRefs) []byte {
 }
 
 func UnmarshalIdRefsBunch(buf []byte) []element.IdRefs {
-	r := bytes.NewBuffer(buf)
-	n, err := binary.ReadUvarint(r)
-	if err != nil {
+	length, n := binary.Uvarint(buf)
+	if n <= 0 {
 		return nil
 	}
 
-	idRefs := make([]element.IdRefs, n)
+	offset := n
+
+	idRefs := make([]element.IdRefs, length)
 
 	last := int64(0)
-	for i := 0; uint64(i) < n; i++ {
-		idRefs[i].Id, err = binary.ReadVarint(r)
-		if err != nil {
-			panic(err)
+	for i := 0; uint64(i) < length; i++ {
+		idRefs[i].Id, n = binary.Varint(buf[offset:])
+		if n <= 0 {
+			panic("no data")
 		}
+		offset += n
 		idRefs[i].Id += last
 		last = idRefs[i].Id
 	}
 	var numRefs uint64
-	for i := 0; uint64(i) < n; i++ {
-		numRefs, err = binary.ReadUvarint(r)
-		if err != nil {
-			panic(err)
+	for i := 0; uint64(i) < length; i++ {
+		numRefs, n = binary.Uvarint(buf[offset:])
+		if n <= 0 {
+			panic("no data")
 		}
+		offset += n
 		idRefs[i].Refs = make([]int64, numRefs)
 	}
 	last = 0
-	for idIdx := 0; uint64(idIdx) < n; idIdx++ {
+	for idIdx := 0; uint64(idIdx) < length; idIdx++ {
 		for refIdx := 0; refIdx < len(idRefs[idIdx].Refs); refIdx++ {
-			idRefs[idIdx].Refs[refIdx], err = binary.ReadVarint(r)
-			if err != nil {
-				panic(err)
+			idRefs[idIdx].Refs[refIdx], n = binary.Varint(buf[offset:])
+			if n <= 0 {
+				panic("no data")
 			}
+			offset += n
 			idRefs[idIdx].Refs[refIdx] += last
 			last = idRefs[idIdx].Refs[refIdx]
 		}
