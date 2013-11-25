@@ -103,16 +103,18 @@ func NewStatsReporterWithEstimate(counts *ElementCounts) *Statistics {
 }
 
 func (s *Statistics) loop() {
-	tick := time.Tick(500 * time.Millisecond)
-	tock := time.Tick(time.Minute)
+	tick := time.NewTicker(500 * time.Millisecond)
+	tock := time.NewTicker(time.Minute)
 	for {
 		select {
 		case <-s.done:
+			tick.Stop()
+			tock.Stop()
 			s.counter.PrintStats()
 			return
-		case <-tock:
+		case <-tock.C:
 			s.counter.PrintStats()
-		case <-tick:
+		case <-tick.C:
 			s.counter.PrintTick()
 			s.counter.Tick()
 		}
