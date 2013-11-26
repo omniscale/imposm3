@@ -27,8 +27,8 @@ type point struct {
 
 func newPointFromCoords(coords []interface{}) (point, error) {
 	p := point{}
-	if len(coords) != 2 {
-		return p, errors.New("point list length not 2")
+	if len(coords) != 2 && len(coords) != 3 {
+		return p, errors.New("point list length not 2 or 3")
 	}
 	var ok bool
 	p.long, ok = coords[0].(float64)

@@ -22,6 +22,22 @@ func TestParsePolygon(t *testing.T) {
 		t.Fatal(geoms[0].Area())
 	}
 
+	// ignore z values
+	r = bytes.NewBufferString(`{"type": "Polygon", "coordinates": [[[0, 0, 0], [10, 0, 0], [10, 10, 0], [0, 10, 0], [0, 0, 0]]]}`)
+	geoms, err = ParseGeoJson(r)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(geoms) != 1 {
+		t.Fatal(geoms)
+	}
+
+	if math.Abs(geoms[0].Area()-100) > 0.00001 {
+		t.Fatal(geoms[0].Area())
+	}
+
 	r = bytes.NewBufferString(`{"type": "Polygon", "coordinates": [[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]], [[5, 5], [6, 5], [6, 6], [5, 6], [5, 5]]]}`)
 	geoms, err = ParseGeoJson(r)
 
