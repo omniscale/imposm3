@@ -163,45 +163,6 @@ func constructPolygons(obj *object) ([]polygon, error) {
 	}
 }
 
-type GeoJson struct {
-	object object
-}
-
-func NewGeoJson(r io.Reader) (*GeoJson, error) {
-	result := &GeoJson{}
-
-	decoder := json.NewDecoder(r)
-
-	err := decoder.Decode(&result.object)
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-func (gj *GeoJson) Geoms() ([]*geos.Geom, error) {
-
-	polygons, err := constructPolygons(&gj.object)
-	if err != nil {
-		return nil, err
-	}
-
-	g := geos.NewGeos()
-	defer g.Finish()
-	result := []*geos.Geom{}
-
-	for _, p := range polygons {
-		geom, err := geosPolygon(g, p)
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, geom)
-
-	}
-	return result, err
-}
-
 func geosRing(g *geos.Geos, ls lineString) (*geos.Geom, error) {
 	coordSeq, err := g.CreateCoordSeq(uint32(len(ls)), 2)
 	if err != nil {

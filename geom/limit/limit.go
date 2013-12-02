@@ -140,11 +140,7 @@ func NewFromGeoJsonWithBuffered(source string, buffer float64) (*Limiter, error)
 	}
 	defer f.Close()
 
-	gj, err := geojson.NewGeoJson(f)
-	if err != nil {
-		return nil, err
-	}
-	geoms, err := gj.Geoms()
+	geoms, err := geojson.ParseGeoJson(f)
 	if err != nil {
 		return nil, err
 	}
