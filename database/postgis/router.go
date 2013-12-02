@@ -10,7 +10,7 @@ type TxRouter struct {
 	tx     *sql.Tx
 }
 
-func newTxRouter(pg *PostGIS, bulkImport bool) *TxRouter {
+func newTxRouter(pg *PostGIS, bulkImport bool) (*TxRouter, error) {
 	txr := TxRouter{
 		Tables: make(map[string]TableTx),
 	}
@@ -20,7 +20,7 @@ func newTxRouter(pg *PostGIS, bulkImport bool) *TxRouter {
 			tt := NewBulkTableTx(pg, table)
 			err := tt.Begin(nil)
 			if err != nil {
-				panic(err) // TODO
+				return nil, err
 			}
 			txr.Tables[tableName] = tt
 		}
@@ -34,7 +34,7 @@ func newTxRouter(pg *PostGIS, bulkImport bool) *TxRouter {
 			tt := NewSynchronousTableTx(pg, table.FullName, table)
 			err := tt.Begin(tx)
 			if err != nil {
-				panic(err) // TODO
+				return nil, err
 			}
 			txr.Tables[tableName] = tt
 		}
@@ -42,13 +42,13 @@ func newTxRouter(pg *PostGIS, bulkImport bool) *TxRouter {
 			tt := NewSynchronousTableTx(pg, table.FullName, table)
 			err := tt.Begin(tx)
 			if err != nil {
-				panic(err) // TODO
+				return nil, err
 			}
 			txr.Tables[tableName] = tt
 		}
 	}
 
-	return &txr
+	return &txr, nil
 }
 
 func (txr *TxRouter) End() error {

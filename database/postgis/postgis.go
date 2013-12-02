@@ -543,13 +543,15 @@ func (pg *PostGIS) EnableGeneralizeUpdates() {
 }
 
 func (pg *PostGIS) Begin() error {
-	pg.txRouter = newTxRouter(pg, false)
-	return nil
+	var err error
+	pg.txRouter, err = newTxRouter(pg, false)
+	return err
 }
 
 func (pg *PostGIS) BeginBulk() error {
-	pg.txRouter = newTxRouter(pg, true)
-	return nil
+	var err error
+	pg.txRouter, err = newTxRouter(pg, true)
+	return err
 }
 
 func (pg *PostGIS) Abort() error {
