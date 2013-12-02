@@ -160,7 +160,6 @@ func (this *Geos) BoundsPolygon(bounds Bounds) *Geom {
 	// geom inherited by Polygon, no destroy
 
 	geom = this.Polygon(geom, nil)
-	this.DestroyLater(geom)
 	return geom
 
 }

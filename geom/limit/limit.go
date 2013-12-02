@@ -88,6 +88,7 @@ func SplitPolygonAtGrid(g *geos.Geos, geom *geos.Geom, gridWidth, currentGridWid
 			return nil, errors.New("couldn't create bounds polygon")
 		}
 		part := g.Intersection(geom, clipGeom)
+		g.Destroy(clipGeom)
 		if part == nil {
 			return nil, errors.New("couldn't create intersection")
 		}
@@ -96,6 +97,7 @@ func SplitPolygonAtGrid(g *geos.Geos, geom *geos.Geom, gridWidth, currentGridWid
 				result = append(result, part)
 			} else {
 				moreParts, err := SplitPolygonAtGrid(g, part, gridWidth, currentGridWidth/2.0)
+				g.Destroy(part)
 				if err != nil {
 					return nil, err
 				}
