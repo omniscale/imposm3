@@ -63,6 +63,9 @@ func Import() {
 		conf := database.Config{
 			ConnectionParams: config.BaseOptions.Connection,
 			Srid:             config.BaseOptions.Srid,
+			ImportSchema:     config.BaseOptions.Schemas.Import,
+			ProductionSchema: config.BaseOptions.Schemas.Production,
+			BackupSchema:     config.BaseOptions.Schemas.Backup,
 		}
 		db, err = database.Open(conf, tagmapping)
 		if err != nil {

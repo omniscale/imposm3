@@ -49,7 +49,7 @@ func (tt *bulkTableTx) Begin(tx *sql.Tx) error {
 	}
 	tt.Tx = tx
 
-	_, err = tx.Exec(fmt.Sprintf(`TRUNCATE TABLE "%s"."%s" RESTART IDENTITY`, tt.Pg.Schema, tt.Table))
+	_, err = tx.Exec(fmt.Sprintf(`TRUNCATE TABLE "%s"."%s" RESTART IDENTITY`, tt.Pg.Config.ImportSchema, tt.Table))
 	if err != nil {
 		return err
 	}

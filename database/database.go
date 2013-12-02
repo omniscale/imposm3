@@ -10,6 +10,9 @@ import (
 type Config struct {
 	ConnectionParams string
 	Srid             int
+	ImportSchema     string
+	ProductionSchema string
+	BackupSchema     string
 }
 
 type DB interface {

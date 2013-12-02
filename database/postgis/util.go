@@ -8,25 +8,6 @@ import (
 	"sync"
 )
 
-func schemasFromConnectionParams(params string) (string, string) {
-	parts := strings.Fields(params)
-	var schema, backupSchema string
-	for _, p := range parts {
-		if strings.HasPrefix(p, "schema=") {
-			schema = strings.Replace(p, "schema=", "", 1)
-		} else if strings.HasPrefix(p, "backupschema=") {
-			backupSchema = strings.Replace(p, "backupschema=", "", 1)
-		}
-	}
-	if schema == "" {
-		schema = "import"
-	}
-	if backupSchema == "" {
-		backupSchema = "backup"
-	}
-	return schema, backupSchema
-}
-
 // disableDefaultSslOnLocalhost adds sslmode=disable to params
 // when host is localhost/127.0.0.1 and the sslmode param and
 // PGSSLMODE environment are both not set.

@@ -53,6 +53,10 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 	dbConf := database.Config{
 		ConnectionParams: config.BaseOptions.Connection,
 		Srid:             config.BaseOptions.Srid,
+		// we apply diff imports on the Production schema
+		ImportSchema:     config.BaseOptions.Schemas.Production,
+		ProductionSchema: config.BaseOptions.Schemas.Production,
+		BackupSchema:     config.BaseOptions.Schemas.Backup,
 	}
 	db, err := database.Open(dbConf, tagmapping)
 	if err != nil {

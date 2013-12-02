@@ -25,11 +25,16 @@ def setup():
 
 def teardown():
     shutil.rmtree(tmpdir)
+    drop_test_schemas()
 
 
 db_conf = {
     'host': 'localhost',
 }
+
+TEST_SCHEMA_IMPORT = "imposm3testimport"
+TEST_SCHEMA_PRODUCTION = "imposm3testpublic"
+TEST_SCHEMA_BACKUP = "imposm3testbackup"
 
 def merc_point(lon, lat):
     pole = 6378137 * math.pi # 20037508.342789244
@@ -50,7 +55,7 @@ def create_geom_in_row(rowdict):
 def query_row(db_conf, table, osmid):
     conn = psycopg2.connect(**db_conf)
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cur.execute('select * from import.%s where osm_id = %%s' % table, [osmid])
+    cur.execute('select * from %s.%s where osm_id = %%s' % (TEST_SCHEMA_PRODUCTION, table), [osmid])
     results = []
     for row in cur.fetchall():
         create_geom_in_row(row)
@@ -66,15 +71,65 @@ def imposm3_import(db_conf, pbf):
     conn = pg_db_url(db_conf)
 
     try:
-        print subprocess.check_output(
+        print subprocess.check_output((
             "../imposm3 import -connection %s -read %s"
             " -write"
             " -cachedir %s"
             " -diff"
             " -overwritecache"
+            " -dbschema-import " + TEST_SCHEMA_IMPORT +
             " -optimize"
-            " -mapping test_mapping.json " % (
+            " -mapping test_mapping.json ") % (
             conn, pbf, tmpdir,
+        ), shell=True)
+    except subprocess.CalledProcessError, ex:
+        print ex.output
+        raise
+
+def imposm3_deploy(db_conf):
+    conn = pg_db_url(db_conf)
+
+    try:
+        print subprocess.check_output((
+            "../imposm3 import -connection %s"
+            " -dbschema-import " + TEST_SCHEMA_IMPORT +
+            " -dbschema-production " + TEST_SCHEMA_PRODUCTION +
+            " -dbschema-backup " + TEST_SCHEMA_BACKUP +
+            " -deployproduction"
+            " -mapping test_mapping.json ") % (
+            conn,
+        ), shell=True)
+    except subprocess.CalledProcessError, ex:
+        print ex.output
+        raise
+
+def imposm3_revert_deploy(db_conf):
+    conn = pg_db_url(db_conf)
+
+    try:
+        print subprocess.check_output((
+            "../imposm3 import -connection %s"
+            " -dbschema-import " + TEST_SCHEMA_IMPORT +
+            " -dbschema-production " + TEST_SCHEMA_PRODUCTION +
+            " -dbschema-backup " + TEST_SCHEMA_BACKUP +
+            " -revertdeploy"
+            " -mapping test_mapping.json ") % (
+            conn,
+        ), shell=True)
+    except subprocess.CalledProcessError, ex:
+        print ex.output
+        raise
+
+def imposm3_remove_backups(db_conf):
+    conn = pg_db_url(db_conf)
+
+    try:
+        print subprocess.check_output((
+            "../imposm3 import -connection %s"
+            " -dbschema-backup " + TEST_SCHEMA_BACKUP +
+            " -removebackup"
+            " -mapping test_mapping.json ") % (
+            conn,
         ), shell=True)
     except subprocess.CalledProcessError, ex:
         print ex.output
@@ -84,11 +139,12 @@ def imposm3_update(db_conf, osc):
     conn = pg_db_url(db_conf)
 
     try:
-        print subprocess.check_output(
+        print subprocess.check_output((
             "../imposm3 diff -connection %s"
             " -cachedir %s"
             " -limitto clipping-3857.geojson"
-            " -mapping test_mapping.json %s" % (
+            " -dbschema-production " + TEST_SCHEMA_PRODUCTION +
+            " -mapping test_mapping.json %s") % (
             conn, tmpdir, osc,
         ), shell=True)
     except subprocess.CalledProcessError, ex:
@@ -113,11 +169,11 @@ def cache_query(nodes='', ways='', relations='', deps='', full=''):
     print out
     return json.loads(out)
 
-def table_exists(table):
+def table_exists(table, schema=TEST_SCHEMA_IMPORT):
     conn = psycopg2.connect(**db_conf)
     cur = conn.cursor()
     cur.execute("SELECT EXISTS(SELECT * FROM information_schema.tables WHERE table_name='%s' AND table_schema='%s')"
-        % (table, 'import'))
+        % (table, schema))
     return cur.fetchone()[0]
 
 def assert_missing_node(id):
@@ -140,19 +196,29 @@ def assert_cached_way(id):
     if not data['ways'][str(id)]:
         raise AssertionError('way %d not found' % id)
 
-def drop_import_schema():
+def drop_test_schemas():
     conn = psycopg2.connect(**db_conf)
     cur = conn.cursor()
-    cur.execute("DROP SCHEMA IF EXISTS import CASCADE")
+    cur.execute("DROP SCHEMA IF EXISTS %s CASCADE" % TEST_SCHEMA_IMPORT)
+    cur.execute("DROP SCHEMA IF EXISTS %s CASCADE" % TEST_SCHEMA_PRODUCTION)
+    cur.execute("DROP SCHEMA IF EXISTS %s CASCADE" % TEST_SCHEMA_BACKUP)
     conn.commit()
 
 #######################################################################
 def test_import():
     """Import succeeds"""
-    drop_import_schema()
-    assert not table_exists('osm_roads')
+    drop_test_schemas()
+    assert not table_exists('osm_roads', schema=TEST_SCHEMA_IMPORT)
     imposm3_import(db_conf, './build/test.pbf')
-    assert table_exists('osm_roads')
+    assert table_exists('osm_roads', schema=TEST_SCHEMA_IMPORT)
+
+def test_deploy():
+    """Deploy succeeds"""
+    assert not table_exists('osm_roads', schema=TEST_SCHEMA_PRODUCTION)
+    imposm3_deploy(db_conf)
+    assert table_exists('osm_roads', schema=TEST_SCHEMA_PRODUCTION)
+    assert not table_exists('osm_roads', schema=TEST_SCHEMA_IMPORT)
+
 #######################################################################
 
 def test_imported_landusage():
@@ -436,3 +502,43 @@ def test_duplicate_ids2():
     assert query_row(db_conf, 'osm_buildings', -51001) == None
     assert query_row(db_conf, 'osm_buildings', -51011)['type'] == 'mp'
     assert query_row(db_conf, 'osm_buildings', 51011) == None
+
+#######################################################################
+def test_deploy_and_revert_deploy():
+    """Revert deploy succeeds"""
+    assert not table_exists('osm_roads', schema=TEST_SCHEMA_IMPORT)
+    assert table_exists('osm_roads', schema=TEST_SCHEMA_PRODUCTION)
+    assert not table_exists('osm_roads', schema=TEST_SCHEMA_BACKUP)
+
+    # import again to have a new import schema
+    imposm3_import(db_conf, './build/test.pbf')
+    assert table_exists('osm_roads', schema=TEST_SCHEMA_IMPORT)
+
+    imposm3_deploy(db_conf)
+    assert not table_exists('osm_roads', schema=TEST_SCHEMA_IMPORT)
+    assert table_exists('osm_roads', schema=TEST_SCHEMA_PRODUCTION)
+    assert table_exists('osm_roads', schema=TEST_SCHEMA_BACKUP)
+
+    imposm3_revert_deploy(db_conf)
+    assert table_exists('osm_roads', schema=TEST_SCHEMA_IMPORT)
+    assert table_exists('osm_roads', schema=TEST_SCHEMA_PRODUCTION)
+    assert not table_exists('osm_roads', schema=TEST_SCHEMA_BACKUP)
+
+def test_remove_backup():
+    """Remove backup succeeds"""
+    assert table_exists('osm_roads', schema=TEST_SCHEMA_IMPORT)
+    assert table_exists('osm_roads', schema=TEST_SCHEMA_PRODUCTION)
+    assert not table_exists('osm_roads', schema=TEST_SCHEMA_BACKUP)
+
+    imposm3_deploy(db_conf)
+
+    assert not table_exists('osm_roads', schema=TEST_SCHEMA_IMPORT)
+    assert table_exists('osm_roads', schema=TEST_SCHEMA_PRODUCTION)
+    assert table_exists('osm_roads', schema=TEST_SCHEMA_BACKUP)
+
+    imposm3_remove_backups(db_conf)
+
+    assert not table_exists('osm_roads', schema=TEST_SCHEMA_IMPORT)
+    assert table_exists('osm_roads', schema=TEST_SCHEMA_PRODUCTION)
+    assert not table_exists('osm_roads', schema=TEST_SCHEMA_BACKUP)
+

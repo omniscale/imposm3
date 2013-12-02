@@ -7,6 +7,10 @@ import (
 func (pg *PostGIS) rotate(source, dest, backup string) error {
 	defer log.StopStep(log.StartStep(fmt.Sprintf("Rotating tables")))
 
+	if err := pg.createSchema(dest); err != nil {
+		return err
+	}
+
 	if err := pg.createSchema(backup); err != nil {
 		return err
 	}
@@ -71,11 +75,11 @@ func (pg *PostGIS) rotate(source, dest, backup string) error {
 }
 
 func (pg *PostGIS) Deploy() error {
-	return pg.rotate(pg.Schema, "public", pg.BackupSchema)
+	return pg.rotate(pg.Config.ImportSchema, pg.Config.ProductionSchema, pg.Config.BackupSchema)
 }
 
 func (pg *PostGIS) RevertDeploy() error {
-	return pg.rotate(pg.BackupSchema, "public", pg.Schema)
+	return pg.rotate(pg.Config.BackupSchema, pg.Config.ProductionSchema, pg.Config.ImportSchema)
 }
 
 func (pg *PostGIS) RemoveBackup() error {
@@ -85,7 +89,7 @@ func (pg *PostGIS) RemoveBackup() error {
 	}
 	defer rollbackIfTx(&tx)
 
-	backup := pg.BackupSchema
+	backup := pg.Config.BackupSchema
 
 	for _, tableName := range pg.tableNames() {
 		tableName = pg.Prefix + tableName

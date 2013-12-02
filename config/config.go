@@ -16,10 +16,20 @@ type Config struct {
 	LimitTo            string  `json:"limitto"`
 	LimitToCacheBuffer float64 `json:"limitto_cache_buffer"`
 	Srid               int     `json:"srid"`
+	Schemas            Schemas `json:"schemas"`
+}
+
+type Schemas struct {
+	Import     string `json:"import"`
+	Production string `json:"production"`
+	Backup     string `json:"backup"`
 }
 
 const defaultSrid = 3857
 const defaultCacheDir = "/tmp/imposm3"
+const defaultSchemaImport = "import"
+const defaultSchemaProduction = "production"
+const defaultSchemaBackup = "backup"
 
 var ImportFlags = flag.NewFlagSet("import", flag.ExitOnError)
 var DiffFlags = flag.NewFlagSet("diff", flag.ExitOnError)
@@ -34,6 +44,7 @@ type _BaseOptions struct {
 	ConfigFile         string
 	Httpprofile        string
 	Quiet              bool
+	Schemas            Schemas
 }
 
 func (o *_BaseOptions) updateFromConfig() error {
@@ -54,6 +65,17 @@ func (o *_BaseOptions) updateFromConfig() error {
 			return err
 		}
 	}
+
+	if o.Schemas.Import == defaultSchemaImport {
+		o.Schemas.Import = conf.Schemas.Import
+	}
+	if o.Schemas.Production == defaultSchemaProduction {
+		o.Schemas.Production = conf.Schemas.Production
+	}
+	if o.Schemas.Backup == defaultSchemaBackup {
+		o.Schemas.Backup = conf.Schemas.Backup
+	}
+
 	if o.Connection == "" {
 		o.Connection = conf.Connection
 	}
@@ -114,7 +136,9 @@ func addBaseFlags(flags *flag.FlagSet) {
 	flags.StringVar(&BaseOptions.ConfigFile, "config", "", "config (json)")
 	flags.StringVar(&BaseOptions.Httpprofile, "httpprofile", "", "bind address for profile server")
 	flags.BoolVar(&BaseOptions.Quiet, "quiet", false, "quiet log output")
-
+	flags.StringVar(&BaseOptions.Schemas.Import, "dbschema-import", defaultSchemaImport, "db schema for imports")
+	flags.StringVar(&BaseOptions.Schemas.Production, "dbschema-production", defaultSchemaProduction, "db schema for production")
+	flags.StringVar(&BaseOptions.Schemas.Backup, "dbschema-backup", defaultSchemaBackup, "db schema for backups")
 }
 
 func UsageImport() {

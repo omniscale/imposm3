@@ -116,7 +116,7 @@ func NewTableSpec(pg *PostGIS, t *mapping.Table) *TableSpec {
 	spec := TableSpec{
 		Name:         t.Name,
 		FullName:     pg.Prefix + t.Name,
-		Schema:       pg.Schema,
+		Schema:       pg.Config.ImportSchema,
 		GeometryType: string(t.Type),
 		Srid:         pg.Config.Srid,
 	}
@@ -140,7 +140,7 @@ func NewGeneralizedTableSpec(pg *PostGIS, t *mapping.GeneralizedTable) *Generali
 	spec := GeneralizedTableSpec{
 		Name:       t.Name,
 		FullName:   pg.Prefix + t.Name,
-		Schema:     pg.Schema,
+		Schema:     pg.Config.ImportSchema,
 		Tolerance:  t.Tolerance,
 		Where:      t.SqlFilter,
 		SourceName: t.SourceTableName,

@@ -113,7 +113,7 @@ func (pg *PostGIS) createSchema(schema string) error {
 
 // Init creates schema and tables, drops existing data.
 func (pg *PostGIS) Init() error {
-	if err := pg.createSchema(pg.Schema); err != nil {
+	if err := pg.createSchema(pg.Config.ImportSchema); err != nil {
 		return err
 	}
 
@@ -173,7 +173,7 @@ func createIndex(pg *PostGIS, tableName string, columns []ColumnSpec) error {
 	for _, col := range columns {
 		if col.Type.Name() == "GEOMETRY" {
 			sql := fmt.Sprintf(`CREATE INDEX "%s_geom" ON "%s"."%s" USING GIST ("%s")`,
-				tableName, pg.Schema, tableName, col.Name)
+				tableName, pg.Config.ImportSchema, tableName, col.Name)
 			step := log.StartStep(fmt.Sprintf("Creating geometry index on %s", tableName))
 			_, err := pg.Db.Exec(sql)
 			log.StopStep(step)
@@ -183,7 +183,7 @@ func createIndex(pg *PostGIS, tableName string, columns []ColumnSpec) error {
 		}
 		if col.FieldType.Name == "id" {
 			sql := fmt.Sprintf(`CREATE INDEX "%s_osm_id_idx" ON "%s"."%s" USING BTREE ("%s")`,
-				tableName, pg.Schema, tableName, col.Name)
+				tableName, pg.Config.ImportSchema, tableName, col.Name)
 			step := log.StartStep(fmt.Sprintf("Creating OSM id index on %s", tableName))
 			_, err := pg.Db.Exec(sql)
 			log.StopStep(step)
@@ -282,7 +282,7 @@ func (pg *PostGIS) generalizeTable(table *GeneralizedTableSpec) error {
 		cols = append(cols, col.Type.GeneralizeSql(&col, table))
 	}
 
-	if err := dropTableIfExists(tx, pg.Schema, table.FullName); err != nil {
+	if err := dropTableIfExists(tx, pg.Config.ImportSchema, table.FullName); err != nil {
 		return err
 	}
 
@@ -295,7 +295,7 @@ func (pg *PostGIS) generalizeTable(table *GeneralizedTableSpec) error {
 		sourceTable = table.Source.FullName
 	}
 	sql := fmt.Sprintf(`CREATE TABLE "%s"."%s" AS (SELECT %s FROM "%s"."%s"%s)`,
-		pg.Schema, table.FullName, columnSQL, pg.Schema,
+		pg.Config.ImportSchema, table.FullName, columnSQL, pg.Config.ImportSchema,
 		sourceTable, where)
 
 	_, err = tx.Exec(sql)
@@ -355,7 +355,7 @@ func clusterTable(pg *PostGIS, tableName string, srid int, columns []ColumnSpec)
 		if col.Type.Name() == "GEOMETRY" {
 			step := log.StartStep(fmt.Sprintf("Indexing %s on geohash", tableName))
 			sql := fmt.Sprintf(`CREATE INDEX "%s_geom_geohash" ON "%s"."%s" (ST_GeoHash(ST_Transform(ST_SetSRID(Box2D(%s), %d), 4326)))`,
-				tableName, pg.Schema, tableName, col.Name, srid)
+				tableName, pg.Config.ImportSchema, tableName, col.Name, srid)
 			_, err := pg.Db.Exec(sql)
 			log.StopStep(step)
 			if err != nil {
@@ -364,7 +364,7 @@ func clusterTable(pg *PostGIS, tableName string, srid int, columns []ColumnSpec)
 
 			step = log.StartStep(fmt.Sprintf("Clustering %s on geohash", tableName))
 			sql = fmt.Sprintf(`CLUSTER "%s_geom_geohash" ON "%s"."%s"`,
-				tableName, pg.Schema, tableName)
+				tableName, pg.Config.ImportSchema, tableName)
 			_, err = pg.Db.Exec(sql)
 			log.StopStep(step)
 			if err != nil {
@@ -376,7 +376,7 @@ func clusterTable(pg *PostGIS, tableName string, srid int, columns []ColumnSpec)
 
 	step := log.StartStep(fmt.Sprintf("Analysing %s", tableName))
 	sql := fmt.Sprintf(`ANALYSE "%s"."%s"`,
-		pg.Schema, tableName)
+		pg.Config.ImportSchema, tableName)
 	_, err := pg.Db.Exec(sql)
 	log.StopStep(step)
 	if err != nil {
@@ -389,8 +389,6 @@ func clusterTable(pg *PostGIS, tableName string, srid int, columns []ColumnSpec)
 type PostGIS struct {
 	Db                      *sql.DB
 	Params                  string
-	Schema                  string
-	BackupSchema            string
 	Config                  database.Config
 	Tables                  map[string]*TableSpec
 	GeneralizedTables       map[string]*GeneralizedTableSpec
@@ -586,7 +584,6 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 		return nil, err
 	}
 	params = disableDefaultSslOnLocalhost(params)
-	db.Schema, db.BackupSchema = schemasFromConnectionParams(params)
 	db.Prefix = prefixFromConnectionParams(params)
 
 	for name, table := range m.Tables {
