@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"imposm3/geom/geos"
+	"imposm3/proj"
 	"io"
 )
 
@@ -38,6 +39,10 @@ func newPointFromCoords(coords []interface{}) (point, error) {
 	p.lat, ok = coords[1].(float64)
 	if !ok {
 		return p, errors.New("invalid lat")
+	}
+
+	if p.long >= -180.0 && p.long <= 180.0 && p.lat >= -90.0 && p.lat <= 90.0 {
+		p.long, p.lat = proj.WgsToMerc(p.long, p.lat)
 	}
 	return p, nil
 }
