@@ -1,4 +1,4 @@
-.PHONY: test all build clean test test-system test-unit
+.PHONY: test all build clean test test-system test-unit update_version
 
 PROTOFILES=$(shell find . -name \*.proto)
 PBGOFILES=$(patsubst %.proto,%.pb.go,$(PROTOFILES))
@@ -16,10 +16,16 @@ BUILD_VERSION=dev-$(BUILD_DATE)-$(BUILD_REV)
 
 all: build test
 
+update_version:
+	@sed -i'' 's/buildVersion = ".*"/buildVersion = "$(BUILD_VERSION)"/' cmd/version.go
+
+revert_version:
+	@sed -i'' 's/buildVersion = ".*"/buildVersion = ""/' cmd/version.go
+
 imposm3: $(GOFILES) $(PROTOFILES)
-	@sed -i='' 's/buildVersion = ".*"/buildVersion = "$(BUILD_VERSION)"/' cmd/version.go
+	$(MAKE) update_version
 	go build $(GOLDFLAGS)
-	@sed -i='' 's/buildVersion = ".*"/buildVersion = ""/' cmd/version.go
+	$(MAKE) revert_version
 
 build: imposm3
 
