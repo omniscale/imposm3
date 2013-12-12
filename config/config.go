@@ -21,7 +21,7 @@ type Config struct {
 
 type Schemas struct {
 	Import     string `json:"import"`
-	Production string `json:"production"`
+	Production string `json:"public"`
 	Backup     string `json:"backup"`
 }
 
