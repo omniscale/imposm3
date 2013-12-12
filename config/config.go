@@ -66,13 +66,13 @@ func (o *_BaseOptions) updateFromConfig() error {
 		}
 	}
 
-	if o.Schemas.Import == defaultSchemaImport {
+	if conf.Schemas.Import != "" && o.Schemas.Import == defaultSchemaImport {
 		o.Schemas.Import = conf.Schemas.Import
 	}
-	if o.Schemas.Production == defaultSchemaProduction {
+	if conf.Schemas.Production != "" && o.Schemas.Production == defaultSchemaProduction {
 		o.Schemas.Production = conf.Schemas.Production
 	}
-	if o.Schemas.Backup == defaultSchemaBackup {
+	if conf.Schemas.Backup != "" && o.Schemas.Backup == defaultSchemaBackup {
 		o.Schemas.Backup = conf.Schemas.Backup
 	}
 
