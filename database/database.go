@@ -40,6 +40,9 @@ type Inserter interface {
 	InsertPoint(element.OSMElem, interface{})
 	InsertLineString(element.OSMElem, interface{})
 	InsertPolygon(element.OSMElem, interface{})
+	// MatchEquals returns true if two interface{}s from ProbeXxx
+	// share the same destination.
+	MatchEquals(interface{}, interface{}) bool
 }
 
 type Deployer interface {
@@ -110,6 +113,7 @@ func (n *nullDb) InsertPolygon(element.OSMElem, interface{})          {}
 func (n *nullDb) ProbePoint(element.OSMElem) (bool, interface{})      { return true, nil }
 func (n *nullDb) ProbeLineString(element.OSMElem) (bool, interface{}) { return true, nil }
 func (n *nullDb) ProbePolygon(element.OSMElem) (bool, interface{})    { return true, nil }
+func (n *nullDb) MatchEquals(interface{}, interface{}) bool           { return false }
 
 func newNullDb(conf Config, m *mapping.Mapping) (DB, error) {
 	return &nullDb{}, nil

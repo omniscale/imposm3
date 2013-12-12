@@ -141,6 +141,11 @@ func newInsertedWaysCache(path string) (*InsertedWaysCache, error) {
 	return &cache, err
 }
 
+func (p *InsertedWaysCache) PutWay(way *element.Way) error {
+	keyBuf := idToKeyBuf(way.Id)
+	return p.db.Put(p.wo, keyBuf, []byte{})
+}
+
 func (p *InsertedWaysCache) PutMembers(members []element.Member) error {
 	batch := levigo.NewWriteBatch()
 	defer batch.Close()

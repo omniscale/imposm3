@@ -363,10 +363,45 @@
     <nd ref="9004"/>
     <nd ref="9001"/>
     <tag k="landuse" v="park"/>
+    <tag k="ref" v="42"/> <!-- unrelated tag -->
   </way>
   <relation id="9001" version="1" timestamp="2011-11-11T00:11:11Z">
     <member type="way" ref="9009" role="outer"/>
     <tag k="name" v="rel 9001"/>
+    <tag k="landuse" v="park"/>
+    <tag k="type" v="multipolygon"/>
+  </relation>
+
+  <!-- test multipolygon way was _not_ inserted, but hole is -->
+  <node id="9101" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="80"/>
+  <node id="9102" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="82"/>
+  <node id="9103" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="82"/>
+  <node id="9104" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="80"/>
+  <node id="9111" version="1" timestamp="2011-11-11T00:11:11Z" lat="47.1" lon="80.1"/>
+  <node id="9112" version="1" timestamp="2011-11-11T00:11:11Z" lat="47.1" lon="80.9"/>
+  <node id="9113" version="1" timestamp="2011-11-11T00:11:11Z" lat="48.9" lon="80.9"/>
+  <node id="9114" version="1" timestamp="2011-11-11T00:11:11Z" lat="48.9" lon="80.1"/>
+  <way id="9109" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="9101"/>
+    <nd ref="9102"/>
+    <nd ref="9103"/>
+    <nd ref="9104"/>
+    <nd ref="9101"/>
+    <tag k="landuse" v="park"/>
+    <tag k="ref" v="42"/> <!-- unrelated tag -->
+  </way>
+  <way id="9110" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="9111"/>
+    <nd ref="9112"/>
+    <nd ref="9113"/>
+    <nd ref="9114"/>
+    <nd ref="9111"/>
+    <tag k="natural" v="scrub"/>
+  </way>
+  <relation id="9101" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="9109" role="outer"/>
+    <member type="way" ref="9110" role="outer"/>
+    <tag k="name" v="rel 9101"/>
     <tag k="landuse" v="park"/>
     <tag k="type" v="multipolygon"/>
   </relation>

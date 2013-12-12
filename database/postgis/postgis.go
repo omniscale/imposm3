@@ -476,6 +476,24 @@ func (pg *PostGIS) ProbePolygon(elem element.OSMElem) (bool, interface{}) {
 	return false, nil
 }
 
+func (pq *PostGIS) MatchEquals(a interface{}, b interface{}) bool {
+	matchesA, okA := a.([]mapping.Match)
+	matchesB, okB := b.([]mapping.Match)
+	if !okA && !okB {
+		return false
+	}
+	for _, matchA := range matchesA {
+		for _, matchB := range matchesB {
+			if matchA.Key == matchB.Key &&
+				matchA.Value == matchB.Value &&
+				matchA.Table == matchB.Table {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func (pg *PostGIS) Delete(id int64, matches interface{}) error {
 	if matches, ok := matches.([]mapping.Match); ok {
 		for _, match := range matches {

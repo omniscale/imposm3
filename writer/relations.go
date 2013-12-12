@@ -125,9 +125,18 @@ NextRel:
 			rel.Id = -r.Id
 			rw.inserter.InsertPolygon(rel.OSMElem, matches)
 		}
-		err = rw.osmCache.InsertedWays.PutMembers(r.Members)
-		if err != nil {
-			log.Warn(err)
+
+		for _, m := range r.Members {
+			if m.Type != element.WAY {
+				continue
+			}
+			ok, memberMatches := rw.inserter.ProbePolygon(m.Way.OSMElem)
+			if ok && rw.inserter.MatchEquals(matches, memberMatches) {
+				err = rw.osmCache.InsertedWays.PutWay(m.Way)
+				if err != nil {
+					log.Warn(err)
+				}
+			}
 		}
 		if rw.diffCache != nil {
 			rw.diffCache.Ways.AddFromMembers(r.Id, allMembers)

@@ -314,6 +314,14 @@ def test_relation_way_not_inserted():
     assert park['name'] == 'rel 9001'
     assert query_row(db_conf, 'osm_landusages', 9009) == None
 
+    park = query_row(db_conf, 'osm_landusages', -9101)
+    assert park['type'] == 'park'
+    assert park['name'] == 'rel 9101'
+    assert query_row(db_conf, 'osm_landusages', 9109) == None
+
+    scrub = query_row(db_conf, 'osm_landusages', 9110)
+    assert scrub['type'] == 'scrub'
+
 def test_relation_way_inserted():
     """Part of relation was inserted twice."""
     park = query_row(db_conf, 'osm_landusages', -8001)

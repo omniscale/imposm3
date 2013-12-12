@@ -219,14 +219,6 @@ func BuildRelGeometry(rel *element.Relation, rings []*Ring, srid int) (*geos.Geo
 		}
 	}
 
-	var relMembers []element.Member
-	for _, m := range rel.Members {
-		if _, ok := insertedWays[m.Id]; ok {
-			relMembers = append(relMembers, m)
-		}
-	}
-
-	rel.Members = relMembers
 	wkb := g.AsEwkbHex(result)
 	if wkb == nil {
 		return nil, errors.New("unable to create WKB for relation")
