@@ -17,10 +17,10 @@ BUILD_VERSION=dev-$(BUILD_DATE)-$(BUILD_REV)
 all: build test
 
 update_version:
-	@sed -i'' 's/buildVersion = ".*"/buildVersion = "$(BUILD_VERSION)"/' cmd/version.go
+	@perl -p -i -e 's/buildVersion = ".*"/buildVersion = "$(BUILD_VERSION)"/' cmd/version.go
 
 revert_version:
-	@sed -i'' 's/buildVersion = ".*"/buildVersion = ""/' cmd/version.go
+	@perl -p -i -e 's/buildVersion = ".*"/buildVersion = ""/' cmd/version.go
 
 imposm3: $(GOFILES) $(PROTOFILES)
 	$(MAKE) update_version
