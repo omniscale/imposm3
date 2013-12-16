@@ -52,13 +52,6 @@ func TestSimplePolygonWithHole(t *testing.T) {
 	g := geos.NewGeos()
 	defer g.Finish()
 
-	if len(rel.Members) != 2 {
-		t.Fatal("wrong rel members", rel.Members)
-	}
-	if rel.Members[0].Id != 1 || rel.Members[1].Id != 2 {
-		t.Fatal("wrong rel members", rel.Members)
-	}
-
 	if len(rel.Tags) != 0 {
 		t.Fatal("wrong rel tags", rel.Tags)
 	}
@@ -98,13 +91,6 @@ func TestMultiPolygonWithHoleAndRelName(t *testing.T) {
 	BuildRelation(&rel, 3857)
 	g := geos.NewGeos()
 	defer g.Finish()
-
-	if len(rel.Members) != 1 {
-		t.Fatal("wrong rel members", rel.Members)
-	}
-	if rel.Members[0].Id != 1 {
-		t.Fatal("wrong rel members", rel.Members)
-	}
 
 	if len(rel.Tags) != 2 {
 		t.Fatal("wrong rel tags", rel.Tags)
@@ -156,13 +142,6 @@ func TestMultiPolygonWithMultipleHoles(t *testing.T) {
 	BuildRelation(&rel, 3857)
 	g := geos.NewGeos()
 	defer g.Finish()
-
-	if len(rel.Members) != 1 {
-		t.Fatal("wrong rel members", rel.Members)
-	}
-	if rel.Members[0].Id != 1 {
-		t.Fatal("wrong rel members", rel.Members)
-	}
 
 	if len(rel.Tags) != 1 {
 		t.Fatal("wrong rel tags", rel.Tags)
@@ -230,13 +209,6 @@ func TestMultiPolygonWithNeastedHoles(t *testing.T) {
 	g := geos.NewGeos()
 	defer g.Finish()
 
-	if len(rel.Members) != 3 {
-		t.Fatal("wrong rel members", rel.Members)
-	}
-	if rel.Members[0].Id != 1 {
-		t.Fatal("wrong rel members", rel.Members)
-	}
-
 	if len(rel.Tags) != 1 {
 		t.Fatal("wrong rel tags", rel.Tags)
 	}
@@ -278,13 +250,6 @@ func TestPolygonFromThreeWays(t *testing.T) {
 	BuildRelation(&rel, 3857)
 	g := geos.NewGeos()
 	defer g.Finish()
-
-	if len(rel.Members) != 2 {
-		t.Fatal("wrong rel members", rel.Members)
-	}
-	if rel.Members[0].Id != 1 || rel.Members[1].Id != 3 {
-		t.Fatal("wrong rel members", rel.Members)
-	}
 
 	if len(rel.Tags) != 1 {
 		t.Fatal("wrong rel tags", rel.Tags)
@@ -335,14 +300,6 @@ func TestTouchingPolygonsWithHole(t *testing.T) {
 	g := geos.NewGeos()
 	defer g.Finish()
 
-	if len(rel.Members) != 2 {
-		t.Fatal("wrong rel members", rel.Members)
-	}
-
-	if rel.Members[0].Id != 1 || rel.Members[1].Id != 2 {
-		t.Fatal("wrong rel members", rel.Members)
-	}
-
 	if len(rel.Tags) != 1 {
 		t.Fatal("wrong rel tags", rel.Tags)
 	}
@@ -382,14 +339,6 @@ func TestInsertedWaysDifferentTags(t *testing.T) {
 	g := geos.NewGeos()
 	defer g.Finish()
 
-	if len(rel.Members) != 1 {
-		t.Fatal("wrong rel members", rel.Members)
-	}
-
-	if rel.Members[0].Id != 1 {
-		t.Fatal("wrong rel members", rel.Members)
-	}
-
 	if len(rel.Tags) != 1 {
 		t.Fatal("wrong rel tags", rel.Tags)
 	}
@@ -428,14 +377,6 @@ func TestInsertMultipleTags(t *testing.T) {
 	BuildRelation(&rel, 3857)
 	g := geos.NewGeos()
 	defer g.Finish()
-
-	if len(rel.Members) != 0 {
-		t.Fatal("wrong rel members", rel.Members)
-	}
-
-	if len(rel.Tags) != 1 {
-		t.Fatal("wrong rel tags", rel.Tags)
-	}
 
 	if rel.Tags["landusage"] != "forest" {
 		t.Fatal("wrong rel tags", rel.Tags)
@@ -486,10 +427,6 @@ func TestBrokenPolygonSelfIntersect(t *testing.T) {
 	g := geos.NewGeos()
 	defer g.Finish()
 
-	if len(rel1.Members) != 2 {
-		t.Fatal("wrong rel members", rel1.Members)
-	}
-
 	if len(rel1.Tags) != 0 {
 		t.Fatal("wrong rel tags", rel1.Tags)
 	}
@@ -531,10 +468,6 @@ func TestBrokenPolygonSelfIntersect(t *testing.T) {
 
 	g = geos.NewGeos()
 	defer g.Finish()
-
-	if len(rel2.Members) != 2 {
-		t.Fatal("wrong rel members", rel2.Members)
-	}
 
 	if len(rel2.Tags) != 0 {
 		t.Fatal("wrong rel tags", rel2.Tags)

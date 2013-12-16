@@ -1,0 +1,154 @@
+{
+    "tables": {
+        "landusages": {
+            "fields": [
+                {
+                    "type": "id",
+                    "name": "osm_id",
+                    "key": null
+                },
+                {
+                    "type": "geometry",
+                    "name": "geometry",
+                    "key": null
+                },
+                {
+                    "type": "string",
+                    "name": "name",
+                    "key": "name"
+                },
+                {
+                    "type": "mapping_value",
+                    "name": "type",
+                    "key": null
+                }
+            ],
+            "type": "polygon",
+            "mapping": {
+                "amenity": [
+                    "university",
+                    "school",
+                    "college",
+                    "library",
+                    "fuel",
+                    "parking",
+                    "cinema",
+                    "theatre",
+                    "place_of_worship",
+                    "hospital"
+                ],
+                "barrier": [
+                    "hedge"
+                ],
+                "leisure": [
+                    "park",
+                    "garden",
+                    "playground",
+                    "golf_course",
+                    "sports_centre",
+                    "pitch",
+                    "stadium",
+                    "common",
+                    "nature_reserve"
+                ],
+                "tourism": [
+                    "zoo"
+                ],
+                "natural": [
+                    "wood",
+                    "land",
+                    "scrub",
+                    "wetland",
+                    "heath"
+                ],
+                "man_made": [
+                    "pier"
+                ],
+                "aeroway": [
+                    "runway",
+                    "taxiway"
+                ],
+                "place": [
+                    "island"
+                ],
+                "military": [
+                    "barracks"
+                ],
+                "landuse": [
+                    "park",
+                    "forest",
+                    "residential",
+                    "retail",
+                    "commercial",
+                    "industrial",
+                    "railway",
+                    "cemetery",
+                    "grass",
+                    "farmyard",
+                    "farm",
+                    "farmland",
+                    "orchard",
+                    "vineyard",
+                    "wood",
+                    "meadow",
+                    "village_green",
+                    "recreation_ground",
+                    "allotments",
+                    "quarry"
+                ],
+                "highway": [
+                    "pedestrian",
+                    "footway"
+                ]
+            }
+        },
+        "waterareas": {
+            "fields": [
+                {
+                    "type": "id",
+                    "name": "osm_id",
+                    "key": null
+                },
+                {
+                    "type": "geometry",
+                    "name": "geometry",
+                    "key": null
+                },
+                {
+                    "type": "string",
+                    "name": "name",
+                    "key": "name"
+                },
+                {
+                    "type": "mapping_value",
+                    "name": "type",
+                    "key": null
+                },
+                {
+                    "type": "pseudoarea",
+                    "name": "area",
+                    "key": null
+                }
+            ],
+            "type": "polygon",
+            "mapping": {
+                "waterway": [
+                    "riverbank"
+                ],
+                "landuse": [
+                    "basin",
+                    "reservoir"
+                ],
+                "natural": [
+                    "water"
+                ],
+                "amenity": [
+                    "swimming_pool"
+                ],
+                "leisure": [
+                    "swimming_pool"
+                ]
+            }
+        }
+    }
+}

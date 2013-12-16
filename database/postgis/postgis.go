@@ -476,12 +476,22 @@ func (pg *PostGIS) ProbePolygon(elem element.OSMElem) (bool, interface{}) {
 	return false, nil
 }
 
-func (pq *PostGIS) MatchEquals(a interface{}, b interface{}) bool {
-	matchesA, okA := a.([]mapping.Match)
-	matchesB, okB := b.([]mapping.Match)
-	if !okA && !okB {
-		return false
+func (pg *PostGIS) FilterRelationPolygons(tags element.Tags, members []element.Member) []element.Member {
+	relMatches := pg.polygonTagMatcher.Match(&tags)
+	result := []element.Member{}
+	for _, m := range members {
+		if m.Type != element.WAY {
+			continue
+		}
+		memberMatches := pg.polygonTagMatcher.Match(&m.Way.Tags)
+		if matchEquals(relMatches, memberMatches) {
+			result = append(result, m)
+		}
 	}
+	return result
+}
+
+func matchEquals(matchesA, matchesB []mapping.Match) bool {
 	for _, matchA := range matchesA {
 		for _, matchB := range matchesB {
 			if matchA.Key == matchB.Key &&

@@ -40,9 +40,9 @@ type Inserter interface {
 	InsertPoint(element.OSMElem, interface{})
 	InsertLineString(element.OSMElem, interface{})
 	InsertPolygon(element.OSMElem, interface{})
-	// MatchEquals returns true if two interface{}s from ProbeXxx
-	// share the same destination.
-	MatchEquals(interface{}, interface{}) bool
+	// FilterRelationPolygons returns a slice of all members that are already
+	// imported with a relation with tags.
+	FilterRelationPolygons(element.Tags, []element.Member) []element.Member
 }
 
 type Deployer interface {
@@ -102,18 +102,18 @@ func Open(conf Config, m *mapping.Mapping) (DB, error) {
 // nullDb is a dummy database that imports into /dev/null
 type nullDb struct{}
 
-func (n *nullDb) Init() error                                         { return nil }
-func (n *nullDb) Begin() error                                        { return nil }
-func (n *nullDb) End() error                                          { return nil }
-func (n *nullDb) Close() error                                        { return nil }
-func (n *nullDb) Abort() error                                        { return nil }
-func (n *nullDb) InsertPoint(element.OSMElem, interface{})            {}
-func (n *nullDb) InsertLineString(element.OSMElem, interface{})       {}
-func (n *nullDb) InsertPolygon(element.OSMElem, interface{})          {}
-func (n *nullDb) ProbePoint(element.OSMElem) (bool, interface{})      { return true, nil }
-func (n *nullDb) ProbeLineString(element.OSMElem) (bool, interface{}) { return true, nil }
-func (n *nullDb) ProbePolygon(element.OSMElem) (bool, interface{})    { return true, nil }
-func (n *nullDb) MatchEquals(interface{}, interface{}) bool           { return false }
+func (n *nullDb) Init() error                                                            { return nil }
+func (n *nullDb) Begin() error                                                           { return nil }
+func (n *nullDb) End() error                                                             { return nil }
+func (n *nullDb) Close() error                                                           { return nil }
+func (n *nullDb) Abort() error                                                           { return nil }
+func (n *nullDb) InsertPoint(element.OSMElem, interface{})                               {}
+func (n *nullDb) InsertLineString(element.OSMElem, interface{})                          {}
+func (n *nullDb) InsertPolygon(element.OSMElem, interface{})                             {}
+func (n *nullDb) ProbePoint(element.OSMElem) (bool, interface{})                         { return true, nil }
+func (n *nullDb) ProbeLineString(element.OSMElem) (bool, interface{})                    { return true, nil }
+func (n *nullDb) ProbePolygon(element.OSMElem) (bool, interface{})                       { return true, nil }
+func (n *nullDb) FilterRelationPolygons(element.Tags, []element.Member) []element.Member { return nil }
 
 func newNullDb(conf Config, m *mapping.Mapping) (DB, error) {
 	return &nullDb{}, nil
