@@ -21,14 +21,14 @@ type Config struct {
 
 type Schemas struct {
 	Import     string `json:"import"`
-	Production string `json:"public"`
+	Production string `json:"production"`
 	Backup     string `json:"backup"`
 }
 
 const defaultSrid = 3857
 const defaultCacheDir = "/tmp/imposm3"
 const defaultSchemaImport = "import"
-const defaultSchemaProduction = "production"
+const defaultSchemaProduction = "public"
 const defaultSchemaBackup = "backup"
 
 var ImportFlags = flag.NewFlagSet("import", flag.ExitOnError)
