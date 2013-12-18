@@ -72,7 +72,7 @@ func SplitPolygonAtAutoGrid(g *geos.Geos, geom *geos.Geom) ([]*geos.Geom, error)
 	if geomBounds == geos.NilBounds {
 		return nil, errors.New("couldn't create bounds for geom")
 	}
-	gridWidth, currentGridWidth := splitParams(geomBounds, 64, 20000.0)
+	gridWidth, currentGridWidth := splitParams(geomBounds, 32, 50000.0)
 	return SplitPolygonAtGrid(g, geom, gridWidth, currentGridWidth)
 }
 
@@ -273,7 +273,7 @@ func (l *Limiter) Clip(geom *geos.Geom) ([]*geos.Geom, error) {
 
 	// too many intersecting parts, it probably faster to
 	// intersect with the original geometry
-	if len(hits) > 25 {
+	if len(hits) > 50 {
 		newPart := g.Intersection(l.geom, geom)
 		if newPart == nil {
 			return nil, nil
