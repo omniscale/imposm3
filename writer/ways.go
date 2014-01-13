@@ -44,12 +44,9 @@ func (ww *WayWriter) loop() {
 		if len(w.Tags) == 0 {
 			continue
 		}
-		inserted, err := ww.osmCache.InsertedWays.IsInserted(w.Id)
+		insertedAsRelation, err := ww.osmCache.InsertedWays.IsInserted(w.Id)
 		if err != nil {
 			log.Warn(err)
-			continue
-		}
-		if inserted {
 			continue
 		}
 
@@ -59,12 +56,13 @@ func (ww *WayWriter) loop() {
 		}
 		proj.NodesToMerc(w.Nodes)
 
-		inserted = false
+		inserted := false
 		if ok, matches := ww.inserter.ProbeLineString(w.OSMElem); ok {
 			ww.buildAndInsert(geos, w, matches, false)
 			inserted = true
 		}
-		if w.IsClosed() {
+		if w.IsClosed() && !insertedAsRelation {
+			// only add polygons that were not inserted as a MultiPolygon relation
 			if ok, matches := ww.inserter.ProbePolygon(w.OSMElem); ok {
 				ww.buildAndInsert(geos, w, matches, true)
 				inserted = true

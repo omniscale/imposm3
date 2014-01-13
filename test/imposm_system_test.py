@@ -322,6 +322,32 @@ def test_relation_way_not_inserted():
     scrub = query_row(db_conf, 'osm_landusages', 9110)
     assert scrub['type'] == 'scrub'
 
+def test_relation_ways_inserted():
+    """Outer ways of multipolygon are inserted. """
+    park = query_row(db_conf, 'osm_landusages', -9201)
+    assert park['type'] == 'park'
+    assert park['name'] == '9209'
+
+    # outer ways of multipolygon stand for their own
+    road = query_row(db_conf, 'osm_roads', 9209)
+    assert road['type'] == 'secondary'
+    assert road['name'] == '9209'
+    road = query_row(db_conf, 'osm_roads', 9210)
+    assert road['type'] == 'residential'
+    assert road['name'] == '9210'
+
+    park = query_row(db_conf, 'osm_landusages', -9301)
+    assert park['type'] == 'park'
+    assert park['name'] == '' # no name on relation
+
+    # outer ways of multipolygon stand for their own
+    road = query_row(db_conf, 'osm_roads', 9309)
+    assert road['type'] == 'secondary'
+    assert road['name'] == '9309'
+    road = query_row(db_conf, 'osm_roads', 9310)
+    assert road['type'] == 'residential'
+    assert road['name'] == '9310'
+
 def test_relation_way_inserted():
     """Part of relation was inserted twice."""
     park = query_row(db_conf, 'osm_landusages', -8001)

@@ -406,6 +406,62 @@
     <tag k="type" v="multipolygon"/>
   </relation>
 
+  <!-- test multipolygon ways were inserted -->
+  <node id="9201" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="80"/>
+  <node id="9202" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="82"/>
+  <node id="9203" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="82"/>
+  <node id="9204" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="80"/>
+  <way id="9209" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="9201"/>
+    <nd ref="9202"/>
+    <nd ref="9203"/>
+    <tag k="landuse" v="park"/>
+    <tag k="highway" v="secondary"/>
+    <tag k="name" v="9209"/>
+  </way>
+  <way id="9210" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="9203"/>
+    <nd ref="9204"/>
+    <nd ref="9201"/>
+    <tag k="landuse" v="park"/>
+    <tag k="highway" v="residential"/>
+    <tag k="name" v="9210"/>
+  </way>
+  <relation id="9201" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="9209" role="outer"/>
+    <member type="way" ref="9210" role="outer"/>
+    <tag k="type" v="multipolygon"/>
+  </relation>
+
+  <!-- test multipolygon ways were inserted (same as 92xx, but different tagging) -->
+  <node id="9301" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="80"/>
+  <node id="9302" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="82"/>
+  <node id="9303" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="82"/>
+  <node id="9304" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="80"/>
+  <way id="9309" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="9301"/>
+    <nd ref="9302"/>
+    <nd ref="9303"/>
+    <tag k="landuse" v="park"/>
+    <tag k="highway" v="secondary"/>
+    <tag k="name" v="9309"/>
+  </way>
+  <way id="9310" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="9303"/>
+    <nd ref="9304"/>
+    <nd ref="9301"/>
+    <tag k="highway" v="residential"/>
+    <tag k="name" v="9310"/>
+  </way>
+  <relation id="9301" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="9309" role="outer"/>
+    <member type="way" ref="9310" role="outer"/>
+    <tag k="type" v="multipolygon"/>
+    <tag k="landuse" v="park"/>
+  </relation>
+
+
+
   <!-- test multipolygon way was inserted -->
   <node id="8001" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="80"/>
   <node id="8002" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="82"/>
