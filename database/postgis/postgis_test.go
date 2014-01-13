@@ -34,9 +34,9 @@ func testDb(t *testing.T) *PostGIS {
 	return db.(*PostGIS)
 }
 
-func TestFilterRelationPolygonsSimple(t *testing.T) {
+func TestSelectRelationPolygonsSimple(t *testing.T) {
 	db := testDb(t)
-	filtered := db.FilterRelationPolygons(element.Tags{"landuse": "park"},
+	filtered := db.SelectRelationPolygons(element.Tags{"landuse": "park"},
 		[]element.Member{
 			makeMember(0, element.Tags{"landuse": "forest"}),
 			makeMember(1, element.Tags{"landuse": "park"}),
@@ -51,9 +51,9 @@ func TestFilterRelationPolygonsSimple(t *testing.T) {
 	}
 }
 
-func TestFilterRelationPolygonsUnrelatedTags(t *testing.T) {
+func TestSelectRelationPolygonsUnrelatedTags(t *testing.T) {
 	db := testDb(t)
-	filtered := db.FilterRelationPolygons(element.Tags{"landuse": "park"},
+	filtered := db.SelectRelationPolygons(element.Tags{"landuse": "park"},
 		[]element.Member{
 			makeMember(0, element.Tags{"landuse": "park", "layer": "2", "name": "foo"}),
 			makeMember(1, element.Tags{"landuse": "forest"}),
@@ -66,9 +66,9 @@ func TestFilterRelationPolygonsUnrelatedTags(t *testing.T) {
 	}
 }
 
-func TestFilterRelationPolygonsMultiple(t *testing.T) {
+func TestSelectRelationPolygonsMultiple(t *testing.T) {
 	db := testDb(t)
-	filtered := db.FilterRelationPolygons(element.Tags{"landuse": "park"},
+	filtered := db.SelectRelationPolygons(element.Tags{"landuse": "park"},
 		[]element.Member{
 			makeMember(0, element.Tags{"landuse": "park"}),
 			makeMember(1, element.Tags{"natural": "forest"}),
@@ -84,9 +84,9 @@ func TestFilterRelationPolygonsMultiple(t *testing.T) {
 	}
 }
 
-func TestFilterRelationPolygonsMultipleTags(t *testing.T) {
+func TestSelectRelationPolygonsMultipleTags(t *testing.T) {
 	db := testDb(t)
-	filtered := db.FilterRelationPolygons(element.Tags{"landuse": "forest", "natural": "scrub"},
+	filtered := db.SelectRelationPolygons(element.Tags{"landuse": "forest", "natural": "scrub"},
 		[]element.Member{
 			makeMember(0, element.Tags{"natural": "scrub"}),
 			makeMember(1, element.Tags{"landuse": "forest"}),

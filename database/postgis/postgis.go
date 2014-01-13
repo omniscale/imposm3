@@ -476,7 +476,7 @@ func (pg *PostGIS) ProbePolygon(elem element.OSMElem) (bool, interface{}) {
 	return false, nil
 }
 
-func (pg *PostGIS) FilterRelationPolygons(tags element.Tags, members []element.Member) []element.Member {
+func (pg *PostGIS) SelectRelationPolygons(tags element.Tags, members []element.Member) []element.Member {
 	relMatches := pg.polygonTagMatcher.Match(&tags)
 	result := []element.Member{}
 	for _, m := range members {

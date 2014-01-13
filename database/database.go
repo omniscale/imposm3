@@ -40,9 +40,9 @@ type Inserter interface {
 	InsertPoint(element.OSMElem, interface{})
 	InsertLineString(element.OSMElem, interface{})
 	InsertPolygon(element.OSMElem, interface{})
-	// FilterRelationPolygons returns a slice of all members that are already
+	// SelectRelationPolygons returns a slice of all members that are already
 	// imported with a relation with tags.
-	FilterRelationPolygons(element.Tags, []element.Member) []element.Member
+	SelectRelationPolygons(element.Tags, []element.Member) []element.Member
 }
 
 type Deployer interface {
@@ -113,7 +113,7 @@ func (n *nullDb) InsertPolygon(element.OSMElem, interface{})                    
 func (n *nullDb) ProbePoint(element.OSMElem) (bool, interface{})                         { return true, nil }
 func (n *nullDb) ProbeLineString(element.OSMElem) (bool, interface{})                    { return true, nil }
 func (n *nullDb) ProbePolygon(element.OSMElem) (bool, interface{})                       { return true, nil }
-func (n *nullDb) FilterRelationPolygons(element.Tags, []element.Member) []element.Member { return nil }
+func (n *nullDb) SelectRelationPolygons(element.Tags, []element.Member) []element.Member { return nil }
 
 func newNullDb(conf Config, m *mapping.Mapping) (DB, error) {
 	return &nullDb{}, nil

@@ -126,7 +126,7 @@ NextRel:
 			rw.inserter.InsertPolygon(rel.OSMElem, matches)
 		}
 
-		for _, m := range rw.inserter.FilterRelationPolygons(r.Tags, r.Members) {
+		for _, m := range rw.inserter.SelectRelationPolygons(r.Tags, r.Members) {
 			err = rw.osmCache.InsertedWays.PutWay(m.Way)
 			if err != nil {
 				log.Warn(err)
