@@ -82,6 +82,9 @@ func mergeRings(rings []*Ring) []*Ring {
 	endpoints := make(map[int64]*Ring)
 
 	for _, ring := range rings {
+		if len(ring.refs) < 2 {
+			continue
+		}
 		left := ring.refs[0]
 		right := ring.refs[len(ring.refs)-1]
 		if origRing, ok := endpoints[left]; ok {

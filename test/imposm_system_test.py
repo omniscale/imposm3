@@ -292,6 +292,18 @@ def test_merge_outer_multipolygon_way_1():
     assert_almost_equal(park_16001['geometry'].area, 12779350582, -1)
     assert query_row(db_conf, 'osm_roads', 16002)['type'] == 'residential'
 
+def test_broken_multipolygon_ways():
+    """MultiPolygons with broken outer ways are handled."""
+    # outer way does not merge (17002 has one node)
+    assert query_row(db_conf, 'osm_landusages', -17001) == None
+    assert query_row(db_conf, 'osm_roads', 17001)['type'] == 'residential'
+    assert query_row(db_conf, 'osm_roads', 17002) == None
+
+    # outer way does not merge (17102 has no nodes)
+    assert query_row(db_conf, 'osm_landusages', -17101) == None
+    assert query_row(db_conf, 'osm_roads', 17101)['type'] == 'residential'
+    assert query_row(db_conf, 'osm_roads', 17102) == None
+
 def test_node_way_ref_after_delete_1():
     """Nodes refereces way"""
     data = cache_query(nodes=[20001, 20002], deps=True)

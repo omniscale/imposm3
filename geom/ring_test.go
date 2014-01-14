@@ -41,6 +41,34 @@ func TestRingMerge(t *testing.T) {
 	}
 }
 
+func TestRingMergeMissingRefs(t *testing.T) {
+	// way without refs should not panic with index out of range
+	w1 := element.Way{}
+	w1.Id = 1
+	w1.Refs = []int64{1, 2, 3}
+	w1.Nodes = []element.Node{
+		element.Node{},
+		element.Node{},
+		element.Node{},
+	}
+	r1 := NewRing(&w1)
+
+	w2 := element.Way{}
+	w2.Id = 2
+	w2.Refs = []int64{}
+	w2.Nodes = []element.Node{}
+	r2 := NewRing(&w2)
+	rings := []*Ring{r1, r2}
+
+	result := mergeRings(rings)
+	if len(result) != 1 {
+		t.Fatal(result)
+	}
+	if result[0] != r1 {
+		t.Fatal(result[0])
+	}
+}
+
 func TestRingMergeReverseEndpoints(t *testing.T) {
 	w1 := element.Way{}
 	w1.Id = 1
