@@ -52,12 +52,11 @@ func (tagMatcher *TagMatcher) Match(tags *element.Tags) []Match {
 				for _, t := range tbls {
 					tables[t] = Match{k, v, t, tagMatcher.tables[t.Name]}
 				}
-				continue
-			} else if tbls, ok := values[v]; ok {
+			}
+			if tbls, ok := values[v]; ok {
 				for _, t := range tbls {
 					tables[t] = Match{k, v, t, tagMatcher.tables[t.Name]}
 				}
-				continue
 			}
 		}
 	}

@@ -318,6 +318,12 @@ func TestPolygonMatcher(t *testing.T) {
 	tags = element.Tags{"building": "residential"}
 	matchesEqual(t, []Match{{"building", "residential", DestTable{"buildings", ""}, nil}}, polys.Match(&tags))
 
+	tags = element.Tags{"building": "shop"}
+	matchesEqual(t, []Match{
+		{"building", "shop", DestTable{"buildings", ""}, nil},
+		{"building", "shop", DestTable{"amenity_areas", ""}, nil}},
+		polys.Match(&tags))
+
 	tags = element.Tags{"landuse": "farm"}
 	matchesEqual(t, []Match{{"landuse", "farm", DestTable{"landusages", ""}, nil}}, polys.Match(&tags))
 
