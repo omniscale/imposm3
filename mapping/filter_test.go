@@ -9,7 +9,7 @@ var mapping *Mapping
 
 func init() {
 	var err error
-	mapping, err = NewMapping("../mapping.json")
+	mapping, err = NewMapping("./test_mapping.json")
 	if err != nil {
 		panic(err)
 	}
