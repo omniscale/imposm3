@@ -407,6 +407,17 @@ def test_duplicate_ids():
     assert query_row(db_conf, 'osm_buildings', 51011)['type'] == 'way'
     assert query_row(db_conf, 'osm_buildings', -51011)['type'] == 'mp'
 
+def test_generalized_banana_polygon_is_valid():
+    """Generalized polygons are valid."""
+    park = query_row(db_conf, 'osm_landusages', 7101)
+    # geometry is not valid
+    assert not park['geometry'].is_valid, park
+    park = query_row(db_conf, 'osm_landusages_gen0', 7101)
+    # but simplified geometies are valid
+    assert park['geometry'].is_valid, park
+    park = query_row(db_conf, 'osm_landusages_gen1', 7101)
+    assert park['geometry'].is_valid, park
+
 #######################################################################
 def test_update():
     """Diff import applies"""

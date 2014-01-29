@@ -302,6 +302,32 @@
     <tag k="type" v="multipolygon"/>
   </relation>
 
+  <!-- test invalid "banana-polygon" (inverted-shell) -->
+  <node id="7101" version="1" timestamp="2011-11-11T00:11:11Z" lat="60" lon="60"/>
+  <node id="7102" version="1" timestamp="2011-11-11T00:11:11Z" lat="60" lon="62"/>
+  <node id="7103" version="1" timestamp="2011-11-11T00:11:11Z" lat="61" lon="61"/>
+  <node id="7104" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="62"/>
+  <node id="7105" version="1" timestamp="2011-11-11T00:11:11Z" lat="61" lon="63"/>
+  <node id="7106" version="1" timestamp="2011-11-11T00:11:11Z" lat="60" lon="62"/>
+  <node id="7107" version="1" timestamp="2011-11-11T00:11:11Z" lat="60" lon="64"/>
+  <node id="7108" version="1" timestamp="2011-11-11T00:11:11Z" lat="64" lon="64"/>
+  <node id="7109" version="1" timestamp="2011-11-11T00:11:11Z" lat="64" lon="60"/>
+  <way id="7101" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="7101"/>
+    <nd ref="7102"/>
+    <nd ref="7103"/>
+    <nd ref="7104"/>
+    <nd ref="7105"/>
+    <nd ref="7106"/>
+    <nd ref="7107"/>
+    <nd ref="7108"/>
+    <nd ref="7109"/>
+    <nd ref="7101"/>
+    <tag k="landuse" v="park"/>
+    <tag k="name" v="banana"/>
+  </way>
+
+
   <!-- test that single node ways or incomplete polygons are _not_ inserted -->
   <node id="30001" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="80"/>
   <node id="30002" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="80"/>
