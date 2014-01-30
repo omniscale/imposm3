@@ -24,6 +24,7 @@ func init() {
 		"mapping_key":          {"mapping_key", "string", Key, nil},
 		"mapping_value":        {"mapping_value", "string", Value, nil},
 		"geometry":             {"geometry", "geometry", Geometry, nil},
+		"validated_geometry":   {"validated_geometry", "validated_geometry", Geometry, nil},
 		"wayzorder":            {"wayzorder", "int32", WayZOrder, nil},
 		"pseudoarea":           {"pseudoarea", "float32", PseudoArea, nil},
 		"zorder":               {"zorder", "int32", nil, MakeZOrder},

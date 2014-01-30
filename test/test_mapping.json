@@ -50,7 +50,7 @@
                     "key": null
                 },
                 {
-                    "type": "geometry",
+                    "type": "validated_geometry",
                     "name": "geometry",
                     "key": null
                 },
@@ -835,7 +835,7 @@
                     "key": null
                 },
                 {
-                    "type": "geometry",
+                    "type": "validated_geometry",
                     "name": "geometry",
                     "key": null
                 },

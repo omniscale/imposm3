@@ -418,6 +418,23 @@ def test_generalized_banana_polygon_is_valid():
     park = query_row(db_conf, 'osm_landusages_gen1', 7101)
     assert park['geometry'].is_valid, park
 
+def test_generalized_linestring_is_valid():
+    """Generalized linestring is valid."""
+    road = query_row(db_conf, 'osm_roads', 7201)
+    # geometry is not simple, but valid
+    # check that geometry 'survives' simplification
+    assert not road['geometry'].is_simple, road['geometry'].wkt
+    assert road['geometry'].is_valid, road['geometry'].wkt
+    assert road['geometry'].length > 1000000
+    road = query_row(db_conf, 'osm_roads_gen0', 7201)
+    # but simplified geometies are simple
+    assert road['geometry'].is_valid, road['geometry'].wkt
+    assert road['geometry'].length > 1000000
+    road = query_row(db_conf, 'osm_roads_gen1', 7201)
+    assert road['geometry'].is_valid, road['geometry'].wkt
+    assert road['geometry'].length > 1000000
+
+
 #######################################################################
 def test_update():
     """Diff import applies"""

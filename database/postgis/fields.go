@@ -42,6 +42,16 @@ func (t *geometryType) PrepareInsertSql(i int, spec *TableSpec) string {
 }
 
 func (t *geometryType) GeneralizeSql(colSpec *ColumnSpec, spec *GeneralizedTableSpec) string {
+	return fmt.Sprintf(`ST_SimplifyPreserveTopology("%s", %f) as "%s"`,
+		colSpec.Name, spec.Tolerance, colSpec.Name,
+	)
+}
+
+type validatedGeometryType struct {
+	geometryType
+}
+
+func (t *validatedGeometryType) GeneralizeSql(colSpec *ColumnSpec, spec *GeneralizedTableSpec) string {
 	return fmt.Sprintf(`ST_Buffer(ST_SimplifyPreserveTopology("%s", %f), 0) as "%s"`,
 		colSpec.Name, spec.Tolerance, colSpec.Name,
 	)
@@ -51,12 +61,13 @@ var pgTypes map[string]ColumnType
 
 func init() {
 	pgTypes = map[string]ColumnType{
-		"string":   &simpleColumnType{"VARCHAR"},
-		"bool":     &simpleColumnType{"BOOL"},
-		"int8":     &simpleColumnType{"SMALLINT"},
-		"int32":    &simpleColumnType{"INT"},
-		"int64":    &simpleColumnType{"BIGINT"},
-		"float32":  &simpleColumnType{"REAL"},
-		"geometry": &geometryType{"GEOMETRY"},
+		"string":             &simpleColumnType{"VARCHAR"},
+		"bool":               &simpleColumnType{"BOOL"},
+		"int8":               &simpleColumnType{"SMALLINT"},
+		"int32":              &simpleColumnType{"INT"},
+		"int64":              &simpleColumnType{"BIGINT"},
+		"float32":            &simpleColumnType{"REAL"},
+		"geometry":           &geometryType{"GEOMETRY"},
+		"validated_geometry": &validatedGeometryType{geometryType{"GEOMETRY"}},
 	}
 }

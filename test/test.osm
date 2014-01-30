@@ -327,6 +327,19 @@
     <tag k="name" v="banana"/>
   </way>
 
+  <!-- test self-intersecting ways -->
+  <node id="7201" version="1" timestamp="2011-11-11T00:11:11Z" lat="60" lon="60"/>
+  <node id="7202" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="62"/>
+  <node id="7203" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="60"/>
+  <node id="7204" version="1" timestamp="2011-11-11T00:11:11Z" lat="60" lon="62"/>
+  <way id="7201" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="7201"/>
+    <nd ref="7202"/>
+    <nd ref="7203"/>
+    <nd ref="7204"/>
+    <tag k="highway" v="motorway"/>
+    <tag k="name" v="self-intersecting"/>
+  </way>
 
   <!-- test that single node ways or incomplete polygons are _not_ inserted -->
   <node id="30001" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="80"/>
