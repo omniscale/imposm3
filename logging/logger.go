@@ -210,9 +210,15 @@ func (l *LogBroker) printRecord(record Record) {
 func (l *LogBroker) printProgress(progress string) {
 	l.printPrefix()
 	fmt.Print(progress)
-	fmt.Print("\r")
-	l.lastProgress = progress
-	l.newline = false
+	if l.quiet {
+		fmt.Print("\n")
+		l.lastProgress = ""
+		l.newline = true
+	} else {
+		fmt.Print("\r")
+		l.lastProgress = progress
+		l.newline = false
+	}
 }
 
 func Shutdown() {
