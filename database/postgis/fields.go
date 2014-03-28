@@ -24,7 +24,7 @@ func (t *simpleColumnType) PrepareInsertSql(i int, spec *TableSpec) string {
 }
 
 func (t *simpleColumnType) GeneralizeSql(colSpec *ColumnSpec, spec *GeneralizedTableSpec) string {
-	return colSpec.Name
+	return "\"" + colSpec.Name + "\""
 }
 
 type geometryType struct {

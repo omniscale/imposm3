@@ -685,6 +685,11 @@
                     "key": "name"
                 },
                 {
+                    "type": "string",
+                    "name": "name:de",
+                    "key": "name:de"
+                },
+                {
                     "type": "boolint",
                     "name": "tunnel",
                     "key": "tunnel"
