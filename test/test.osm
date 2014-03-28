@@ -302,6 +302,18 @@
     <tag k="type" v="multipolygon"/>
   </relation>
 
+  <!-- test multiple name mappings -->
+  <node id="1101" version="1" timestamp="2011-11-11T00:11:11Z" lat="60" lon="60"/>
+  <node id="1102" version="1" timestamp="2011-11-11T00:11:11Z" lat="60" lon="60.1"/>
+  <way id="1101" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="1101"/>
+    <nd ref="1102"/>
+    <tag k="highway" v="residential"/>
+    <tag k="name" v="name"/>
+    <tag k="name:de" v="name:de"/>
+    <tag k="name:en" v="name:en"/>
+  </way>
+
   <!-- test invalid "banana-polygon" (inverted-shell) -->
   <node id="7101" version="1" timestamp="2011-11-11T00:11:11Z" lat="60" lon="60"/>
   <node id="7102" version="1" timestamp="2011-11-11T00:11:11Z" lat="60" lon="62"/>

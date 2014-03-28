@@ -690,6 +690,12 @@
                     "key": "name:de"
                 },
                 {
+                    "type": "string",
+                    "#": " check for different name/keys",
+                    "name": "name_en",
+                    "key": "name:en"
+                },
+                {
                     "type": "boolint",
                     "name": "tunnel",
                     "key": "tunnel"

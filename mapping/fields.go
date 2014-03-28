@@ -37,13 +37,13 @@ type MakeValue func(string, *element.OSMElem, Match) interface{}
 type MakeMakeValue func(string, FieldType, Field) (MakeValue, error)
 
 type FieldSpec struct {
-	Name string
+	Key  string
 	Type FieldType
 }
 
 func (f *FieldSpec) Value(elem *element.OSMElem, match Match) interface{} {
 	if f.Type.Func != nil {
-		return f.Type.Func(elem.Tags[f.Name], elem, match)
+		return f.Type.Func(elem.Tags[f.Key], elem, match)
 	}
 	return nil
 }
@@ -79,7 +79,7 @@ func (t *Table) TableFields() *TableFields {
 
 	for _, mappingField := range t.Fields {
 		field := FieldSpec{}
-		field.Name = mappingField.Name
+		field.Key = mappingField.Key
 
 		fieldType := mappingField.FieldType()
 		if fieldType != nil {

@@ -237,6 +237,12 @@ def test_missing_nodes():
     place_10000 = query_row(db_conf, 'osm_places', 10000)
     assert place_10000['name'] == 'Foo', place_10000
 
+def test_name_tags():
+    """Road contains multiple names"""
+    road = query_row(db_conf, 'osm_roads', 1101)
+    assert road['name'] == 'name', road
+    assert road['name:de'] == 'name:de', road
+    assert road['name_en'] == 'name:en', road
 
 def test_landusage_to_waterarea_1():
     """Parks inserted into landusages"""
