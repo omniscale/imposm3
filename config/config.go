@@ -91,6 +91,10 @@ func (o *_BaseOptions) updateFromConfig() error {
 	if o.LimitTo == "" {
 		o.LimitTo = conf.LimitTo
 	}
+	if o.LimitTo == "NONE" {
+		// allow overwrite from cmd line
+		o.LimitTo = ""
+	}
 	if o.LimitToCacheBuffer == 0.0 {
 		o.LimitToCacheBuffer = conf.LimitToCacheBuffer
 	}
