@@ -4,6 +4,7 @@ Package import_ provides the import sub command initial imports.
 package import_
 
 import (
+	"os"
 	"path"
 
 	"imposm3/cache"
@@ -119,7 +120,11 @@ func Import() {
 		log.StopStep(step)
 		diffstate := state.FromPbf(pbfFile)
 		if diffstate != nil {
-			diffstate.WriteToFile(path.Join(config.BaseOptions.CacheDir, "last.state.txt"))
+			os.MkdirAll(config.BaseOptions.DiffDir, 0755)
+			err := diffstate.WriteToFile(path.Join(config.BaseOptions.DiffDir, "last.state.txt"))
+			if err != nil {
+				log.Print("error writing last.state.txt: ", err)
+			}
 		}
 	}
 

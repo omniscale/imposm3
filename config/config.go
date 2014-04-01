@@ -11,6 +11,7 @@ import (
 
 type Config struct {
 	CacheDir           string  `json:"cachedir"`
+	DiffDir            string  `json:"diffdir"`
 	Connection         string  `json:"connection"`
 	MappingFile        string  `json:"mapping"`
 	LimitTo            string  `json:"limitto"`
@@ -37,6 +38,7 @@ var DiffFlags = flag.NewFlagSet("diff", flag.ExitOnError)
 type _BaseOptions struct {
 	Connection         string
 	CacheDir           string
+	DiffDir            string
 	MappingFile        string
 	Srid               int
 	LimitTo            string
@@ -101,6 +103,14 @@ func (o *_BaseOptions) updateFromConfig() error {
 	if o.CacheDir == defaultCacheDir {
 		o.CacheDir = conf.CacheDir
 	}
+	if o.DiffDir == "" {
+		if conf.DiffDir == "" {
+			// use CacheDir for backwards compatibility
+			o.DiffDir = o.CacheDir
+		} else {
+			o.DiffDir = conf.DiffDir
+		}
+	}
 	return nil
 }
 
@@ -133,6 +143,7 @@ var ImportOptions = _ImportOptions{}
 func addBaseFlags(flags *flag.FlagSet) {
 	flags.StringVar(&BaseOptions.Connection, "connection", "", "connection parameters")
 	flags.StringVar(&BaseOptions.CacheDir, "cachedir", defaultCacheDir, "cache directory")
+	flags.StringVar(&BaseOptions.DiffDir, "diffdir", "", "diff directory for last.state.txt")
 	flags.StringVar(&BaseOptions.MappingFile, "mapping", "", "mapping file")
 	flags.IntVar(&BaseOptions.Srid, "srid", defaultSrid, "srs id")
 	flags.StringVar(&BaseOptions.LimitTo, "limitto", "", "limit to geometries")

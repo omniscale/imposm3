@@ -29,7 +29,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 	if err != nil {
 		return err
 	}
-	lastState, err := diffstate.ParseLastState(config.BaseOptions.CacheDir)
+	lastState, err := diffstate.ParseLastState(config.BaseOptions.DiffDir)
 	if err != nil {
 		log.Warn(err)
 	}
@@ -300,7 +300,7 @@ For:
 		if lastState != nil {
 			state.Url = lastState.Url
 		}
-		err = diffstate.WriteLastState(config.BaseOptions.CacheDir, state)
+		err = diffstate.WriteLastState(config.BaseOptions.DiffDir, state)
 		if err != nil {
 			log.Warn(err) // warn only
 		}
