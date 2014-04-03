@@ -10,7 +10,7 @@ import (
 	"imposm3/cache"
 	"imposm3/config"
 	"imposm3/database"
-	_ "imposm3/database/postgis"
+	_ "imposm3/database/sql/postgis"
 	state "imposm3/diff/state"
 	"imposm3/geom/limit"
 	"imposm3/logging"

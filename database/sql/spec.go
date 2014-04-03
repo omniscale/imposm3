@@ -1,4 +1,4 @@
-package postgis
+package sql
 
 import (
 	"fmt"

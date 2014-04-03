@@ -1,9 +1,8 @@
-package postgis
+package sql
 
 import (
 	"database/sql"
 	"fmt"
-	pq "github.com/lib/pq"
 	"imposm3/database"
 	"imposm3/element"
 	"imposm3/logging"
@@ -13,7 +12,7 @@ import (
 	"sync/atomic"
 )
 
-var log = logging.NewLogger("PostGIS")
+var log = logging.NewLogger("SQL")
 
 type SQLError struct {
 	query         string
@@ -394,9 +393,9 @@ type PostGIS struct {
 	GeneralizedTables       map[string]*GeneralizedTableSpec
 	Prefix                  string
 	txRouter                *TxRouter
-	pointTagMatcher         *mapping.TagMatcher
-	lineStringTagMatcher    *mapping.TagMatcher
-	polygonTagMatcher       *mapping.TagMatcher
+	PointTagMatcher         *mapping.TagMatcher
+	LineStringTagMatcher    *mapping.TagMatcher
+	PolygonTagMatcher       *mapping.TagMatcher
 	updateGeneralizedTables bool
 	updatedIds              map[string][]int64
 }
@@ -456,34 +455,34 @@ func (pg *PostGIS) InsertPolygon(elem element.OSMElem, matches interface{}) {
 }
 
 func (pg *PostGIS) ProbePoint(elem element.OSMElem) (bool, interface{}) {
-	if matches := pg.pointTagMatcher.Match(&elem.Tags); len(matches) > 0 {
+	if matches := pg.PointTagMatcher.Match(&elem.Tags); len(matches) > 0 {
 		return true, matches
 	}
 	return false, nil
 }
 
 func (pg *PostGIS) ProbeLineString(elem element.OSMElem) (bool, interface{}) {
-	if matches := pg.lineStringTagMatcher.Match(&elem.Tags); len(matches) > 0 {
+	if matches := pg.LineStringTagMatcher.Match(&elem.Tags); len(matches) > 0 {
 		return true, matches
 	}
 	return false, nil
 }
 
 func (pg *PostGIS) ProbePolygon(elem element.OSMElem) (bool, interface{}) {
-	if matches := pg.polygonTagMatcher.Match(&elem.Tags); len(matches) > 0 {
+	if matches := pg.PolygonTagMatcher.Match(&elem.Tags); len(matches) > 0 {
 		return true, matches
 	}
 	return false, nil
 }
 
 func (pg *PostGIS) SelectRelationPolygons(tags element.Tags, members []element.Member) []element.Member {
-	relMatches := pg.polygonTagMatcher.Match(&tags)
+	relMatches := pg.PolygonTagMatcher.Match(&tags)
 	result := []element.Member{}
 	for _, m := range members {
 		if m.Type != element.WAY {
 			continue
 		}
-		memberMatches := pg.polygonTagMatcher.Match(&m.Way.Tags)
+		memberMatches := pg.PolygonTagMatcher.Match(&m.Way.Tags)
 		if matchEquals(relMatches, memberMatches) {
 			result = append(result, m)
 		}
@@ -594,53 +593,10 @@ func (pg *PostGIS) Close() error {
 	return pg.Db.Close()
 }
 
-func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
-	db := &PostGIS{}
-
-	db.Tables = make(map[string]*TableSpec)
-	db.GeneralizedTables = make(map[string]*GeneralizedTableSpec)
-
-	db.Config = conf
-
-	if strings.HasPrefix(db.Config.ConnectionParams, "postgis://") {
-		db.Config.ConnectionParams = strings.Replace(
-			db.Config.ConnectionParams,
-			"postgis", "postgres", 1,
-		)
-	}
-
-	params, err := pq.ParseURL(db.Config.ConnectionParams)
-	if err != nil {
-		return nil, err
-	}
-	params = disableDefaultSslOnLocalhost(params)
-	db.Prefix = prefixFromConnectionParams(params)
-
-	for name, table := range m.Tables {
-		db.Tables[name] = NewTableSpec(db, table)
-	}
-	for name, table := range m.GeneralizedTables {
-		db.GeneralizedTables[name] = NewGeneralizedTableSpec(db, table)
-	}
-	db.prepareGeneralizedTableSources()
-	db.prepareGeneralizations()
-
-	db.pointTagMatcher = m.PointMatcher()
-	db.lineStringTagMatcher = m.LineStringMatcher()
-	db.polygonTagMatcher = m.PolygonMatcher()
-
-	db.Params = params
-	err = db.Open()
-	if err != nil {
-		return nil, err
-	}
-	return db, nil
-}
-
-// prepareGeneralizedTableSources checks if all generalized table have an
+// PrepareGeneralizedTableSources checks if all generalized table have an
 // existing source and sets .Source to the original source (works even
 // when source is allready generalized).
-func (pg *PostGIS) prepareGeneralizedTableSources() {
+func (pg *PostGIS) PrepareGeneralizedTableSources() {
 	for name, table := range pg.GeneralizedTables {
 		if source, ok := pg.Tables[table.SourceName]; ok {
 			table.Source = source
@@ -666,16 +622,11 @@ func (pg *PostGIS) prepareGeneralizedTableSources() {
 	}
 }
 
-func (pg *PostGIS) prepareGeneralizations() {
+func (pg *PostGIS) PrepareGeneralizations() {
 	for _, table := range pg.GeneralizedTables {
 		table.Source.Generalizations = append(table.Source.Generalizations, table)
 		if source, ok := pg.GeneralizedTables[table.SourceName]; ok {
 			source.Generalizations = append(source.Generalizations, table)
 		}
 	}
-}
-
-func init() {
-	database.Register("postgres", New)
-	database.Register("postgis", New)
 }
