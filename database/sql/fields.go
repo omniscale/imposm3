@@ -57,10 +57,10 @@ func (t *validatedGeometryType) GeneralizeSql(colSpec *ColumnSpec, spec *General
 	)
 }
 
-var pgTypes map[string]ColumnType
+var sdbTypes map[string]ColumnType
 
 func init() {
-	pgTypes = map[string]ColumnType{
+	sdbTypes = map[string]ColumnType{
 		"string":             &simpleColumnType{"VARCHAR"},
 		"bool":               &simpleColumnType{"BOOL"},
 		"int8":               &simpleColumnType{"SMALLINT"},

@@ -10,14 +10,14 @@ type TxRouter struct {
 	tx     *sql.Tx
 }
 
-func newTxRouter(pg *PostGIS, bulkImport bool) (*TxRouter, error) {
+func newTxRouter(sdb *SQLDB, bulkImport bool) (*TxRouter, error) {
 	txr := TxRouter{
 		Tables: make(map[string]TableTx),
 	}
 
 	if bulkImport {
-		for tableName, table := range pg.Tables {
-			tt := NewBulkTableTx(pg, table)
+		for tableName, table := range sdb.Tables {
+			tt := NewBulkTableTx(sdb, table)
 			err := tt.Begin(nil)
 			if err != nil {
 				return nil, err
@@ -25,21 +25,21 @@ func newTxRouter(pg *PostGIS, bulkImport bool) (*TxRouter, error) {
 			txr.Tables[tableName] = tt
 		}
 	} else {
-		tx, err := pg.Db.Begin()
+		tx, err := sdb.Db.Begin()
 		if err != nil {
 			panic(err) // TODO
 		}
 		txr.tx = tx
-		for tableName, table := range pg.Tables {
-			tt := NewSynchronousTableTx(pg, table.FullName, table)
+		for tableName, table := range sdb.Tables {
+			tt := NewSynchronousTableTx(sdb, table.FullName, table)
 			err := tt.Begin(tx)
 			if err != nil {
 				return nil, err
 			}
 			txr.Tables[tableName] = tt
 		}
-		for tableName, table := range pg.GeneralizedTables {
-			tt := NewSynchronousTableTx(pg, table.FullName, table)
+		for tableName, table := range sdb.GeneralizedTables {
+			tt := NewSynchronousTableTx(sdb, table.FullName, table)
 			err := tt.Begin(tx)
 			if err != nil {
 				return nil, err

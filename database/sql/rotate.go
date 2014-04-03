@@ -4,25 +4,25 @@ import (
 	"fmt"
 )
 
-func (pg *PostGIS) rotate(source, dest, backup string) error {
+func (sdb *SQLDB) rotate(source, dest, backup string) error {
 	defer log.StopStep(log.StartStep(fmt.Sprintf("Rotating tables")))
 
-	if err := pg.createSchema(dest); err != nil {
+	if err := sdb.createSchema(dest); err != nil {
 		return err
 	}
 
-	if err := pg.createSchema(backup); err != nil {
+	if err := sdb.createSchema(backup); err != nil {
 		return err
 	}
 
-	tx, err := pg.Db.Begin()
+	tx, err := sdb.Db.Begin()
 	if err != nil {
 		return err
 	}
 	defer rollbackIfTx(&tx)
 
-	for _, tableName := range pg.tableNames() {
-		tableName = pg.Prefix + tableName
+	for _, tableName := range sdb.tableNames() {
+		tableName = sdb.Prefix + tableName
 
 		log.Printf("Rotating %s from %s -> %s -> %s", tableName, source, dest, backup)
 
@@ -74,25 +74,25 @@ func (pg *PostGIS) rotate(source, dest, backup string) error {
 	return nil
 }
 
-func (pg *PostGIS) Deploy() error {
-	return pg.rotate(pg.Config.ImportSchema, pg.Config.ProductionSchema, pg.Config.BackupSchema)
+func (sdb *SQLDB) Deploy() error {
+	return sdb.rotate(sdb.Config.ImportSchema, sdb.Config.ProductionSchema, sdb.Config.BackupSchema)
 }
 
-func (pg *PostGIS) RevertDeploy() error {
-	return pg.rotate(pg.Config.BackupSchema, pg.Config.ProductionSchema, pg.Config.ImportSchema)
+func (sdb *SQLDB) RevertDeploy() error {
+	return sdb.rotate(sdb.Config.BackupSchema, sdb.Config.ProductionSchema, sdb.Config.ImportSchema)
 }
 
-func (pg *PostGIS) RemoveBackup() error {
-	tx, err := pg.Db.Begin()
+func (sdb *SQLDB) RemoveBackup() error {
+	tx, err := sdb.Db.Begin()
 	if err != nil {
 		return err
 	}
 	defer rollbackIfTx(&tx)
 
-	backup := pg.Config.BackupSchema
+	backup := sdb.Config.BackupSchema
 
-	for _, tableName := range pg.tableNames() {
-		tableName = pg.Prefix + tableName
+	for _, tableName := range sdb.tableNames() {
+		tableName = sdb.Prefix + tableName
 
 		backupExists, err := tableExists(tx, backup, tableName)
 		if err != nil {
@@ -117,12 +117,12 @@ func (pg *PostGIS) RemoveBackup() error {
 }
 
 // tableNames returns a list of all tables (without prefix).
-func (pg *PostGIS) tableNames() []string {
+func (sdb *SQLDB) tableNames() []string {
 	var names []string
-	for name, _ := range pg.Tables {
+	for name, _ := range sdb.Tables {
 		names = append(names, name)
 	}
-	for name, _ := range pg.GeneralizedTables {
+	for name, _ := range sdb.GeneralizedTables {
 		names = append(names, name)
 	}
 	return names

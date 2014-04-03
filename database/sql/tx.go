@@ -16,7 +16,7 @@ type TableTx interface {
 }
 
 type bulkTableTx struct {
-	Pg         *PostGIS
+	Sdb        *SQLDB
 	Tx         *sql.Tx
 	Table      string
 	Spec       *TableSpec
@@ -26,9 +26,9 @@ type bulkTableTx struct {
 	rows       chan []interface{}
 }
 
-func NewBulkTableTx(pg *PostGIS, spec *TableSpec) TableTx {
+func NewBulkTableTx(sdb *SQLDB, spec *TableSpec) TableTx {
 	tt := &bulkTableTx{
-		Pg:    pg,
+		Sdb:    sdb,
 		Table: spec.FullName,
 		Spec:  spec,
 		wg:    &sync.WaitGroup{},
@@ -42,14 +42,14 @@ func NewBulkTableTx(pg *PostGIS, spec *TableSpec) TableTx {
 func (tt *bulkTableTx) Begin(tx *sql.Tx) error {
 	var err error
 	if tx == nil {
-		tx, err = tt.Pg.Db.Begin()
+		tx, err = tt.Sdb.Db.Begin()
 		if err != nil {
 			return err
 		}
 	}
 	tt.Tx = tx
 
-	_, err = tx.Exec(fmt.Sprintf(`TRUNCATE TABLE "%s"."%s" RESTART IDENTITY`, tt.Pg.Config.ImportSchema, tt.Table))
+	_, err = tx.Exec(fmt.Sprintf(`TRUNCATE TABLE "%s"."%s" RESTART IDENTITY`, tt.Sdb.Config.ImportSchema, tt.Table))
 	if err != nil {
 		return err
 	}
@@ -111,7 +111,7 @@ func (tt *bulkTableTx) Rollback() {
 }
 
 type syncTableTx struct {
-	Pg         *PostGIS
+	Sdb        *SQLDB
 	Tx         *sql.Tx
 	Table      string
 	Spec       tableSpec
@@ -126,9 +126,9 @@ type tableSpec interface {
 	DeleteSQL() string
 }
 
-func NewSynchronousTableTx(pg *PostGIS, tableName string, spec tableSpec) TableTx {
+func NewSynchronousTableTx(sdb *SQLDB, tableName string, spec tableSpec) TableTx {
 	tt := &syncTableTx{
-		Pg:    pg,
+		Sdb:    sdb,
 		Table: tableName,
 		Spec:  spec,
 	}
@@ -138,7 +138,7 @@ func NewSynchronousTableTx(pg *PostGIS, tableName string, spec tableSpec) TableT
 func (tt *syncTableTx) Begin(tx *sql.Tx) error {
 	var err error
 	if tx == nil {
-		tx, err = tt.Pg.Db.Begin()
+		tx, err = tt.Sdb.Db.Begin()
 		if err != nil {
 			return err
 		}

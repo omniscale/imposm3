@@ -9,7 +9,7 @@ import (
 )
 
 func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
-	db := &sql.PostGIS{}
+	db := &sql.SQLDB{}
 
 	db.Tables = make(map[string]*sql.TableSpec)
 	db.GeneralizedTables = make(map[string]*sql.GeneralizedTableSpec)

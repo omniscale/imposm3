@@ -112,35 +112,35 @@ func (spec *TableSpec) DeleteSQL() string {
 	)
 }
 
-func NewTableSpec(pg *PostGIS, t *mapping.Table) *TableSpec {
+func NewTableSpec(sdb *SQLDB, t *mapping.Table) *TableSpec {
 	spec := TableSpec{
 		Name:         t.Name,
-		FullName:     pg.Prefix + t.Name,
-		Schema:       pg.Config.ImportSchema,
+		FullName:     sdb.Prefix + t.Name,
+		Schema:       sdb.Config.ImportSchema,
 		GeometryType: string(t.Type),
-		Srid:         pg.Config.Srid,
+		Srid:         sdb.Config.Srid,
 	}
 	for _, field := range t.Fields {
 		fieldType := field.FieldType()
 		if fieldType == nil {
 			continue
 		}
-		pgType, ok := pgTypes[fieldType.GoType]
+		sdbType, ok := sdbTypes[fieldType.GoType]
 		if !ok {
 			log.Errorf("unhandled field type %v, using string type", fieldType)
-			pgType = pgTypes["string"]
+			sdbType = sdbTypes["string"]
 		}
-		col := ColumnSpec{field.Name, *fieldType, pgType}
+		col := ColumnSpec{field.Name, *fieldType, sdbType}
 		spec.Columns = append(spec.Columns, col)
 	}
 	return &spec
 }
 
-func NewGeneralizedTableSpec(pg *PostGIS, t *mapping.GeneralizedTable) *GeneralizedTableSpec {
+func NewGeneralizedTableSpec(sdb *SQLDB, t *mapping.GeneralizedTable) *GeneralizedTableSpec {
 	spec := GeneralizedTableSpec{
 		Name:       t.Name,
-		FullName:   pg.Prefix + t.Name,
-		Schema:     pg.Config.ImportSchema,
+		FullName:   sdb.Prefix + t.Name,
+		Schema:     sdb.Config.ImportSchema,
 		Tolerance:  t.Tolerance,
 		Where:      t.SqlFilter,
 		SourceName: t.SourceTableName,
