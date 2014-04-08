@@ -32,7 +32,7 @@ func (e *SQLInsertError) Error() string {
 	return fmt.Sprintf("SQL Error: %s in query %s (%+v)", e.originalError.Error(), e.query, e.data)
 }
 
-func createTable(tx *sql.Tx, spec TableSpec, qb QueryBuilder) error {
+func createTable(tx *sql.Tx, spec TableSpec, qb TableQueryBuilder) error {
 	var sql string
 	var err error
 
@@ -54,7 +54,7 @@ func createTable(tx *sql.Tx, spec TableSpec, qb QueryBuilder) error {
 	return nil
 }
 
-func addGeometryColumn(tx *sql.Tx, qb QueryBuilder) error {
+func addGeometryColumn(tx *sql.Tx, qb TableQueryBuilder) error {
 	sql := qb.AddGeometryColumn()
 	row := tx.QueryRow(sql)
 	var void interface{}
@@ -116,7 +116,7 @@ func (sdb *SQLDB) Init() error {
 		return err
 	}
 	defer rollbackIfTx(&tx)
-	for name, qb := range sdb.Queries {
+	for name, qb := range sdb.TableQueryBuilder {
 		if err := createTable(tx, *sdb.Tables[name], qb); err != nil {
 			return err
 		}
@@ -273,7 +273,7 @@ func (sdb *SQLDB) generalizeTable(table *GeneralizedTableSpec) error {
 	var cols []string
 
 	for _, col := range table.Source.Columns {
-		cols = append(cols, col.Type.GeneralizeSql(&col, table))
+		cols = append(cols, col.Type.GeneralizeSql(&col, table.Tolerance))
 	}
 
 	if err := dropTableIfExists(tx, sdb.Config.ImportSchema, table.FullName); err != nil {
@@ -380,9 +380,17 @@ func clusterTable(sdb *SQLDB, tableName string, srid int, columns []ColumnSpec) 
 	return nil
 }
 
-type QueryBuilder interface {
+type TableQueryBuilder interface {
   CreateTableSQL() string
   AddGeometryColumn() string
+  InsertSQL() string
+  CopySQL() string
+  DeleteSQL() string
+}
+
+type GenTableQueryBuilder interface {
+  InsertSQL() string
+  DeleteSQL() string
 }
 
 type SQLDB struct {
@@ -390,7 +398,8 @@ type SQLDB struct {
 	Params                  string
 	Config                  database.Config
 	Tables                  map[string]*TableSpec
-  Queries                 map[string]QueryBuilder
+  TableQueryBuilder       map[string]TableQueryBuilder
+  GenTableQueryBuilder       map[string]GenTableQueryBuilder
 	GeneralizedTables       map[string]*GeneralizedTableSpec
 	Prefix                  string
 	txRouter                *TxRouter

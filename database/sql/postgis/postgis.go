@@ -13,6 +13,9 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 
 	db.Tables = make(map[string]*sql.TableSpec)
 	db.GeneralizedTables = make(map[string]*sql.GeneralizedTableSpec)
+  
+  db.TableQueryBuilder = make(map[string]sql.TableQueryBuilder)
+  db.GenTableQueryBuilder = make(map[string]sql.GenTableQueryBuilder)
 
 	db.Config = conf
 
@@ -34,16 +37,18 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 		db.Tables[name] = sql.NewTableSpec(db, table)
 	}
   
-  // create query builder
-  db.Queries = make(map[string]sql.QueryBuilder)
-  
 	for name, tableSpec := range db.Tables {
-		db.Queries[name] = NewQueryBuilder(tableSpec)
+		db.TableQueryBuilder[name] = NewTableQueryBuilder(tableSpec)
 	}
   
 	for name, table := range m.GeneralizedTables {
 		db.GeneralizedTables[name] = sql.NewGeneralizedTableSpec(db, table)
 	}
+  
+	for name, genTableSpec := range db.GeneralizedTables {
+		db.GenTableQueryBuilder[name] = NewGenTableQueryBuilder(genTableSpec)
+	}
+  
 	db.PrepareGeneralizedTableSources()
 	db.PrepareGeneralizations()
 

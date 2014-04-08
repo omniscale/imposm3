@@ -6,6 +6,16 @@ import (
 	"sync"
 )
 
+type tableSpec interface {
+	InsertSQL() string
+	DeleteSQL() string
+}
+
+type bulkTableSpec interface {
+  tableSpec
+  CopySQL() string
+}
+
 type TableTx interface {
 	Begin(*sql.Tx) error
 	Insert(row []interface{}) error
@@ -19,17 +29,17 @@ type bulkTableTx struct {
 	Sdb        *SQLDB
 	Tx         *sql.Tx
 	Table      string
-	Spec       *TableSpec
+	Spec       bulkTableSpec
 	InsertStmt *sql.Stmt
 	InsertSql  string
 	wg         *sync.WaitGroup
 	rows       chan []interface{}
 }
 
-func NewBulkTableTx(sdb *SQLDB, spec *TableSpec) TableTx {
+func NewBulkTableTx(sdb *SQLDB, tableName string, spec bulkTableSpec) TableTx {
 	tt := &bulkTableTx{
 		Sdb:    sdb,
-		Table: spec.FullName,
+		Table: tableName,
 		Spec:  spec,
 		wg:    &sync.WaitGroup{},
 		rows:  make(chan []interface{}, 64),
@@ -119,11 +129,6 @@ type syncTableTx struct {
 	DeleteStmt *sql.Stmt
 	InsertSql  string
 	DeleteSql  string
-}
-
-type tableSpec interface {
-	InsertSQL() string
-	DeleteSQL() string
 }
 
 func NewSynchronousTableTx(sdb *SQLDB, tableName string, spec tableSpec) TableTx {

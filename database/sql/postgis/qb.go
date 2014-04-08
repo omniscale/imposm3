@@ -18,8 +18,12 @@ type QGeneralizedTableSpec struct {
   sql.GeneralizedTableSpec
 }
 
-func NewQueryBuilder(spec *sql.TableSpec) *QTableSpec {
+func NewTableQueryBuilder(spec *sql.TableSpec) *QTableSpec {
 	return &QTableSpec{*spec}
+}
+
+func NewGenTableQueryBuilder(spec *sql.GeneralizedTableSpec) *QGeneralizedTableSpec {
+	return &QGeneralizedTableSpec{*spec}
 }
 
 func (spec *QTableSpec) CreateTableSQL() string {
@@ -71,4 +75,89 @@ func (spec *QTableSpec) InsertSQL() string {
 		columns,
 		placeholders,
 	)
+}
+
+func (spec *QTableSpec) CopySQL() string {
+	var cols []string
+	for _, col := range spec.Columns {
+		cols = append(cols, "\""+col.Name+"\"")
+	}
+	columns := strings.Join(cols, ", ")
+
+	return fmt.Sprintf(`COPY "%s"."%s" (%s) FROM STDIN`,
+		spec.Schema,
+		spec.FullName,
+		columns,
+	)
+}
+
+func (spec *QTableSpec) DeleteSQL() string {
+	var idColumnName string
+	for _, col := range spec.Columns {
+		if col.FieldType.Name == "id" {
+			idColumnName = col.Name
+			break
+		}
+	}
+
+	if idColumnName == "" {
+		panic("missing id column")
+	}
+
+	return fmt.Sprintf(`DELETE FROM "%s"."%s" WHERE "%s" = $1`,
+		spec.Schema,
+		spec.FullName,
+		idColumnName,
+	)
+}
+
+func (spec *QGeneralizedTableSpec) DeleteSQL() string {
+	var idColumnName string
+	for _, col := range spec.Source.Columns {
+		if col.FieldType.Name == "id" {
+			idColumnName = col.Name
+			break
+		}
+	}
+
+	if idColumnName == "" {
+		panic("missing id column")
+	}
+
+	return fmt.Sprintf(`DELETE FROM "%s"."%s" WHERE "%s" = $1`,
+		spec.Schema,
+		spec.FullName,
+		idColumnName,
+	)
+}
+
+func (spec *QGeneralizedTableSpec) InsertSQL() string {
+	var idColumnName string
+	for _, col := range spec.Source.Columns {
+		if col.FieldType.Name == "id" {
+			idColumnName = col.Name
+			break
+		}
+	}
+
+	if idColumnName == "" {
+		panic("missing id column")
+	}
+
+	var cols []string
+	for _, col := range spec.Source.Columns {
+		cols = append(cols, col.Type.GeneralizeSql(&col, spec.Tolerance))
+	}
+
+	where := fmt.Sprintf(` WHERE "%s" = $1`, idColumnName)
+	if spec.Where != "" {
+		where += " AND (" + spec.Where + ")"
+	}
+
+	columnSQL := strings.Join(cols, ",\n")
+	sql := fmt.Sprintf(`INSERT INTO "%s"."%s" (SELECT %s FROM "%s"."%s"%s)`,
+		spec.Schema, spec.FullName, columnSQL, spec.Source.Schema,
+		spec.Source.FullName, where)
+	return sql
+
 }

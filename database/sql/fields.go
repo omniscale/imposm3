@@ -7,7 +7,7 @@ import (
 type ColumnType interface {
 	Name() string
 	PrepareInsertSql(i int) string
-	GeneralizeSql(colSpec *ColumnSpec, spec *GeneralizedTableSpec) string
+	GeneralizeSql(colSpec *ColumnSpec, tolerance float64) string
 }
 
 type simpleColumnType struct {
@@ -22,7 +22,7 @@ func (t *simpleColumnType) PrepareInsertSql(i int) string {
 	return fmt.Sprintf("$%d", i)
 }
 
-func (t *simpleColumnType) GeneralizeSql(colSpec *ColumnSpec, spec *GeneralizedTableSpec) string {
+func (t *simpleColumnType) GeneralizeSql(colSpec *ColumnSpec, tolerance float64) string {
 	return "\"" + colSpec.Name + "\""
 }
 
@@ -40,9 +40,9 @@ func (t *geometryType) PrepareInsertSql(i int) string {
 	)
 }
 
-func (t *geometryType) GeneralizeSql(colSpec *ColumnSpec, spec *GeneralizedTableSpec) string {
+func (t *geometryType) GeneralizeSql(colSpec *ColumnSpec, tolerance float64) string {
 	return fmt.Sprintf(`ST_SimplifyPreserveTopology("%s", %f) as "%s"`,
-		colSpec.Name, spec.Tolerance, colSpec.Name,
+		colSpec.Name, tolerance, colSpec.Name,
 	)
 }
 
@@ -50,9 +50,9 @@ type validatedGeometryType struct {
 	geometryType
 }
 
-func (t *validatedGeometryType) GeneralizeSql(colSpec *ColumnSpec, spec *GeneralizedTableSpec) string {
+func (t *validatedGeometryType) GeneralizeSql(colSpec *ColumnSpec, tolerance float64) string {
 	return fmt.Sprintf(`ST_Buffer(ST_SimplifyPreserveTopology("%s", %f), 0) as "%s"`,
-		colSpec.Name, spec.Tolerance, colSpec.Name,
+		colSpec.Name, tolerance, colSpec.Name,
 	)
 }
 
