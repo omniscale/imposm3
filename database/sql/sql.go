@@ -32,7 +32,7 @@ func (e *SQLInsertError) Error() string {
 	return fmt.Sprintf("SQL Error: %s in query %s (%+v)", e.originalError.Error(), e.query, e.data)
 }
 
-func createTable(tx *sql.Tx, spec TableSpec) error {
+func createTable(tx *sql.Tx, spec TableSpec, qb QueryBuilder) error {
 	var sql string
 	var err error
 
@@ -41,26 +41,21 @@ func createTable(tx *sql.Tx, spec TableSpec) error {
 		return err
 	}
 
-	sql = spec.CreateTableSQL()
+	sql = qb.CreateTableSQL()
 	_, err = tx.Exec(sql)
 	if err != nil {
 		return &SQLError{sql, err}
 	}
 
-	err = addGeometryColumn(tx, spec.FullName, spec)
+	err = addGeometryColumn(tx, qb)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func addGeometryColumn(tx *sql.Tx, tableName string, spec TableSpec) error {
-	geomType := strings.ToUpper(spec.GeometryType)
-	if geomType == "POLYGON" {
-		geomType = "GEOMETRY" // for multipolygon support
-	}
-	sql := fmt.Sprintf("SELECT AddGeometryColumn('%s', '%s', 'geometry', '%d', '%s', 2);",
-		spec.Schema, tableName, spec.Srid, geomType)
+func addGeometryColumn(tx *sql.Tx, qb QueryBuilder) error {
+	sql := qb.AddGeometryColumn()
 	row := tx.QueryRow(sql)
 	var void interface{}
 	err := row.Scan(&void)
@@ -121,8 +116,8 @@ func (sdb *SQLDB) Init() error {
 		return err
 	}
 	defer rollbackIfTx(&tx)
-	for _, spec := range sdb.Tables {
-		if err := createTable(tx, *spec); err != nil {
+	for name, qb := range sdb.Queries {
+		if err := createTable(tx, *sdb.Tables[name], qb); err != nil {
 			return err
 		}
 	}
@@ -385,11 +380,17 @@ func clusterTable(sdb *SQLDB, tableName string, srid int, columns []ColumnSpec) 
 	return nil
 }
 
+type QueryBuilder interface {
+  CreateTableSQL() string
+  AddGeometryColumn() string
+}
+
 type SQLDB struct {
 	Db                      *sql.DB
 	Params                  string
 	Config                  database.Config
 	Tables                  map[string]*TableSpec
+  Queries                 map[string]QueryBuilder
 	GeneralizedTables       map[string]*GeneralizedTableSpec
 	Prefix                  string
 	txRouter                *TxRouter

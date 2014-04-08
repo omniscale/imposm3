@@ -6,8 +6,7 @@ import (
 
 type ColumnType interface {
 	Name() string
-	PrepareInsertSql(i int,
-		spec *TableSpec) string
+	PrepareInsertSql(i int) string
 	GeneralizeSql(colSpec *ColumnSpec, spec *GeneralizedTableSpec) string
 }
 
@@ -19,7 +18,7 @@ func (t *simpleColumnType) Name() string {
 	return t.name
 }
 
-func (t *simpleColumnType) PrepareInsertSql(i int, spec *TableSpec) string {
+func (t *simpleColumnType) PrepareInsertSql(i int) string {
 	return fmt.Sprintf("$%d", i)
 }
 
@@ -35,7 +34,7 @@ func (t *geometryType) Name() string {
 	return t.name
 }
 
-func (t *geometryType) PrepareInsertSql(i int, spec *TableSpec) string {
+func (t *geometryType) PrepareInsertSql(i int) string {
 	return fmt.Sprintf("$%d::Geometry",
 		i,
 	)

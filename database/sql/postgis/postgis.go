@@ -33,6 +33,14 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	for name, table := range m.Tables {
 		db.Tables[name] = sql.NewTableSpec(db, table)
 	}
+  
+  // create query builder
+  db.Queries = make(map[string]sql.QueryBuilder)
+  
+	for name, tableSpec := range db.Tables {
+		db.Queries[name] = NewQueryBuilder(tableSpec)
+	}
+  
 	for name, table := range m.GeneralizedTables {
 		db.GeneralizedTables[name] = sql.NewGeneralizedTableSpec(db, table)
 	}
