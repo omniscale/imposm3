@@ -17,7 +17,7 @@ func newTxRouter(sdb *SQLDB, bulkImport bool) (*TxRouter, error) {
 
 	if bulkImport {
 		for tableName, table := range sdb.Tables {
-			tt := NewBulkTableTx(sdb, table.FullName, sdb.TableQueryBuilder[tableName])
+			tt := NewBulkTableTx(sdb, table.FullName, sdb.NormalTableQueryBuilder[tableName])
 			err := tt.Begin(nil)
 			if err != nil {
 				return nil, err
@@ -31,7 +31,7 @@ func newTxRouter(sdb *SQLDB, bulkImport bool) (*TxRouter, error) {
 		}
 		txr.tx = tx
 		for tableName, table := range sdb.Tables {
-			tt := NewSynchronousTableTx(sdb, table.FullName, sdb.TableQueryBuilder[tableName])
+			tt := NewSynchronousTableTx(sdb, table.FullName, sdb.NormalTableQueryBuilder[tableName])
 			err := tt.Begin(tx)
 			if err != nil {
 				return nil, err

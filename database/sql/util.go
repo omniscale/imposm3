@@ -2,15 +2,12 @@ package sql
 
 import (
 	"database/sql"
-	"fmt"
 	"sync"
 )
 
-func tableExists(tx *sql.Tx, schema, table string) (bool, error) {
+func tableExists(tx *sql.Tx, qb QueryBuilder, schema, table string) (bool, error) {
 	var exists bool
-	sql := fmt.Sprintf(`SELECT EXISTS(SELECT * FROM information_schema.tables WHERE table_name='%s' AND table_schema='%s')`,
-		table, schema)
-	row := tx.QueryRow(sql)
+	row := tx.QueryRow(qb.TableExistsSQL(schema, table))
 	err := row.Scan(&exists)
 	if err != nil {
 		return false, err
@@ -18,16 +15,15 @@ func tableExists(tx *sql.Tx, schema, table string) (bool, error) {
 	return exists, nil
 }
 
-func dropTableIfExists(tx *sql.Tx, schema, table string) error {
-	exists, err := tableExists(tx, schema, table)
+func dropTableIfExists(tx *sql.Tx, qb QueryBuilder, schema, table string) error {
+	exists, err := tableExists(tx, qb, schema, table)
 	if err != nil {
 		return err
 	}
 	if !exists {
 		return nil
 	}
-	sqlStmt := fmt.Sprintf("SELECT DropGeometryTable('%s', '%s');",
-		schema, table)
+	sqlStmt := qb.DropTableSQL(schema, table)
 	row := tx.QueryRow(sqlStmt)
 	var void interface{}
 	err = row.Scan(&void)

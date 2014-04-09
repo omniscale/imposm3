@@ -1,11 +1,11 @@
 package postgis
 
 import (
-	"imposm3/database/sql"
+	pq "github.com/lib/pq"
 	"imposm3/database"
+	"imposm3/database/sql"
 	"imposm3/mapping"
-  "strings"
-  pq "github.com/lib/pq"
+	"strings"
 )
 
 func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
@@ -13,11 +13,13 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 
 	db.Tables = make(map[string]*sql.TableSpec)
 	db.GeneralizedTables = make(map[string]*sql.GeneralizedTableSpec)
-  
-  db.TableQueryBuilder = make(map[string]sql.TableQueryBuilder)
-  db.GenTableQueryBuilder = make(map[string]sql.GenTableQueryBuilder)
+
+	db.NormalTableQueryBuilder = make(map[string]sql.NormalTableQueryBuilder)
+	db.GenTableQueryBuilder = make(map[string]sql.GenTableQueryBuilder)
 
 	db.Config = conf
+
+	db.QB = NewQueryBuilder()
 
 	if strings.HasPrefix(db.Config.ConnectionParams, "postgis://") {
 		db.Config.ConnectionParams = strings.Replace(
@@ -36,19 +38,19 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	for name, table := range m.Tables {
 		db.Tables[name] = sql.NewTableSpec(db, table)
 	}
-  
+
 	for name, tableSpec := range db.Tables {
-		db.TableQueryBuilder[name] = NewTableQueryBuilder(tableSpec)
+		db.NormalTableQueryBuilder[name] = NewNormalTableQueryBuilder(tableSpec)
 	}
-  
+
 	for name, table := range m.GeneralizedTables {
 		db.GeneralizedTables[name] = sql.NewGeneralizedTableSpec(db, table)
 	}
-  
+
 	for name, genTableSpec := range db.GeneralizedTables {
 		db.GenTableQueryBuilder[name] = NewGenTableQueryBuilder(genTableSpec)
 	}
-  
+
 	db.PrepareGeneralizedTableSources()
 	db.PrepareGeneralizations()
 

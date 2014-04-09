@@ -1,29 +1,45 @@
 package postgis
 
 import (
-  "imposm3/database/sql"
-  "strings"
-  "fmt"
+	"fmt"
+	"imposm3/database/sql"
+	"strings"
 )
 
 type QColumnSpec struct {
-  sql.ColumnSpec
+	sql.ColumnSpec
 }
 
 type QTableSpec struct {
-  sql.TableSpec
+	sql.TableSpec
 }
 
 type QGeneralizedTableSpec struct {
-  sql.GeneralizedTableSpec
+	sql.GeneralizedTableSpec
 }
 
-func NewTableQueryBuilder(spec *sql.TableSpec) *QTableSpec {
+type QQueryBuilder struct {
+}
+
+func NewNormalTableQueryBuilder(spec *sql.TableSpec) *QTableSpec {
 	return &QTableSpec{*spec}
 }
 
 func NewGenTableQueryBuilder(spec *sql.GeneralizedTableSpec) *QGeneralizedTableSpec {
 	return &QGeneralizedTableSpec{*spec}
+}
+
+func NewQueryBuilder() *QQueryBuilder {
+	return &QQueryBuilder{}
+}
+
+func TableExistsSQL(schema string, table string) string {
+	return fmt.Sprintf(`SELECT EXISTS(SELECT * FROM information_schema.tables WHERE table_name='%s' AND table_schema='%s')`,
+		table, schema)
+}
+
+func DropTableSQL(schema string, table string) string {
+	return fmt.Sprintf("SELECT DropGeometryTable('%s', '%s');", schema, table)
 }
 
 func (spec *QTableSpec) CreateTableSQL() string {
@@ -47,13 +63,13 @@ func (spec *QTableSpec) CreateTableSQL() string {
 	)
 }
 
-func (spec *QTableSpec) AddGeometryColumn() string {
+func (spec *QTableSpec) AddGeometryColumnSQL() string {
 	geomType := strings.ToUpper(spec.GeometryType)
-  
+
 	if geomType == "POLYGON" {
 		geomType = "GEOMETRY" // for multipolygon support
 	}
-  
+
 	return fmt.Sprintf("SELECT AddGeometryColumn('%s', '%s', 'geometry', '%d', '%s', 2);",
 		spec.Schema, spec.FullName, spec.Srid, geomType)
 }
@@ -159,5 +175,26 @@ func (spec *QGeneralizedTableSpec) InsertSQL() string {
 		spec.Schema, spec.FullName, columnSQL, spec.Source.Schema,
 		spec.Source.FullName, where)
 	return sql
+}
 
+func (q *QQueryBuilder) TableExistsSQL(schema string, table string) string {
+	return TableExistsSQL(schema, table)
+}
+
+func (q *QQueryBuilder) DropTableSQL(schema string, table string) string {
+	return DropTableSQL(schema, table)
+}
+
+func (q *QQueryBuilder) SchemaExistsSQL(schema string) string {
+	return fmt.Sprintf("SELECT EXISTS(SELECT schema_name FROM information_schema.schemata WHERE schema_name = '%s');",
+		schema)
+}
+
+func (q *QQueryBuilder) CreateSchemaSQL(schema string) string {
+	return fmt.Sprintf("CREATE SCHEMA \"%s\"", schema)
+}
+
+func (spec *QQueryBuilder) PopulateGeometryColumnSQL(schema string, table string) string {
+	return fmt.Sprintf("SELECT Populate_Geometry_Columns('%s.%s'::regclass);",
+		schema, table)
 }

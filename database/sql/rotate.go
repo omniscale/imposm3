@@ -26,15 +26,15 @@ func (sdb *SQLDB) rotate(source, dest, backup string) error {
 
 		log.Printf("Rotating %s from %s -> %s -> %s", tableName, source, dest, backup)
 
-		backupExists, err := tableExists(tx, backup, tableName)
+		backupExists, err := tableExists(tx, sdb.QB, backup, tableName)
 		if err != nil {
 			return err
 		}
-		sourceExists, err := tableExists(tx, source, tableName)
+		sourceExists, err := tableExists(tx, sdb.QB, source, tableName)
 		if err != nil {
 			return err
 		}
-		destExists, err := tableExists(tx, dest, tableName)
+		destExists, err := tableExists(tx, sdb.QB, dest, tableName)
 		if err != nil {
 			return err
 		}
@@ -47,7 +47,7 @@ func (sdb *SQLDB) rotate(source, dest, backup string) error {
 		if destExists {
 			log.Printf("backup of %s, to %s", tableName, backup)
 			if backupExists {
-				err = dropTableIfExists(tx, backup, tableName)
+				err = dropTableIfExists(tx, sdb.QB, backup, tableName)
 				if err != nil {
 					return err
 				}
@@ -94,13 +94,13 @@ func (sdb *SQLDB) RemoveBackup() error {
 	for _, tableName := range sdb.tableNames() {
 		tableName = sdb.Prefix + tableName
 
-		backupExists, err := tableExists(tx, backup, tableName)
+		backupExists, err := tableExists(tx, sdb.QB, backup, tableName)
 		if err != nil {
 			return err
 		}
 		if backupExists {
 			log.Printf("removing backup of %s from %s", tableName, backup)
-			err = dropTableIfExists(tx, backup, tableName)
+			err = dropTableIfExists(tx, sdb.QB, backup, tableName)
 			if err != nil {
 				return err
 			}

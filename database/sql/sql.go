@@ -32,30 +32,30 @@ func (e *SQLInsertError) Error() string {
 	return fmt.Sprintf("SQL Error: %s in query %s (%+v)", e.originalError.Error(), e.query, e.data)
 }
 
-func createTable(tx *sql.Tx, spec TableSpec, qb TableQueryBuilder) error {
+func createTable(tx *sql.Tx, spec TableSpec, qb QueryBuilder, qbn NormalTableQueryBuilder) error {
 	var sql string
 	var err error
 
-	err = dropTableIfExists(tx, spec.Schema, spec.FullName)
+	err = dropTableIfExists(tx, qb, spec.Schema, spec.FullName)
 	if err != nil {
 		return err
 	}
 
-	sql = qb.CreateTableSQL()
+	sql = qbn.CreateTableSQL()
 	_, err = tx.Exec(sql)
 	if err != nil {
 		return &SQLError{sql, err}
 	}
 
-	err = addGeometryColumn(tx, qb)
+	err = addGeometryColumn(tx, qbn)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func addGeometryColumn(tx *sql.Tx, qb TableQueryBuilder) error {
-	sql := qb.AddGeometryColumn()
+func addGeometryColumn(tx *sql.Tx, qb NormalTableQueryBuilder) error {
+	sql := qb.AddGeometryColumnSQL()
 	row := tx.QueryRow(sql)
 	var void interface{}
 	err := row.Scan(&void)
@@ -65,9 +65,8 @@ func addGeometryColumn(tx *sql.Tx, qb TableQueryBuilder) error {
 	return nil
 }
 
-func populateGeometryColumn(tx *sql.Tx, tableName string, spec TableSpec) error {
-	sql := fmt.Sprintf("SELECT Populate_Geometry_Columns('%s.%s'::regclass);",
-		spec.Schema, tableName)
+func populateGeometryColumn(tx *sql.Tx, qb QueryBuilder, tableName string, spec TableSpec) error {
+	sql := qb.PopulateGeometryColumnSQL(spec.Schema, tableName)
 	row := tx.QueryRow(sql)
 	var void interface{}
 	err := row.Scan(&void)
@@ -85,8 +84,12 @@ func (sdb *SQLDB) createSchema(schema string) error {
 		return nil
 	}
 
-	sql = fmt.Sprintf("SELECT EXISTS(SELECT schema_name FROM information_schema.schemata WHERE schema_name = '%s');",
-		schema)
+	sql = sdb.QB.SchemaExistsSQL(schema)
+
+	if sql == "" {
+		return nil
+	}
+
 	row := sdb.Db.QueryRow(sql)
 	var exists bool
 	err = row.Scan(&exists)
@@ -97,7 +100,11 @@ func (sdb *SQLDB) createSchema(schema string) error {
 		return nil
 	}
 
-	sql = fmt.Sprintf("CREATE SCHEMA \"%s\"", schema)
+	sql = sdb.QB.CreateSchemaSQL(schema)
+	if sql == "" {
+		return nil
+	}
+
 	_, err = sdb.Db.Exec(sql)
 	if err != nil {
 		return &SQLError{sql, err}
@@ -116,8 +123,8 @@ func (sdb *SQLDB) Init() error {
 		return err
 	}
 	defer rollbackIfTx(&tx)
-	for name, qb := range sdb.TableQueryBuilder {
-		if err := createTable(tx, *sdb.Tables[name], qb); err != nil {
+	for name, qb := range sdb.NormalTableQueryBuilder {
+		if err := createTable(tx, *sdb.Tables[name], sdb.QB, qb); err != nil {
 			return err
 		}
 	}
@@ -276,7 +283,7 @@ func (sdb *SQLDB) generalizeTable(table *GeneralizedTableSpec) error {
 		cols = append(cols, col.Type.GeneralizeSql(&col, table.Tolerance))
 	}
 
-	if err := dropTableIfExists(tx, sdb.Config.ImportSchema, table.FullName); err != nil {
+	if err := dropTableIfExists(tx, sdb.QB, sdb.Config.ImportSchema, table.FullName); err != nil {
 		return err
 	}
 
@@ -297,7 +304,7 @@ func (sdb *SQLDB) generalizeTable(table *GeneralizedTableSpec) error {
 		return &SQLError{sql, err}
 	}
 
-	err = populateGeometryColumn(tx, table.FullName, *table.Source)
+	err = populateGeometryColumn(tx, sdb.QB, table.FullName, *table.Source)
 	if err != nil {
 		return err
 	}
@@ -380,17 +387,28 @@ func clusterTable(sdb *SQLDB, tableName string, srid int, columns []ColumnSpec) 
 	return nil
 }
 
+type QueryBuilder interface {
+	TableExistsSQL(string, string) string
+	DropTableSQL(string, string) string
+	SchemaExistsSQL(string) string
+	CreateSchemaSQL(string) string
+	PopulateGeometryColumnSQL(string, string) string
+}
+
 type TableQueryBuilder interface {
-  CreateTableSQL() string
-  AddGeometryColumn() string
-  InsertSQL() string
-  CopySQL() string
-  DeleteSQL() string
+	InsertSQL() string
+	DeleteSQL() string
+}
+
+type NormalTableQueryBuilder interface {
+	TableQueryBuilder
+	CreateTableSQL() string
+	AddGeometryColumnSQL() string
+	CopySQL() string
 }
 
 type GenTableQueryBuilder interface {
-  InsertSQL() string
-  DeleteSQL() string
+	TableQueryBuilder
 }
 
 type SQLDB struct {
@@ -398,8 +416,9 @@ type SQLDB struct {
 	Params                  string
 	Config                  database.Config
 	Tables                  map[string]*TableSpec
-  TableQueryBuilder       map[string]TableQueryBuilder
-  GenTableQueryBuilder       map[string]GenTableQueryBuilder
+	QB                      QueryBuilder
+	NormalTableQueryBuilder map[string]NormalTableQueryBuilder
+	GenTableQueryBuilder    map[string]GenTableQueryBuilder
 	GeneralizedTables       map[string]*GeneralizedTableSpec
 	Prefix                  string
 	txRouter                *TxRouter
