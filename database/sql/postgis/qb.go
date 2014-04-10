@@ -208,3 +208,9 @@ func (spec *QQueryBuilder) CreateGeometryIndexSQL(schema string, table string, c
   return fmt.Sprintf(`CREATE INDEX "%s_geom" ON "%s"."%s" USING GIST ("%s")`,
   				table, schema, table, column) 
 }
+
+func (spec *QQueryBuilder) CreateGeneralizedTableSQL(targetSchema string, targetTable string,
+  columnSQL string, sourceSchema string, sourceTable string, where string) string {
+	return fmt.Sprintf(`CREATE TABLE "%s"."%s" AS (SELECT %s FROM "%s"."%s"%s)`,
+    targetSchema, targetTable, columnSQL, sourceSchema, sourceTable, where)
+}

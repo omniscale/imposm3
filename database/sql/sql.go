@@ -293,8 +293,9 @@ func (sdb *SQLDB) generalizeTable(table *GeneralizedTableSpec) error {
 	} else {
 		sourceTable = table.Source.FullName
 	}
-	sql := fmt.Sprintf(`CREATE TABLE "%s"."%s" AS (SELECT %s FROM "%s"."%s"%s)`,
-		sdb.Config.ImportSchema, table.FullName, columnSQL, sdb.Config.ImportSchema,
+  
+  sql := sdb.QB.CreateGeneralizedTableSQL(sdb.Config.ImportSchema, table.FullName,
+    columnSQL, sdb.Config.ImportSchema,
 		sourceTable, where)
 
 	_, err = tx.Exec(sql)
@@ -393,6 +394,7 @@ type QueryBuilder interface {
 	PopulateGeometryColumnSQL(string, string) string
   CreateIndexSQL(string, string, string) string
   CreateGeometryIndexSQL(string, string, string) string
+  CreateGeneralizedTableSQL(string, string, string, string, string, string) string
 }
 
 type TableQueryBuilder interface {
