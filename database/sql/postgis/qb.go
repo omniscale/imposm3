@@ -214,3 +214,8 @@ func (spec *QQueryBuilder) CreateGeneralizedTableSQL(targetSchema string, target
 	return fmt.Sprintf(`CREATE TABLE "%s"."%s" AS (SELECT %s FROM "%s"."%s"%s)`,
     targetSchema, targetTable, columnSQL, sourceSchema, sourceTable, where)
 }
+
+func (spec *QQueryBuilder) TruncateTableSQL(schema string, table string) string {
+  return fmt.Sprintf(`TRUNCATE TABLE "%s"."%s" RESTART IDENTITY`, schema, table)
+}
+

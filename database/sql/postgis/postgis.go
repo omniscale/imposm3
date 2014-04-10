@@ -19,6 +19,7 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	}
   
   db.Worker = worker
+  db.BulkSupported = true
 
 	db.Tables = make(map[string]*sql.TableSpec)
 	db.GeneralizedTables = make(map[string]*sql.GeneralizedTableSpec)

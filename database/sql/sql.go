@@ -381,6 +381,7 @@ type QueryBuilder interface {
   CreateIndexSQL(string, string, string) string
   CreateGeometryIndexSQL(string, string, string) string
   CreateGeneralizedTableSQL(string, string, string, string, string, string) string
+  TruncateTableSQL(string, string) string
 }
 
 type TableQueryBuilder interface {
@@ -416,6 +417,7 @@ type SQLDB struct {
 	updateGeneralizedTables bool
 	updatedIds              map[string][]int64
   Worker                  int
+  BulkSupported             bool
 }
 
 func (sdb *SQLDB) InsertPoint(elem element.OSMElem, matches interface{}) {
@@ -580,7 +582,7 @@ func (sdb *SQLDB) Begin() error {
 
 func (sdb *SQLDB) BeginBulk() error {
 	var err error
-	sdb.txRouter, err = newTxRouter(sdb, true)
+	sdb.txRouter, err = newTxRouter(sdb, sdb.BulkSupported)
 	return err
 }
 

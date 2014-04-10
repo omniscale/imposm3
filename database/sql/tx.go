@@ -2,7 +2,6 @@ package sql
 
 import (
 	"database/sql"
-	"fmt"
 	"sync"
 )
 
@@ -59,7 +58,7 @@ func (tt *bulkTableTx) Begin(tx *sql.Tx) error {
 	}
 	tt.Tx = tx
 
-	_, err = tx.Exec(fmt.Sprintf(`TRUNCATE TABLE "%s"."%s" RESTART IDENTITY`, tt.Sdb.Config.ImportSchema, tt.Table))
+	_, err = tx.Exec(tt.Sdb.QB.TruncateTableSQL(tt.Sdb.Config.ImportSchema, tt.Table))
 	if err != nil {
 		return err
 	}
