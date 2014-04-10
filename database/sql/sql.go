@@ -7,7 +7,6 @@ import (
 	"imposm3/element"
 	"imposm3/logging"
 	"imposm3/mapping"
-	"runtime"
 	"strings"
 	"sync/atomic"
 )
@@ -140,12 +139,7 @@ func (sdb *SQLDB) Init() error {
 func (sdb *SQLDB) Finish() error {
 	defer log.StopStep(log.StartStep(fmt.Sprintf("Creating geometry indices")))
 
-	worker := int(runtime.NumCPU() / 2)
-	if worker < 1 {
-		worker = 1
-	}
-
-	p := newWorkerPool(worker, len(sdb.Tables)+len(sdb.GeneralizedTables))
+	p := newWorkerPool(sdb.Worker, len(sdb.Tables)+len(sdb.GeneralizedTables))
 	for _, tbl := range sdb.Tables {
 		tableName := tbl.FullName
 		table := tbl
@@ -209,13 +203,9 @@ func (sdb *SQLDB) GeneralizeUpdates() error {
 func (sdb *SQLDB) Generalize() error {
 	defer log.StopStep(log.StartStep(fmt.Sprintf("Creating generalized tables")))
 
-	worker := int(runtime.NumCPU() / 2)
-	if worker < 1 {
-		worker = 1
-	}
 	// generalized tables can depend on other generalized tables
 	// create tables with non-generalized sources first
-	p := newWorkerPool(worker, len(sdb.GeneralizedTables))
+	p := newWorkerPool(sdb.Worker, len(sdb.GeneralizedTables))
 	for _, table := range sdb.GeneralizedTables {
 		if table.SourceGeneralized == nil {
 			tbl := table // for following closure
@@ -239,7 +229,7 @@ func (sdb *SQLDB) Generalize() error {
 	for created == 1 {
 		created = 0
 
-		p := newWorkerPool(worker, len(sdb.GeneralizedTables))
+		p := newWorkerPool(sdb.Worker, len(sdb.GeneralizedTables))
 		for _, table := range sdb.GeneralizedTables {
 			if !table.created && table.SourceGeneralized.created {
 				tbl := table // for following closure
@@ -320,12 +310,7 @@ func (sdb *SQLDB) generalizeTable(table *GeneralizedTableSpec) error {
 func (sdb *SQLDB) Optimize() error {
 	defer log.StopStep(log.StartStep(fmt.Sprintf("Clustering on geometry")))
 
-	worker := int(runtime.NumCPU() / 2)
-	if worker < 1 {
-		worker = 1
-	}
-
-	p := newWorkerPool(worker, len(sdb.Tables)+len(sdb.GeneralizedTables))
+	p := newWorkerPool(sdb.Worker, len(sdb.Tables)+len(sdb.GeneralizedTables))
 
 	for _, tbl := range sdb.Tables {
 		tableName := tbl.FullName
@@ -350,6 +335,7 @@ func (sdb *SQLDB) Optimize() error {
 	return nil
 }
 
+// TODO refactor somehow (e.g. move to postgis package)
 func clusterTable(sdb *SQLDB, tableName string, srid int, columns []ColumnSpec) error {
 	for _, col := range columns {
 		if col.Type.Name() == "GEOMETRY" {
@@ -429,21 +415,7 @@ type SQLDB struct {
 	PolygonTagMatcher       *mapping.TagMatcher
 	updateGeneralizedTables bool
 	updatedIds              map[string][]int64
-}
-
-func (sdb *SQLDB) Open() error {
-	var err error
-
-	sdb.Db, err = sql.Open("postgres", sdb.Params)
-	if err != nil {
-		return err
-	}
-	// check that the connection actually works
-	err = sdb.Db.Ping()
-	if err != nil {
-		return err
-	}
-	return nil
+  Worker                  int
 }
 
 func (sdb *SQLDB) InsertPoint(elem element.OSMElem, matches interface{}) {

@@ -4,12 +4,21 @@ import (
 	pq "github.com/lib/pq"
 	"imposm3/database"
 	"imposm3/database/sql"
+  sqld "database/sql"
 	"imposm3/mapping"
 	"strings"
+  "runtime"
 )
 
 func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	db := &sql.SQLDB{}
+  
+	worker := int(runtime.NumCPU() / 2)
+	if worker < 1 {
+		worker = 1
+	}
+  
+  db.Worker = worker
 
 	db.Tables = make(map[string]*sql.TableSpec)
 	db.GeneralizedTables = make(map[string]*sql.GeneralizedTableSpec)
@@ -59,7 +68,7 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	db.PolygonTagMatcher = m.PolygonMatcher()
 
 	db.Params = params
-	err = db.Open()
+	err = Open(db)
 	if err != nil {
 		return nil, err
 	}
@@ -69,4 +78,19 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 func init() {
 	database.Register("postgres", New)
 	database.Register("postgis", New)
+}
+
+func Open(sdb *sql.SQLDB) error {
+	var err error
+
+	sdb.Db, err = sqld.Open("postgres", sdb.Params)
+	if err != nil {
+		return err
+	}
+	// check that the connection actually works
+	err = sdb.Db.Ping()
+	if err != nil {
+		return err
+	}
+	return nil
 }
