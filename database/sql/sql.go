@@ -150,7 +150,7 @@ func (sdb *SQLDB) Finish() error {
 		tableName := tbl.FullName
 		table := tbl
 		p.in <- func() error {
-			return createIndex(sdb, tableName, table.Columns)
+			return createIndex(sdb, sdb.QB, tableName, table.Columns)
 		}
 	}
 
@@ -158,7 +158,7 @@ func (sdb *SQLDB) Finish() error {
 		tableName := tbl.FullName
 		table := tbl
 		p.in <- func() error {
-			return createIndex(sdb, tableName, table.Source.Columns)
+			return createIndex(sdb, sdb.QB, tableName, table.Source.Columns)
 		}
 	}
 
@@ -170,11 +170,10 @@ func (sdb *SQLDB) Finish() error {
 	return nil
 }
 
-func createIndex(sdb *SQLDB, tableName string, columns []ColumnSpec) error {
+func createIndex(sdb *SQLDB, qb QueryBuilder, tableName string, columns []ColumnSpec) error {
 	for _, col := range columns {
 		if col.Type.Name() == "GEOMETRY" {
-			sql := fmt.Sprintf(`CREATE INDEX "%s_geom" ON "%s"."%s" USING GIST ("%s")`,
-				tableName, sdb.Config.ImportSchema, tableName, col.Name)
+      sql := qb.CreateGeometryIndexSQL(sdb.Config.ImportSchema, tableName, col.Name)
 			step := log.StartStep(fmt.Sprintf("Creating geometry index on %s", tableName))
 			_, err := sdb.Db.Exec(sql)
 			log.StopStep(step)
@@ -183,8 +182,7 @@ func createIndex(sdb *SQLDB, tableName string, columns []ColumnSpec) error {
 			}
 		}
 		if col.FieldType.Name == "id" {
-			sql := fmt.Sprintf(`CREATE INDEX "%s_osm_id_idx" ON "%s"."%s" USING BTREE ("%s")`,
-				tableName, sdb.Config.ImportSchema, tableName, col.Name)
+        sql := qb.CreateIndexSQL(sdb.Config.ImportSchema, tableName, col.Name)
 			step := log.StartStep(fmt.Sprintf("Creating OSM id index on %s", tableName))
 			_, err := sdb.Db.Exec(sql)
 			log.StopStep(step)
@@ -393,6 +391,8 @@ type QueryBuilder interface {
 	SchemaExistsSQL(string) string
 	CreateSchemaSQL(string) string
 	PopulateGeometryColumnSQL(string, string) string
+  CreateIndexSQL(string, string, string) string
+  CreateGeometryIndexSQL(string, string, string) string
 }
 
 type TableQueryBuilder interface {

@@ -198,3 +198,13 @@ func (spec *QQueryBuilder) PopulateGeometryColumnSQL(schema string, table string
 	return fmt.Sprintf("SELECT Populate_Geometry_Columns('%s.%s'::regclass);",
 		schema, table)
 }
+
+func (spec *QQueryBuilder) CreateIndexSQL(schema string, table string, column string) string {
+  return fmt.Sprintf(`CREATE INDEX "%s_osm_id_idx" ON "%s"."%s" USING BTREE ("%s")`,
+  				table, schema, table, column)
+}
+
+func (spec *QQueryBuilder) CreateGeometryIndexSQL(schema string, table string, column string) string {
+  return fmt.Sprintf(`CREATE INDEX "%s_geom" ON "%s"."%s" USING GIST ("%s")`,
+  				table, schema, table, column) 
+}
