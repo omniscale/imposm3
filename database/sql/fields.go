@@ -35,9 +35,7 @@ func (t *geometryType) Name() string {
 }
 
 func (t *geometryType) PrepareInsertSql(i int) string {
-	return fmt.Sprintf("$%d::Geometry",
-		i,
-	)
+  return fmt.Sprintf("CastToMulti(GeomFromEWKB($%d))", i)
 }
 
 func (t *geometryType) GeneralizeSql(colSpec *ColumnSpec, tolerance float64) string {
