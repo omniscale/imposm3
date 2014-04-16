@@ -118,12 +118,20 @@ NextRel:
 				rel := element.Relation(*r)
 				rel.Id = -r.Id
 				rel.Geom = &element.Geometry{Geom: g, Wkb: geos.AsEwkbHex(g)}
-				rw.inserter.InsertPolygon(rel.OSMElem, matches)
+				err := rw.inserter.InsertPolygon(rel.OSMElem, matches)
+  			if err != nil {
+  				log.Warn(err)
+  				continue NextRel
+  			}
 			}
 		} else {
 			rel := element.Relation(*r)
 			rel.Id = -r.Id
-			rw.inserter.InsertPolygon(rel.OSMElem, matches)
+      err := rw.inserter.InsertPolygon(rel.OSMElem, matches)
+			if err != nil {
+				log.Warn(err)
+				continue NextRel
+			}
 		}
 
 		for _, m := range rw.inserter.SelectRelationPolygons(r.Tags, r.Members) {

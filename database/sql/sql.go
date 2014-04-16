@@ -193,7 +193,11 @@ func (sdb *SQLDB) GeneralizeUpdates() error {
 	for _, table := range sdb.sortedGeneralizedTables() {
 		if ids, ok := sdb.updatedIds[table]; ok {
 			for _, id := range ids {
-				sdb.txRouter.Insert(table, []interface{}{id})
+				err := sdb.txRouter.Insert(table, []interface{}{id})
+        
+        if (err != nil) {
+          return err
+        }
 			}
 		}
 	}
@@ -420,43 +424,58 @@ type SQLDB struct {
   BulkSupported             bool
 }
 
-func (sdb *SQLDB) InsertPoint(elem element.OSMElem, matches interface{}) {
+func (sdb *SQLDB) InsertPoint(elem element.OSMElem, matches interface{}) error {
 	if matches, ok := matches.([]mapping.Match); ok {
 		for _, match := range matches {
 			row := match.Row(&elem)
-			sdb.txRouter.Insert(match.Table.Name, row)
+			err := sdb.txRouter.Insert(match.Table.Name, row)
+      if err != nil {
+        return err
+      }
 		}
 	}
+  
+  return nil
 }
 
-func (sdb *SQLDB) InsertLineString(elem element.OSMElem, matches interface{}) {
+func (sdb *SQLDB) InsertLineString(elem element.OSMElem, matches interface{}) error {
 	if matches, ok := matches.([]mapping.Match); ok {
 		for _, match := range matches {
 			row := match.Row(&elem)
-			sdb.txRouter.Insert(match.Table.Name, row)
+			err := sdb.txRouter.Insert(match.Table.Name, row)
+      
+      if err != nil {
+        return err
+      }
 		}
 		if sdb.updateGeneralizedTables {
 			for _, generalizedTable := range sdb.generalizedFromMatches(matches) {
 				sdb.updatedIds[generalizedTable.Name] = append(sdb.updatedIds[generalizedTable.Name], elem.Id)
 			}
 		}
-
 	}
+  
+  return nil
 }
 
-func (sdb *SQLDB) InsertPolygon(elem element.OSMElem, matches interface{}) {
+func (sdb *SQLDB) InsertPolygon(elem element.OSMElem, matches interface{}) error {
 	if matches, ok := matches.([]mapping.Match); ok {
 		for _, match := range matches {
 			row := match.Row(&elem)
-			sdb.txRouter.Insert(match.Table.Name, row)
+			err := sdb.txRouter.Insert(match.Table.Name, row)
+      
+      if err != nil {
+        return err
+      }
 		}
 		if sdb.updateGeneralizedTables {
 			for _, generalizedTable := range sdb.generalizedFromMatches(matches) {
 				sdb.updatedIds[generalizedTable.Name] = append(sdb.updatedIds[generalizedTable.Name], elem.Id)
 			}
 		}
-
 	}
+  
+  return nil
 }
 
 func (sdb *SQLDB) ProbePoint(elem element.OSMElem) (bool, interface{}) {
@@ -511,11 +530,18 @@ func matchEquals(matchesA, matchesB []mapping.Match) bool {
 func (sdb *SQLDB) Delete(id int64, matches interface{}) error {
 	if matches, ok := matches.([]mapping.Match); ok {
 		for _, match := range matches {
-			sdb.txRouter.Delete(match.Table.Name, id)
+			err := sdb.txRouter.Delete(match.Table.Name, id)
+      
+      if err != nil {
+        return err
+      }
 		}
 		if sdb.updateGeneralizedTables {
 			for _, generalizedTable := range sdb.generalizedFromMatches(matches) {
-				sdb.txRouter.Delete(generalizedTable.Name, id)
+				err := sdb.txRouter.Delete(generalizedTable.Name, id)
+        if err != nil {
+          return err
+        }
 			}
 		}
 	}
@@ -532,10 +558,16 @@ func (sdb *SQLDB) DeleteElem(elem element.OSMElem) error {
 			if tableSpec.GeometryType != "polygon" {
 				continue
 			}
-			sdb.txRouter.Delete(tableSpec.Name, elem.Id)
+			err := sdb.txRouter.Delete(tableSpec.Name, elem.Id)
+      if err != nil {
+        return err
+      }
 			if sdb.updateGeneralizedTables {
 				for _, genTable := range tableSpec.Generalizations {
-					sdb.txRouter.Delete(genTable.Name, elem.Id)
+					err := sdb.txRouter.Delete(genTable.Name, elem.Id)
+          if err != nil {
+            return err
+          }
 				}
 			}
 		}
