@@ -195,13 +195,11 @@ func (spec *QQueryBuilder) PopulateGeometryColumnSQL(schema string, table string
 }
 
 func (spec *QQueryBuilder) CreateIndexSQL(schema string, table string, column string) string {
-  return fmt.Sprintf(`CREATE INDEX "%s_osm_id_idx" ON "%s"."%s" USING BTREE ("%s")`,
-  				table, schema, table, column)
+  return fmt.Sprintf(`CREATE INDEX "%s_osm_id_idx" ON "%s" ("%s")`, table, table, column)
 }
 
 func (spec *QQueryBuilder) CreateGeometryIndexSQL(schema string, table string, column string) string {
-  return fmt.Sprintf(`CREATE INDEX "%s_geom" ON "%s"."%s" USING GIST ("%s")`,
-  				table, schema, table, column) 
+  return fmt.Sprintf(`SELECT CreateSpatialIndex('%s', '%s')`, table, column)
 }
 
 func (spec *QQueryBuilder) CreateGeneralizedTableSQL(targetSchema string, targetTable string,
