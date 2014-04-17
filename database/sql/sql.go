@@ -65,7 +65,8 @@ func addGeometryColumn(tx *sql.Tx, qb NormalTableQueryBuilder) error {
 }
 
 func populateGeometryColumn(tx *sql.Tx, qb QueryBuilder, tableName string, spec TableSpec) error {
-	sql := qb.PopulateGeometryColumnSQL(spec.Schema, tableName)
+	sql := qb.PopulateGeometryColumnSQL(spec.Schema, tableName, spec.GeometryType, spec.Srid)
+  
 	row := tx.QueryRow(sql)
 	var void interface{}
 	err := row.Scan(&void)
@@ -381,7 +382,7 @@ type QueryBuilder interface {
 	DropTableSQL(string, string) string
 	SchemaExistsSQL(string) string
 	CreateSchemaSQL(string) string
-	PopulateGeometryColumnSQL(string, string) string
+	PopulateGeometryColumnSQL(string, string, string, int) string
   CreateIndexSQL(string, string, string) string
   CreateGeometryIndexSQL(string, string, string) string
   CreateGeneralizedTableSQL(string, string, string, string, string, string) string

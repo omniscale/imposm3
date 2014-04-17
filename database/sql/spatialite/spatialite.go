@@ -1,4 +1,4 @@
-package postgis
+package spatialite
 
 import (
 	"github.com/mattn/go-sqlite3"
@@ -36,21 +36,21 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	for name, table := range m.Tables {
 		db.Tables[name] = sql.NewTableSpec(db, table)
 	}
+  
+	for name, table := range m.GeneralizedTables {
+		db.GeneralizedTables[name] = sql.NewGeneralizedTableSpec(db, table)
+	}
+  
+  db.PrepareGeneralizedTableSources()
+  db.PrepareGeneralizations()
 
 	for name, tableSpec := range db.Tables {
 		db.NormalTableQueryBuilder[name] = NewNormalTableQueryBuilder(tableSpec)
 	}
 
-	for name, table := range m.GeneralizedTables {
-		db.GeneralizedTables[name] = sql.NewGeneralizedTableSpec(db, table)
-	}
-
 	for name, genTableSpec := range db.GeneralizedTables {
 		db.GenTableQueryBuilder[name] = NewGenTableQueryBuilder(genTableSpec)
 	}
-
-	db.PrepareGeneralizedTableSources()
-	db.PrepareGeneralizations()
 
 	db.PointTagMatcher = m.PointMatcher()
 	db.LineStringTagMatcher = m.LineStringMatcher()

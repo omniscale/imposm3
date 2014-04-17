@@ -194,7 +194,7 @@ func (q *QQueryBuilder) CreateSchemaSQL(schema string) string {
 	return fmt.Sprintf("CREATE SCHEMA \"%s\"", schema)
 }
 
-func (spec *QQueryBuilder) PopulateGeometryColumnSQL(schema string, table string) string {
+func (spec *QQueryBuilder) PopulateGeometryColumnSQL(schema string, table string, geomType string, srid int) string {
 	return fmt.Sprintf("SELECT Populate_Geometry_Columns('%s.%s'::regclass);",
 		schema, table)
 }

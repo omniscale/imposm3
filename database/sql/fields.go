@@ -39,7 +39,7 @@ func (t *geometryType) PrepareInsertSql(i int) string {
 }
 
 func (t *geometryType) GeneralizeSql(colSpec *ColumnSpec, tolerance float64) string {
-	return fmt.Sprintf(`ST_SimplifyPreserveTopology("%s", %f) as "%s"`,
+	return fmt.Sprintf(`CastToMulti(ST_SimplifyPreserveTopology("%s", %f)) as "%s"`,
 		colSpec.Name, tolerance, colSpec.Name,
 	)
 }
@@ -49,7 +49,7 @@ type validatedGeometryType struct {
 }
 
 func (t *validatedGeometryType) GeneralizeSql(colSpec *ColumnSpec, tolerance float64) string {
-	return fmt.Sprintf(`ST_Buffer(ST_SimplifyPreserveTopology("%s", %f), 0) as "%s"`,
+	return fmt.Sprintf(`CastToMulti(ST_Buffer(ST_SimplifyPreserveTopology("%s", %f), 0)) as "%s"`,
 		colSpec.Name, tolerance, colSpec.Name,
 	)
 }

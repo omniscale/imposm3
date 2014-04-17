@@ -1,4 +1,4 @@
-package postgis
+package spatialite
 
 import (
 	"fmt"
@@ -126,6 +126,11 @@ func (spec *QTableSpec) DeleteSQL() string {
 }
 
 func (spec *QGeneralizedTableSpec) DeleteSQL() string {
+  // FIXME @see explanation at
+  // (spec *QGeneralizedTableSpec) InsertSQL()
+  
+  return ""
+  /*
 	var idColumnName string
 	for _, col := range spec.Source.Columns {
 		if col.FieldType.Name == "id" {
@@ -142,9 +147,17 @@ func (spec *QGeneralizedTableSpec) DeleteSQL() string {
 		spec.FullName,
 		idColumnName,
 	)
+  */
 }
 
 func (spec *QGeneralizedTableSpec) InsertSQL() string {
+  // FIXME this is currently disabled as the statement can't be prepared
+  // when the generalized table doesn't exist (this bug affects the postgis)
+  // implementation as well, but it's hidden as the postgis version uses
+  // bulkimport by default
+  return ""
+  
+  /*
 	var idColumnName string
 	for _, col := range spec.Source.Columns {
 		if col.FieldType.Name == "id" {
@@ -168,9 +181,10 @@ func (spec *QGeneralizedTableSpec) InsertSQL() string {
 	}
 
 	columnSQL := strings.Join(cols, ",\n")
-	sql := fmt.Sprintf(`INSERT INTO "%s" (SELECT %s FROM "%s"%s)`,
+	sql := fmt.Sprintf(`INSERT INTO "%s" SELECT %s FROM "%s"%s`,
 		spec.FullName, columnSQL, spec.Source.FullName, where)
 	return sql
+  */
 }
 
 func (q *QQueryBuilder) TableExistsSQL(schema string, table string) string {
@@ -189,9 +203,23 @@ func (q *QQueryBuilder) CreateSchemaSQL(schema string) string {
   return ""
 }
 
-func (spec *QQueryBuilder) PopulateGeometryColumnSQL(schema string, table string) string {
-	return fmt.Sprintf("SELECT Populate_Geometry_Columns('%s.%s'::regclass);",
-		schema, table)
+func (spec *QQueryBuilder) PopulateGeometryColumnSQL(schema string, table string, geomType string, srid int) string {
+	ucGeomType := strings.ToUpper(geomType)
+
+	if ucGeomType == "POLYGON" {
+		ucGeomType = "MULTIPOLYGON" // for multipolygon support
+	}
+  
+	if ucGeomType == "LINESTRING" {
+		ucGeomType = "MULTILINESTRING" // for multipolygon support
+	}
+  
+	if ucGeomType == "POINT" {
+		ucGeomType = "MULTIPOINT" // for multipolygon support
+	}
+  
+	return fmt.Sprintf("SELECT RecoverGeometryColumn('%s', 'geometry', %d, '%s', 2);",
+		table, srid, ucGeomType)
 }
 
 func (spec *QQueryBuilder) CreateIndexSQL(schema string, table string, column string) string {
@@ -204,8 +232,8 @@ func (spec *QQueryBuilder) CreateGeometryIndexSQL(schema string, table string, c
 
 func (spec *QQueryBuilder) CreateGeneralizedTableSQL(targetSchema string, targetTable string,
   columnSQL string, sourceSchema string, sourceTable string, where string) string {
-	return fmt.Sprintf(`CREATE TABLE "%s"."%s" AS (SELECT %s FROM "%s"."%s"%s)`,
-    targetSchema, targetTable, columnSQL, sourceSchema, sourceTable, where)
+	return fmt.Sprintf(`CREATE TABLE "%s" AS SELECT %s FROM "%s"%s`,
+    targetTable, columnSQL, sourceTable, where)
 }
 
 func (spec *QQueryBuilder) TruncateTableSQL(schema string, table string) string {
