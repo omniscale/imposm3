@@ -21,6 +21,27 @@ type QGeneralizedTableSpec struct {
 type QQueryBuilder struct {
 }
 
+func multiGeometryType(geomType string) string {
+  // SQLITE is very strict about single vs. multi types
+  // as those items are mixed in osm files only multi items are loaded
+  // (and single items are casted to multi items)
+  geomType = strings.ToUpper(geomType)
+  
+	if geomType == "POLYGON" {
+		geomType = "MULTIPOLYGON" // for multipolygon support
+	}
+  
+	if geomType == "LINESTRING" {
+		geomType = "MULTILINESTRING" // for multipolygon support
+	}
+  
+	if geomType == "POINT" {
+		geomType = "MULTIPOINT" // for multipolygon support
+	}
+  
+  return geomType
+}
+
 func NewNormalTableQueryBuilder(spec *sql.TableSpec) *QTableSpec {
 	return &QTableSpec{*spec}
 }
@@ -39,7 +60,7 @@ func TableExistsSQL(schema string, table string) string {
 }
 
 func DropTableSQL(schema string, table string) string {
-	return fmt.Sprintf("SELECT DropGeometryTable('%s', '%s');", schema, table)
+	return fmt.Sprintf("DROP TABLE %s", table)
 }
 
 func (spec *QTableSpec) CreateTableSQL() string {
@@ -63,23 +84,7 @@ func (spec *QTableSpec) CreateTableSQL() string {
 }
 
 func (spec *QTableSpec) AddGeometryColumnSQL() string {
-	geomType := strings.ToUpper(spec.GeometryType)
-
-  // SQLITE is very strict about single vs. multi types
-  // as those items are mixed in osm files only multi items are loaded
-  // (and single items are casted to multi items)
-	if geomType == "POLYGON" {
-		geomType = "MULTIPOLYGON" // for multipolygon support
-	}
-  
-	if geomType == "LINESTRING" {
-		geomType = "MULTILINESTRING" // for multipolygon support
-	}
-  
-	if geomType == "POINT" {
-		geomType = "MULTIPOINT" // for multipolygon support
-	}
-  
+  geomType := multiGeometryType(spec.GeometryType)
 	return fmt.Sprintf("SELECT AddGeometryColumn('%s', 'geometry', %d, '%s', 2);",
 		spec.FullName, spec.Srid, geomType)
 }
@@ -204,26 +209,33 @@ func (q *QQueryBuilder) CreateSchemaSQL(schema string) string {
 }
 
 func (spec *QQueryBuilder) PopulateGeometryColumnSQL(schema string, table string, geomType string, srid int) string {
-	ucGeomType := strings.ToUpper(geomType)
-
-	if ucGeomType == "POLYGON" {
-		ucGeomType = "MULTIPOLYGON" // for multipolygon support
-	}
-  
-	if ucGeomType == "LINESTRING" {
-		ucGeomType = "MULTILINESTRING" // for multipolygon support
-	}
-  
-	if ucGeomType == "POINT" {
-		ucGeomType = "MULTIPOINT" // for multipolygon support
-	}
-  
+  geomType = multiGeometryType(geomType)
 	return fmt.Sprintf("SELECT RecoverGeometryColumn('%s', 'geometry', %d, '%s', 2);",
-		table, srid, ucGeomType)
+		table, srid, geomType)
 }
 
 func (spec *QQueryBuilder) CreateIndexSQL(schema string, table string, column string) string {
-  return fmt.Sprintf(`CREATE INDEX "%s_osm_id_idx" ON "%s" ("%s")`, table, table, column)
+  return fmt.Sprintf(`CREATE INDEX "%s_idx" ON "%s" ("%s")`, table, table, column)
+}
+
+func (spec *QQueryBuilder) GeometryIndexesSQL(schema string, table string) string {
+	return fmt.Sprintf(`
+    SELECT REPLACE(name, 'idx_%s_', '')
+      FROM sqlite_master
+     WHERE type = 'table'
+       AND name like 'idx_%s_%%'
+       AND REPLACE(name, 'idx_%s_', '') NOT LIKE '%%\_%%' ESCAPE '\'
+       AND rootpage = 0
+           ;`,
+       table, table, table)
+}
+
+func (spec *QQueryBuilder) DropGeometryIndexSQL(schema string, table string, column string) string {
+  return spec.DropTableSQL(schema, fmt.Sprintf("idx_%s_%s", table, column))
+}
+
+func (spec *QQueryBuilder) DisableGeometryIndexSQL(schema string, table string, column string) string {
+  return fmt.Sprintf(`SELECT DisableSpatialIndex('%s', '%s');`, table, column)
 }
 
 func (spec *QQueryBuilder) CreateGeometryIndexSQL(schema string, table string, column string) string {
@@ -238,4 +250,14 @@ func (spec *QQueryBuilder) CreateGeneralizedTableSQL(targetSchema string, target
 
 func (spec *QQueryBuilder) TruncateTableSQL(schema string, table string) string {
   return fmt.Sprintf(`DELETE FROM "%s"`, table)
+}
+
+func (spec *QQueryBuilder) GeometryColumnExistsSQL(schema string, table string) string {
+	return fmt.Sprintf("SELECT EXISTS(SELECT 1 FROM geometry_columns WHERE f_table_name = '%s');",
+		table)  
+}
+
+func (spec *QQueryBuilder) DropGeometryColumnSQL(schema string, table string) string {
+	return fmt.Sprintf("SELECT DiscardGeometryColumn('%s', 'geometry');",
+		table)  
 }

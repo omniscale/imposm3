@@ -23,13 +23,68 @@ func dropTableIfExists(tx *sql.Tx, qb QueryBuilder, schema, table string) error 
 	if !exists {
 		return nil
 	}
-	sqlStmt := qb.DropTableSQL(schema, table)
-	row := tx.QueryRow(sqlStmt)
-	var void interface{}
-	err = row.Scan(&void)
+
+	sqlStmt := qb.GeometryIndexesSQL(schema, table)
+
+	// this operation is optional
+	if sqlStmt != "" {
+		rows, err := tx.Query(sqlStmt)
+		if err != nil {
+			return &SQLError{sqlStmt, err}
+		}
+
+		// remove spatial indexes
+
+		// The query result must be cached in a slice
+		// to close the query cursor, thus avoiding
+		// the blocking of tables about to be deleted
+		indexes := []string{}
+		for rows.Next() {
+			var index string
+			if err := rows.Scan(&index); err != nil {
+				return &SQLError{sqlStmt, err}
+			}
+			indexes = append(indexes, index)
+		}
+
+		for _, index := range indexes {
+			// disable spatial index
+			sqlStmt = qb.DisableGeometryIndexSQL(schema, table, index)
+			_, err = tx.Exec(sqlStmt)
+			if err != nil {
+				return &SQLError{sqlStmt, err}
+			}
+
+			sqlStmt = qb.DropGeometryIndexSQL(schema, table, index)
+			_, err = tx.Exec(sqlStmt)
+			if err != nil {
+				return &SQLError{sqlStmt, err}
+			}
+		}
+	}
+
+	// remove geometric columns
+	row := tx.QueryRow(qb.GeometryColumnExistsSQL(schema, table))
+	err = row.Scan(&exists)
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		// drop geometry column
+		sqlStmt := qb.DropGeometryColumnSQL(schema, table)
+		_, err = tx.Exec(sqlStmt)
+		if err != nil {
+			return &SQLError{sqlStmt, err}
+		}
+	}
+
+	sqlStmt = qb.DropTableSQL(schema, table)
+	_, err = tx.Exec(sqlStmt)
 	if err != nil {
 		return &SQLError{sqlStmt, err}
 	}
+
 	return nil
 }
 

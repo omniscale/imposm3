@@ -39,7 +39,7 @@ func TableExistsSQL(schema string, table string) string {
 }
 
 func DropTableSQL(schema string, table string) string {
-	return fmt.Sprintf("SELECT DropGeometryTable('%s', '%s');", schema, table)
+  return fmt.Sprintf("DROP TABLE %s.%s", schema, table)
 }
 
 func (spec *QTableSpec) CreateTableSQL() string {
@@ -209,6 +209,18 @@ func (spec *QQueryBuilder) CreateGeometryIndexSQL(schema string, table string, c
   				table, schema, table, column) 
 }
 
+func (spec *QQueryBuilder) GeometryIndexesSQL(schema string, table string) string {
+  return ""
+}
+
+func (spec *QQueryBuilder) DropGeometryIndexSQL(schema string, table string, column string) string {
+  return ""
+}
+
+func (spec *QQueryBuilder) DisableGeometryIndexSQL(schema string, table string, column string) string {
+  return ""
+}
+
 func (spec *QQueryBuilder) CreateGeneralizedTableSQL(targetSchema string, targetTable string,
   columnSQL string, sourceSchema string, sourceTable string, where string) string {
 	return fmt.Sprintf(`CREATE TABLE "%s"."%s" AS (SELECT %s FROM "%s"."%s"%s)`,
@@ -219,3 +231,12 @@ func (spec *QQueryBuilder) TruncateTableSQL(schema string, table string) string 
   return fmt.Sprintf(`TRUNCATE TABLE "%s"."%s" RESTART IDENTITY`, schema, table)
 }
 
+func (spec *QQueryBuilder) GeometryColumnExistsSQL(schema string, table string) string {
+	return fmt.Sprintf("SELECT EXISTS(SELECT 1 FROM geometry_columns WHERE f_table_schema = '%s' AND f_table_name = '%s');",
+		schema, table)  
+}
+
+func (spec *QQueryBuilder) DropGeometryColumnSQL(schema string, table string) string {
+	return fmt.Sprintf("SELECT DropGeometryColumn('%s', '%s', 'geometry');",
+		schema, table)  
+}

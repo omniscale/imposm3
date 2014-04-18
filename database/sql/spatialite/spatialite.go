@@ -6,7 +6,6 @@ import (
 	"imposm3/database"
 	"imposm3/database/sql"
 	"imposm3/mapping"
-	"os"
 	"strings"
 )
 
@@ -72,9 +71,6 @@ func init() {
 }
 
 func Open(sdb *sql.SQLDB) error {
-	// TODO check if this is the correct position
-	os.Remove(sdb.Config.ConnectionParams)
-
 	// load spatialite extension
 	sqld.Register("sqlite3_with_spatialite",
 		&sqlite3.SQLiteDriver{
@@ -87,17 +83,35 @@ func Open(sdb *sql.SQLDB) error {
 	if err != nil {
 		return err
 	}
-
-	s := "SELECT InitSpatialMetaData();"
-	row := sdb.Db.QueryRow(s)
-	var exists bool
-	err = row.Scan(&exists)
+  
+  // check if database needs to be initialized
+	sql_stmt := 
+    `SELECT EXISTS(
+      SELECT 1
+      WHERE EXISTS (
+        SELECT * FROM sqlite_master WHERE type='table' and name='geometry_columns'
+      ) AND EXISTS (
+        SELECT * FROM sqlite_master WHERE type='table' and name='spatial_ref_sys')
+     )`
+    
+  var exists bool
+  row := sdb.Db.QueryRow(sql_stmt)
+  err = row.Scan(&exists)
+  
 	if err != nil {
 		return err
 	}
-	if exists {
-		return nil
-	}
+  
+  if !exists {
+    sql_stmt = "SELECT InitSpatialMetaData();"
+  	_, err = sdb.Db.Exec(sql_stmt)
+    
+  	if err != nil {
+  		return err
+  	}
+  }
+
+  return nil
 
 	// TODO check if we need an option for this
 	/*

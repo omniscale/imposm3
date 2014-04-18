@@ -380,11 +380,16 @@ func clusterTable(sdb *SQLDB, tableName string, srid int, columns []ColumnSpec) 
 type QueryBuilder interface {
 	TableExistsSQL(string, string) string
 	DropTableSQL(string, string) string
+  GeometryColumnExistsSQL(string, string) string
+  DropGeometryColumnSQL(string, string) string
 	SchemaExistsSQL(string) string
 	CreateSchemaSQL(string) string
 	PopulateGeometryColumnSQL(string, string, string, int) string
   CreateIndexSQL(string, string, string) string
   CreateGeometryIndexSQL(string, string, string) string
+  GeometryIndexesSQL(string, string) string
+  DisableGeometryIndexSQL(string, string, string) string
+  DropGeometryIndexSQL(string, string, string) string
   CreateGeneralizedTableSQL(string, string, string, string, string, string) string
   TruncateTableSQL(string, string) string
 }
