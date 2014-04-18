@@ -50,10 +50,10 @@ func NewTableSpec(sdb *SQLDB, t *mapping.Table) *TableSpec {
 		if fieldType == nil {
 			continue
 		}
-		sdbType, ok := sdbTypes[fieldType.GoType]
+		sdbType, ok := sdb.SdbTypes[fieldType.GoType]
 		if !ok {
 			log.Errorf("unhandled field type %v, using string type", fieldType)
-			sdbType = sdbTypes["string"]
+			sdbType = sdb.SdbTypes["string"]
 		}
 		col := ColumnSpec{field.Name, *fieldType, sdbType}
 		spec.Columns = append(spec.Columns, col)

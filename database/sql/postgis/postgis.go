@@ -26,6 +26,8 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 
 	db.NormalTableQueryBuilder = make(map[string]sql.NormalTableQueryBuilder)
 	db.GenTableQueryBuilder = make(map[string]sql.GenTableQueryBuilder)
+  
+  db.SdbTypes = NewSdbTypes()
 
 	db.Config = conf
 

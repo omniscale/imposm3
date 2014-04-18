@@ -1,14 +1,9 @@
-package sql
+package postgis
 
 import (
 	"fmt"
+  "imposm3/database/sql"
 )
-
-type ColumnType interface {
-	Name() string
-	PrepareInsertSql(i int) string
-	GeneralizeSql(colSpec *ColumnSpec, tolerance float64) string
-}
 
 type simpleColumnType struct {
 	name string
@@ -22,7 +17,7 @@ func (t *simpleColumnType) PrepareInsertSql(i int) string {
 	return fmt.Sprintf("$%d", i)
 }
 
-func (t *simpleColumnType) GeneralizeSql(colSpec *ColumnSpec, tolerance float64) string {
+func (t *simpleColumnType) GeneralizeSql(colSpec *sql.ColumnSpec, tolerance float64) string {
 	return "\"" + colSpec.Name + "\""
 }
 
@@ -35,11 +30,13 @@ func (t *geometryType) Name() string {
 }
 
 func (t *geometryType) PrepareInsertSql(i int) string {
-  return fmt.Sprintf("CastToMulti(GeomFromEWKB($%d))", i)
+	return fmt.Sprintf("$%d::Geometry",
+		i,
+	)
 }
 
-func (t *geometryType) GeneralizeSql(colSpec *ColumnSpec, tolerance float64) string {
-	return fmt.Sprintf(`CastToMulti(ST_SimplifyPreserveTopology("%s", %f)) as "%s"`,
+func (t *geometryType) GeneralizeSql(colSpec *sql.ColumnSpec, tolerance float64) string {
+	return fmt.Sprintf(`ST_SimplifyPreserveTopology("%s", %f) as "%s"`,
 		colSpec.Name, tolerance, colSpec.Name,
 	)
 }
@@ -48,16 +45,14 @@ type validatedGeometryType struct {
 	geometryType
 }
 
-func (t *validatedGeometryType) GeneralizeSql(colSpec *ColumnSpec, tolerance float64) string {
-	return fmt.Sprintf(`CastToMulti(ST_Buffer(ST_SimplifyPreserveTopology("%s", %f), 0)) as "%s"`,
+func (t *validatedGeometryType) GeneralizeSql(colSpec *sql.ColumnSpec, tolerance float64) string {
+	return fmt.Sprintf(`ST_Buffer(ST_SimplifyPreserveTopology("%s", %f), 0) as "%s"`,
 		colSpec.Name, tolerance, colSpec.Name,
 	)
 }
 
-var sdbTypes map[string]ColumnType
-
-func init() {
-	sdbTypes = map[string]ColumnType{
+func NewSdbTypes() map[string]sql.ColumnType {
+	return map[string]sql.ColumnType{
 		"string":             &simpleColumnType{"VARCHAR"},
 		"bool":               &simpleColumnType{"BOOL"},
 		"int8":               &simpleColumnType{"SMALLINT"},

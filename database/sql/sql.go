@@ -405,6 +405,12 @@ type GenTableQueryBuilder interface {
 	TableQueryBuilder
 }
 
+type ColumnType interface {
+	Name() string
+	PrepareInsertSql(i int) string
+	GeneralizeSql(colSpec *ColumnSpec, tolerance float64) string
+}
+
 type SQLDB struct {
 	Db                      *sql.DB
 	Params                  string
@@ -422,7 +428,8 @@ type SQLDB struct {
 	updateGeneralizedTables bool
 	updatedIds              map[string][]int64
   Worker                  int
-  BulkSupported             bool
+  BulkSupported           bool
+  SdbTypes                map[string]ColumnType
 }
 
 func (sdb *SQLDB) InsertPoint(elem element.OSMElem, matches interface{}) error {

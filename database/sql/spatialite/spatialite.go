@@ -1,26 +1,28 @@
 package spatialite
 
 import (
+	sqld "database/sql"
 	"github.com/mattn/go-sqlite3"
-  "os"
 	"imposm3/database"
 	"imposm3/database/sql"
-  sqld "database/sql"
 	"imposm3/mapping"
+	"os"
 	"strings"
 )
 
 func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	db := &sql.SQLDB{}
-  
-  db.Worker = 1
-  db.BulkSupported = false
+
+	db.Worker = 1
+	db.BulkSupported = false
 
 	db.Tables = make(map[string]*sql.TableSpec)
 	db.GeneralizedTables = make(map[string]*sql.GeneralizedTableSpec)
 
 	db.NormalTableQueryBuilder = make(map[string]sql.NormalTableQueryBuilder)
 	db.GenTableQueryBuilder = make(map[string]sql.GenTableQueryBuilder)
+
+	db.SdbTypes = NewSdbTypes()
 
 	db.Config = conf
 
@@ -36,13 +38,13 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	for name, table := range m.Tables {
 		db.Tables[name] = sql.NewTableSpec(db, table)
 	}
-  
+
 	for name, table := range m.GeneralizedTables {
 		db.GeneralizedTables[name] = sql.NewGeneralizedTableSpec(db, table)
 	}
-  
-  db.PrepareGeneralizedTableSources()
-  db.PrepareGeneralizations()
+
+	db.PrepareGeneralizedTableSources()
+	db.PrepareGeneralizations()
 
 	for name, tableSpec := range db.Tables {
 		db.NormalTableQueryBuilder[name] = NewNormalTableQueryBuilder(tableSpec)
@@ -56,7 +58,7 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	db.LineStringTagMatcher = m.LineStringMatcher()
 	db.PolygonTagMatcher = m.PolygonMatcher()
 
-  // TODO do we need this?
+	// TODO do we need this?
 	// db.Params = params
 	err := Open(db)
 	if err != nil {
@@ -70,7 +72,7 @@ func init() {
 }
 
 func Open(sdb *sql.SQLDB) error {
-  // TODO check if this is the correct position
+	// TODO check if this is the correct position
 	os.Remove(sdb.Config.ConnectionParams)
 
 	// load spatialite extension
@@ -85,47 +87,47 @@ func Open(sdb *sql.SQLDB) error {
 	if err != nil {
 		return err
 	}
-  
+
 	s := "SELECT InitSpatialMetaData();"
 	row := sdb.Db.QueryRow(s)
 	var exists bool
 	err = row.Scan(&exists)
 	if err != nil {
-    return err
+		return err
 	}
 	if exists {
 		return nil
 	}
-  
-  // TODO check if we need an option for this
-  /*
-  _, err = pg.Db.Exec("PRAGMA synchronous = OFF;")
+
+	// TODO check if we need an option for this
+	/*
+	  _, err = pg.Db.Exec("PRAGMA synchronous = OFF;")
+		if err != nil {
+			return err
+		}
+	  _, err = pg.Db.Exec("PRAGMA journal_mode = MEMORY;")
+		if err != nil {
+			return err
+		}
+	  _, err = pg.Db.Exec("PRAGMA page_size = 1000000;")
+		if err != nil {
+			return err
+		}
+	  _, err = pg.Db.Exec("VACUUM;")
+		if err != nil {
+			return err
+		}
+	  _, err = pg.Db.Exec("PRAGMA cache_size = 1000000;")
+		if err != nil {
+			return err
+		}
+	*/
+
+	// pg.tx, err = pg.Db.Begin()
+
 	if err != nil {
 		return err
 	}
-  _, err = pg.Db.Exec("PRAGMA journal_mode = MEMORY;")
-	if err != nil {
-		return err
-	}
-  _, err = pg.Db.Exec("PRAGMA page_size = 1000000;")
-	if err != nil {
-		return err
-	}
-  _, err = pg.Db.Exec("VACUUM;")
-	if err != nil {
-		return err
-	}
-  _, err = pg.Db.Exec("PRAGMA cache_size = 1000000;")
-	if err != nil {
-		return err
-	}
-  */
-  
-  // pg.tx, err = pg.Db.Begin()
-  
-	if err != nil {
-		return err
-	}
-  
+
 	return nil
 }
