@@ -63,8 +63,6 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 
 	db.Optimizer = optimize
 
-	// TODO do we need this?
-	// db.Params = params
 	err := Open(db)
 	if err != nil {
 		return nil, err
@@ -116,34 +114,6 @@ func Open(sdb *sql.SQLDB) error {
 			return err
 		}
 	}
-
-	return nil
-
-	// TODO check if we need an option for this
-	/*
-		  _, err = pg.Db.Exec("PRAGMA synchronous = OFF;")
-			if err != nil {
-				return err
-			}
-		  _, err = pg.Db.Exec("PRAGMA journal_mode = MEMORY;")
-			if err != nil {
-				return err
-			}
-		  _, err = pg.Db.Exec("PRAGMA page_size = 1000000;")
-			if err != nil {
-				return err
-			}
-		  _, err = pg.Db.Exec("VACUUM;")
-			if err != nil {
-				return err
-			}
-		  _, err = pg.Db.Exec("PRAGMA cache_size = 1000000;")
-			if err != nil {
-				return err
-			}
-	*/
-
-	// pg.tx, err = pg.Db.Begin()
 
 	if err != nil {
 		return err
