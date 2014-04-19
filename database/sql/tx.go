@@ -11,8 +11,8 @@ type tableSpec interface {
 }
 
 type bulkTableSpec interface {
-  tableSpec
-  CopySQL() string
+	tableSpec
+	CopySQL() string
 }
 
 type TableTx interface {
@@ -37,7 +37,7 @@ type bulkTableTx struct {
 
 func NewBulkTableTx(sdb *SQLDB, tableName string, spec bulkTableSpec) TableTx {
 	tt := &bulkTableTx{
-		Sdb:    sdb,
+		Sdb:   sdb,
 		Table: tableName,
 		Spec:  spec,
 		wg:    &sync.WaitGroup{},
@@ -132,7 +132,7 @@ type syncTableTx struct {
 
 func NewSynchronousTableTx(sdb *SQLDB, tableName string, spec tableSpec) TableTx {
 	tt := &syncTableTx{
-		Sdb:    sdb,
+		Sdb:   sdb,
 		Table: tableName,
 		Spec:  spec,
 	}

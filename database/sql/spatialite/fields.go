@@ -2,7 +2,7 @@ package spatialite
 
 import (
 	"fmt"
-  "imposm3/database/sql"
+	"imposm3/database/sql"
 )
 
 type simpleColumnType struct {
@@ -30,7 +30,7 @@ func (t *geometryType) Name() string {
 }
 
 func (t *geometryType) PrepareInsertSql(i int) string {
-  return fmt.Sprintf("CastToMulti(GeomFromEWKB($%d))", i)
+	return fmt.Sprintf("CastToMulti(GeomFromEWKB($%d))", i)
 }
 
 func (t *geometryType) GeneralizeSql(colSpec *sql.ColumnSpec, tolerance float64) string {

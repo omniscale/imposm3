@@ -1,10 +1,9 @@
 package postgis
 
 import (
-  "strings"
-  "os"
+	"os"
+	"strings"
 )
-
 
 // disableDefaultSslOnLocalhost adds sslmode=disable to params
 // when host is localhost/127.0.0.1 and the sslmode param and

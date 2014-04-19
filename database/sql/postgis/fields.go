@@ -2,7 +2,7 @@ package postgis
 
 import (
 	"fmt"
-  "imposm3/database/sql"
+	"imposm3/database/sql"
 )
 
 type simpleColumnType struct {

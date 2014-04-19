@@ -85,7 +85,7 @@ func (txr *TxRouter) Insert(table string, row []interface{}) error {
 	if !ok {
 		panic("unknown table " + table)
 	}
-  
+
 	return tt.Insert(row)
 }
 
@@ -94,6 +94,6 @@ func (txr *TxRouter) Delete(table string, id int64) error {
 	if !ok {
 		panic("unknown table " + table)
 	}
-  
+
 	return tt.Delete(id)
 }

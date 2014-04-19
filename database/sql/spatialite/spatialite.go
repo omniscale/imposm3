@@ -2,13 +2,13 @@ package spatialite
 
 import (
 	sqld "database/sql"
+	"fmt"
 	"github.com/mattn/go-sqlite3"
 	"imposm3/database"
 	"imposm3/database/sql"
+	"imposm3/logging"
 	"imposm3/mapping"
 	"strings"
-  "imposm3/logging"
-  "fmt"
 )
 
 var log = logging.NewLogger("SQL")
@@ -28,8 +28,8 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	db.SdbTypes = NewSdbTypes()
 	db.Config = conf
 	db.QB = NewQueryBuilder()
-  
-  db.DeploymentSupported = false
+
+	db.DeploymentSupported = false
 
 	if strings.HasPrefix(db.Config.ConnectionParams, "spatialite://") {
 		db.Config.ConnectionParams = strings.Replace(
@@ -60,8 +60,8 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	db.PointTagMatcher = m.PointMatcher()
 	db.LineStringTagMatcher = m.LineStringMatcher()
 	db.PolygonTagMatcher = m.PolygonMatcher()
-  
-  db.Optimizer = optimize
+
+	db.Optimizer = optimize
 
 	// TODO do we need this?
 	// db.Params = params
@@ -89,58 +89,58 @@ func Open(sdb *sql.SQLDB) error {
 	if err != nil {
 		return err
 	}
-  
-  // check if database needs to be initialized
-	sql_stmt := 
-    `SELECT EXISTS(
+
+	// check if database needs to be initialized
+	sql_stmt :=
+		`SELECT EXISTS(
       SELECT 1
       WHERE EXISTS (
         SELECT * FROM sqlite_master WHERE type='table' and name='geometry_columns'
       ) AND EXISTS (
         SELECT * FROM sqlite_master WHERE type='table' and name='spatial_ref_sys')
      )`
-    
-  var exists bool
-  row := sdb.Db.QueryRow(sql_stmt)
-  err = row.Scan(&exists)
-  
+
+	var exists bool
+	row := sdb.Db.QueryRow(sql_stmt)
+	err = row.Scan(&exists)
+
 	if err != nil {
 		return err
 	}
-  
-  if !exists {
-    sql_stmt = "SELECT InitSpatialMetaData();"
-  	_, err = sdb.Db.Exec(sql_stmt)
-    
-  	if err != nil {
-  		return err
-  	}
-  }
 
-  return nil
+	if !exists {
+		sql_stmt = "SELECT InitSpatialMetaData();"
+		_, err = sdb.Db.Exec(sql_stmt)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 
 	// TODO check if we need an option for this
 	/*
-	  _, err = pg.Db.Exec("PRAGMA synchronous = OFF;")
-		if err != nil {
-			return err
-		}
-	  _, err = pg.Db.Exec("PRAGMA journal_mode = MEMORY;")
-		if err != nil {
-			return err
-		}
-	  _, err = pg.Db.Exec("PRAGMA page_size = 1000000;")
-		if err != nil {
-			return err
-		}
-	  _, err = pg.Db.Exec("VACUUM;")
-		if err != nil {
-			return err
-		}
-	  _, err = pg.Db.Exec("PRAGMA cache_size = 1000000;")
-		if err != nil {
-			return err
-		}
+		  _, err = pg.Db.Exec("PRAGMA synchronous = OFF;")
+			if err != nil {
+				return err
+			}
+		  _, err = pg.Db.Exec("PRAGMA journal_mode = MEMORY;")
+			if err != nil {
+				return err
+			}
+		  _, err = pg.Db.Exec("PRAGMA page_size = 1000000;")
+			if err != nil {
+				return err
+			}
+		  _, err = pg.Db.Exec("VACUUM;")
+			if err != nil {
+				return err
+			}
+		  _, err = pg.Db.Exec("PRAGMA cache_size = 1000000;")
+			if err != nil {
+				return err
+			}
 	*/
 
 	// pg.tx, err = pg.Db.Begin()
@@ -153,7 +153,7 @@ func Open(sdb *sql.SQLDB) error {
 }
 
 func analyze(sdb *sql.SQLDB, table string) error {
-  fmt.Sprintf("ANALYZE %s")
+	fmt.Sprintf("ANALYZE %s")
 	step := log.StartStep(fmt.Sprintf("Analysing %s", table))
 	sql := fmt.Sprintf(`ANALYZE "%s"`, table)
 	_, err := sdb.Db.Exec(sql)
@@ -161,26 +161,26 @@ func analyze(sdb *sql.SQLDB, table string) error {
 	if err != nil {
 		return err
 	}
-  
-  return nil
+
+	return nil
 }
 
 func optimize(sdb *sql.SQLDB) error {
-  fmt.Sprintf("ANALYZE %s")
-  
-  for _, tbl := range sdb.Tables {
-    err := analyze(sdb, tbl.FullName)
-    if (err != nil) {
-      return err
-    }
-  }
-  
-  for _, tbl := range sdb.GeneralizedTables {
-    err := analyze(sdb, tbl.FullName)
-    if (err != nil) {
-      return err
-    }
-  }
-  
-  return nil
+	fmt.Sprintf("ANALYZE %s")
+
+	for _, tbl := range sdb.Tables {
+		err := analyze(sdb, tbl.FullName)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, tbl := range sdb.GeneralizedTables {
+		err := analyze(sdb, tbl.FullName)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

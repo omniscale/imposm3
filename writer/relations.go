@@ -119,15 +119,15 @@ NextRel:
 				rel.Id = -r.Id
 				rel.Geom = &element.Geometry{Geom: g, Wkb: geos.AsEwkbHex(g)}
 				err := rw.inserter.InsertPolygon(rel.OSMElem, matches)
-  			if err != nil {
-  				log.Warn(err)
-  				continue NextRel
-  			}
+				if err != nil {
+					log.Warn(err)
+					continue NextRel
+				}
 			}
 		} else {
 			rel := element.Relation(*r)
 			rel.Id = -r.Id
-      err := rw.inserter.InsertPolygon(rel.OSMElem, matches)
+			err := rw.inserter.InsertPolygon(rel.OSMElem, matches)
 			if err != nil {
 				log.Warn(err)
 				continue NextRel

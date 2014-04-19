@@ -66,7 +66,7 @@ func addGeometryColumn(tx *sql.Tx, qb NormalTableQueryBuilder) error {
 
 func populateGeometryColumn(tx *sql.Tx, qb QueryBuilder, tableName string, spec TableSpec) error {
 	sql := qb.PopulateGeometryColumnSQL(spec.Schema, tableName, spec.GeometryType, spec.Srid)
-  
+
 	row := tx.QueryRow(sql)
 	var void interface{}
 	err := row.Scan(&void)
@@ -168,7 +168,7 @@ func (sdb *SQLDB) Finish() error {
 func createIndex(sdb *SQLDB, qb QueryBuilder, tableName string, columns []ColumnSpec) error {
 	for _, col := range columns {
 		if col.Type.Name() == "GEOMETRY" {
-      sql := qb.CreateGeometryIndexSQL(sdb.Config.ImportSchema, tableName, col.Name)
+			sql := qb.CreateGeometryIndexSQL(sdb.Config.ImportSchema, tableName, col.Name)
 			step := log.StartStep(fmt.Sprintf("Creating geometry index on %s", tableName))
 			_, err := sdb.Db.Exec(sql)
 			log.StopStep(step)
@@ -177,7 +177,7 @@ func createIndex(sdb *SQLDB, qb QueryBuilder, tableName string, columns []Column
 			}
 		}
 		if col.FieldType.Name == "id" {
-        sql := qb.CreateIndexSQL(sdb.Config.ImportSchema, tableName, col.Name)
+			sql := qb.CreateIndexSQL(sdb.Config.ImportSchema, tableName, col.Name)
 			step := log.StartStep(fmt.Sprintf("Creating OSM id index on %s", tableName))
 			_, err := sdb.Db.Exec(sql)
 			log.StopStep(step)
@@ -195,10 +195,10 @@ func (sdb *SQLDB) GeneralizeUpdates() error {
 		if ids, ok := sdb.updatedIds[table]; ok {
 			for _, id := range ids {
 				err := sdb.txRouter.Insert(table, []interface{}{id})
-        
-        if (err != nil) {
-          return err
-        }
+
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -288,9 +288,9 @@ func (sdb *SQLDB) generalizeTable(table *GeneralizedTableSpec) error {
 	} else {
 		sourceTable = table.Source.FullName
 	}
-  
-  sql := sdb.QB.CreateGeneralizedTableSQL(sdb.Config.ImportSchema, table.FullName,
-    columnSQL, sdb.Config.ImportSchema,
+
+	sql := sdb.QB.CreateGeneralizedTableSQL(sdb.Config.ImportSchema, table.FullName,
+		columnSQL, sdb.Config.ImportSchema,
 		sourceTable, where)
 
 	_, err = tx.Exec(sql)
@@ -311,32 +311,31 @@ func (sdb *SQLDB) generalizeTable(table *GeneralizedTableSpec) error {
 	return nil
 }
 
-
 // Optimize clusters tables on new GeoHash index.
 func (sdb *SQLDB) Optimize() error {
-  if sdb.Optimizer != nil {
-    return sdb.Optimizer(sdb)    
-  }
-  
-  return nil
+	if sdb.Optimizer != nil {
+		return sdb.Optimizer(sdb)
+	}
+
+	return nil
 }
 
 type QueryBuilder interface {
 	TableExistsSQL(string, string) string
 	DropTableSQL(string, string) string
-  GeometryColumnExistsSQL(string, string) string
-  DropGeometryColumnSQL(string, string) string
+	GeometryColumnExistsSQL(string, string) string
+	DropGeometryColumnSQL(string, string) string
 	SchemaExistsSQL(string) string
 	CreateSchemaSQL(string) string
 	PopulateGeometryColumnSQL(string, string, string, int) string
-  CreateIndexSQL(string, string, string) string
-  CreateGeometryIndexSQL(string, string, string) string
-  GeometryIndexesSQL(string, string) string
-  DisableGeometryIndexSQL(string, string, string) string
-  DropGeometryIndexSQL(string, string, string) string
-  CreateGeneralizedTableSQL(string, string, string, string, string, string) string
-  TruncateTableSQL(string, string) string
-  ChangeTableSchemaSQL(string, string, string) string
+	CreateIndexSQL(string, string, string) string
+	CreateGeometryIndexSQL(string, string, string) string
+	GeometryIndexesSQL(string, string) string
+	DisableGeometryIndexSQL(string, string, string) string
+	DropGeometryIndexSQL(string, string, string) string
+	CreateGeneralizedTableSQL(string, string, string, string, string, string) string
+	TruncateTableSQL(string, string) string
+	ChangeTableSchemaSQL(string, string, string) string
 }
 
 type TableQueryBuilder interface {
@@ -379,11 +378,11 @@ type SQLDB struct {
 	PolygonTagMatcher       *mapping.TagMatcher
 	updateGeneralizedTables bool
 	updatedIds              map[string][]int64
-  Worker                  int
-  BulkSupported           bool
-  SdbTypes                map[string]ColumnType
-  Optimizer               OptimizerFunc
-  DeploymentSupported     bool
+	Worker                  int
+	BulkSupported           bool
+	SdbTypes                map[string]ColumnType
+	Optimizer               OptimizerFunc
+	DeploymentSupported     bool
 }
 
 func (sdb *SQLDB) InsertPoint(elem element.OSMElem, matches interface{}) error {
@@ -391,13 +390,13 @@ func (sdb *SQLDB) InsertPoint(elem element.OSMElem, matches interface{}) error {
 		for _, match := range matches {
 			row := match.Row(&elem)
 			err := sdb.txRouter.Insert(match.Table.Name, row)
-      if err != nil {
-        return err
-      }
+			if err != nil {
+				return err
+			}
 		}
 	}
-  
-  return nil
+
+	return nil
 }
 
 func (sdb *SQLDB) InsertLineString(elem element.OSMElem, matches interface{}) error {
@@ -405,10 +404,10 @@ func (sdb *SQLDB) InsertLineString(elem element.OSMElem, matches interface{}) er
 		for _, match := range matches {
 			row := match.Row(&elem)
 			err := sdb.txRouter.Insert(match.Table.Name, row)
-      
-      if err != nil {
-        return err
-      }
+
+			if err != nil {
+				return err
+			}
 		}
 		if sdb.updateGeneralizedTables {
 			for _, generalizedTable := range sdb.generalizedFromMatches(matches) {
@@ -416,8 +415,8 @@ func (sdb *SQLDB) InsertLineString(elem element.OSMElem, matches interface{}) er
 			}
 		}
 	}
-  
-  return nil
+
+	return nil
 }
 
 func (sdb *SQLDB) InsertPolygon(elem element.OSMElem, matches interface{}) error {
@@ -425,10 +424,10 @@ func (sdb *SQLDB) InsertPolygon(elem element.OSMElem, matches interface{}) error
 		for _, match := range matches {
 			row := match.Row(&elem)
 			err := sdb.txRouter.Insert(match.Table.Name, row)
-      
-      if err != nil {
-        return err
-      }
+
+			if err != nil {
+				return err
+			}
 		}
 		if sdb.updateGeneralizedTables {
 			for _, generalizedTable := range sdb.generalizedFromMatches(matches) {
@@ -436,8 +435,8 @@ func (sdb *SQLDB) InsertPolygon(elem element.OSMElem, matches interface{}) error
 			}
 		}
 	}
-  
-  return nil
+
+	return nil
 }
 
 func (sdb *SQLDB) ProbePoint(elem element.OSMElem) (bool, interface{}) {
@@ -493,17 +492,17 @@ func (sdb *SQLDB) Delete(id int64, matches interface{}) error {
 	if matches, ok := matches.([]mapping.Match); ok {
 		for _, match := range matches {
 			err := sdb.txRouter.Delete(match.Table.Name, id)
-      
-      if err != nil {
-        return err
-      }
+
+			if err != nil {
+				return err
+			}
 		}
 		if sdb.updateGeneralizedTables {
 			for _, generalizedTable := range sdb.generalizedFromMatches(matches) {
 				err := sdb.txRouter.Delete(generalizedTable.Name, id)
-        if err != nil {
-          return err
-        }
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -521,15 +520,15 @@ func (sdb *SQLDB) DeleteElem(elem element.OSMElem) error {
 				continue
 			}
 			err := sdb.txRouter.Delete(tableSpec.Name, elem.Id)
-      if err != nil {
-        return err
-      }
+			if err != nil {
+				return err
+			}
 			if sdb.updateGeneralizedTables {
 				for _, genTable := range tableSpec.Generalizations {
 					err := sdb.txRouter.Delete(genTable.Name, elem.Id)
-          if err != nil {
-            return err
-          }
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}

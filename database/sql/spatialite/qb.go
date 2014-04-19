@@ -22,24 +22,24 @@ type QQueryBuilder struct {
 }
 
 func multiGeometryType(geomType string) string {
-  // SQLITE is very strict about single vs. multi types
-  // as those items are mixed in osm files only multi items are loaded
-  // (and single items are casted to multi items)
-  geomType = strings.ToUpper(geomType)
-  
+	// SQLITE is very strict about single vs. multi types
+	// as those items are mixed in osm files only multi items are loaded
+	// (and single items are casted to multi items)
+	geomType = strings.ToUpper(geomType)
+
 	if geomType == "POLYGON" {
 		geomType = "MULTIPOLYGON" // for multipolygon support
 	}
-  
+
 	if geomType == "LINESTRING" {
 		geomType = "MULTILINESTRING" // for multipolygon support
 	}
-  
+
 	if geomType == "POINT" {
 		geomType = "MULTIPOINT" // for multipolygon support
 	}
-  
-  return geomType
+
+	return geomType
 }
 
 func NewNormalTableQueryBuilder(spec *sql.TableSpec) *QTableSpec {
@@ -84,7 +84,7 @@ func (spec *QTableSpec) CreateTableSQL() string {
 }
 
 func (spec *QTableSpec) AddGeometryColumnSQL() string {
-  geomType := multiGeometryType(spec.GeometryType)
+	geomType := multiGeometryType(spec.GeometryType)
 	return fmt.Sprintf("SELECT AddGeometryColumn('%s', 'geometry', %d, '%s', 2);",
 		spec.FullName, spec.Srid, geomType)
 }
@@ -108,7 +108,7 @@ func (spec *QTableSpec) InsertSQL() string {
 }
 
 func (spec *QTableSpec) CopySQL() string {
-  return ""
+	return ""
 }
 
 func (spec *QTableSpec) DeleteSQL() string {
@@ -131,65 +131,65 @@ func (spec *QTableSpec) DeleteSQL() string {
 }
 
 func (spec *QGeneralizedTableSpec) DeleteSQL() string {
-  // FIXME @see explanation at
-  // (spec *QGeneralizedTableSpec) InsertSQL()
-  
-  return ""
-  /*
-	var idColumnName string
-	for _, col := range spec.Source.Columns {
-		if col.FieldType.Name == "id" {
-			idColumnName = col.Name
-			break
+	// FIXME @see explanation at
+	// (spec *QGeneralizedTableSpec) InsertSQL()
+
+	return ""
+	/*
+		var idColumnName string
+		for _, col := range spec.Source.Columns {
+			if col.FieldType.Name == "id" {
+				idColumnName = col.Name
+				break
+			}
 		}
-	}
 
-	if idColumnName == "" {
-		panic("missing id column")
-	}
+		if idColumnName == "" {
+			panic("missing id column")
+		}
 
-	return fmt.Sprintf(`DELETE FROM "%s" WHERE "%s" = $1`,
-		spec.FullName,
-		idColumnName,
-	)
-  */
+		return fmt.Sprintf(`DELETE FROM "%s" WHERE "%s" = $1`,
+			spec.FullName,
+			idColumnName,
+		)
+	*/
 }
 
 func (spec *QGeneralizedTableSpec) InsertSQL() string {
-  // FIXME this is currently disabled as the statement can't be prepared
-  // when the generalized table doesn't exist (this bug affects the postgis)
-  // implementation as well, but it's hidden as the postgis version uses
-  // bulkimport by default
-  return ""
-  
-  /*
-	var idColumnName string
-	for _, col := range spec.Source.Columns {
-		if col.FieldType.Name == "id" {
-			idColumnName = col.Name
-			break
+	// FIXME this is currently disabled as the statement can't be prepared
+	// when the generalized table doesn't exist (this bug affects the postgis)
+	// implementation as well, but it's hidden as the postgis version uses
+	// bulkimport by default
+	return ""
+
+	/*
+		var idColumnName string
+		for _, col := range spec.Source.Columns {
+			if col.FieldType.Name == "id" {
+				idColumnName = col.Name
+				break
+			}
 		}
-	}
 
-	if idColumnName == "" {
-		panic("missing id column")
-	}
+		if idColumnName == "" {
+			panic("missing id column")
+		}
 
-	var cols []string
-	for _, col := range spec.Source.Columns {
-		cols = append(cols, col.Type.GeneralizeSql(&col, spec.Tolerance))
-	}
+		var cols []string
+		for _, col := range spec.Source.Columns {
+			cols = append(cols, col.Type.GeneralizeSql(&col, spec.Tolerance))
+		}
 
-	where := fmt.Sprintf(` WHERE "%s" = $1`, idColumnName)
-	if spec.Where != "" {
-		where += " AND (" + spec.Where + ")"
-	}
+		where := fmt.Sprintf(` WHERE "%s" = $1`, idColumnName)
+		if spec.Where != "" {
+			where += " AND (" + spec.Where + ")"
+		}
 
-	columnSQL := strings.Join(cols, ",\n")
-	sql := fmt.Sprintf(`INSERT INTO "%s" SELECT %s FROM "%s"%s`,
-		spec.FullName, columnSQL, spec.Source.FullName, where)
-	return sql
-  */
+		columnSQL := strings.Join(cols, ",\n")
+		sql := fmt.Sprintf(`INSERT INTO "%s" SELECT %s FROM "%s"%s`,
+			spec.FullName, columnSQL, spec.Source.FullName, where)
+		return sql
+	*/
 }
 
 func (q *QQueryBuilder) TableExistsSQL(schema string, table string) string {
@@ -205,17 +205,17 @@ func (q *QQueryBuilder) SchemaExistsSQL(schema string) string {
 }
 
 func (q *QQueryBuilder) CreateSchemaSQL(schema string) string {
-  return ""
+	return ""
 }
 
 func (spec *QQueryBuilder) PopulateGeometryColumnSQL(schema string, table string, geomType string, srid int) string {
-  geomType = multiGeometryType(geomType)
+	geomType = multiGeometryType(geomType)
 	return fmt.Sprintf("SELECT RecoverGeometryColumn('%s', 'geometry', %d, '%s', 2);",
 		table, srid, geomType)
 }
 
 func (spec *QQueryBuilder) CreateIndexSQL(schema string, table string, column string) string {
-  return fmt.Sprintf(`CREATE INDEX "%s_idx" ON "%s" ("%s")`, table, table, column)
+	return fmt.Sprintf(`CREATE INDEX "%s_idx" ON "%s" ("%s")`, table, table, column)
 }
 
 func (spec *QQueryBuilder) GeometryIndexesSQL(schema string, table string) string {
@@ -227,41 +227,41 @@ func (spec *QQueryBuilder) GeometryIndexesSQL(schema string, table string) strin
        AND REPLACE(name, 'idx_%s_', '') NOT LIKE '%%\_%%' ESCAPE '\'
        AND rootpage = 0
            ;`,
-       table, table, table)
+		table, table, table)
 }
 
 func (spec *QQueryBuilder) DropGeometryIndexSQL(schema string, table string, column string) string {
-  return spec.DropTableSQL(schema, fmt.Sprintf("idx_%s_%s", table, column))
+	return spec.DropTableSQL(schema, fmt.Sprintf("idx_%s_%s", table, column))
 }
 
 func (spec *QQueryBuilder) DisableGeometryIndexSQL(schema string, table string, column string) string {
-  return fmt.Sprintf(`SELECT DisableSpatialIndex('%s', '%s');`, table, column)
+	return fmt.Sprintf(`SELECT DisableSpatialIndex('%s', '%s');`, table, column)
 }
 
 func (spec *QQueryBuilder) CreateGeometryIndexSQL(schema string, table string, column string) string {
-  return fmt.Sprintf(`SELECT CreateSpatialIndex('%s', '%s')`, table, column)
+	return fmt.Sprintf(`SELECT CreateSpatialIndex('%s', '%s')`, table, column)
 }
 
 func (spec *QQueryBuilder) CreateGeneralizedTableSQL(targetSchema string, targetTable string,
-  columnSQL string, sourceSchema string, sourceTable string, where string) string {
+	columnSQL string, sourceSchema string, sourceTable string, where string) string {
 	return fmt.Sprintf(`CREATE TABLE "%s" AS SELECT %s FROM "%s"%s`,
-    targetTable, columnSQL, sourceTable, where)
+		targetTable, columnSQL, sourceTable, where)
 }
 
 func (spec *QQueryBuilder) TruncateTableSQL(schema string, table string) string {
-  return fmt.Sprintf(`DELETE FROM "%s"`, table)
+	return fmt.Sprintf(`DELETE FROM "%s"`, table)
 }
 
 func (spec *QQueryBuilder) GeometryColumnExistsSQL(schema string, table string) string {
 	return fmt.Sprintf("SELECT EXISTS(SELECT 1 FROM geometry_columns WHERE f_table_name = '%s');",
-		table)  
+		table)
 }
 
 func (spec *QQueryBuilder) DropGeometryColumnSQL(schema string, table string) string {
 	return fmt.Sprintf("SELECT DiscardGeometryColumn('%s', 'geometry');",
-		table)  
+		table)
 }
 
 func (spec *QQueryBuilder) ChangeTableSchemaSQL(currSchema string, table string, newSchema string) string {
-  return ""
+	return ""
 }
