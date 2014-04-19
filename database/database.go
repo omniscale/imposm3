@@ -46,6 +46,7 @@ type Inserter interface {
 }
 
 type Deployer interface {
+  IsDeploymentSupported() bool
 	Deploy() error
 	RevertDeploy() error
 	RemoveBackup() error

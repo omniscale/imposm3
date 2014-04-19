@@ -239,7 +239,7 @@ func Import() {
 	}
 
 	if config.ImportOptions.DeployProduction {
-		if db, ok := db.(database.Deployer); ok {
+		if db, ok := db.(database.Deployer); ok && db.IsDeploymentSupported() {
 			if err := db.Deploy(); err != nil {
 				log.Fatal(err)
 			}
@@ -249,7 +249,7 @@ func Import() {
 	}
 
 	if config.ImportOptions.RevertDeploy {
-		if db, ok := db.(database.Deployer); ok {
+		if db, ok := db.(database.Deployer); ok && db.IsDeploymentSupported() {
 			if err := db.RevertDeploy(); err != nil {
 				log.Fatal(err)
 			}
@@ -259,7 +259,7 @@ func Import() {
 	}
 
 	if config.ImportOptions.RemoveBackup {
-		if db, ok := db.(database.Deployer); ok {
+		if db, ok := db.(database.Deployer); ok && db.IsDeploymentSupported() {
 			if err := db.RemoveBackup(); err != nil {
 				log.Fatal(err)
 			}

@@ -261,3 +261,7 @@ func (spec *QQueryBuilder) DropGeometryColumnSQL(schema string, table string) st
 	return fmt.Sprintf("SELECT DiscardGeometryColumn('%s', 'geometry');",
 		table)  
 }
+
+func (spec *QQueryBuilder) ChangeTableSchemaSQL(currSchema string, table string, newSchema string) string {
+  return ""
+}

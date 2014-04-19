@@ -1,41 +1,40 @@
 package postgis
 
 import (
+	sqld "database/sql"
+	"fmt"
 	pq "github.com/lib/pq"
 	"imposm3/database"
 	"imposm3/database/sql"
-  sqld "database/sql"
+	"imposm3/logging"
 	"imposm3/mapping"
+	"runtime"
 	"strings"
-  "runtime"
-  "imposm3/logging"
-  "fmt"
 )
 
 var log = logging.NewLogger("SQL")
 
 func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	db := &sql.SQLDB{}
-  
+
 	worker := int(runtime.NumCPU() / 2)
 	if worker < 1 {
 		worker = 1
 	}
-  
-  db.Worker = worker
-  db.BulkSupported = true
+
+	db.Worker = worker
+	db.BulkSupported = true
 
 	db.Tables = make(map[string]*sql.TableSpec)
 	db.GeneralizedTables = make(map[string]*sql.GeneralizedTableSpec)
 
 	db.NormalTableQueryBuilder = make(map[string]sql.NormalTableQueryBuilder)
 	db.GenTableQueryBuilder = make(map[string]sql.GenTableQueryBuilder)
-  
-  db.SdbTypes = NewSdbTypes()
 
+	db.SdbTypes = NewSdbTypes()
 	db.Config = conf
-
 	db.QB = NewQueryBuilder()
+	db.DeploymentSupported = true
 
 	if strings.HasPrefix(db.Config.ConnectionParams, "postgis://") {
 		db.Config.ConnectionParams = strings.Replace(
@@ -73,8 +72,8 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	db.PointTagMatcher = m.PointMatcher()
 	db.LineStringTagMatcher = m.LineStringMatcher()
 	db.PolygonTagMatcher = m.PolygonMatcher()
-  
-  db.Optimizer = Optimize
+
+	db.Optimizer = Optimize
 
 	db.Params = params
 	err = Open(db)
@@ -105,30 +104,30 @@ func Open(sdb *sql.SQLDB) error {
 }
 
 func Optimize(sdb *sql.SQLDB) error {
-  defer log.StopStep(log.StartStep(fmt.Sprintf("Clustering on geometry")))
+	defer log.StopStep(log.StartStep(fmt.Sprintf("Clustering on geometry")))
 
-  p := sql.NewWorkerPool(sdb.Worker, len(sdb.Tables)+len(sdb.GeneralizedTables))
-  for _, tbl := range sdb.Tables {
-  	tableName := tbl.FullName
-  	table := tbl
-  	p.In <- func() error {
-  		return clusterTable(sdb, tableName, table.Srid, table.Columns)
-  	}
-  }
-  for _, tbl := range sdb.GeneralizedTables {
-  	tableName := tbl.FullName
-  	table := tbl
-  	p.In <- func() error {
-  		return clusterTable(sdb, tableName, table.Source.Srid, table.Source.Columns)
-  	}
-  }
+	p := sql.NewWorkerPool(sdb.Worker, len(sdb.Tables)+len(sdb.GeneralizedTables))
+	for _, tbl := range sdb.Tables {
+		tableName := tbl.FullName
+		table := tbl
+		p.In <- func() error {
+			return clusterTable(sdb, tableName, table.Srid, table.Columns)
+		}
+	}
+	for _, tbl := range sdb.GeneralizedTables {
+		tableName := tbl.FullName
+		table := tbl
+		p.In <- func() error {
+			return clusterTable(sdb, tableName, table.Source.Srid, table.Source.Columns)
+		}
+	}
 
-  err := p.Wait()
-  if err != nil {
-  	return err
-  }
+	err := p.Wait()
+	if err != nil {
+		return err
+	}
 
-  return nil
+	return nil
 }
 
 func clusterTable(sdb *sql.SQLDB, tableName string, srid int, columns []sql.ColumnSpec) error {

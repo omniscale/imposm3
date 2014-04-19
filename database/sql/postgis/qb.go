@@ -240,3 +240,7 @@ func (spec *QQueryBuilder) DropGeometryColumnSQL(schema string, table string) st
 	return fmt.Sprintf("SELECT DropGeometryColumn('%s', '%s', 'geometry');",
 		schema, table)  
 }
+
+func (spec *QQueryBuilder) ChangeTableSchemaSQL(currSchema string, table string, newSchema string) string {
+  return fmt.Sprintf(`ALTER TABLE "%s"."%s" SET SCHEMA "%s"`, currSchema, table, newSchema)
+}

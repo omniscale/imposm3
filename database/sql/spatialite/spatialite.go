@@ -26,10 +26,10 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	db.GenTableQueryBuilder = make(map[string]sql.GenTableQueryBuilder)
 
 	db.SdbTypes = NewSdbTypes()
-
 	db.Config = conf
-
 	db.QB = NewQueryBuilder()
+  
+  db.DeploymentSupported = false
 
 	if strings.HasPrefix(db.Config.ConnectionParams, "spatialite://") {
 		db.Config.ConnectionParams = strings.Replace(

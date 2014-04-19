@@ -336,6 +336,7 @@ type QueryBuilder interface {
   DropGeometryIndexSQL(string, string, string) string
   CreateGeneralizedTableSQL(string, string, string, string, string, string) string
   TruncateTableSQL(string, string) string
+  ChangeTableSchemaSQL(string, string, string) string
 }
 
 type TableQueryBuilder interface {
@@ -382,6 +383,7 @@ type SQLDB struct {
   BulkSupported           bool
   SdbTypes                map[string]ColumnType
   Optimizer               OptimizerFunc
+  DeploymentSupported     bool
 }
 
 func (sdb *SQLDB) InsertPoint(elem element.OSMElem, matches interface{}) error {

@@ -52,14 +52,14 @@ func (sdb *SQLDB) rotate(source, dest, backup string) error {
 					return err
 				}
 			}
-			sql := fmt.Sprintf(`ALTER TABLE "%s"."%s" SET SCHEMA "%s"`, dest, tableName, backup)
+			sql := sdb.QB.ChangeTableSchemaSQL(dest, tableName, backup)
 			_, err = tx.Exec(sql)
 			if err != nil {
 				return err
 			}
 		}
 
-		sql := fmt.Sprintf(`ALTER TABLE "%s"."%s" SET SCHEMA "%s"`, source, tableName, dest)
+		sql := sdb.QB.ChangeTableSchemaSQL(source, tableName, dest)
 		_, err = tx.Exec(sql)
 		if err != nil {
 			return err
@@ -126,4 +126,8 @@ func (sdb *SQLDB) tableNames() []string {
 		names = append(names, name)
 	}
 	return names
+}
+
+func (sdb *SQLDB) IsDeploymentSupported() bool {
+	return sdb.DeploymentSupported
 }
