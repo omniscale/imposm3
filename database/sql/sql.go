@@ -140,11 +140,11 @@ func (sdb *SQLDB) Init() error {
 func (sdb *SQLDB) Finish() error {
 	defer log.StopStep(log.StartStep(fmt.Sprintf("Creating geometry indices")))
 
-	p := newWorkerPool(sdb.Worker, len(sdb.Tables)+len(sdb.GeneralizedTables))
+	p := NewWorkerPool(sdb.Worker, len(sdb.Tables)+len(sdb.GeneralizedTables))
 	for _, tbl := range sdb.Tables {
 		tableName := tbl.FullName
 		table := tbl
-		p.in <- func() error {
+		p.In <- func() error {
 			return createIndex(sdb, sdb.QB, tableName, table.Columns)
 		}
 	}
@@ -152,12 +152,12 @@ func (sdb *SQLDB) Finish() error {
 	for _, tbl := range sdb.GeneralizedTables {
 		tableName := tbl.FullName
 		table := tbl
-		p.in <- func() error {
+		p.In <- func() error {
 			return createIndex(sdb, sdb.QB, tableName, table.Source.Columns)
 		}
 	}
 
-	err := p.wait()
+	err := p.Wait()
 	if err != nil {
 		return err
 	}
@@ -210,11 +210,11 @@ func (sdb *SQLDB) Generalize() error {
 
 	// generalized tables can depend on other generalized tables
 	// create tables with non-generalized sources first
-	p := newWorkerPool(sdb.Worker, len(sdb.GeneralizedTables))
+	p := NewWorkerPool(sdb.Worker, len(sdb.GeneralizedTables))
 	for _, table := range sdb.GeneralizedTables {
 		if table.SourceGeneralized == nil {
 			tbl := table // for following closure
-			p.in <- func() error {
+			p.In <- func() error {
 				if err := sdb.generalizeTable(tbl); err != nil {
 					return err
 				}
@@ -223,7 +223,7 @@ func (sdb *SQLDB) Generalize() error {
 			}
 		}
 	}
-	err := p.wait()
+	err := p.Wait()
 	if err != nil {
 		return err
 	}
@@ -234,11 +234,11 @@ func (sdb *SQLDB) Generalize() error {
 	for created == 1 {
 		created = 0
 
-		p := newWorkerPool(sdb.Worker, len(sdb.GeneralizedTables))
+		p := NewWorkerPool(sdb.Worker, len(sdb.GeneralizedTables))
 		for _, table := range sdb.GeneralizedTables {
 			if !table.created && table.SourceGeneralized.created {
 				tbl := table // for following closure
-				p.in <- func() error {
+				p.In <- func() error {
 					if err := sdb.generalizeTable(tbl); err != nil {
 						return err
 					}
@@ -248,7 +248,7 @@ func (sdb *SQLDB) Generalize() error {
 				}
 			}
 		}
-		err := p.wait()
+		err := p.Wait()
 		if err != nil {
 			return err
 		}
@@ -311,70 +311,14 @@ func (sdb *SQLDB) generalizeTable(table *GeneralizedTableSpec) error {
 	return nil
 }
 
+
 // Optimize clusters tables on new GeoHash index.
 func (sdb *SQLDB) Optimize() error {
-	defer log.StopStep(log.StartStep(fmt.Sprintf("Clustering on geometry")))
-
-	p := newWorkerPool(sdb.Worker, len(sdb.Tables)+len(sdb.GeneralizedTables))
-
-	for _, tbl := range sdb.Tables {
-		tableName := tbl.FullName
-		table := tbl
-		p.in <- func() error {
-			return clusterTable(sdb, tableName, table.Srid, table.Columns)
-		}
-	}
-	for _, tbl := range sdb.GeneralizedTables {
-		tableName := tbl.FullName
-		table := tbl
-		p.in <- func() error {
-			return clusterTable(sdb, tableName, table.Source.Srid, table.Source.Columns)
-		}
-	}
-
-	err := p.wait()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// TODO refactor somehow (e.g. move to postgis package)
-func clusterTable(sdb *SQLDB, tableName string, srid int, columns []ColumnSpec) error {
-	for _, col := range columns {
-		if col.Type.Name() == "GEOMETRY" {
-			step := log.StartStep(fmt.Sprintf("Indexing %s on geohash", tableName))
-			sql := fmt.Sprintf(`CREATE INDEX "%s_geom_geohash" ON "%s"."%s" (ST_GeoHash(ST_Transform(ST_SetSRID(Box2D(%s), %d), 4326)))`,
-				tableName, sdb.Config.ImportSchema, tableName, col.Name, srid)
-			_, err := sdb.Db.Exec(sql)
-			log.StopStep(step)
-			if err != nil {
-				return err
-			}
-
-			step = log.StartStep(fmt.Sprintf("Clustering %s on geohash", tableName))
-			sql = fmt.Sprintf(`CLUSTER "%s_geom_geohash" ON "%s"."%s"`,
-				tableName, sdb.Config.ImportSchema, tableName)
-			_, err = sdb.Db.Exec(sql)
-			log.StopStep(step)
-			if err != nil {
-				return err
-			}
-			break
-		}
-	}
-
-	step := log.StartStep(fmt.Sprintf("Analysing %s", tableName))
-	sql := fmt.Sprintf(`ANALYSE "%s"."%s"`,
-		sdb.Config.ImportSchema, tableName)
-	_, err := sdb.Db.Exec(sql)
-	log.StopStep(step)
-	if err != nil {
-		return err
-	}
-
-	return nil
+  if sdb.Optimizer != nil {
+    return sdb.Optimizer(sdb)    
+  }
+  
+  return nil
 }
 
 type QueryBuilder interface {
@@ -416,6 +360,8 @@ type ColumnType interface {
 	GeneralizeSql(colSpec *ColumnSpec, tolerance float64) string
 }
 
+type OptimizerFunc func(*SQLDB) error
+
 type SQLDB struct {
 	Db                      *sql.DB
 	Params                  string
@@ -435,6 +381,7 @@ type SQLDB struct {
   Worker                  int
   BulkSupported           bool
   SdbTypes                map[string]ColumnType
+  Optimizer               OptimizerFunc
 }
 
 func (sdb *SQLDB) InsertPoint(elem element.OSMElem, matches interface{}) error {

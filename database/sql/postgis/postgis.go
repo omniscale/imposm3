@@ -8,7 +8,11 @@ import (
 	"imposm3/mapping"
 	"strings"
   "runtime"
+  "imposm3/logging"
+  "fmt"
 )
+
+var log = logging.NewLogger("SQL")
 
 func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	db := &sql.SQLDB{}
@@ -69,6 +73,8 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	db.PointTagMatcher = m.PointMatcher()
 	db.LineStringTagMatcher = m.LineStringMatcher()
 	db.PolygonTagMatcher = m.PolygonMatcher()
+  
+  db.Optimizer = Optimize
 
 	db.Params = params
 	err = Open(db)
@@ -95,5 +101,68 @@ func Open(sdb *sql.SQLDB) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func Optimize(sdb *sql.SQLDB) error {
+  defer log.StopStep(log.StartStep(fmt.Sprintf("Clustering on geometry")))
+
+  p := sql.NewWorkerPool(sdb.Worker, len(sdb.Tables)+len(sdb.GeneralizedTables))
+  for _, tbl := range sdb.Tables {
+  	tableName := tbl.FullName
+  	table := tbl
+  	p.In <- func() error {
+  		return clusterTable(sdb, tableName, table.Srid, table.Columns)
+  	}
+  }
+  for _, tbl := range sdb.GeneralizedTables {
+  	tableName := tbl.FullName
+  	table := tbl
+  	p.In <- func() error {
+  		return clusterTable(sdb, tableName, table.Source.Srid, table.Source.Columns)
+  	}
+  }
+
+  err := p.Wait()
+  if err != nil {
+  	return err
+  }
+
+  return nil
+}
+
+func clusterTable(sdb *sql.SQLDB, tableName string, srid int, columns []sql.ColumnSpec) error {
+	for _, col := range columns {
+		if col.Type.Name() == "GEOMETRY" {
+			step := log.StartStep(fmt.Sprintf("Indexing %s on geohash", tableName))
+			sql := fmt.Sprintf(`CREATE INDEX "%s_geom_geohash" ON "%s"."%s" (ST_GeoHash(ST_Transform(ST_SetSRID(Box2D(%s), %d), 4326)))`,
+				tableName, sdb.Config.ImportSchema, tableName, col.Name, srid)
+			_, err := sdb.Db.Exec(sql)
+			log.StopStep(step)
+			if err != nil {
+				return err
+			}
+
+			step = log.StartStep(fmt.Sprintf("Clustering %s on geohash", tableName))
+			sql = fmt.Sprintf(`CLUSTER "%s_geom_geohash" ON "%s"."%s"`,
+				tableName, sdb.Config.ImportSchema, tableName)
+			_, err = sdb.Db.Exec(sql)
+			log.StopStep(step)
+			if err != nil {
+				return err
+			}
+			break
+		}
+	}
+
+	step := log.StartStep(fmt.Sprintf("Analysing %s", tableName))
+	sql := fmt.Sprintf(`ANALYSE "%s"."%s"`,
+		sdb.Config.ImportSchema, tableName)
+	_, err := sdb.Db.Exec(sql)
+	log.StopStep(step)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

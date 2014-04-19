@@ -101,42 +101,42 @@ func rollbackIfTx(tx **sql.Tx) {
 // wait will return the first error or nil when all functions
 // returned succesfull.
 type workerPool struct {
-	in  chan func() error
-	out chan error
-	wg  *sync.WaitGroup
+	In  chan func() error
+	Out chan error
+	Wg  *sync.WaitGroup
 }
 
-func newWorkerPool(worker, tasks int) *workerPool {
+func NewWorkerPool(worker, tasks int) *workerPool {
 	p := &workerPool{
 		make(chan func() error, tasks),
 		make(chan error, tasks),
 		&sync.WaitGroup{},
 	}
 	for i := 0; i < worker; i++ {
-		p.wg.Add(1)
-		go p.workerLoop()
+		p.Wg.Add(1)
+		go p.WorkerLoop()
 	}
 	return p
 }
 
-func (p *workerPool) workerLoop() {
-	for f := range p.in {
-		p.out <- f()
+func (p *workerPool) WorkerLoop() {
+	for f := range p.In {
+		p.Out <- f()
 	}
-	p.wg.Done()
+	p.Wg.Done()
 }
 
-func (p *workerPool) wait() error {
-	close(p.in)
+func (p *workerPool) Wait() error {
+	close(p.In)
 	done := make(chan bool)
 	go func() {
-		p.wg.Wait()
+		p.Wg.Wait()
 		done <- true
 	}()
 
 	for {
 		select {
-		case err := <-p.out:
+		case err := <-p.Out:
 			if err != nil {
 				return err
 			}

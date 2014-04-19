@@ -7,7 +7,11 @@ import (
 	"imposm3/database/sql"
 	"imposm3/mapping"
 	"strings"
+  "imposm3/logging"
+  "fmt"
 )
+
+var log = logging.NewLogger("SQL")
 
 func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	db := &sql.SQLDB{}
@@ -56,6 +60,8 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	db.PointTagMatcher = m.PointMatcher()
 	db.LineStringTagMatcher = m.LineStringMatcher()
 	db.PolygonTagMatcher = m.PolygonMatcher()
+  
+  db.Optimizer = optimize
 
 	// TODO do we need this?
 	// db.Params = params
@@ -144,4 +150,37 @@ func Open(sdb *sql.SQLDB) error {
 	}
 
 	return nil
+}
+
+func analyze(sdb *sql.SQLDB, table string) error {
+  fmt.Sprintf("ANALYZE %s")
+	step := log.StartStep(fmt.Sprintf("Analysing %s", table))
+	sql := fmt.Sprintf(`ANALYZE "%s"`, table)
+	_, err := sdb.Db.Exec(sql)
+	log.StopStep(step)
+	if err != nil {
+		return err
+	}
+  
+  return nil
+}
+
+func optimize(sdb *sql.SQLDB) error {
+  fmt.Sprintf("ANALYZE %s")
+  
+  for _, tbl := range sdb.Tables {
+    err := analyze(sdb, tbl.FullName)
+    if (err != nil) {
+      return err
+    }
+  }
+  
+  for _, tbl := range sdb.GeneralizedTables {
+    err := analyze(sdb, tbl.FullName)
+    if (err != nil) {
+      return err
+    }
+  }
+  
+  return nil
 }
