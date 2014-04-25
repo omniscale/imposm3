@@ -118,7 +118,7 @@ func String(val string, elem *element.OSMElem, match Match) interface{} {
 }
 
 func Integer(val string, elem *element.OSMElem, match Match) interface{} {
-	v, err := strconv.ParseInt(val, 10, 64)
+	v, err := strconv.ParseInt(val, 10, 32)
 	if err != nil {
 		return nil
 	}
