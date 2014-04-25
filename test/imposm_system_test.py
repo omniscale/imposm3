@@ -446,6 +446,11 @@ def test_relation_with_gap():
     park = query_row(db_conf, 'osm_landusages', -7301)
     assert park['geometry'].is_valid, park
 
+def test_updated_nodes1():
+    """Zig-Zag line is inserted."""
+    road =  query_row(db_conf, 'osm_roads', 60000)
+    assert_almost_equal(road['geometry'].length, 14035.61150207768)
+
 #######################################################################
 def test_update():
     """Diff import applies"""
@@ -587,6 +592,12 @@ def test_duplicate_ids2():
     assert query_row(db_conf, 'osm_buildings', -51001) == None
     assert query_row(db_conf, 'osm_buildings', -51011)['type'] == 'mp'
     assert query_row(db_conf, 'osm_buildings', 51011) == None
+
+def test_updated_way2():
+    """All nodes of straightened way are updated."""
+    road =  query_row(db_conf, 'osm_roads', 60000)
+    # new length 0.1 degree
+    assert_almost_equal(road['geometry'].length, 20037508.342789244/180.0/10.0)
 
 #######################################################################
 def test_deploy_and_revert_deploy():

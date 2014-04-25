@@ -112,20 +112,76 @@ func checkReadWriteDeltaCoords(t *testing.T, withLinearImport bool) {
 		}
 	}
 
-	_, err = cache.GetCoord(999999)
-	if err != NotFound {
-		t.Error("missing node returned not NotFound")
-	}
+	// test overwrite
+	insertAndCheck(t, cache, 100, 50, 50)
 
 	// test delete
-	cache.PutCoords([]element.Node{mknode(999999)})
-
 	_, err = cache.GetCoord(999999)
-	if err == NotFound {
-		t.Error("missing coord")
+	if err != NotFound {
+		t.Error("found missing node")
 	}
-	err = cache.DeleteCoord(999999)
+	insertAndCheck(t, cache, 999999, 10, 10)
+	deleteAndCheck(t, cache, 999999)
+}
+
+func insertAndCheck(t *testing.T, cache *DeltaCoordsCache, id int64, lon, lat float64) {
+	newNode := mknode(id)
+	newNode.Long = lon
+	newNode.Lat = lat
+
+	err := cache.PutCoords([]element.Node{newNode})
 	if err != nil {
-		t.Fatal(err)
+		t.Errorf("error during PutCoords for %v: %s", newNode, err)
 	}
+
+	result, err := cache.GetCoord(id)
+	if err != nil {
+		t.Errorf("got error after getting inserted node %d: %s", id, err)
+	}
+	if result == nil || result.Long != lon || result.Lat != lat {
+		t.Errorf("invalid coords %f, %f != %v", lon, lat, result)
+	}
+}
+
+func deleteAndCheck(t *testing.T, cache *DeltaCoordsCache, id int64) {
+	err := cache.DeleteCoord(id)
+	if err != nil {
+		t.Errorf("error during DeleteCoord for %d: %s", id, err)
+	}
+
+	result, err := cache.GetCoord(id)
+	if err != NotFound {
+		t.Error("found deleted coord", result)
+	}
+}
+
+func TestSingleUpdate(t *testing.T) {
+	cache_dir, _ := ioutil.TempDir("", "imposm3_test")
+	defer os.RemoveAll(cache_dir)
+
+	cache, err := newDeltaCoordsCache(cache_dir)
+	if err != nil {
+		t.Fatal()
+	}
+
+	// insert and update in empty batch
+	insertAndCheck(t, cache, 123, 10, 10)
+	insertAndCheck(t, cache, 123, 10, 11)
+
+	// insert and update in same batch
+	insertAndCheck(t, cache, 1, 1, 1)
+	insertAndCheck(t, cache, 2, 2, 2)
+	insertAndCheck(t, cache, 3, 3, 3)
+	insertAndCheck(t, cache, 4, 4, 4)
+	insertAndCheck(t, cache, 3, 10, 11)
+	insertAndCheck(t, cache, 2, 10, 11)
+	insertAndCheck(t, cache, 1, 10, 11)
+	insertAndCheck(t, cache, 4, 10, 11)
+	// repeat after flushing
+	cache.Flush()
+	insertAndCheck(t, cache, 1, 1, 1)
+	insertAndCheck(t, cache, 2, 2, 2)
+	insertAndCheck(t, cache, 3, 3, 3)
+	insertAndCheck(t, cache, 4, 4, 4)
+
 }

@@ -165,6 +165,15 @@
     <way id="51011" />
   </delete>
 
-
-
+  <!-- update zig-zag line with coords internaly cached in differend deltacoords bunches -->
+  <modify>
+    <node id="60001" version="1" timestamp="2011-11-11T00:11:11Z" lat="0" lon="20.00"/>
+    <node id="60002" version="1" timestamp="2011-11-11T00:11:11Z" lat="0" lon="20.01"/>
+    <node id="60003" version="1" timestamp="2011-11-11T00:11:11Z" lat="0" lon="20.02"/>
+    <node id="61004" version="1" timestamp="2011-11-11T00:11:11Z" lat="0" lon="20.03"/>
+    <node id="62005" version="1" timestamp="2011-11-11T00:11:11Z" lat="0" lon="20.04"/>
+    <node id="63006" version="1" timestamp="2011-11-11T00:11:11Z" lat="0" lon="20.05"/>
+    <node id="64007" version="1" timestamp="2011-11-11T00:11:11Z" lat="0" lon="20.06"/>
+    <node id="64008" version="1" timestamp="2011-11-11T00:11:11Z" lat="0" lon="20.10"/>
+  </modify>
 </osmChange>

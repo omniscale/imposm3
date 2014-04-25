@@ -898,4 +898,24 @@
     <tag k="building" v="mp"/>
   </relation>
 
+  <!-- zig-zag line with coords internaly cached in differend deltacoords bunches -->
+  <node id="60001" version="1" timestamp="2011-11-11T00:11:11Z" lat="0.01" lon="20.00"/>
+  <node id="60002" version="1" timestamp="2011-11-11T00:11:11Z" lat="0.00" lon="20.01"/>
+  <node id="60003" version="1" timestamp="2011-11-11T00:11:11Z" lat="0.01" lon="20.02"/>
+  <node id="61004" version="1" timestamp="2011-11-11T00:11:11Z" lat="0.00" lon="20.03"/>
+  <node id="62005" version="1" timestamp="2011-11-11T00:11:11Z" lat="0.01" lon="20.04"/>
+  <node id="63006" version="1" timestamp="2011-11-11T00:11:11Z" lat="0.00" lon="20.05"/>
+  <node id="64007" version="1" timestamp="2011-11-11T00:11:11Z" lat="0.01" lon="20.06"/>
+  <node id="64008" version="1" timestamp="2011-11-11T00:11:11Z" lat="0.00" lon="20.10"/>
+  <way id="60000" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="60001"/>
+    <nd ref="60002"/>
+    <nd ref="60003"/>
+    <nd ref="61004"/>
+    <nd ref="62005"/>
+    <nd ref="63006"/>
+    <nd ref="64007"/>
+    <nd ref="64008"/>
+    <tag k="highway" v="residential"/>
+  </way>
 </osm>

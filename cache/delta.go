@@ -93,6 +93,35 @@ func (b *coordsBunch) DeleteCoord(id int64) {
 	}
 }
 
+// PutCoord puts a single coord into the coords bunch. This function
+// does support updating nodes.
+func (b *coordsBunch) PutCoord(node element.Node) {
+	idx := sort.Search(len(b.coords), func(i int) bool {
+		return b.coords[i].Id >= node.Id
+	})
+	if idx < len(b.coords) {
+		if b.coords[idx].Id == node.Id {
+			// overwrite
+			b.coords[idx] = node
+		} else {
+			// insert
+			b.coords = append(b.coords, node)
+			copy(b.coords[idx+1:], b.coords[idx:])
+			b.coords[idx] = node
+		}
+	} else {
+		// append
+		b.coords = append(b.coords, node)
+	}
+}
+
+// PutCoords puts multiple coords into the coords bunch. This bulk function
+// does not support duplicate or updated nodes.
+func (b *coordsBunch) PutCoords(nodes []element.Node) {
+	b.coords = append(b.coords, nodes...)
+	sort.Sort(byId(b.coords))
+}
+
 type DeltaCoordsCache struct {
 	cache
 	lruList      *list.List
@@ -247,8 +276,14 @@ func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) error {
 				if err != nil {
 					return err
 				}
-				bunch.coords = append(bunch.coords, nodes[start:i]...)
-				sort.Sort(byId(bunch.coords))
+				if self.linearImport {
+					bunch.PutCoords(nodes[start:i])
+				} else {
+					for _, node := range nodes[start:i] {
+						// single inserts to handle updated coords
+						bunch.PutCoord(node)
+					}
+				}
 				bunch.needsWrite = true
 				bunch.Unlock()
 			}
@@ -260,8 +295,16 @@ func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) error {
 	if err != nil {
 		return err
 	}
-	bunch.coords = append(bunch.coords, nodes[start:]...)
-	sort.Sort(byId(bunch.coords))
+
+	if self.linearImport {
+		bunch.PutCoords(nodes[start:])
+	} else {
+		for _, node := range nodes[start:] {
+			// single inserts to handle updated coords
+			bunch.PutCoord(node)
+		}
+	}
+
 	bunch.needsWrite = true
 	bunch.Unlock()
 	return nil
