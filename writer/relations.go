@@ -73,12 +73,9 @@ NextRel:
 		// relation tags)
 		prepedRel, err := geom.PrepareRelation(r, rw.srid)
 		if err != nil {
-			if err, ok := err.(ErrorLevel); ok {
-				if err.Level() <= 0 {
-					continue NextRel
-				}
+			if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
+				log.Warn(err)
 			}
-			log.Warn(err)
 			continue NextRel
 		}
 
@@ -94,13 +91,9 @@ NextRel:
 			if r.Geom != nil && r.Geom.Geom != nil {
 				geos.Destroy(r.Geom.Geom)
 			}
-			if err, ok := err.(ErrorLevel); ok {
-				if err.Level() <= 0 {
-					continue NextRel
-
-				}
+			if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
+				log.Warn(err)
 			}
-			log.Warn(err)
 			continue NextRel
 		}
 
@@ -118,12 +111,24 @@ NextRel:
 				rel := element.Relation(*r)
 				rel.Id = -r.Id
 				rel.Geom = &element.Geometry{Geom: g, Wkb: geos.AsEwkbHex(g)}
-				rw.inserter.InsertPolygon(rel.OSMElem, matches)
+				err := rw.inserter.InsertPolygon(rel.OSMElem, matches)
+				if err != nil {
+					if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
+						log.Warn(err)
+					}
+					continue
+				}
 			}
 		} else {
 			rel := element.Relation(*r)
 			rel.Id = -r.Id
-			rw.inserter.InsertPolygon(rel.OSMElem, matches)
+			err := rw.inserter.InsertPolygon(rel.OSMElem, matches)
+			if err != nil {
+				if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
+					log.Warn(err)
+				}
+				continue
+			}
 		}
 
 		for _, m := range rw.inserter.SelectRelationPolygons(r.Tags, r.Members) {

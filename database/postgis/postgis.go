@@ -416,20 +416,25 @@ func (pg *PostGIS) Open() error {
 	return nil
 }
 
-func (pg *PostGIS) InsertPoint(elem element.OSMElem, matches interface{}) {
+func (pg *PostGIS) InsertPoint(elem element.OSMElem, matches interface{}) error {
 	if matches, ok := matches.([]mapping.Match); ok {
 		for _, match := range matches {
 			row := match.Row(&elem)
-			pg.txRouter.Insert(match.Table.Name, row)
+			if err := pg.txRouter.Insert(match.Table.Name, row); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
-func (pg *PostGIS) InsertLineString(elem element.OSMElem, matches interface{}) {
+func (pg *PostGIS) InsertLineString(elem element.OSMElem, matches interface{}) error {
 	if matches, ok := matches.([]mapping.Match); ok {
 		for _, match := range matches {
 			row := match.Row(&elem)
-			pg.txRouter.Insert(match.Table.Name, row)
+			if err := pg.txRouter.Insert(match.Table.Name, row); err != nil {
+				return err
+			}
 		}
 		if pg.updateGeneralizedTables {
 			for _, generalizedTable := range pg.generalizedFromMatches(matches) {
@@ -438,13 +443,16 @@ func (pg *PostGIS) InsertLineString(elem element.OSMElem, matches interface{}) {
 		}
 
 	}
+	return nil
 }
 
-func (pg *PostGIS) InsertPolygon(elem element.OSMElem, matches interface{}) {
+func (pg *PostGIS) InsertPolygon(elem element.OSMElem, matches interface{}) error {
 	if matches, ok := matches.([]mapping.Match); ok {
 		for _, match := range matches {
 			row := match.Row(&elem)
-			pg.txRouter.Insert(match.Table.Name, row)
+			if err := pg.txRouter.Insert(match.Table.Name, row); err != nil {
+				return err
+			}
 		}
 		if pg.updateGeneralizedTables {
 			for _, generalizedTable := range pg.generalizedFromMatches(matches) {
@@ -453,6 +461,7 @@ func (pg *PostGIS) InsertPolygon(elem element.OSMElem, matches interface{}) {
 		}
 
 	}
+	return nil
 }
 
 func (pg *PostGIS) ProbePoint(elem element.OSMElem) (bool, interface{}) {

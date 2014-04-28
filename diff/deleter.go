@@ -50,35 +50,39 @@ func (d *Deleter) DeletedMemberWays() map[int64]struct{} {
 	return d.deletedMembers
 }
 
-func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) {
+func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) error {
 	d.deletedRelations[id] = struct{}{}
 
 	elem, err := d.osmCache.Relations.GetRelation(id)
 	if err != nil {
 		if err == cache.NotFound {
-			return
+			return nil
 		}
-		// TODO
-		log.Print("rel", id, err)
-		return
+		return err
 	}
 	if elem.Tags == nil {
-		return
+		return nil
 	}
 	if ok, matches := d.delDb.ProbePolygon(elem.OSMElem); ok {
-		d.delDb.Delete(-elem.Id, matches)
+		if err := d.delDb.Delete(-elem.Id, matches); err != nil {
+			return err
+		}
 	} else {
 		// handle relations with tags from members by deleting
 		// from all tables
 		e := element.OSMElem(elem.OSMElem)
 		e.Id = -e.Id
-		d.delDb.DeleteElem(e)
+		if err := d.delDb.DeleteElem(e); err != nil {
+			return err
+		}
 	}
 
 	if deleteRefs {
 		for _, m := range elem.Members {
 			if m.Type == element.WAY {
-				d.diffCache.Ways.DeleteRef(m.Id, id)
+				if err := d.diffCache.Ways.DeleteRef(m.Id, id); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -92,12 +96,16 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 				if _, ok := d.deletedWays[member.Id]; ok {
 					continue
 				}
-				d.deleteWay(member.Id, false)
+				if err := d.deleteWay(member.Id, false); err != nil {
+					return err
+				}
 			}
 		}
 	}
 
-	d.osmCache.InsertedWays.DeleteMembers(elem.Members)
+	if err := d.osmCache.InsertedWays.DeleteMembers(elem.Members); err != nil {
+		return err
+	}
 	if d.expireor != nil {
 		for _, m := range elem.Members {
 			if m.Way == nil {
@@ -111,81 +119,91 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 			expire.ExpireNodes(d.expireor, m.Way.Nodes)
 		}
 	}
+	return nil
 }
 
-func (d *Deleter) deleteWay(id int64, deleteRefs bool) {
+func (d *Deleter) deleteWay(id int64, deleteRefs bool) error {
 	d.deletedWays[id] = struct{}{}
 
 	elem, err := d.osmCache.Ways.GetWay(id)
 	if err != nil {
 		if err == cache.NotFound {
-			return
+			return nil
 		}
-		// TODO
-		log.Print("way", id, err)
-		return
+		return err
 	}
 	if elem.Tags == nil {
-		return
+		return nil
 	}
 	deleted := false
 	if ok, matches := d.delDb.ProbePolygon(elem.OSMElem); ok {
-		d.delDb.Delete(elem.Id, matches)
+		if err := d.delDb.Delete(elem.Id, matches); err != nil {
+			return err
+		}
 		deleted = true
 	}
 	if ok, matches := d.delDb.ProbeLineString(elem.OSMElem); ok {
-		d.delDb.Delete(elem.Id, matches)
+		if err := d.delDb.Delete(elem.Id, matches); err != nil {
+			return err
+		}
 		deleted = true
 	}
 	if deleted && deleteRefs {
 		for _, n := range elem.Refs {
-			d.diffCache.Coords.DeleteRef(n, id)
+			if err := d.diffCache.Coords.DeleteRef(n, id); err != nil {
+				return err
+			}
 		}
 	}
 	if deleted && d.expireor != nil {
 		err := d.osmCache.Coords.FillWay(elem)
 		if err != nil {
-			return
+			return err
 		}
 		expire.ExpireNodes(d.expireor, elem.Nodes)
 	}
+	return nil
 }
 
-func (d *Deleter) deleteNode(id int64) {
+func (d *Deleter) deleteNode(id int64) error {
 	elem, err := d.osmCache.Nodes.GetNode(id)
 	if err != nil {
 		if err == cache.NotFound {
-			return
+			return nil
 		}
-		// TODO
-		log.Print("node", id, err)
-		return
+		return err
 	}
 	if elem.Tags == nil {
-		return
+		return nil
 	}
 	deleted := false
 
 	if ok, matches := d.delDb.ProbePoint(elem.OSMElem); ok {
-		d.delDb.Delete(elem.Id, matches)
+		if err := d.delDb.Delete(elem.Id, matches); err != nil {
+			return err
+		}
 		deleted = true
 	}
 
 	if deleted && d.expireor != nil {
 		d.expireor.Expire(elem.Long, elem.Lat)
 	}
-
+	return nil
 }
 
-func (d *Deleter) Delete(delElem parser.DiffElem) {
+func (d *Deleter) Delete(delElem parser.DiffElem) error {
 	if !delElem.Del {
 		panic("del=false")
 	}
 
 	if delElem.Rel != nil {
-		d.deleteRelation(delElem.Rel.Id, true, true)
+		if err := d.deleteRelation(delElem.Rel.Id, true, true); err != nil {
+			return err
+		}
 	} else if delElem.Way != nil {
-		d.deleteWay(delElem.Way.Id, true)
+		if err := d.deleteWay(delElem.Way.Id, true); err != nil {
+			return err
+		}
 
 		if delElem.Mod {
 			dependers := d.diffCache.Ways.Get(delElem.Way.Id)
@@ -193,18 +211,24 @@ func (d *Deleter) Delete(delElem parser.DiffElem) {
 				if _, ok := d.deletedRelations[rel]; ok {
 					continue
 				}
-				d.deleteRelation(rel, false, false)
+				if err := d.deleteRelation(rel, false, false); err != nil {
+					return err
+				}
 			}
 		}
 	} else if delElem.Node != nil {
-		d.deleteNode(delElem.Node.Id)
+		if err := d.deleteNode(delElem.Node.Id); err != nil {
+			return err
+		}
 		if delElem.Mod {
 			dependers := d.diffCache.Coords.Get(delElem.Node.Id)
 			for _, way := range dependers {
 				if _, ok := d.deletedWays[way]; ok {
 					continue
 				}
-				d.deleteWay(way, false)
+				if err := d.deleteWay(way, false); err != nil {
+					return err
+				}
 				dependers := d.diffCache.Ways.Get(way)
 				if len(dependers) >= 1 {
 					// mark member ways from deleted relations for re-insert
@@ -214,12 +238,17 @@ func (d *Deleter) Delete(delElem parser.DiffElem) {
 					if _, ok := d.deletedRelations[rel]; ok {
 						continue
 					}
-					d.deleteRelation(rel, false, false)
+					if err := d.deleteRelation(rel, false, false); err != nil {
+						return err
+					}
 				}
 			}
 		}
 		if !delElem.Add {
-			d.diffCache.Coords.Delete(delElem.Node.Id)
+			if err := d.diffCache.Coords.Delete(delElem.Node.Id); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }

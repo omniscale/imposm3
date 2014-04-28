@@ -47,12 +47,9 @@ func (nw *NodeWriter) loop() {
 			}
 			point, err := geom.Point(geos, *n)
 			if err != nil {
-				if err, ok := err.(ErrorLevel); ok {
-					if err.Level() <= 0 {
-						continue
-					}
+				if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
+					log.Warn(err)
 				}
-				log.Warn(err)
 				continue
 			}
 
@@ -69,10 +66,16 @@ func (nw *NodeWriter) loop() {
 					continue
 				}
 				if len(parts) >= 1 {
-					nw.inserter.InsertPoint(n.OSMElem, matches)
+					if err := nw.inserter.InsertPoint(n.OSMElem, matches); err != nil {
+						log.Warn(err)
+						continue
+					}
 				}
 			} else {
-				nw.inserter.InsertPoint(n.OSMElem, matches)
+				if err := nw.inserter.InsertPoint(n.OSMElem, matches); err != nil {
+					log.Warn(err)
+					continue
+				}
 			}
 
 		}

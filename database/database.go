@@ -37,9 +37,9 @@ type Inserter interface {
 	ProbePolygon(element.OSMElem) (bool, interface{})
 	// InsertXxx inserts element of that type into the database.
 	// element.Geom is set to that type.
-	InsertPoint(element.OSMElem, interface{})
-	InsertLineString(element.OSMElem, interface{})
-	InsertPolygon(element.OSMElem, interface{})
+	InsertPoint(element.OSMElem, interface{}) error
+	InsertLineString(element.OSMElem, interface{}) error
+	InsertPolygon(element.OSMElem, interface{}) error
 	// SelectRelationPolygons returns a slice of all members that are already
 	// imported with a relation with tags.
 	SelectRelationPolygons(element.Tags, []element.Member) []element.Member
@@ -107,9 +107,9 @@ func (n *nullDb) Begin() error                                                  
 func (n *nullDb) End() error                                                             { return nil }
 func (n *nullDb) Close() error                                                           { return nil }
 func (n *nullDb) Abort() error                                                           { return nil }
-func (n *nullDb) InsertPoint(element.OSMElem, interface{})                               {}
-func (n *nullDb) InsertLineString(element.OSMElem, interface{})                          {}
-func (n *nullDb) InsertPolygon(element.OSMElem, interface{})                             {}
+func (n *nullDb) InsertPoint(element.OSMElem, interface{}) error                         { return nil }
+func (n *nullDb) InsertLineString(element.OSMElem, interface{}) error                    { return nil }
+func (n *nullDb) InsertPolygon(element.OSMElem, interface{}) error                       { return nil }
 func (n *nullDb) ProbePoint(element.OSMElem) (bool, interface{})                         { return true, nil }
 func (n *nullDb) ProbeLineString(element.OSMElem) (bool, interface{})                    { return true, nil }
 func (n *nullDb) ProbePolygon(element.OSMElem) (bool, interface{})                       { return true, nil }

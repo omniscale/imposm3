@@ -141,7 +141,9 @@ For:
 				progress.AddCoords(1)
 			}
 			if elem.Del {
-				deleter.Delete(elem)
+				if err := deleter.Delete(elem); err != nil {
+					return err
+				}
 				if !elem.Add {
 					if elem.Rel != nil {
 						if err := osmCache.Relations.DeleteRelation(elem.Rel.Id); err != nil {

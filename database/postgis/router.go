@@ -80,18 +80,18 @@ func (txr *TxRouter) Abort() error {
 	return nil
 }
 
-func (txr *TxRouter) Insert(table string, row []interface{}) {
+func (txr *TxRouter) Insert(table string, row []interface{}) error {
 	tt, ok := txr.Tables[table]
 	if !ok {
 		panic("unknown table " + table)
 	}
-	tt.Insert(row)
+	return tt.Insert(row)
 }
 
-func (txr *TxRouter) Delete(table string, id int64) {
+func (txr *TxRouter) Delete(table string, id int64) error {
 	tt, ok := txr.Tables[table]
 	if !ok {
 		panic("unknown table " + table)
 	}
-	tt.Delete(id)
+	return tt.Delete(id)
 }
