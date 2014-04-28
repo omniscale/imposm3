@@ -1,10 +1,19 @@
-package postgis
+package sql
 
 import (
 	"database/sql"
-	"fmt"
 	"sync"
 )
+
+type tableSpec interface {
+	InsertSQL() string
+	DeleteSQL() string
+}
+
+type bulkTableSpec interface {
+	tableSpec
+	CopySQL() string
+}
 
 type TableTx interface {
 	Begin(*sql.Tx) error
@@ -16,20 +25,20 @@ type TableTx interface {
 }
 
 type bulkTableTx struct {
-	Pg         *PostGIS
+	Sdb        *SQLDB
 	Tx         *sql.Tx
 	Table      string
-	Spec       *TableSpec
+	Spec       bulkTableSpec
 	InsertStmt *sql.Stmt
 	InsertSql  string
 	wg         *sync.WaitGroup
 	rows       chan []interface{}
 }
 
-func NewBulkTableTx(pg *PostGIS, spec *TableSpec) TableTx {
+func NewBulkTableTx(sdb *SQLDB, tableName string, spec bulkTableSpec) TableTx {
 	tt := &bulkTableTx{
-		Pg:    pg,
-		Table: spec.FullName,
+		Sdb:   sdb,
+		Table: tableName,
 		Spec:  spec,
 		wg:    &sync.WaitGroup{},
 		rows:  make(chan []interface{}, 64),
@@ -42,14 +51,14 @@ func NewBulkTableTx(pg *PostGIS, spec *TableSpec) TableTx {
 func (tt *bulkTableTx) Begin(tx *sql.Tx) error {
 	var err error
 	if tx == nil {
-		tx, err = tt.Pg.Db.Begin()
+		tx, err = tt.Sdb.Db.Begin()
 		if err != nil {
 			return err
 		}
 	}
 	tt.Tx = tx
 
-	_, err = tx.Exec(fmt.Sprintf(`TRUNCATE TABLE "%s"."%s" RESTART IDENTITY`, tt.Pg.Config.ImportSchema, tt.Table))
+	_, err = tx.Exec(tt.Sdb.QB.TruncateTableSQL(tt.Sdb.Config.ImportSchema, tt.Table))
 	if err != nil {
 		return err
 	}
@@ -111,7 +120,7 @@ func (tt *bulkTableTx) Rollback() {
 }
 
 type syncTableTx struct {
-	Pg         *PostGIS
+	Sdb        *SQLDB
 	Tx         *sql.Tx
 	Table      string
 	Spec       tableSpec
@@ -121,14 +130,9 @@ type syncTableTx struct {
 	DeleteSql  string
 }
 
-type tableSpec interface {
-	InsertSQL() string
-	DeleteSQL() string
-}
-
-func NewSynchronousTableTx(pg *PostGIS, tableName string, spec tableSpec) TableTx {
+func NewSynchronousTableTx(sdb *SQLDB, tableName string, spec tableSpec) TableTx {
 	tt := &syncTableTx{
-		Pg:    pg,
+		Sdb:   sdb,
 		Table: tableName,
 		Spec:  spec,
 	}
@@ -138,7 +142,7 @@ func NewSynchronousTableTx(pg *PostGIS, tableName string, spec tableSpec) TableT
 func (tt *syncTableTx) Begin(tx *sql.Tx) error {
 	var err error
 	if tx == nil {
-		tx, err = tt.Pg.Db.Begin()
+		tx, err = tt.Sdb.Db.Begin()
 		if err != nil {
 			return err
 		}

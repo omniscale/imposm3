@@ -2,7 +2,7 @@ Imposm 3
 ========
 
 Imposm is an importer for OpenStreetMap data. It reads PBF files and
-imports the data into PostgreSQL/PostGIS. It can also update the
+imports the data into PostgreSQL/PostGIS or SpatiaLite. It can also update the
 DB from diff files.
 
 It is designed to create databases that are optimized for rendering (i.e. generating tiles or for WMS services).
@@ -128,6 +128,7 @@ You need [Go >=1.1](http://golang.org).
 
 Other dependencies are [libleveldb][], [libgeos][] and [libsqlite3][].
 Imposm 3 was tested with recent versions of these libraries, but you might succeed with older versions.
+For SpatiaLite support, a HEAD version of [libspatialite] is required.
 GEOS >=3.2 is recommended, since it became much more robust when handling invalid geometries.
 For best performance use [HyperLevelDB][libhyperleveldb] as an in-place replacement for libleveldb.
 
@@ -136,6 +137,18 @@ For best performance use [HyperLevelDB][libhyperleveldb] as an in-place replacem
 [libhyperleveldb]: https://github.com/rescrv/HyperLevelDB
 [libgeos]: http://trac.osgeo.org/geos/
 [libsqlite3]: http://www.sqlite.org/
+[libspatialite]: https://www.gaia-gis.it/fossil/libspatialite/index
+
+##### Building SpatiaLite
+
+fossil clone https://www.gaia-gis.it/fossil/libspatialite libspatialite.fossil
+mkdir libspatialite
+cd libspatialite
+fossil open ../libspatialite.fossil
+./configure --prefix=/path/to/lib --enable-lwgeom=yes
+make install
+
+SpatiaLite is only needed if one wants to import into a SpatiaLite database.
 
 #### Go libraries
 
@@ -189,9 +202,14 @@ Usage
 
 `imposm3` has multiple subcommands. Use `imposm3 import` for basic imports.
 
-For a simple import:
+For a simple PostGIS import:
 
     imposm3 import -connection postgis://user:password@host/database \
+        -mapping mapping.json -read /path/to/osm.pbf -write
+		
+To import into a SpatiaLite database:
+
+    imposm3 import -connection spatialite:///path/to/foo.db \
         -mapping mapping.json -read /path/to/osm.pbf -write
 
 You need a JSON file with the target database mapping. See `example-mapping.json` to get an idea what is possible with the mapping.

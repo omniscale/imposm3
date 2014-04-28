@@ -190,7 +190,7 @@ func currentState(url string) (*DiffState, error) {
 func estimateSequence(url string, timestamp time.Time) int32 {
 	state, err := currentState(url)
 	if err != nil {
-		log.Warn("unabnle to fetch current state from ", url, ":", err)
+		log.Warn("Unable to fetch current state from ", url, ":", err)
 		return 0
 	}
 	behind := state.Time.Sub(timestamp)

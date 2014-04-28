@@ -10,7 +10,8 @@ import (
 	"imposm3/cache"
 	"imposm3/config"
 	"imposm3/database"
-	_ "imposm3/database/postgis"
+	_ "imposm3/database/sql/postgis"
+	_ "imposm3/database/sql/spatialite"
 	state "imposm3/diff/state"
 	"imposm3/geom/limit"
 	"imposm3/logging"
@@ -238,7 +239,7 @@ func Import() {
 	}
 
 	if config.ImportOptions.DeployProduction {
-		if db, ok := db.(database.Deployer); ok {
+		if db, ok := db.(database.Deployer); ok && db.IsDeploymentSupported() {
 			if err := db.Deploy(); err != nil {
 				log.Fatal(err)
 			}
@@ -248,7 +249,7 @@ func Import() {
 	}
 
 	if config.ImportOptions.RevertDeploy {
-		if db, ok := db.(database.Deployer); ok {
+		if db, ok := db.(database.Deployer); ok && db.IsDeploymentSupported() {
 			if err := db.RevertDeploy(); err != nil {
 				log.Fatal(err)
 			}
@@ -258,7 +259,7 @@ func Import() {
 	}
 
 	if config.ImportOptions.RemoveBackup {
-		if db, ok := db.(database.Deployer); ok {
+		if db, ok := db.(database.Deployer); ok && db.IsDeploymentSupported() {
 			if err := db.RemoveBackup(); err != nil {
 				log.Fatal(err)
 			}

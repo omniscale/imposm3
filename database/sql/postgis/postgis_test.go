@@ -2,8 +2,8 @@ package postgis
 
 import (
 	"testing"
-
 	"imposm3/database"
+	"imposm3/database/sql"
 	"imposm3/element"
 	"imposm3/mapping"
 )
@@ -14,7 +14,7 @@ func makeMember(id int64, tags element.Tags) element.Member {
 
 }
 
-func testDb(t *testing.T) *PostGIS {
+func testDb(t *testing.T) *sql.SQLDB {
 	mapping, err := mapping.NewMapping("test_mapping.json")
 	if err != nil {
 		t.Fatal(err)
@@ -31,7 +31,7 @@ func testDb(t *testing.T) *PostGIS {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return db.(*PostGIS)
+	return db.(*sql.SQLDB)
 }
 
 func TestSelectRelationPolygonsSimple(t *testing.T) {
