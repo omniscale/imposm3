@@ -46,14 +46,14 @@ func (tagMatcher *TagMatcher) Match(tags *element.Tags) []Match {
 	tables := make(map[DestTable]Match)
 
 	for k, v := range *tags {
-		values, ok := tagMatcher.mappings[k]
+		values, ok := tagMatcher.mappings[Key(k)]
 		if ok {
 			if tbls, ok := values["__any__"]; ok {
 				for _, t := range tbls {
 					tables[t] = Match{k, v, t, tagMatcher.tables[t.Name]}
 				}
 			}
-			if tbls, ok := values[v]; ok {
+			if tbls, ok := values[Value(v)]; ok {
 				for _, t := range tbls {
 					tables[t] = Match{k, v, t, tagMatcher.tables[t.Name]}
 				}

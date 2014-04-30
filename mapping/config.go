@@ -9,7 +9,7 @@ import (
 
 type Field struct {
 	Name string                 `json:"name"`
-	Key  string                 `json:"key"`
+	Key  Key                    `json:"key"`
 	Type string                 `json:"type"`
 	Args map[string]interface{} `json:"args"`
 }
@@ -17,14 +17,14 @@ type Field struct {
 type Table struct {
 	Name     string
 	Type     TableType             `json:"type"`
-	Mapping  map[string][]string   `json:"mapping"`
+	Mapping  map[Key][]Value       `json:"mapping"`
 	Mappings map[string]SubMapping `json:"mappings"`
 	Fields   []*Field              `json:"fields"`
 	Filters  *Filters              `json:"filters"`
 }
 
 type SubMapping struct {
-	Mapping map[string][]string
+	Mapping map[Key][]Value
 }
 
 type GeneralizedTable struct {
@@ -49,7 +49,7 @@ type Mapping struct {
 
 type ElementFilter func(tags *element.Tags) bool
 
-type TagTables map[string]map[string][]DestTable
+type TagTables map[Key]map[Value][]DestTable
 
 type DestTable struct {
 	Name       string
@@ -85,8 +85,8 @@ func NewMapping(filename string) (*Mapping, error) {
 	return &mapping, nil
 }
 
-func (t *Table) ExtraTags() map[string]bool {
-	tags := make(map[string]bool)
+func (t *Table) ExtraTags() map[Key]bool {
+	tags := make(map[Key]bool)
 	for _, field := range t.Fields {
 		if field.Key != "" {
 			tags[field.Key] = true
@@ -116,14 +116,14 @@ func (m *Mapping) prepare() error {
 	return nil
 }
 
-func (tt TagTables) addFromMapping(mapping map[string][]string, table DestTable) {
+func (tt TagTables) addFromMapping(mapping map[Key][]Value, table DestTable) {
 	for key, vals := range mapping {
 		for _, v := range vals {
 			vals, ok := tt[key]
 			if ok {
 				vals[v] = append(vals[v], table)
 			} else {
-				tt[key] = make(map[string][]DestTable)
+				tt[key] = make(map[Value][]DestTable)
 				tt[key][v] = append(tt[key][v], table)
 			}
 		}
@@ -154,7 +154,7 @@ func (m *Mapping) tables(tableType TableType) map[string]*TableFields {
 	return result
 }
 
-func (m *Mapping) extraTags(tableType TableType, tags map[string]bool) {
+func (m *Mapping) extraTags(tableType TableType, tags map[Key]bool) {
 	for _, t := range m.Tables {
 		if t.Type != tableType {
 			continue
@@ -164,7 +164,7 @@ func (m *Mapping) extraTags(tableType TableType, tags map[string]bool) {
 		}
 		if t.Filters != nil && t.Filters.ExcludeTags != nil {
 			for _, keyVal := range *t.Filters.ExcludeTags {
-				tags[keyVal[0]] = true
+				tags[Key(keyVal[0])] = true
 			}
 		}
 	}

@@ -5,32 +5,32 @@ import (
 )
 
 func (m *Mapping) NodeTagFilter() *TagFilter {
-	mappings := make(map[string]map[string][]DestTable)
+	mappings := make(map[Key]map[Value][]DestTable)
 	m.mappings("point", mappings)
-	tags := make(map[string]bool)
+	tags := make(map[Key]bool)
 	m.extraTags("point", tags)
 	return &TagFilter{mappings, tags}
 }
 
 func (m *Mapping) WayTagFilter() *TagFilter {
-	mappings := make(map[string]map[string][]DestTable)
+	mappings := make(map[Key]map[Value][]DestTable)
 	m.mappings("linestring", mappings)
 	m.mappings("polygon", mappings)
-	tags := make(map[string]bool)
+	tags := make(map[Key]bool)
 	m.extraTags("linestring", tags)
 	m.extraTags("polygon", tags)
 	return &TagFilter{mappings, tags}
 }
 
 func (m *Mapping) RelationTagFilter() *RelationTagFilter {
-	mappings := make(map[string]map[string][]DestTable)
+	mappings := make(map[Key]map[Value][]DestTable)
 	m.mappings("linestring", mappings)
 	m.mappings("polygon", mappings)
-	tags := make(map[string]bool)
+	tags := make(map[Key]bool)
 	m.extraTags("linestring", tags)
 	m.extraTags("polygon", tags)
 	// do not filter out type tag
-	mappings["type"] = map[string][]DestTable{
+	mappings["type"] = map[Value][]DestTable{
 		"multipolygon": []DestTable{},
 		"boundary":     []DestTable{},
 		"land_area":    []DestTable{},
@@ -39,8 +39,8 @@ func (m *Mapping) RelationTagFilter() *RelationTagFilter {
 }
 
 type TagFilter struct {
-	mappings  map[string]map[string][]DestTable
-	extraTags map[string]bool
+	mappings  map[Key]map[Value][]DestTable
+	extraTags map[Key]bool
 }
 
 type RelationTagFilter struct {
@@ -53,18 +53,18 @@ func (f *TagFilter) Filter(tags *element.Tags) bool {
 	}
 	foundMapping := false
 	for k, v := range *tags {
-		values, ok := f.mappings[k]
+		values, ok := f.mappings[Key(k)]
 		if ok {
 			if _, ok := values["__any__"]; ok {
 				foundMapping = true
 				continue
-			} else if _, ok := values[v]; ok {
+			} else if _, ok := values[Value(v)]; ok {
 				foundMapping = true
 				continue
-			} else if _, ok := f.extraTags[k]; !ok {
+			} else if _, ok := f.extraTags[Key(k)]; !ok {
 				delete(*tags, k)
 			}
-		} else if _, ok := f.extraTags[k]; !ok {
+		} else if _, ok := f.extraTags[Key(k)]; !ok {
 			delete(*tags, k)
 		}
 	}
