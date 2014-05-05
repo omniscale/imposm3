@@ -78,3 +78,33 @@ func (tagMatcher *TagMatcher) Match(tags *element.Tags) []Match {
 	}
 	return matches
 }
+
+// SelectRelationPolygons returns a slice of all members that are already
+// imported with a relation with tags.
+func SelectRelationPolygons(polygonTagMatcher *TagMatcher, tags element.Tags, members []element.Member) []element.Member {
+	relMatches := polygonTagMatcher.Match(&tags)
+	result := []element.Member{}
+	for _, m := range members {
+		if m.Type != element.WAY {
+			continue
+		}
+		memberMatches := polygonTagMatcher.Match(&m.Way.Tags)
+		if matchEquals(relMatches, memberMatches) {
+			result = append(result, m)
+		}
+	}
+	return result
+}
+
+func matchEquals(matchesA, matchesB []Match) bool {
+	for _, matchA := range matchesA {
+		for _, matchB := range matchesB {
+			if matchA.Key == matchB.Key &&
+				matchA.Value == matchB.Value &&
+				matchA.Table == matchB.Table {
+				return true
+			}
+		}
+	}
+	return false
+}

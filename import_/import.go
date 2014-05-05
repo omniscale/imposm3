@@ -171,7 +171,9 @@ func Import() {
 
 		relations := osmCache.Relations.Iter()
 		relWriter := writer.NewRelationWriter(osmCache, diffCache, relations,
-			db, progress, config.BaseOptions.Srid)
+			db, progress,
+			tagmapping.PolygonMatcher(),
+			config.BaseOptions.Srid)
 		relWriter.SetLimiter(geometryLimiter)
 		relWriter.EnableConcurrent()
 		relWriter.Start()
@@ -180,7 +182,9 @@ func Import() {
 
 		ways := osmCache.Ways.Iter()
 		wayWriter := writer.NewWayWriter(osmCache, diffCache, ways, db,
-			progress, config.BaseOptions.Srid)
+			progress,
+			tagmapping.PolygonMatcher(), tagmapping.LineStringMatcher(),
+			config.BaseOptions.Srid)
 		wayWriter.SetLimiter(geometryLimiter)
 		wayWriter.EnableConcurrent()
 		wayWriter.Start()
@@ -189,7 +193,9 @@ func Import() {
 
 		nodes := osmCache.Nodes.Iter()
 		nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
-			progress, config.BaseOptions.Srid)
+			progress,
+			tagmapping.PointMatcher(),
+			config.BaseOptions.Srid)
 		nodeWriter.SetLimiter(geometryLimiter)
 		nodeWriter.EnableConcurrent()
 		nodeWriter.Start()

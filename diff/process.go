@@ -99,19 +99,26 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 	nodes := make(chan *element.Node)
 
 	relWriter := writer.NewRelationWriter(osmCache, diffCache, relations,
-		db, progress, config.BaseOptions.Srid)
+		db, progress,
+		tagmapping.PolygonMatcher(),
+		config.BaseOptions.Srid)
 	relWriter.SetLimiter(geometryLimiter)
 	relWriter.SetExpireor(expireor)
 	relWriter.Start()
 
 	wayWriter := writer.NewWayWriter(osmCache, diffCache, ways, db,
-		progress, config.BaseOptions.Srid)
+		progress,
+		tagmapping.PolygonMatcher(),
+		tagmapping.LineStringMatcher(),
+		config.BaseOptions.Srid)
 	wayWriter.SetLimiter(geometryLimiter)
 	wayWriter.SetExpireor(expireor)
 	wayWriter.Start()
 
 	nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
-		progress, config.BaseOptions.Srid)
+		progress,
+		tagmapping.PointMatcher(),
+		config.BaseOptions.Srid)
 	nodeWriter.SetLimiter(geometryLimiter)
 	nodeWriter.SetExpireor(expireor)
 	nodeWriter.Start()

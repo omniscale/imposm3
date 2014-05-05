@@ -63,7 +63,7 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 	if elem.Tags == nil {
 		return nil
 	}
-	if ok, matches := d.delDb.ProbePolygon(elem.OSMElem); ok {
+	if matches := d.tmPolygons.Match(&elem.Tags); len(matches) > 0 {
 		if err := d.delDb.Delete(-elem.Id, matches); err != nil {
 			return err
 		}
@@ -136,13 +136,13 @@ func (d *Deleter) deleteWay(id int64, deleteRefs bool) error {
 		return nil
 	}
 	deleted := false
-	if ok, matches := d.delDb.ProbePolygon(elem.OSMElem); ok {
+	if matches := d.tmPolygons.Match(&elem.Tags); len(matches) > 0 {
 		if err := d.delDb.Delete(elem.Id, matches); err != nil {
 			return err
 		}
 		deleted = true
 	}
-	if ok, matches := d.delDb.ProbeLineString(elem.OSMElem); ok {
+	if matches := d.tmLineStrings.Match(&elem.Tags); len(matches) > 0 {
 		if err := d.delDb.Delete(elem.Id, matches); err != nil {
 			return err
 		}
@@ -178,7 +178,7 @@ func (d *Deleter) deleteNode(id int64) error {
 	}
 	deleted := false
 
-	if ok, matches := d.delDb.ProbePoint(elem.OSMElem); ok {
+	if matches := d.tmPoints.Match(&elem.Tags); len(matches) > 0 {
 		if err := d.delDb.Delete(elem.Id, matches); err != nil {
 			return err
 		}

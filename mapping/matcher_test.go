@@ -1,12 +1,23 @@
-package postgis
+package mapping
 
 import (
-	"testing"
-
-	"imposm3/database"
 	"imposm3/element"
-	"imposm3/mapping"
+	"testing"
 )
+
+func BenchmarkTagMatch(b *testing.B) {
+	m, err := NewMapping("matcher_test_mapping.json")
+	if err != nil {
+		b.Fatal(err)
+	}
+	matcher := m.PolygonMatcher()
+	for i := 0; i < b.N; i++ {
+		t := element.Tags{"landuse": "forest", "name": "Forest", "source": "bling", "tourism": "zoo"}
+		if m := matcher.Match(&t); len(m) != 1 {
+			b.Fatal(m)
+		}
+	}
+}
 
 func makeMember(id int64, tags element.Tags) element.Member {
 	way := &element.Way{element.OSMElem{id, tags, nil}, nil, nil}
@@ -14,29 +25,14 @@ func makeMember(id int64, tags element.Tags) element.Member {
 
 }
 
-func testDb(t *testing.T) *PostGIS {
-	mapping, err := mapping.NewMapping("test_mapping.json")
-	if err != nil {
-		t.Fatal(err)
-	}
-	conf := database.Config{
-		ConnectionParams: "postgis://localhost",
-		Srid:             3857,
-		ImportSchema:     "",
-		ProductionSchema: "",
-		BackupSchema:     "",
-	}
-
-	db, err := New(conf, mapping)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return db.(*PostGIS)
-}
-
 func TestSelectRelationPolygonsSimple(t *testing.T) {
-	db := testDb(t)
-	filtered := db.SelectRelationPolygons(element.Tags{"landuse": "park"},
+	mapping, err := NewMapping("test_mapping.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	filtered := SelectRelationPolygons(
+		mapping.PolygonMatcher(),
+		element.Tags{"landuse": "park"},
 		[]element.Member{
 			makeMember(0, element.Tags{"landuse": "forest"}),
 			makeMember(1, element.Tags{"landuse": "park"}),
@@ -52,8 +48,13 @@ func TestSelectRelationPolygonsSimple(t *testing.T) {
 }
 
 func TestSelectRelationPolygonsUnrelatedTags(t *testing.T) {
-	db := testDb(t)
-	filtered := db.SelectRelationPolygons(element.Tags{"landuse": "park"},
+	mapping, err := NewMapping("test_mapping.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	filtered := SelectRelationPolygons(
+		mapping.PolygonMatcher(),
+		element.Tags{"landuse": "park"},
 		[]element.Member{
 			makeMember(0, element.Tags{"landuse": "park", "layer": "2", "name": "foo"}),
 			makeMember(1, element.Tags{"landuse": "forest"}),
@@ -67,8 +68,13 @@ func TestSelectRelationPolygonsUnrelatedTags(t *testing.T) {
 }
 
 func TestSelectRelationPolygonsMultiple(t *testing.T) {
-	db := testDb(t)
-	filtered := db.SelectRelationPolygons(element.Tags{"landuse": "park"},
+	mapping, err := NewMapping("test_mapping.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	filtered := SelectRelationPolygons(
+		mapping.PolygonMatcher(),
+		element.Tags{"landuse": "park"},
 		[]element.Member{
 			makeMember(0, element.Tags{"landuse": "park"}),
 			makeMember(1, element.Tags{"natural": "forest"}),
@@ -85,8 +91,13 @@ func TestSelectRelationPolygonsMultiple(t *testing.T) {
 }
 
 func TestSelectRelationPolygonsMultipleTags(t *testing.T) {
-	db := testDb(t)
-	filtered := db.SelectRelationPolygons(element.Tags{"landuse": "forest", "natural": "scrub"},
+	mapping, err := NewMapping("test_mapping.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	filtered := SelectRelationPolygons(
+		mapping.PolygonMatcher(),
+		element.Tags{"landuse": "forest", "natural": "scrub"},
 		[]element.Member{
 			makeMember(0, element.Tags{"natural": "scrub"}),
 			makeMember(1, element.Tags{"landuse": "forest"}),

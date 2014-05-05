@@ -7,6 +7,7 @@ import (
 	"imposm3/expire"
 	"imposm3/geom"
 	"imposm3/geom/geos"
+	"imposm3/mapping"
 	"imposm3/proj"
 	"imposm3/stats"
 	"sync"
@@ -15,12 +16,19 @@ import (
 
 type RelationWriter struct {
 	OsmElemWriter
-	rel chan *element.Relation
+	rel            chan *element.Relation
+	polygonMatcher *mapping.TagMatcher
 }
 
-func NewRelationWriter(osmCache *cache.OSMCache, diffCache *cache.DiffCache, rel chan *element.Relation,
-	inserter database.Inserter, progress *stats.Statistics,
-	srid int) *OsmElemWriter {
+func NewRelationWriter(
+	osmCache *cache.OSMCache,
+	diffCache *cache.DiffCache,
+	rel chan *element.Relation,
+	inserter database.Inserter,
+	progress *stats.Statistics,
+	matcher *mapping.TagMatcher,
+	srid int,
+) *OsmElemWriter {
 	rw := RelationWriter{
 		OsmElemWriter: OsmElemWriter{
 			osmCache:  osmCache,
@@ -30,7 +38,8 @@ func NewRelationWriter(osmCache *cache.OSMCache, diffCache *cache.DiffCache, rel
 			inserter:  inserter,
 			srid:      srid,
 		},
-		rel: rel,
+		polygonMatcher: matcher,
+		rel:            rel,
 	}
 	rw.OsmElemWriter.writer = &rw
 	return &rw.OsmElemWriter
@@ -80,8 +89,8 @@ NextRel:
 		}
 
 		// check for matches befor building the geometry
-		ok, matches := rw.inserter.ProbePolygon(r.OSMElem)
-		if !ok {
+		matches := rw.polygonMatcher.Match(&r.Tags)
+		if len(matches) == 0 {
 			continue NextRel
 		}
 
@@ -131,7 +140,7 @@ NextRel:
 			}
 		}
 
-		for _, m := range rw.inserter.SelectRelationPolygons(r.Tags, r.Members) {
+		for _, m := range mapping.SelectRelationPolygons(rw.polygonMatcher, r.Tags, r.Members) {
 			err = rw.osmCache.InsertedWays.PutWay(m.Way)
 			if err != nil {
 				log.Warn(err)

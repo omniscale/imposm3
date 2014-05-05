@@ -402,9 +402,6 @@ type PostGIS struct {
 	GeneralizedTables       map[string]*GeneralizedTableSpec
 	Prefix                  string
 	txRouter                *TxRouter
-	pointTagMatcher         *mapping.TagMatcher
-	lineStringTagMatcher    *mapping.TagMatcher
-	polygonTagMatcher       *mapping.TagMatcher
 	updateGeneralizedTables bool
 	updatedIds              map[string][]int64
 }
@@ -424,101 +421,44 @@ func (pg *PostGIS) Open() error {
 	return nil
 }
 
-func (pg *PostGIS) InsertPoint(elem element.OSMElem, matches interface{}) error {
-	if matches, ok := matches.([]mapping.Match); ok {
-		for _, match := range matches {
-			row := match.Row(&elem)
-			if err := pg.txRouter.Insert(match.Table.Name, row); err != nil {
-				return err
-			}
+func (pg *PostGIS) InsertPoint(elem element.OSMElem, matches []mapping.Match) error {
+	for _, match := range matches {
+		row := match.Row(&elem)
+		if err := pg.txRouter.Insert(match.Table.Name, row); err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-func (pg *PostGIS) InsertLineString(elem element.OSMElem, matches interface{}) error {
-	if matches, ok := matches.([]mapping.Match); ok {
-		for _, match := range matches {
-			row := match.Row(&elem)
-			if err := pg.txRouter.Insert(match.Table.Name, row); err != nil {
-				return err
-			}
+func (pg *PostGIS) InsertLineString(elem element.OSMElem, matches []mapping.Match) error {
+	for _, match := range matches {
+		row := match.Row(&elem)
+		if err := pg.txRouter.Insert(match.Table.Name, row); err != nil {
+			return err
 		}
-		if pg.updateGeneralizedTables {
-			for _, generalizedTable := range pg.generalizedFromMatches(matches) {
-				pg.updatedIds[generalizedTable.Name] = append(pg.updatedIds[generalizedTable.Name], elem.Id)
-			}
+	}
+	if pg.updateGeneralizedTables {
+		for _, generalizedTable := range pg.generalizedFromMatches(matches) {
+			pg.updatedIds[generalizedTable.Name] = append(pg.updatedIds[generalizedTable.Name], elem.Id)
 		}
-
 	}
 	return nil
 }
 
-func (pg *PostGIS) InsertPolygon(elem element.OSMElem, matches interface{}) error {
-	if matches, ok := matches.([]mapping.Match); ok {
-		for _, match := range matches {
-			row := match.Row(&elem)
-			if err := pg.txRouter.Insert(match.Table.Name, row); err != nil {
-				return err
-			}
+func (pg *PostGIS) InsertPolygon(elem element.OSMElem, matches []mapping.Match) error {
+	for _, match := range matches {
+		row := match.Row(&elem)
+		if err := pg.txRouter.Insert(match.Table.Name, row); err != nil {
+			return err
 		}
-		if pg.updateGeneralizedTables {
-			for _, generalizedTable := range pg.generalizedFromMatches(matches) {
-				pg.updatedIds[generalizedTable.Name] = append(pg.updatedIds[generalizedTable.Name], elem.Id)
-			}
+	}
+	if pg.updateGeneralizedTables {
+		for _, generalizedTable := range pg.generalizedFromMatches(matches) {
+			pg.updatedIds[generalizedTable.Name] = append(pg.updatedIds[generalizedTable.Name], elem.Id)
 		}
-
 	}
 	return nil
-}
-
-func (pg *PostGIS) ProbePoint(elem element.OSMElem) (bool, interface{}) {
-	if matches := pg.pointTagMatcher.Match(&elem.Tags); len(matches) > 0 {
-		return true, matches
-	}
-	return false, nil
-}
-
-func (pg *PostGIS) ProbeLineString(elem element.OSMElem) (bool, interface{}) {
-	if matches := pg.lineStringTagMatcher.Match(&elem.Tags); len(matches) > 0 {
-		return true, matches
-	}
-	return false, nil
-}
-
-func (pg *PostGIS) ProbePolygon(elem element.OSMElem) (bool, interface{}) {
-	if matches := pg.polygonTagMatcher.Match(&elem.Tags); len(matches) > 0 {
-		return true, matches
-	}
-	return false, nil
-}
-
-func (pg *PostGIS) SelectRelationPolygons(tags element.Tags, members []element.Member) []element.Member {
-	relMatches := pg.polygonTagMatcher.Match(&tags)
-	result := []element.Member{}
-	for _, m := range members {
-		if m.Type != element.WAY {
-			continue
-		}
-		memberMatches := pg.polygonTagMatcher.Match(&m.Way.Tags)
-		if matchEquals(relMatches, memberMatches) {
-			result = append(result, m)
-		}
-	}
-	return result
-}
-
-func matchEquals(matchesA, matchesB []mapping.Match) bool {
-	for _, matchA := range matchesA {
-		for _, matchB := range matchesB {
-			if matchA.Key == matchB.Key &&
-				matchA.Value == matchB.Value &&
-				matchA.Table == matchB.Table {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 func (pg *PostGIS) Delete(id int64, matches interface{}) error {
@@ -641,10 +581,6 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	}
 	db.prepareGeneralizedTableSources()
 	db.prepareGeneralizations()
-
-	db.pointTagMatcher = m.PointMatcher()
-	db.lineStringTagMatcher = m.LineStringMatcher()
-	db.polygonTagMatcher = m.PolygonMatcher()
 
 	db.Params = params
 	err = db.Open()
