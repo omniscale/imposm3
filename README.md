@@ -126,7 +126,7 @@ You need [Go >=1.1](http://golang.org).
 
 #### C/C++ libraries
 
-Other dependencies are [libleveldb][], [libgeos][] and [libsqlite3][].
+Other dependencies are [libleveldb][], [libgeos][], [protobuf][] and [libsqlite3][].
 Imposm 3 was tested with recent versions of these libraries, but you might succeed with older versions.
 GEOS >=3.2 is recommended, since it became much more robust when handling invalid geometries.
 For best performance use [HyperLevelDB][libhyperleveldb] as an in-place replacement for libleveldb.
