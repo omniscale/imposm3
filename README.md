@@ -136,6 +136,7 @@ For best performance use [HyperLevelDB][libhyperleveldb] as an in-place replacem
 [libhyperleveldb]: https://github.com/rescrv/HyperLevelDB
 [libgeos]: http://trac.osgeo.org/geos/
 [libsqlite3]: http://www.sqlite.org/
+[protobuf]: https://code.google.com/p/protobuf/
 
 #### Go libraries
 
