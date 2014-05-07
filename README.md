@@ -87,7 +87,7 @@ Current status
 --------------
 
 Imposm 3 is in alpha stadium and there is no official release yet.
-The import itself is working however and it was already used for production databases.
+The import itself is working however and it is already used for production databases.
 
 ### Missing ###
 
@@ -99,11 +99,9 @@ Compared to Imposm 2:
 
 Other missing features:
 
-* Updating generalized tables in diff-mode
 * Automatic download of diff files
 * Tile expire list for re-rendering updated areas
 * Background mode for diff-import (update DB in background)
-* Diff import into custom PG schemas
 * Improve parallelization of diff import
 
 Installation
