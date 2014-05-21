@@ -46,8 +46,19 @@ func (this *Geos) IndexAdd(index *Index, geom *Geom) {
 	index.geoms = append(index.geoms, IndexGeom{geom})
 }
 
+// IndexQueryGeoms queries the index for intersections with geom.
+func (this *Geos) IndexQueryGeoms(index *Index, geom *Geom) []IndexGeom {
+	hits := this.IndexQuery(index, geom)
+
+	var geoms []IndexGeom
+	for _, idx := range hits {
+		geoms = append(geoms, index.geoms[idx])
+	}
+	return geoms
+}
+
 // IndexQuery queries the index for intersections with geom.
-func (this *Geos) IndexQuery(index *Index, geom *Geom) []IndexGeom {
+func (this *Geos) IndexQuery(index *Index, geom *Geom) []int {
 	index.mu.Lock()
 	defer index.mu.Unlock()
 	var num C.uint32_t
@@ -58,9 +69,9 @@ func (this *Geos) IndexQuery(index *Index, geom *Geom) []IndexGeom {
 	hits := (*[2 << 16]C.uint32_t)(unsafe.Pointer(r))[:num]
 	defer C.free(unsafe.Pointer(r))
 
-	var geoms []IndexGeom
-	for _, idx := range hits {
-		geoms = append(geoms, index.geoms[idx])
+	indices := make([]int, len(hits))
+	for i := range hits {
+		indices[i] = int(hits[i])
 	}
-	return geoms
+	return indices
 }

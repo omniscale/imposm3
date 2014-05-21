@@ -3,6 +3,7 @@ package geojson
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"imposm3/geom/geos"
 	"imposm3/proj"
 	"io"
@@ -68,6 +69,24 @@ func newLineStringFromCoords(coords []interface{}) (lineString, error) {
 
 type polygon []lineString
 
+type polygonFeature struct {
+	polygon    polygon
+	properties map[string]string
+}
+
+type Feature struct {
+	Geom       *geos.Geom
+	Properties map[string]string
+}
+
+func stringProperties(properties map[string]interface{}) map[string]string {
+	result := make(map[string]string, len(properties))
+	for k, v := range properties {
+		result[k] = fmt.Sprintf("%v", v)
+	}
+	return result
+}
+
 func newPolygonFromCoords(coords []interface{}) (polygon, error) {
 	poly := polygon{}
 
@@ -85,24 +104,24 @@ func newPolygonFromCoords(coords []interface{}) (polygon, error) {
 	return poly, nil
 }
 
-func newMultiPolygonFromCoords(coords []interface{}) ([]polygon, error) {
-	mp := []polygon{}
+func newMultiPolygonFeaturesFromCoords(coords []interface{}) ([]polygonFeature, error) {
+	features := []polygonFeature{}
 
 	for _, part := range coords {
 		polyCoords, ok := part.([]interface{})
 		if !ok {
-			return mp, errors.New("multipolygon polygon not a list")
+			return features, errors.New("multipolygon polygon not a list")
 		}
 		poly, err := newPolygonFromCoords(polyCoords)
 		if err != nil {
-			return mp, err
+			return features, err
 		}
-		mp = append(mp, poly)
+		features = append(features, polygonFeature{poly, nil})
 	}
-	return mp, nil
+	return features, nil
 }
 
-func ParseGeoJson(r io.Reader) ([]*geos.Geom, error) {
+func ParseGeoJson(r io.Reader) ([]Feature, error) {
 	decoder := json.NewDecoder(r)
 
 	obj := &object{}
@@ -111,7 +130,7 @@ func ParseGeoJson(r io.Reader) ([]*geos.Geom, error) {
 		return nil, err
 	}
 
-	polygons, err := constructPolygons(obj)
+	polygons, err := constructPolygonFeatures(obj)
 
 	if err != nil {
 		return nil, err
@@ -119,20 +138,20 @@ func ParseGeoJson(r io.Reader) ([]*geos.Geom, error) {
 
 	g := geos.NewGeos()
 	defer g.Finish()
-	result := []*geos.Geom{}
+	result := []Feature{}
 
 	for _, p := range polygons {
-		geom, err := geosPolygon(g, p)
+		geom, err := geosPolygon(g, p.polygon)
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, geom)
+		result = append(result, Feature{geom, p.properties})
 
 	}
 	return result, err
 }
 
-func constructPolygons(obj *object) ([]polygon, error) {
+func constructPolygonFeatures(obj *object) ([]polygonFeature, error) {
 	switch obj.Type {
 	case "Point":
 		return nil, errors.New("only polygon or MultiPolygon are supported")
@@ -140,22 +159,29 @@ func constructPolygons(obj *object) ([]polygon, error) {
 		return nil, errors.New("only polygon or MultiPolygon are supported")
 	case "Polygon":
 		poly, err := newPolygonFromCoords(obj.Coordinates)
-		return []polygon{poly}, err
+		return []polygonFeature{{poly, nil}}, err
 	case "MultiPolygon":
-		poly, err := newMultiPolygonFromCoords(obj.Coordinates)
+		poly, err := newMultiPolygonFeaturesFromCoords(obj.Coordinates)
 		return poly, err
 	case "Feature":
-		geom, err := constructPolygons(obj.Geometry)
-		return geom, err
+		features, err := constructPolygonFeatures(obj.Geometry)
+		if err != nil {
+			return nil, err
+		}
+		properties := stringProperties(obj.Properties)
+		for i, _ := range features {
+			features[i].properties = properties
+		}
+		return features, err
 	case "FeatureCollection":
-		features := make([]polygon, 0)
+		features := make([]polygonFeature, 0)
 
 		for _, obj := range obj.Features {
-			geom, err := constructPolygons(&obj)
+			f, err := constructPolygonFeatures(&obj)
 			if err != nil {
 				return nil, err
 			}
-			features = append(features, geom...)
+			features = append(features, f...)
 		}
 		return features, nil
 	default:

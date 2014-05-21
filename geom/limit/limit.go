@@ -140,7 +140,7 @@ func NewFromGeoJsonWithBuffered(source string, buffer float64) (*Limiter, error)
 	}
 	defer f.Close()
 
-	geoms, err := geojson.ParseGeoJson(f)
+	features, err := geojson.ParseGeoJson(f)
 	if err != nil {
 		return nil, err
 	}
@@ -158,9 +158,9 @@ func NewFromGeoJsonWithBuffered(source string, buffer float64) (*Limiter, error)
 		withBuffer = true
 	}
 
-	for _, geom := range geoms {
+	for _, feature := range features {
 		if withBuffer {
-			simplified := g.SimplifyPreserveTopology(geom, 1000)
+			simplified := g.SimplifyPreserveTopology(feature.Geom, 1000)
 			if simplified == nil {
 				return nil, errors.New("couldn't simplify limitto")
 			}
@@ -172,9 +172,9 @@ func NewFromGeoJsonWithBuffered(source string, buffer float64) (*Limiter, error)
 			// buffered gets destroyed in UnionPolygons
 			bufferedPolygons = append(bufferedPolygons, buffered)
 		}
-		polygons = append(polygons, geom)
+		polygons = append(polygons, feature.Geom)
 
-		parts, err := SplitPolygonAtAutoGrid(g, geom)
+		parts, err := SplitPolygonAtAutoGrid(g, feature.Geom)
 
 		if err != nil {
 			return nil, err
@@ -267,7 +267,7 @@ func (l *Limiter) Clip(geom *geos.Geom) ([]*geos.Geom, error) {
 	l.geomPrepMu.Unlock()
 
 	// we have intersections, query index to get intersecting parts
-	hits := g.IndexQuery(l.index, geom)
+	hits := g.IndexQueryGeoms(l.index, geom)
 
 	geomType := g.Type(geom)
 
