@@ -1,6 +1,7 @@
 package mapping
 
 import (
+	"imposm3/element"
 	"testing"
 )
 
@@ -86,4 +87,18 @@ func TestMakeSuffixReplace(t *testing.T) {
 	if result := suffixReplace("Foostraßeee", nil, Match{}); result != "Foostraßeee" {
 		t.Fatal(result)
 	}
+}
+
+func assertEq(t *testing.T, a, b string) {
+	if a != b {
+		t.Errorf("'%v' != '%v'", a, b)
+	}
+}
+
+func TestHstoreString(t *testing.T) {
+	match := Match{}
+	assertEq(t, HstoreString("", &element.OSMElem{Tags: element.Tags{"key": "value"}}, match).(string), `"key"=>"value"`)
+	assertEq(t, HstoreString("", &element.OSMElem{Tags: element.Tags{`"key"`: `'"value"'`}}, match).(string), `"\"key\""=>"'\"value\"'"`)
+	assertEq(t, HstoreString("", &element.OSMElem{Tags: element.Tags{`\`: `\\\\`}}, match).(string), `"\\"=>"\\\\\\\\"`)
+	assertEq(t, HstoreString("", &element.OSMElem{Tags: element.Tags{"Ümlåütê=>": ""}}, match).(string), `"Ümlåütê=>"=>""`)
 }

@@ -25,6 +25,7 @@ func init() {
 		"mapping_value":        {"mapping_value", "string", ValueName, nil},
 		"geometry":             {"geometry", "geometry", Geometry, nil},
 		"validated_geometry":   {"validated_geometry", "validated_geometry", Geometry, nil},
+		"hstore_tags":          {"hstore_tags", "hstore_string", HstoreString, nil},
 		"wayzorder":            {"wayzorder", "int32", WayZOrder, nil},
 		"pseudoarea":           {"pseudoarea", "float32", PseudoArea, nil},
 		"zorder":               {"zorder", "int32", nil, MakeZOrder},
@@ -161,6 +162,16 @@ func PseudoArea(val string, elem *element.OSMElem, match Match) interface{} {
 		return nil
 	}
 	return float32(area)
+}
+
+var hstoreReplacer = strings.NewReplacer("\\", "\\\\", "\"", "\\\"")
+
+func HstoreString(val string, elem *element.OSMElem, match Match) interface{} {
+	tags := make([]string, 0, len(elem.Tags))
+	for k, v := range elem.Tags {
+		tags = append(tags, `"`+hstoreReplacer.Replace(k)+`"=>"`+hstoreReplacer.Replace(v)+`"`)
+	}
+	return strings.Join(tags, ", ")
 }
 
 var wayRanks map[string]int

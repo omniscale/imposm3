@@ -4,7 +4,10 @@ import (
 	"imposm3/element"
 )
 
-func (m *Mapping) NodeTagFilter() *TagFilter {
+func (m *Mapping) NodeTagFilter() TagFilterer {
+	if m.LoadAllTags {
+		return &NullFilter{}
+	}
 	mappings := make(map[Key]map[Value][]DestTable)
 	m.mappings("point", mappings)
 	tags := make(map[Key]bool)
@@ -12,7 +15,10 @@ func (m *Mapping) NodeTagFilter() *TagFilter {
 	return &TagFilter{mappings, tags}
 }
 
-func (m *Mapping) WayTagFilter() *TagFilter {
+func (m *Mapping) WayTagFilter() TagFilterer {
+	if m.LoadAllTags {
+		return &NullFilter{}
+	}
 	mappings := make(map[Key]map[Value][]DestTable)
 	m.mappings("linestring", mappings)
 	m.mappings("polygon", mappings)
@@ -22,7 +28,10 @@ func (m *Mapping) WayTagFilter() *TagFilter {
 	return &TagFilter{mappings, tags}
 }
 
-func (m *Mapping) RelationTagFilter() *RelationTagFilter {
+func (m *Mapping) RelationTagFilter() TagFilterer {
+	if m.LoadAllTags {
+		return &NullFilter{}
+	}
 	mappings := make(map[Key]map[Value][]DestTable)
 	m.mappings("linestring", mappings)
 	m.mappings("polygon", mappings)
@@ -45,6 +54,16 @@ type TagFilter struct {
 
 type RelationTagFilter struct {
 	TagFilter
+}
+
+type NullFilter struct{}
+
+func (t *NullFilter) Filter(tags *element.Tags) bool {
+	return true
+}
+
+type TagFilterer interface {
+	Filter(tags *element.Tags) bool
 }
 
 func (f *TagFilter) Filter(tags *element.Tags) bool {

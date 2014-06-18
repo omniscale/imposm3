@@ -45,6 +45,7 @@ type GeneralizedTables map[string]*GeneralizedTable
 type Mapping struct {
 	Tables            Tables            `json:"tables"`
 	GeneralizedTables GeneralizedTables `json:"generalized_tables"`
+	LoadAllTags       bool              `json:"load_all_tags"`
 }
 
 type ElementFilter func(tags *element.Tags) bool
