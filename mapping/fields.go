@@ -66,6 +66,7 @@ func (field *Field) FieldType() *FieldType {
 			makeValue, err := fieldType.MakeFunc(field.Name, fieldType, *field)
 			if err != nil {
 				log.Print(err)
+				return nil
 			}
 			fieldType = FieldType{fieldType.Name, fieldType.GoType, makeValue, nil}
 		}
