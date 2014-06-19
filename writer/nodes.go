@@ -15,7 +15,7 @@ import (
 type NodeWriter struct {
 	OsmElemWriter
 	nodes        chan *element.Node
-	pointMatcher *mapping.TagMatcher
+	pointMatcher mapping.NodeMatcher
 }
 
 func NewNodeWriter(
@@ -23,7 +23,7 @@ func NewNodeWriter(
 	nodes chan *element.Node,
 	inserter database.Inserter,
 	progress *stats.Statistics,
-	matcher *mapping.TagMatcher,
+	matcher mapping.NodeMatcher,
 	srid int,
 ) *OsmElemWriter {
 	nw := NodeWriter{
@@ -48,7 +48,7 @@ func (nw *NodeWriter) loop() {
 
 	for n := range nw.nodes {
 		nw.progress.AddNodes(1)
-		if matches := nw.pointMatcher.Match(&n.Tags); len(matches) > 0 {
+		if matches := nw.pointMatcher.MatchNode(n); len(matches) > 0 {
 			proj.NodeToMerc(n)
 			if nw.expireor != nil {
 				nw.expireor.Expire(n.Long, n.Lat)

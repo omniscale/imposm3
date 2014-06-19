@@ -1,0 +1,109 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osm version="0.6" generator="Osmosis SNAPSHOT-r25240">
+
+  <node id="10001" version="1" timestamp="2011-11-11T00:11:11Z" lat="42" lon="10">
+      <tag k="random" v="tag"/>
+      <tag k="not" v="mapped"/>
+  </node>
+
+  <node id="10002" version="1" timestamp="2011-11-11T00:11:11Z" lat="42" lon="11">
+      <tag k="random" v="tag"/>
+      <tag k="but" v="mapped"/>
+      <tag k="poi" v="unicorn"/>
+  </node>
+
+
+  <node id="20001" version="1" timestamp="2011-11-11T00:11:11Z" lat="43" lon="11"/>
+  <node id="20002" version="1" timestamp="2011-11-11T00:11:11Z" lat="43" lon="12"/>
+  <node id="20003" version="1" timestamp="2011-11-11T00:11:11Z" lat="44" lon="12"/>
+  <node id="20004" version="1" timestamp="2011-11-11T00:11:11Z" lat="44" lon="11"/>
+
+  <way id="20101" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="20001"/>
+    <nd ref="20002"/>
+    <tag k="not" v="mapped"/>
+    <tag k="random" v="tag"/>
+  </way>
+
+  <way id="20102" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="20001"/>
+    <nd ref="20002"/>
+    <tag k="poi" v="unicorn"/> <!-- only mapped for nodes -->
+    <tag k="random" v="tag"/>
+  </way>
+
+  <way id="20103" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="20001"/>
+    <nd ref="20002"/>
+    <tag k="building" v="yes"/> <!-- only mapped for polygons, but way not closed -->
+    <tag k="random" v="tag"/>
+  </way>
+
+  <way id="20201" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="20001"/>
+    <nd ref="20002"/>
+    <tag k="highway" v="yes"/>
+    <tag k="random" v="tag"/>
+    <tag k="source" v="filtered out"/>
+    <tag k="created_by" v="filtered out"/>
+  </way>
+
+
+  <way id="20301" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="20001"/>
+    <nd ref="20002"/>
+    <nd ref="20003"/>
+    <nd ref="20004"/>
+    <nd ref="20001"/>
+    <tag k="poi" v="unicorn"/> <!-- only mapped for nodes -->
+    <tag k="random" v="tag"/>
+  </way>
+
+  <way id="20401" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="20001"/>
+    <nd ref="20002"/>
+    <nd ref="20003"/>
+    <nd ref="20004"/>
+    <nd ref="20001"/>
+    <tag k="building" v="yes"/>
+    <tag k="random" v="tag"/>
+  </way>
+
+  <way id="20501" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="20001"/>
+    <nd ref="20002"/>
+    <nd ref="20003"/>
+    <nd ref="20004"/>
+    <nd ref="20001"/>
+    <tag k="landuse" v="grass"/>
+    <tag k="highway" v="pedestrian"/>
+    <tag k="area" v="yes"/>
+    <tag k="random" v="tag"/>
+  </way>
+
+  <way id="20502" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="20001"/>
+    <nd ref="20002"/>
+    <nd ref="20003"/>
+    <nd ref="20004"/>
+    <nd ref="20001"/>
+    <tag k="landuse" v="grass"/>
+    <tag k="highway" v="pedestrian"/>
+    <tag k="area" v="no"/>
+    <tag k="random" v="tag"/>
+  </way>
+
+
+  <way id="20601" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="20001"/>
+    <nd ref="20002"/>
+    <nd ref="20003"/>
+    <nd ref="20004"/>
+    <nd ref="20001"/>
+    <tag k="landuse" v="grass"/>
+    <tag k="highway" v="pedestrian"/>
+    <tag k="random" v="tag"/>
+  </way>
+
+
+</osm>

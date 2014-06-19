@@ -2,5 +2,5 @@
 mapping.json
 config.json
 test/build
-test/.lasttestrun
+test/.lasttestrun*
 test/*.pyc

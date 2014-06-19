@@ -16,8 +16,8 @@ import (
 type WayWriter struct {
 	OsmElemWriter
 	ways           chan *element.Way
-	lineMatcher    *mapping.TagMatcher
-	polygonMatcher *mapping.TagMatcher
+	lineMatcher    mapping.WayMatcher
+	polygonMatcher mapping.WayMatcher
 }
 
 func NewWayWriter(
@@ -26,8 +26,8 @@ func NewWayWriter(
 	ways chan *element.Way,
 	inserter database.Inserter,
 	progress *stats.Statistics,
-	polygonMatcher *mapping.TagMatcher,
-	lineMatcher *mapping.TagMatcher,
+	polygonMatcher mapping.WayMatcher,
+	lineMatcher mapping.WayMatcher,
 	srid int,
 ) *OsmElemWriter {
 	ww := WayWriter{
@@ -69,7 +69,7 @@ func (ww *WayWriter) loop() {
 		proj.NodesToMerc(w.Nodes)
 
 		inserted := false
-		if matches := ww.lineMatcher.Match(&w.Tags); len(matches) > 0 {
+		if matches := ww.lineMatcher.MatchWay(w); len(matches) > 0 {
 			err := ww.buildAndInsert(geos, w, matches, false)
 			if err != nil {
 				if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
@@ -81,7 +81,7 @@ func (ww *WayWriter) loop() {
 		}
 		if w.IsClosed() && !insertedAsRelation {
 			// only add polygons that were not inserted as a MultiPolygon relation
-			if matches := ww.polygonMatcher.Match(&w.Tags); len(matches) > 0 {
+			if matches := ww.polygonMatcher.MatchWay(w); len(matches) > 0 {
 				err := ww.buildAndInsert(geos, w, matches, true)
 				if err != nil {
 					if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {

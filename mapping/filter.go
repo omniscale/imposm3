@@ -5,8 +5,8 @@ import (
 )
 
 func (m *Mapping) NodeTagFilter() TagFilterer {
-	if m.LoadAllTags {
-		return &NullFilter{}
+	if m.Tags.LoadAll {
+		return newExcludeFilter(m.Tags.Exclude)
 	}
 	mappings := make(map[Key]map[Value][]DestTable)
 	m.mappings("point", mappings)
@@ -16,8 +16,8 @@ func (m *Mapping) NodeTagFilter() TagFilterer {
 }
 
 func (m *Mapping) WayTagFilter() TagFilterer {
-	if m.LoadAllTags {
-		return &NullFilter{}
+	if m.Tags.LoadAll {
+		return newExcludeFilter(m.Tags.Exclude)
 	}
 	mappings := make(map[Key]map[Value][]DestTable)
 	m.mappings("linestring", mappings)
@@ -29,8 +29,8 @@ func (m *Mapping) WayTagFilter() TagFilterer {
 }
 
 func (m *Mapping) RelationTagFilter() TagFilterer {
-	if m.LoadAllTags {
-		return &NullFilter{}
+	if m.Tags.LoadAll {
+		return newExcludeFilter(m.Tags.Exclude)
 	}
 	mappings := make(map[Key]map[Value][]DestTable)
 	m.mappings("linestring", mappings)
@@ -56,9 +56,24 @@ type RelationTagFilter struct {
 	TagFilter
 }
 
-type NullFilter struct{}
+type ExcludeFilter struct {
+	exclude map[Key]struct{}
+}
 
-func (t *NullFilter) Filter(tags *element.Tags) bool {
+func newExcludeFilter(tags []Key) *ExcludeFilter {
+	f := ExcludeFilter{make(map[Key]struct{}, len(tags))}
+	for _, tag := range tags {
+		f.exclude[tag] = struct{}{}
+	}
+	return &f
+}
+
+func (f *ExcludeFilter) Filter(tags *element.Tags) bool {
+	for k, _ := range *tags {
+		if _, ok := f.exclude[Key(k)]; ok {
+			delete(*tags, k)
+		}
+	}
 	return true
 }
 

@@ -14,9 +14,9 @@ type Deleter struct {
 	delDb            database.Deleter
 	osmCache         *cache.OSMCache
 	diffCache        *cache.DiffCache
-	tmPoints         *mapping.TagMatcher
-	tmLineStrings    *mapping.TagMatcher
-	tmPolygons       *mapping.TagMatcher
+	tmPoints         mapping.NodeMatcher
+	tmLineStrings    mapping.WayMatcher
+	tmPolygons       mapping.RelWayMatcher
 	expireor         expire.Expireor
 	deletedRelations map[int64]struct{}
 	deletedWays      map[int64]struct{}
@@ -24,9 +24,9 @@ type Deleter struct {
 }
 
 func NewDeleter(db database.Deleter, osmCache *cache.OSMCache, diffCache *cache.DiffCache,
-	tmPoints *mapping.TagMatcher,
-	tmLineStrings *mapping.TagMatcher,
-	tmPolygons *mapping.TagMatcher,
+	tmPoints mapping.NodeMatcher,
+	tmLineStrings mapping.WayMatcher,
+	tmPolygons mapping.RelWayMatcher,
 ) *Deleter {
 	return &Deleter{
 		db,
@@ -63,7 +63,7 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 	if elem.Tags == nil {
 		return nil
 	}
-	if matches := d.tmPolygons.Match(&elem.Tags); len(matches) > 0 {
+	if matches := d.tmPolygons.MatchRelation(elem); len(matches) > 0 {
 		if err := d.delDb.Delete(-elem.Id, matches); err != nil {
 			return err
 		}
@@ -136,13 +136,13 @@ func (d *Deleter) deleteWay(id int64, deleteRefs bool) error {
 		return nil
 	}
 	deleted := false
-	if matches := d.tmPolygons.Match(&elem.Tags); len(matches) > 0 {
+	if matches := d.tmPolygons.MatchWay(elem); len(matches) > 0 {
 		if err := d.delDb.Delete(elem.Id, matches); err != nil {
 			return err
 		}
 		deleted = true
 	}
-	if matches := d.tmLineStrings.Match(&elem.Tags); len(matches) > 0 {
+	if matches := d.tmLineStrings.MatchWay(elem); len(matches) > 0 {
 		if err := d.delDb.Delete(elem.Id, matches); err != nil {
 			return err
 		}
@@ -178,7 +178,7 @@ func (d *Deleter) deleteNode(id int64) error {
 	}
 	deleted := false
 
-	if matches := d.tmPoints.Match(&elem.Tags); len(matches) > 0 {
+	if matches := d.tmPoints.MatchNode(elem); len(matches) > 0 {
 		if err := d.delDb.Delete(elem.Id, matches); err != nil {
 			return err
 		}

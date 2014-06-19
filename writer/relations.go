@@ -17,7 +17,7 @@ import (
 type RelationWriter struct {
 	OsmElemWriter
 	rel            chan *element.Relation
-	polygonMatcher *mapping.TagMatcher
+	polygonMatcher mapping.RelWayMatcher
 }
 
 func NewRelationWriter(
@@ -26,7 +26,7 @@ func NewRelationWriter(
 	rel chan *element.Relation,
 	inserter database.Inserter,
 	progress *stats.Statistics,
-	matcher *mapping.TagMatcher,
+	matcher mapping.RelWayMatcher,
 	srid int,
 ) *OsmElemWriter {
 	rw := RelationWriter{
@@ -89,7 +89,7 @@ NextRel:
 		}
 
 		// check for matches befor building the geometry
-		matches := rw.polygonMatcher.Match(&r.Tags)
+		matches := rw.polygonMatcher.MatchRelation(r)
 		if len(matches) == 0 {
 			continue NextRel
 		}
@@ -140,7 +140,7 @@ NextRel:
 			}
 		}
 
-		for _, m := range mapping.SelectRelationPolygons(rw.polygonMatcher, r.Tags, r.Members) {
+		for _, m := range mapping.SelectRelationPolygons(rw.polygonMatcher, r) {
 			err = rw.osmCache.InsertedWays.PutWay(m.Way)
 			if err != nil {
 				log.Warn(err)

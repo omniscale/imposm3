@@ -251,97 +251,97 @@ func TestTagFilterRelations(t *testing.T) {
 }
 
 func TestPointMatcher(t *testing.T) {
-	var tags element.Tags
+	elem := element.Node{}
 	points := mapping.PointMatcher()
 
-	tags = element.Tags{"unknown": "baz"}
-	matchesEqual(t, []Match{}, points.Match(&tags))
+	elem.Tags = element.Tags{"unknown": "baz"}
+	matchesEqual(t, []Match{}, points.MatchNode(&elem))
 
-	tags = element.Tags{"place": "unknown"}
-	matchesEqual(t, []Match{}, points.Match(&tags))
+	elem.Tags = element.Tags{"place": "unknown"}
+	matchesEqual(t, []Match{}, points.MatchNode(&elem))
 
-	tags = element.Tags{"place": "city"}
-	matchesEqual(t, []Match{{"place", "city", DestTable{"places", ""}, nil}}, points.Match(&tags))
+	elem.Tags = element.Tags{"place": "city"}
+	matchesEqual(t, []Match{{"place", "city", DestTable{"places", ""}, nil}}, points.MatchNode(&elem))
 
-	tags = element.Tags{"place": "city", "highway": "unknown"}
-	matchesEqual(t, []Match{{"place", "city", DestTable{"places", ""}, nil}}, points.Match(&tags))
+	elem.Tags = element.Tags{"place": "city", "highway": "unknown"}
+	matchesEqual(t, []Match{{"place", "city", DestTable{"places", ""}, nil}}, points.MatchNode(&elem))
 
-	tags = element.Tags{"place": "city", "highway": "bus_stop"}
+	elem.Tags = element.Tags{"place": "city", "highway": "bus_stop"}
 	matchesEqual(t,
 		[]Match{
 			{"place", "city", DestTable{"places", ""}, nil},
 			{"highway", "bus_stop", DestTable{"transport_points", ""}, nil}},
-		points.Match(&tags))
+		points.MatchNode(&elem))
 }
 
 func TestLineStringMatcher(t *testing.T) {
-	var tags element.Tags
+	elem := element.Way{}
 	ls := mapping.LineStringMatcher()
 
-	tags = element.Tags{"unknown": "baz"}
-	matchesEqual(t, []Match{}, ls.Match(&tags))
+	elem.Tags = element.Tags{"unknown": "baz"}
+	matchesEqual(t, []Match{}, ls.MatchWay(&elem))
 
-	tags = element.Tags{"highway": "unknown"}
-	matchesEqual(t, []Match{}, ls.Match(&tags))
+	elem.Tags = element.Tags{"highway": "unknown"}
+	matchesEqual(t, []Match{}, ls.MatchWay(&elem))
 
-	tags = element.Tags{"highway": "pedestrian"}
-	matchesEqual(t, []Match{{"highway", "pedestrian", DestTable{"roads", "roads"}, nil}}, ls.Match(&tags))
+	elem.Tags = element.Tags{"highway": "pedestrian"}
+	matchesEqual(t, []Match{{"highway", "pedestrian", DestTable{"roads", "roads"}, nil}}, ls.MatchWay(&elem))
 
 	// exclude_tags area=yes
-	tags = element.Tags{"highway": "pedestrian", "area": "yes"}
-	matchesEqual(t, []Match{}, ls.Match(&tags))
+	elem.Tags = element.Tags{"highway": "pedestrian", "area": "yes"}
+	matchesEqual(t, []Match{}, ls.MatchWay(&elem))
 
-	tags = element.Tags{"highway": "secondary", "railway": "tram"}
+	elem.Tags = element.Tags{"highway": "secondary", "railway": "tram"}
 	matchesEqual(t,
 		[]Match{
 			{"highway", "secondary", DestTable{"roads", "roads"}, nil},
 			{"railway", "tram", DestTable{"roads", "railway"}, nil}},
-		ls.Match(&tags))
+		ls.MatchWay(&elem))
 
-	tags = element.Tags{"highway": "footway", "landuse": "park"}
+	elem.Tags = element.Tags{"highway": "footway", "landuse": "park"}
 	// landusages not a linestring table
-	matchesEqual(t, []Match{{"highway", "footway", DestTable{"roads", "roads"}, nil}}, ls.Match(&tags))
+	matchesEqual(t, []Match{{"highway", "footway", DestTable{"roads", "roads"}, nil}}, ls.MatchWay(&elem))
 }
 
 func TestPolygonMatcher(t *testing.T) {
-	var tags element.Tags
+	elem := element.Relation{}
 	polys := mapping.PolygonMatcher()
 
-	tags = element.Tags{"unknown": "baz"}
-	matchesEqual(t, []Match{}, polys.Match(&tags))
+	elem.Tags = element.Tags{"unknown": "baz"}
+	matchesEqual(t, []Match{}, polys.MatchRelation(&elem))
 
-	tags = element.Tags{"landuse": "unknowns"}
-	matchesEqual(t, []Match{}, polys.Match(&tags))
+	elem.Tags = element.Tags{"landuse": "unknowns"}
+	matchesEqual(t, []Match{}, polys.MatchRelation(&elem))
 
-	tags = element.Tags{"building": "yes"}
-	matchesEqual(t, []Match{{"building", "yes", DestTable{"buildings", ""}, nil}}, polys.Match(&tags))
-	tags = element.Tags{"building": "residential"}
-	matchesEqual(t, []Match{{"building", "residential", DestTable{"buildings", ""}, nil}}, polys.Match(&tags))
+	elem.Tags = element.Tags{"building": "yes"}
+	matchesEqual(t, []Match{{"building", "yes", DestTable{"buildings", ""}, nil}}, polys.MatchRelation(&elem))
+	elem.Tags = element.Tags{"building": "residential"}
+	matchesEqual(t, []Match{{"building", "residential", DestTable{"buildings", ""}, nil}}, polys.MatchRelation(&elem))
 
-	tags = element.Tags{"building": "shop"}
+	elem.Tags = element.Tags{"building": "shop"}
 	matchesEqual(t, []Match{
 		{"building", "shop", DestTable{"buildings", ""}, nil},
 		{"building", "shop", DestTable{"amenity_areas", ""}, nil}},
-		polys.Match(&tags))
+		polys.MatchRelation(&elem))
 
-	tags = element.Tags{"landuse": "farm"}
-	matchesEqual(t, []Match{{"landuse", "farm", DestTable{"landusages", ""}, nil}}, polys.Match(&tags))
+	elem.Tags = element.Tags{"landuse": "farm"}
+	matchesEqual(t, []Match{{"landuse", "farm", DestTable{"landusages", ""}, nil}}, polys.MatchRelation(&elem))
 
-	tags = element.Tags{"landuse": "farm", "highway": "secondary"}
-	matchesEqual(t, []Match{{"landuse", "farm", DestTable{"landusages", ""}, nil}}, polys.Match(&tags))
+	elem.Tags = element.Tags{"landuse": "farm", "highway": "secondary"}
+	matchesEqual(t, []Match{{"landuse", "farm", DestTable{"landusages", ""}, nil}}, polys.MatchRelation(&elem))
 
-	tags = element.Tags{"landuse": "farm", "aeroway": "apron"}
+	elem.Tags = element.Tags{"landuse": "farm", "aeroway": "apron"}
 	matchesEqual(t,
 		[]Match{
 			{"aeroway", "apron", DestTable{"transport_areas", ""}, nil},
 			{"landuse", "farm", DestTable{"landusages", ""}, nil}},
-		polys.Match(&tags))
+		polys.MatchRelation(&elem))
 
-	tags = element.Tags{"highway": "footway"}
-	matchesEqual(t, []Match{{"highway", "footway", DestTable{"landusages", ""}, nil}}, polys.Match(&tags))
+	elem.Tags = element.Tags{"highway": "footway"}
+	matchesEqual(t, []Match{{"highway", "footway", DestTable{"landusages", ""}, nil}}, polys.MatchRelation(&elem))
 
-	tags = element.Tags{"boundary": "administrative", "admin_level": "8"}
-	matchesEqual(t, []Match{{"boundary", "administrative", DestTable{"admin", ""}, nil}}, polys.Match(&tags))
+	elem.Tags = element.Tags{"boundary": "administrative", "admin_level": "8"}
+	matchesEqual(t, []Match{{"boundary", "administrative", DestTable{"admin", ""}, nil}}, polys.MatchRelation(&elem))
 }
 
 func TestFilterNodes(t *testing.T) {
