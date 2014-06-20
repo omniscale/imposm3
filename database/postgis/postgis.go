@@ -56,12 +56,20 @@ func createTable(tx *sql.Tx, spec TableSpec) error {
 }
 
 func addGeometryColumn(tx *sql.Tx, tableName string, spec TableSpec) error {
+	colName := "geometry"
+	for _, col := range spec.Columns {
+		if col.Type.Name() == "GEOMETRY" {
+			colName = col.Name
+			break
+		}
+	}
+
 	geomType := strings.ToUpper(spec.GeometryType)
 	if geomType == "POLYGON" {
 		geomType = "GEOMETRY" // for multipolygon support
 	}
-	sql := fmt.Sprintf("SELECT AddGeometryColumn('%s', '%s', 'geometry', '%d', '%s', 2);",
-		spec.Schema, tableName, spec.Srid, geomType)
+	sql := fmt.Sprintf("SELECT AddGeometryColumn('%s', '%s', '%s', '%d', '%s', 2);",
+		spec.Schema, tableName, colName, spec.Srid, geomType)
 	row := tx.QueryRow(sql)
 	var void interface{}
 	err := row.Scan(&void)
