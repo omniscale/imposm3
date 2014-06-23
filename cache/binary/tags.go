@@ -79,7 +79,7 @@ func tagsFromArray(arr []string) element.Tags {
 				panic("missing tag for codepoint")
 			}
 			result[tag.Key] = tag.Value
-		} else if arr[i][0] < 32 {
+		} else if len(arr[i]) > 0 && arr[i][0] < 32 {
 			result[codePointToCommonKey[arr[i][0]]] = arr[i][1:]
 		} else {
 			result[arr[i]] = arr[i+1]
