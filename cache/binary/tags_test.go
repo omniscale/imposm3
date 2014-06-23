@@ -2,6 +2,7 @@ package binary
 
 import (
 	"imposm3/element"
+	"sort"
 	"testing"
 )
 
@@ -13,9 +14,12 @@ func TestTagsAsAndFromArray(t *testing.T) {
 		t.Fatal("invalid length", array)
 	}
 
-	for i, expected := range []string{"\x01foo",
+	sort.Strings(array)
+	for i, expected := range []string{
+		"\x01foo",
 		string(tagsToCodePoint["highway"]["residential"]),
-		string(tagsToCodePoint["oneway"]["yes"])} {
+		string(tagsToCodePoint["oneway"]["yes"]),
+	} {
 		if array[i] != expected {
 			t.Fatal("invalid value", array, i, expected)
 		}
