@@ -20,7 +20,8 @@ type Table struct {
 	Mapping      map[Key][]Value       `json:"mapping"`
 	Mappings     map[string]SubMapping `json:"mappings"`
 	TypeMappings TypeMappings          `json:"type_mappings"`
-	Fields       []*Field              `json:"fields"`
+	Fields       []*Field              `json:"columns"`
+	OldFields    []*Field              `json:"fields"`
 	Filters      *Filters              `json:"filters"`
 }
 
@@ -130,6 +131,10 @@ func (t *Table) ExtraTags() map[Key]bool {
 func (m *Mapping) prepare() error {
 	for name, t := range m.Tables {
 		t.Name = name
+		if t.OldFields != nil {
+			// todo deprecate 'fields'
+			t.Fields = t.OldFields
+		}
 	}
 
 	for name, t := range m.GeneralizedTables {
