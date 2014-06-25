@@ -38,12 +38,14 @@ func disableDefaultSslOnLocalhost(params string) string {
 	return params + " sslmode=disable"
 }
 
-func prefixFromConnectionParams(params string) string {
+func stripPrefixFromConnectionParams(params string) (string, string) {
 	parts := strings.Fields(params)
 	var prefix string
-	for _, p := range parts {
+	for i, p := range parts {
 		if strings.HasPrefix(p, "prefix=") {
 			prefix = strings.Replace(p, "prefix=", "", 1)
+			parts = append(parts[:i], parts[i+1:]...)
+			params = strings.Join(parts, " ")
 			break
 		}
 	}
@@ -53,7 +55,7 @@ func prefixFromConnectionParams(params string) string {
 	if prefix[len(prefix)-1] != '_' {
 		prefix = prefix + "_"
 	}
-	return prefix
+	return params, prefix
 }
 
 func tableExists(tx *sql.Tx, schema, table string) (bool, error) {

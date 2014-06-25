@@ -631,7 +631,7 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 		return nil, err
 	}
 	params = disableDefaultSslOnLocalhost(params)
-	db.Prefix = prefixFromConnectionParams(params)
+	params, db.Prefix = stripPrefixFromConnectionParams(params)
 
 	for name, table := range m.Tables {
 		db.Tables[name] = NewTableSpec(db, table)
