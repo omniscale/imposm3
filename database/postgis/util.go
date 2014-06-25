@@ -18,7 +18,7 @@ func disableDefaultSslOnLocalhost(params string) string {
 		if strings.HasPrefix(p, "sslmode=") {
 			return params
 		}
-		if p == "host=localhost" || p == "host=127.0.0.1" {
+		if p == "host=localhost" || p == "host=127.0.0.1" || strings.HasPrefix(p,"host=/") {
 			isLocalHost = true
 		}
 	}
