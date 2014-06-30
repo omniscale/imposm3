@@ -8,7 +8,6 @@ import (
 	"imposm3/geom"
 	"imposm3/geom/geos"
 	"imposm3/mapping"
-	"imposm3/proj"
 	"imposm3/stats"
 	"sync"
 	"time"
@@ -71,7 +70,7 @@ NextRel:
 				}
 				continue NextRel
 			}
-			proj.NodesToMerc(m.Way.Nodes)
+			rw.NodesToSrid(m.Way.Nodes)
 		}
 
 		// BuildRelation updates r.Members but we need all of them

@@ -7,7 +7,6 @@ import (
 	"imposm3/geom"
 	"imposm3/geom/geos"
 	"imposm3/mapping"
-	"imposm3/proj"
 	"imposm3/stats"
 	"sync"
 )
@@ -49,7 +48,7 @@ func (nw *NodeWriter) loop() {
 	for n := range nw.nodes {
 		nw.progress.AddNodes(1)
 		if matches := nw.pointMatcher.MatchNode(n); len(matches) > 0 {
-			proj.NodeToMerc(n)
+			nw.NodeToSrid(n)
 			if nw.expireor != nil {
 				nw.expireor.Expire(n.Long, n.Lat)
 			}

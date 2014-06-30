@@ -8,7 +8,6 @@ import (
 	"imposm3/geom"
 	"imposm3/geom/geos"
 	"imposm3/mapping"
-	"imposm3/proj"
 	"imposm3/stats"
 	"sync"
 )
@@ -66,7 +65,7 @@ func (ww *WayWriter) loop() {
 		if err != nil {
 			continue
 		}
-		proj.NodesToMerc(w.Nodes)
+		ww.NodesToSrid(w.Nodes)
 
 		inserted := false
 		if matches := ww.lineMatcher.MatchWay(w); len(matches) > 0 {

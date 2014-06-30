@@ -1,14 +1,17 @@
 package writer
 
 import (
+	"runtime"
+	"sync"
+
 	"imposm3/cache"
 	"imposm3/database"
+	"imposm3/element"
 	"imposm3/expire"
 	"imposm3/geom/limit"
 	"imposm3/logging"
+	"imposm3/proj"
 	"imposm3/stats"
-	"runtime"
-	"sync"
 )
 
 var log = logging.NewLogger("writer")
@@ -59,4 +62,27 @@ func (writer *OsmElemWriter) SetExpireor(exp expire.Expireor) {
 
 func (writer *OsmElemWriter) Wait() {
 	writer.wg.Wait()
+}
+
+func (writer *OsmElemWriter) NodesToSrid(nodes []element.Node) {
+	if writer.srid == 4326 {
+		return
+	}
+	if writer.srid != 3857 {
+		panic("invalid srid. only 4326 and 3857 are supported")
+	}
+
+	for i, nd := range nodes {
+		nodes[i].Long, nodes[i].Lat = proj.WgsToMerc(nd.Long, nd.Lat)
+	}
+}
+
+func (writer *OsmElemWriter) NodeToSrid(node *element.Node) {
+	if writer.srid == 4326 {
+		return
+	}
+	if writer.srid != 3857 {
+		panic("invalid srid. only 4326 and 3857 are supported")
+	}
+	node.Long, node.Lat = proj.WgsToMerc(node.Long, node.Lat)
 }
