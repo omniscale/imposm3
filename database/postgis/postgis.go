@@ -570,7 +570,7 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	params = disableDefaultSslOnLocalhost(params)
+	params = disableDefaultSsl(params)
 	params, db.Prefix = stripPrefixFromConnectionParams(params)
 
 	for name, table := range m.Tables {

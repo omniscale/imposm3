@@ -8,33 +8,29 @@ import (
 	"sync"
 )
 
-// disableDefaultSslOnLocalhost adds sslmode=disable to params
-// when host is localhost/127.0.0.1 and the sslmode param and
-// PGSSLMODE environment are both not set.
-func disableDefaultSslOnLocalhost(params string) string {
+// disableDefaultSsl adds sslmode=disable to params
+// when sslmode param and PGSSLMODE environment are both not set.
+//
+// Reason: PG will renegotiate encryption after 512MB by default, but
+// Go's TLS does not suport renegotiation. Disable SSL to work around that.
+// See: https://code.google.com/p/go/issues/detail?id=5742
+// and ssl_renegotiation_limit on:
+// http://www.postgresql.org/docs/9.1/static/runtime-config-connection.html
+
+func disableDefaultSsl(params string) string {
 	parts := strings.Fields(params)
-	isLocalHost := false
 	for _, p := range parts {
 		if strings.HasPrefix(p, "sslmode=") {
 			return params
 		}
-		if p == "host=localhost" || p == "host=127.0.0.1" || strings.HasPrefix(p,"host=/") {
-			isLocalHost = true
-		}
-	}
-
-	if !isLocalHost {
-		return params
 	}
 
 	for _, v := range os.Environ() {
-		parts := strings.SplitN(v, "=", 2)
-		if parts[0] == "PGSSLMODE" {
+		if strings.HasPrefix(v, "PGSSLMODE=") {
 			return params
 		}
 	}
 
-	// found localhost but explicit no sslmode, disable sslmode
 	return params + " sslmode=disable"
 }
 
