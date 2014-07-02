@@ -45,10 +45,16 @@ func stripPrefixFromConnectionParams(params string) (string, string) {
 			break
 		}
 	}
+	if prefix == "NONE" {
+		return params, ""
+	}
+
 	if prefix == "" {
+		// default
 		prefix = "osm_"
 	}
 	if prefix[len(prefix)-1] != '_' {
+		// always separated by _
 		prefix = prefix + "_"
 	}
 	return params, prefix
