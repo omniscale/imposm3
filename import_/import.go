@@ -106,7 +106,11 @@ func Import() {
 			log.Fatal(err)
 		}
 
-		osmCache.Coords.SetLinearImport(true)
+		if !config.ImportOptions.Appendcache {
+			// enable optimization if we don't append to existing cache
+			osmCache.Coords.SetLinearImport(true)
+		}
+
 		readLimiter := geometryLimiter
 		if config.BaseOptions.LimitToCacheBuffer == 0.0 {
 			readLimiter = nil
