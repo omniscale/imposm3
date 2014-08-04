@@ -36,8 +36,8 @@ clean:
 test: test-unit test-system
 
 test-unit: imposm3
-	go test imposm3/... -i
-	go test imposm3/...
+	go test ./... -i
+	go test ./...
 
 test-system: imposm3
 	(cd test && make test)

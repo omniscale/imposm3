@@ -4,14 +4,14 @@ import (
 	"runtime"
 	"sync"
 
-	"imposm3/cache"
-	"imposm3/database"
-	"imposm3/element"
-	"imposm3/expire"
-	"imposm3/geom/limit"
-	"imposm3/logging"
-	"imposm3/proj"
-	"imposm3/stats"
+	"github.com/omniscale/imposm3/cache"
+	"github.com/omniscale/imposm3/database"
+	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/expire"
+	"github.com/omniscale/imposm3/geom/limit"
+	"github.com/omniscale/imposm3/logging"
+	"github.com/omniscale/imposm3/proj"
+	"github.com/omniscale/imposm3/stats"
 )
 
 var log = logging.NewLogger("writer")

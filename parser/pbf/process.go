@@ -1,8 +1,8 @@
 package pbf
 
 import (
-	"imposm3/element"
-	"imposm3/util"
+	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/util"
 	"runtime"
 	"sync"
 )

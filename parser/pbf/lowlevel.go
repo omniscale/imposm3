@@ -7,7 +7,7 @@ import (
 	structs "encoding/binary"
 	"errors"
 	"fmt"
-	"imposm3/parser/pbf/osmpbf"
+	"github.com/omniscale/imposm3/parser/pbf/osmpbf"
 	"io"
 	"log"
 	"os"

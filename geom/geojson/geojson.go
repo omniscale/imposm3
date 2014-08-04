@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"imposm3/geom/geos"
-	"imposm3/proj"
+	"github.com/omniscale/imposm3/geom/geos"
+	"github.com/omniscale/imposm3/proj"
 	"io"
 )
 

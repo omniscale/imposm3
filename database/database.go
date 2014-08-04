@@ -2,8 +2,8 @@ package database
 
 import (
 	"errors"
-	"imposm3/element"
-	"imposm3/mapping"
+	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/mapping"
 	"strings"
 )
 

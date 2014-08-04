@@ -2,8 +2,8 @@ package mapping
 
 import (
 	"errors"
-	"imposm3/element"
-	"imposm3/logging"
+	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/logging"
 	"regexp"
 	"strconv"
 	"strings"

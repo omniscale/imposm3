@@ -13,7 +13,7 @@ extern void initGEOS_debug();
 import "C"
 
 import (
-	"imposm3/logging"
+	"github.com/omniscale/imposm3/logging"
 	"runtime"
 	"unsafe"
 )

@@ -2,7 +2,7 @@ package binary
 
 import (
 	"code.google.com/p/goprotobuf/proto"
-	"imposm3/element"
+	"github.com/omniscale/imposm3/element"
 	"math"
 	"math/rand"
 	"runtime"

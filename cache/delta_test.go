@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"imposm3/element"
+	"github.com/omniscale/imposm3/element"
 	"io/ioutil"
 	"math/rand"
 	"os"

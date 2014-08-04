@@ -1,8 +1,8 @@
 package geom
 
 import (
-	"imposm3/element"
-	"imposm3/geom/geos"
+	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/geom/geos"
 )
 
 type Ring struct {

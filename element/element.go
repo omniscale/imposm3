@@ -3,7 +3,7 @@ package element
 import (
 	"sort"
 
-	"imposm3/geom/geos"
+	"github.com/omniscale/imposm3/geom/geos"
 )
 
 type Tags map[string]string

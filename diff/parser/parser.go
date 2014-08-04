@@ -3,8 +3,8 @@ package parser
 import (
 	"compress/gzip"
 	"encoding/xml"
-	"imposm3/element"
-	"imposm3/logging"
+	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/logging"
 	"os"
 	"strconv"
 )

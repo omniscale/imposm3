@@ -3,7 +3,7 @@ package binary
 import (
 	"encoding/binary"
 
-	"imposm3/element"
+	"github.com/omniscale/imposm3/element"
 )
 
 func MarshalIdRefsBunch(idRefs []element.IdRefs) []byte {

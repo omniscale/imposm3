@@ -1,13 +1,13 @@
 package diff
 
 import (
-	"imposm3/cache"
-	"imposm3/database"
-	"imposm3/diff/parser"
-	"imposm3/element"
-	"imposm3/expire"
-	"imposm3/mapping"
-	"imposm3/proj"
+	"github.com/omniscale/imposm3/cache"
+	"github.com/omniscale/imposm3/database"
+	"github.com/omniscale/imposm3/diff/parser"
+	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/expire"
+	"github.com/omniscale/imposm3/mapping"
+	"github.com/omniscale/imposm3/proj"
 )
 
 type Deleter struct {

@@ -1,7 +1,7 @@
 package limit
 
 import (
-	"imposm3/geom/geos"
+	"github.com/omniscale/imposm3/geom/geos"
 	"testing"
 )
 

@@ -1,8 +1,8 @@
 package pbf
 
 import (
-	"imposm3/element"
-	"imposm3/parser/pbf/osmpbf"
+	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/parser/pbf/osmpbf"
 	"log"
 )
 

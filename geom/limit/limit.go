@@ -2,9 +2,9 @@ package limit
 
 import (
 	"errors"
-	"imposm3/geom/geojson"
-	"imposm3/geom/geos"
-	"imposm3/logging"
+	"github.com/omniscale/imposm3/geom/geojson"
+	"github.com/omniscale/imposm3/geom/geos"
+	"github.com/omniscale/imposm3/logging"
 	"math"
 	"os"
 	"strings"

@@ -3,7 +3,7 @@ package mapping
 import (
 	"encoding/json"
 	"errors"
-	"imposm3/element"
+	"github.com/omniscale/imposm3/element"
 	"os"
 )
 
