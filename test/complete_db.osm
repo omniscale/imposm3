@@ -761,6 +761,20 @@
     <tag k="landuse" v="park"/>
   </relation>
 
+  <!-- test way with multiple mappings is inserted twice -->
+  <node id="18001" version="1" timestamp="2011-11-11T00:11:11Z" lat="11" lon="89"/>
+  <node id="18002" version="1" timestamp="2011-11-11T00:11:11Z" lat="11" lon="90"/>
+  <node id="18003" version="1" timestamp="2011-11-11T00:11:11Z" lat="14" lon="90"/>
+  <node id="18004" version="1" timestamp="2011-11-11T00:11:11Z" lat="14" lon="89"/>
+
+  <way id="18001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="18001"/>
+    <nd ref="18002"/>
+    <nd ref="18003"/>
+    <tag k="name" v="way 18001"/>
+    <tag k="highway" v="residential"/>
+    <tag k="railway" v="tram"/>
+  </way>
 
   <!-- test that node (n:20001) does not reference way (w:20001) after it was deleted -->
   <node id="20001" version="1" timestamp="2011-11-11T00:11:11Z" lat="30" lon="10">

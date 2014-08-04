@@ -110,6 +110,14 @@ def test_broken_multipolygon_ways():
     assert t.query_row(t.db_conf, 'osm_roads', 17101)['type'] == 'residential'
     assert t.query_row(t.db_conf, 'osm_roads', 17102) == None
 
+def test_node_way_inserted_twice():
+    """Way with multiple mappings is inserted twice in same table"""
+    rows = t.query_row(t.db_conf, 'osm_roads', 18001)
+    rows.sort(key=lambda x: x['type'])
+
+    assert rows[0]['type'] == 'residential'
+    assert rows[1]['type'] == 'tram'
+
 def test_node_way_ref_after_delete_1():
     """Nodes refereces way"""
     data = t.cache_query(nodes=[20001, 20002], deps=True)
