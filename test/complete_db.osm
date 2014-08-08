@@ -932,4 +932,11 @@
     <nd ref="64008"/>
     <tag k="highway" v="residential"/>
   </way>
+
+  <!-- add remove tags from nodes/coords -->
+  <node id="70001" version="1" timestamp="2011-11-11T00:11:11Z" lat="0.01" lon="20.00">
+      <tag k="amenity" v="police"/>
+  </node>
+  <node id="70002" version="1" timestamp="2011-11-11T00:11:11Z" lat="0.02" lon="20.00"/>
+
 </osm>

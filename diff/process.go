@@ -152,6 +152,7 @@ For:
 					return err
 				}
 				if !elem.Add {
+					// no new or modified elem -> remove from cache
 					if elem.Rel != nil {
 						if err := osmCache.Relations.DeleteRelation(elem.Rel.Id); err != nil {
 							return err
@@ -168,6 +169,11 @@ For:
 						if err := osmCache.Coords.DeleteCoord(elem.Node.Id); err != nil {
 							return err
 						}
+					}
+				} else if elem.Node != nil && elem.Node.Tags == nil {
+					// handle modifies where a node drops all tags
+					if err := osmCache.Nodes.DeleteNode(elem.Node.Id); err != nil {
+						return err
 					}
 				}
 			}

@@ -265,6 +265,15 @@ def test_updated_nodes1():
     road =  t.query_row(t.db_conf, 'osm_roads', 60000)
     t.assert_almost_equal(road['geometry'].length, 14035.61150207768)
 
+def test_update_node_to_coord_1():
+    """Node is inserted with tag."""
+    coords = t.cache_query(nodes=(70001, 70002))
+    assert coords['nodes']["70001"]["tags"] == {"amenity": "police"}
+    assert "tags" not in coords['nodes']["70002"]
+
+    assert t.query_row(t.db_conf, 'osm_amenities', 70001)
+    assert not t.query_row(t.db_conf, 'osm_amenities', 70002)
+
 #######################################################################
 def test_update():
     """Diff import applies"""
@@ -412,6 +421,17 @@ def test_updated_way2():
     road =  t.query_row(t.db_conf, 'osm_roads', 60000)
     # new length 0.1 degree
     t.assert_almost_equal(road['geometry'].length, 20037508.342789244/180.0/10.0)
+
+def test_update_node_to_coord_2():
+    """Node is becomes coord after tags are removed."""
+    coords = t.cache_query(nodes=(70001, 70002))
+
+    assert "tags" not in coords['nodes']["70001"]
+    assert coords['nodes']["70002"]["tags"] == {"amenity": "police"}
+
+    assert not t.query_row(t.db_conf, 'osm_amenities', 70001)
+    assert t.query_row(t.db_conf, 'osm_amenities', 70002)
+
 
 #######################################################################
 def test_deploy_and_revert_deploy():
