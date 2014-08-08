@@ -89,9 +89,9 @@ def test_mapped_closed_way_without_area():
     assert len(elems) == 2
     elems.sort(key=lambda x: x['geometry'].type)
 
-    assert elems[0]['geometry'].type == 'LineString', elem['geometry'].type
+    assert elems[0]['geometry'].type == 'LineString', elems[0]['geometry'].type
     assert elems[0]['tags'] == {'random': 'tag', 'landuse': 'grass', 'highway': 'pedestrian'}
-    assert elems[1]['geometry'].type == 'Polygon', elem['geometry'].type
+    assert elems[1]['geometry'].type == 'Polygon', elems[1]['geometry'].type
     assert elems[1]['tags'] == {'random': 'tag', 'landuse': 'grass', 'highway': 'pedestrian'}
 
 
