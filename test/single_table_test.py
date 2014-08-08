@@ -7,6 +7,12 @@ psycopg2.extras.register_hstore(psycopg2.connect(**t.db_conf), globally=True)
 
 mapping_file = 'single_table_mapping.json'
 
+def setup():
+    t.setup()
+
+def teardown():
+    t.teardown()
+
 #######################################################################
 def test_import():
     """Import succeeds"""

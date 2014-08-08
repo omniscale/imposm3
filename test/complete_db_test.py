@@ -4,6 +4,12 @@ import helper as t
 
 mapping_file = 'complete_db_mapping.json'
 
+def setup():
+    t.setup()
+
+def teardown():
+    t.teardown()
+
 #######################################################################
 def test_import():
     """Import succeeds"""
