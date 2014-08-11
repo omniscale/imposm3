@@ -83,6 +83,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 		delDb,
 		osmCache,
 		diffCache,
+		tagmapping.SingleIdSpace,
 		tagmapping.PointMatcher(),
 		tagmapping.LineStringMatcher(),
 		tagmapping.PolygonMatcher(),
@@ -98,7 +99,9 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 	ways := make(chan *element.Way)
 	nodes := make(chan *element.Node)
 
-	relWriter := writer.NewRelationWriter(osmCache, diffCache, relations,
+	relWriter := writer.NewRelationWriter(osmCache, diffCache,
+		tagmapping.SingleIdSpace,
+		relations,
 		db, progress,
 		tagmapping.PolygonMatcher(),
 		config.BaseOptions.Srid)
@@ -106,7 +109,9 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 	relWriter.SetExpireor(expireor)
 	relWriter.Start()
 
-	wayWriter := writer.NewWayWriter(osmCache, diffCache, ways, db,
+	wayWriter := writer.NewWayWriter(osmCache, diffCache,
+		tagmapping.SingleIdSpace,
+		ways, db,
 		progress,
 		tagmapping.PolygonMatcher(),
 		tagmapping.LineStringMatcher(),

@@ -89,3 +89,17 @@ func (idRefs *IdRefs) Delete(ref int64) {
 		idRefs.Refs = append(idRefs.Refs[:i], idRefs.Refs[i+1:]...)
 	}
 }
+
+// RelIdOffset is a constant we subtract from relation IDs
+// to avoid conflicts with way and node IDs.
+// Nodes, ways and relations have separate ID spaces in OSM, but
+// we need unique IDs for updating and removing elements in diff mode.
+// In a normal diff import relation IDs are negated to distinguish them
+// from way IDs, because ways and relations can both be imported in the
+// same polygon table.
+// Nodes are only imported together with ways and relations in single table
+// imports (see `type_mappings`). In this case we negate the way and
+// relation IDs and aditionaly subtract RelIdOffset from the relation IDs.
+// Ways will go from -0 to -100,000,000,000,000,000, relations from
+// -100,000,000,000,000,000 down wards.
+const RelIdOffset = -1e17

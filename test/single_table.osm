@@ -106,4 +106,42 @@
   </way>
 
 
+  <!-- source nodes/ways for tests below -->
+  <node id="31001" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="80"/>
+  <node id="31002" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="82"/>
+  <node id="31003" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="82"/>
+  <node id="31004" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="80"/>
+  <way id="31002" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="31001"/>
+    <nd ref="31002"/>
+    <tag k="barrier" v="fence"/>
+  </way>
+
+  <way id="31003" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="31002"/>
+    <nd ref="31003"/>
+    <nd ref="31004"/>
+    <nd ref="31001"/>
+  </way>
+
+  <!-- modify duplicate node -->
+  <node id="31101" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="80">
+    <tag k="amenity" v="cafe"/>
+  </node>
+  <way id="31101" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="31001"/>
+    <nd ref="31002"/>
+    <nd ref="31003"/>
+    <nd ref="31004"/>
+    <nd ref="31001"/>
+    <tag k="highway" v="secondary"/>
+    <tag k="landuse" v="park"/>
+  </way>
+
+  <relation id="31101" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="31002" role="outer"/>
+    <member type="way" ref="31003" role="outer"/>
+    <tag k="type" v="multipolygon"/>
+    <tag k="building" v="yes"/>
+  </relation>
 </osm>

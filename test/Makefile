@@ -32,6 +32,6 @@ test: .lasttestrun_complete_db .lasttestrun_single_table
 	nosetests complete_db_test.py $(NOSEOPTS)
 	@touch .lasttestrun_complete_db
 
-.lasttestrun_single_table: $(IMPOSM_BIN) single_table_test.py build/single_table.pbf
+.lasttestrun_single_table: $(IMPOSM_BIN) single_table_test.py build/single_table.osc.gz build/single_table.pbf
 	nosetests single_table_test.py $(NOSEOPTS)
 	@touch .lasttestrun_single_table

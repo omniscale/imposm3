@@ -174,7 +174,9 @@ func Import() {
 		osmCache.Coords.SetReadOnly(true)
 
 		relations := osmCache.Relations.Iter()
-		relWriter := writer.NewRelationWriter(osmCache, diffCache, relations,
+		relWriter := writer.NewRelationWriter(osmCache, diffCache,
+			tagmapping.SingleIdSpace,
+			relations,
 			db, progress,
 			tagmapping.PolygonMatcher(),
 			config.BaseOptions.Srid)
@@ -185,7 +187,9 @@ func Import() {
 		osmCache.Relations.Close()
 
 		ways := osmCache.Ways.Iter()
-		wayWriter := writer.NewWayWriter(osmCache, diffCache, ways, db,
+		wayWriter := writer.NewWayWriter(osmCache, diffCache,
+			tagmapping.SingleIdSpace,
+			ways, db,
 			progress,
 			tagmapping.PolygonMatcher(), tagmapping.LineStringMatcher(),
 			config.BaseOptions.Srid)

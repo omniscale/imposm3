@@ -6,6 +6,7 @@
             "source"
         ]
     },
+    "use_single_id_space": true,
     "tables": {
         "all": {
             "fields": [

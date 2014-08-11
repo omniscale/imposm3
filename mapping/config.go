@@ -3,8 +3,9 @@ package mapping
 import (
 	"encoding/json"
 	"errors"
-	"github.com/omniscale/imposm3/element"
 	"os"
+
+	"github.com/omniscale/imposm3/element"
 )
 
 type Field struct {
@@ -44,6 +45,9 @@ type Mapping struct {
 	Tables            Tables            `json:"tables"`
 	GeneralizedTables GeneralizedTables `json:"generalized_tables"`
 	Tags              Tags              `json:"tags"`
+	// SingleIdSpace mangles the overlapping node/way/relation IDs
+	// to be unique (nodes positive, ways negative, relations negative -1e17)
+	SingleIdSpace bool `json:"use_single_id_space"`
 }
 
 type Tags struct {

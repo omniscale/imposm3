@@ -13,6 +13,8 @@ def setup():
 def teardown():
     t.teardown()
 
+RELOFFSET = int(-1e17)
+
 #######################################################################
 def test_import():
     """Import succeeds"""
@@ -54,38 +56,38 @@ def test_non_mapped_way_is_missing():
 def test_mapped_way():
     """Way is stored with all tags."""
     t.assert_cached_way(20201)
-    highway = t.query_row(t.db_conf, 'osm_all', 20201)
+    highway = t.query_row(t.db_conf, 'osm_all', -20201)
     assert highway['tags'] == {'random': 'tag', 'highway': 'yes'}
 
 def test_non_mapped_closed_way_is_missing():
     """Closed way without mapped tags is missing."""
     t.assert_cached_way(20301)
-    assert not t.query_row(t.db_conf, 'osm_all', 20301)
+    assert not t.query_row(t.db_conf, 'osm_all', -20301)
 
 def test_mapped_closed_way():
     """Closed way is stored with all tags."""
     t.assert_cached_way(20401)
-    building = t.query_row(t.db_conf, 'osm_all', 20401)
+    building = t.query_row(t.db_conf, 'osm_all', -20401)
     assert building['tags'] == {'random': 'tag', 'building': 'yes'}
 
 def test_mapped_closed_way_area_yes():
     """Closed way with area=yes is not stored as linestring."""
     t.assert_cached_way(20501)
-    elem = t.query_row(t.db_conf, 'osm_all', 20501)
+    elem = t.query_row(t.db_conf, 'osm_all', -20501)
     assert elem['geometry'].type == 'Polygon', elem['geometry'].type
     assert elem['tags'] == {'random': 'tag', 'landuse': 'grass', 'highway': 'pedestrian', 'area': 'yes'}
 
 def test_mapped_closed_way_area_no():
     """Closed way with area=no is not stored as polygon."""
     t.assert_cached_way(20502)
-    elem = t.query_row(t.db_conf, 'osm_all', 20502)
+    elem = t.query_row(t.db_conf, 'osm_all', -20502)
     assert elem['geometry'].type == 'LineString', elem['geometry'].type
     assert elem['tags'] == {'random': 'tag', 'landuse': 'grass', 'highway': 'pedestrian', 'area': 'no'}
 
 def test_mapped_closed_way_without_area():
     """Closed way without area is stored as mapped (linestring and polygon)."""
     t.assert_cached_way(20601)
-    elems = t.query_row(t.db_conf, 'osm_all', 20601)
+    elems = t.query_row(t.db_conf, 'osm_all', -20601)
     assert len(elems) == 2
     elems.sort(key=lambda x: x['geometry'].type)
 
@@ -94,6 +96,52 @@ def test_mapped_closed_way_without_area():
     assert elems[1]['geometry'].type == 'Polygon', elems[1]['geometry'].type
     assert elems[1]['tags'] == {'random': 'tag', 'landuse': 'grass', 'highway': 'pedestrian'}
 
+def test_duplicate_ids_1():
+    """Points/lines/polygons with same ID are inserted."""
+    node = t.query_row(t.db_conf, 'osm_all', 31101)
+    assert node['geometry'].type == 'Point', node['geometry'].type
+    assert node['tags'] == {'amenity': 'cafe'}
+    assert node['geometry'].distance(t.merc_point(80, 47)) < 1
+
+    ways = t.query_row(t.db_conf, 'osm_all', -31101)
+    ways.sort(key=lambda x: x['geometry'].type)
+    assert ways[0]['geometry'].type == 'LineString', ways[0]['geometry'].type
+    assert ways[0]['tags'] == {'landuse': 'park', 'highway': 'secondary'}
+    assert ways[1]['geometry'].type == 'Polygon', ways[1]['geometry'].type
+    assert ways[1]['tags'] == {'landuse': 'park', 'highway': 'secondary'}
+
+    rel = t.query_row(t.db_conf, 'osm_all', RELOFFSET-31101L)
+    assert rel['geometry'].type == 'Polygon', rel['geometry'].type
+    assert rel['tags'] == {'building': 'yes'}
+
+
+#######################################################################
+
+def test_update():
+    """Diff import applies"""
+    t.imposm3_update(t.db_conf, './build/single_table.osc.gz', mapping_file)
+
+#######################################################################
+
+def test_duplicate_ids_2():
+    """Node moved and ways/rels with same ID are still present."""
+    node = t.query_row(t.db_conf, 'osm_all', 31101)
+    assert node['geometry'].type == 'Point', node['geometry'].type
+    assert node['tags'] == {'amenity': 'cafe'}
+    assert node['geometry'].distance(t.merc_point(81, 47)) < 1
+
+    ways = t.query_row(t.db_conf, 'osm_all', -31101)
+    ways.sort(key=lambda x: x['geometry'].type)
+
+    assert ways[0]['geometry'].type == 'LineString', ways[0]['geometry'].type
+    assert ways[0]['tags'] == {'landuse': 'park', 'highway': 'secondary'}
+    assert ways[1]['geometry'].type == 'Polygon', ways[1]['geometry'].type
+    assert ways[1]['tags'] == {'landuse': 'park', 'highway': 'secondary'}
+
+    rel = t.query_row(t.db_conf, 'osm_all', RELOFFSET-31101L)
+
+    assert rel['geometry'].type == 'Polygon', rel['geometry'].type
+    assert rel['tags'] == {'building': 'yes'}
 
 #######################################################################
 def test_deploy_and_revert_deploy():

@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osmChange version="0.6" generator="Osmosis 0.41">
+  <modify>
+    <node id="31101" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="81">
+        <tag k="amenity" v="cafe"/>
+    </node>
+  </modify>
+</osmChange>

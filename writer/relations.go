@@ -1,6 +1,9 @@
 package writer
 
 import (
+	"sync"
+	"time"
+
 	"github.com/omniscale/imposm3/cache"
 	"github.com/omniscale/imposm3/database"
 	"github.com/omniscale/imposm3/element"
@@ -9,12 +12,11 @@ import (
 	"github.com/omniscale/imposm3/geom/geos"
 	"github.com/omniscale/imposm3/mapping"
 	"github.com/omniscale/imposm3/stats"
-	"sync"
-	"time"
 )
 
 type RelationWriter struct {
 	OsmElemWriter
+	singleIdSpace  bool
 	rel            chan *element.Relation
 	polygonMatcher mapping.RelWayMatcher
 }
@@ -22,6 +24,7 @@ type RelationWriter struct {
 func NewRelationWriter(
 	osmCache *cache.OSMCache,
 	diffCache *cache.DiffCache,
+	singleIdSpace bool,
 	rel chan *element.Relation,
 	inserter database.Inserter,
 	progress *stats.Statistics,
@@ -37,11 +40,19 @@ func NewRelationWriter(
 			inserter:  inserter,
 			srid:      srid,
 		},
+		singleIdSpace:  singleIdSpace,
 		polygonMatcher: matcher,
 		rel:            rel,
 	}
 	rw.OsmElemWriter.writer = &rw
 	return &rw.OsmElemWriter
+}
+
+func (rw *RelationWriter) relId(id int64) int64 {
+	if !rw.singleIdSpace {
+		return -id
+	}
+	return element.RelIdOffset - id
 }
 
 func (rw *RelationWriter) loop() {
@@ -117,7 +128,7 @@ NextRel:
 			}
 			for _, g := range parts {
 				rel := element.Relation(*r)
-				rel.Id = -r.Id
+				rel.Id = rw.relId(r.Id)
 				rel.Geom = &element.Geometry{Geom: g, Wkb: geos.AsEwkbHex(g)}
 				err := rw.inserter.InsertPolygon(rel.OSMElem, matches)
 				if err != nil {
@@ -129,7 +140,7 @@ NextRel:
 			}
 		} else {
 			rel := element.Relation(*r)
-			rel.Id = -r.Id
+			rel.Id = rw.relId(r.Id)
 			err := rw.inserter.InsertPolygon(rel.OSMElem, matches)
 			if err != nil {
 				if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {

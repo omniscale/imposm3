@@ -1,6 +1,8 @@
 package writer
 
 import (
+	"sync"
+
 	"github.com/omniscale/imposm3/cache"
 	"github.com/omniscale/imposm3/database"
 	"github.com/omniscale/imposm3/element"
@@ -9,11 +11,11 @@ import (
 	"github.com/omniscale/imposm3/geom/geos"
 	"github.com/omniscale/imposm3/mapping"
 	"github.com/omniscale/imposm3/stats"
-	"sync"
 )
 
 type WayWriter struct {
 	OsmElemWriter
+	singleIdSpace  bool
 	ways           chan *element.Way
 	lineMatcher    mapping.WayMatcher
 	polygonMatcher mapping.WayMatcher
@@ -22,6 +24,7 @@ type WayWriter struct {
 func NewWayWriter(
 	osmCache *cache.OSMCache,
 	diffCache *cache.DiffCache,
+	singleIdSpace bool,
 	ways chan *element.Way,
 	inserter database.Inserter,
 	progress *stats.Statistics,
@@ -38,12 +41,20 @@ func NewWayWriter(
 			inserter:  inserter,
 			srid:      srid,
 		},
+		singleIdSpace:  singleIdSpace,
 		lineMatcher:    lineMatcher,
 		polygonMatcher: polygonMatcher,
 		ways:           ways,
 	}
 	ww.OsmElemWriter.writer = &ww
 	return &ww.OsmElemWriter
+}
+
+func (ww *WayWriter) wayId(id int64) int64 {
+	if !ww.singleIdSpace {
+		return id
+	}
+	return -id
 }
 
 func (ww *WayWriter) loop() {
@@ -66,6 +77,8 @@ func (ww *WayWriter) loop() {
 			continue
 		}
 		ww.NodesToSrid(w.Nodes)
+
+		w.Id = ww.wayId(w.Id)
 
 		inserted := false
 		if matches := ww.lineMatcher.MatchWay(w); len(matches) > 0 {
