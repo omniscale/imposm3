@@ -1,5 +1,6 @@
 .DS_Store
 imposm3
+docs/_build
 mapping.json
 config.json
 test/build
