@@ -1,4 +1,5 @@
 .DS_Store
+imposm3
 mapping.json
 config.json
 test/build
