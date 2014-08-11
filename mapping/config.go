@@ -21,7 +21,7 @@ type Table struct {
 	Mapping      map[Key][]Value       `json:"mapping"`
 	Mappings     map[string]SubMapping `json:"mappings"`
 	TypeMappings TypeMappings          `json:"type_mappings"`
-	Fields       []*Field              `json:"columns"`
+	Fields       []*Field              `json:"columns"` // TODO rename Fields internaly to Columns
 	OldFields    []*Field              `json:"fields"`
 	Filters      *Filters              `json:"filters"`
 }
