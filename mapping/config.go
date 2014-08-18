@@ -11,6 +11,7 @@ import (
 type Field struct {
 	Name string                 `json:"name"`
 	Key  Key                    `json:"key"`
+	Keys []Key                  `json:"keys"`
 	Type string                 `json:"type"`
 	Args map[string]interface{} `json:"args"`
 }
@@ -127,6 +128,9 @@ func (t *Table) ExtraTags() map[Key]bool {
 	for _, field := range t.Fields {
 		if field.Key != "" {
 			tags[field.Key] = true
+		}
+		for _, k := range field.Keys {
+			tags[k] = true
 		}
 	}
 	return tags
