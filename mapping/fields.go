@@ -2,11 +2,12 @@ package mapping
 
 import (
 	"errors"
-	"github.com/omniscale/imposm3/element"
-	"github.com/omniscale/imposm3/logging"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/logging"
 )
 
 var log = logging.NewLogger("mapping")
@@ -232,6 +233,15 @@ func MakeZOrder(fieldName string, fieldType FieldType, field Field) (MakeValue, 
 		return nil, errors.New("ranks in args for zorder not a list")
 	}
 
+	var key string
+	_key, ok := field.Args["key"]
+	if ok {
+		key, ok = _key.(string)
+		if !ok {
+			return nil, errors.New("key in args for zorder not a string")
+		}
+	}
+
 	ranks := make(map[string]int)
 	for i, rank := range rankList {
 		rankName, ok := rank.(string)
@@ -241,11 +251,18 @@ func MakeZOrder(fieldName string, fieldType FieldType, field Field) (MakeValue, 
 
 		ranks[rankName] = len(rankList) - i
 	}
+
 	zOrder := func(val string, elem *element.OSMElem, match Match) interface{} {
+		if key != "" {
+			if r, ok := ranks[elem.Tags[key]]; ok {
+				return r
+			}
+			return 0
+		}
 		if r, ok := ranks[match.Value]; ok {
 			return r
 		}
-		return nil
+		return 0
 	}
 
 	return zOrder, nil
