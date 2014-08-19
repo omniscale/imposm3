@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/omniscale/imposm3/logging"
-	"github.com/omniscale/imposm3/parser/pbf"
 	"io"
 	"net/http"
 	"os"
@@ -13,6 +11,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/omniscale/imposm3/logging"
+	"github.com/omniscale/imposm3/parser/pbf"
 )
 
 var log = logging.NewLogger("diff")
@@ -37,7 +38,7 @@ func (d DiffState) WriteToFile(file string) error {
 	writer := bufio.NewWriter(f)
 
 	lines := []string{}
-	lines = append(lines, "timestamp="+d.Time.Format("2006-01-02T15\\:04\\:05Z"))
+	lines = append(lines, "timestamp="+d.Time.Format(timestampFormat))
 	if d.Sequence != 0 {
 		lines = append(lines, "sequenceNumber="+fmt.Sprintf("%d", d.Sequence))
 	}
@@ -94,10 +95,12 @@ func FromPbf(pbfFile *pbf.Pbf) *DiffState {
 	replicationUrl := "http://planet.openstreetmap.org/replication/minute/"
 
 	seq := estimateSequence(replicationUrl, timestamp)
-	if seq != 0 {
-		// start a two hours earlier
-		seq -= 120
+	if seq == 0 {
+		return nil
 	}
+
+	// start two hours earlier
+	seq -= 120
 	return &DiffState{Time: timestamp, Url: replicationUrl, Sequence: seq}
 }
 
@@ -159,11 +162,13 @@ func parseSimpleIni(f io.Reader) (map[string]string, error) {
 	return result, nil
 }
 
+const timestampFormat = "2006-01-02T15\\:04\\:05Z"
+
 func parseTimeStamp(value string) (time.Time, error) {
 	if value == "" {
 		return time.Time{}, errors.New("missing timestamp in state")
 	}
-	return time.Parse("2006-01-02T15\\:04\\:05Z", value)
+	return time.Parse(timestampFormat, value)
 }
 
 func parseSequence(value string) (int32, error) {
@@ -190,9 +195,16 @@ func currentState(url string) (*DiffState, error) {
 func estimateSequence(url string, timestamp time.Time) int32 {
 	state, err := currentState(url)
 	if err != nil {
-		log.Warn("unabnle to fetch current state from ", url, ":", err)
-		return 0
+		// try a second time befor failing
+		log.Warn("unable to fetch current state from ", url, ":", err, ", retry in 30s")
+		time.Sleep(time.Second * 30)
+		state, err = currentState(url)
+		if err != nil {
+			log.Warn("unable to fetch current state from ", url, ":", err, ", giving up")
+			return 0
+		}
 	}
+
 	behind := state.Time.Sub(timestamp)
 	return state.Sequence - int32(behind.Minutes())
 }
