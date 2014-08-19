@@ -122,12 +122,14 @@ func Import() {
 		elementCounts = progress.Stop()
 		osmCache.Close()
 		log.StopStep(step)
-		diffstate := state.FromPbf(pbfFile)
-		if diffstate != nil {
-			os.MkdirAll(config.BaseOptions.DiffDir, 0755)
-			err := diffstate.WriteToFile(path.Join(config.BaseOptions.DiffDir, "last.state.txt"))
-			if err != nil {
-				log.Print("error writing last.state.txt: ", err)
+		if config.ImportOptions.Diff {
+			diffstate := state.FromPbf(pbfFile)
+			if diffstate != nil {
+				os.MkdirAll(config.BaseOptions.DiffDir, 0755)
+				err := diffstate.WriteToFile(path.Join(config.BaseOptions.DiffDir, "last.state.txt"))
+				if err != nil {
+					log.Print("error writing last.state.txt: ", err)
+				}
 			}
 		}
 	}
