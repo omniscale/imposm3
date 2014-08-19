@@ -1,12 +1,17 @@
 package element
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/omniscale/imposm3/geom/geos"
 )
 
 type Tags map[string]string
+
+func (t *Tags) String() string {
+	return fmt.Sprintf("%v", (map[string]string)(*t))
+}
 
 type OSMElem struct {
 	Id   int64     `json:"-"`
