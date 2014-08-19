@@ -3,14 +3,15 @@ package postgis
 import (
 	"database/sql"
 	"fmt"
+	"runtime"
+	"strings"
+	"sync/atomic"
+
 	pq "github.com/lib/pq"
 	"github.com/omniscale/imposm3/database"
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/logging"
 	"github.com/omniscale/imposm3/mapping"
-	"runtime"
-	"strings"
-	"sync/atomic"
 )
 
 var log = logging.NewLogger("PostGIS")
@@ -147,7 +148,7 @@ func (pg *PostGIS) Init() error {
 func (pg *PostGIS) Finish() error {
 	defer log.StopStep(log.StartStep(fmt.Sprintf("Creating geometry indices")))
 
-	worker := int(runtime.NumCPU() / 2)
+	worker := int(runtime.GOMAXPROCS(0))
 	if worker < 1 {
 		worker = 1
 	}
@@ -218,7 +219,7 @@ func (pg *PostGIS) GeneralizeUpdates() error {
 func (pg *PostGIS) Generalize() error {
 	defer log.StopStep(log.StartStep(fmt.Sprintf("Creating generalized tables")))
 
-	worker := int(runtime.NumCPU() / 2)
+	worker := int(runtime.GOMAXPROCS(0))
 	if worker < 1 {
 		worker = 1
 	}
@@ -328,7 +329,7 @@ func (pg *PostGIS) generalizeTable(table *GeneralizedTableSpec) error {
 func (pg *PostGIS) Optimize() error {
 	defer log.StopStep(log.StartStep(fmt.Sprintf("Clustering on geometry")))
 
-	worker := int(runtime.NumCPU() / 2)
+	worker := int(runtime.GOMAXPROCS(0))
 	if worker < 1 {
 		worker = 1
 	}
