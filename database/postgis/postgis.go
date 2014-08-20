@@ -147,7 +147,7 @@ func (pg *PostGIS) Init() error {
 func (pg *PostGIS) Finish() error {
 	defer log.StopStep(log.StartStep(fmt.Sprintf("Creating geometry indices")))
 
-	worker := int(runtime.NumCPU() / 2)
+	worker := int(runtime.NumCPU())
 	if worker < 1 {
 		worker = 1
 	}
@@ -218,7 +218,7 @@ func (pg *PostGIS) GeneralizeUpdates() error {
 func (pg *PostGIS) Generalize() error {
 	defer log.StopStep(log.StartStep(fmt.Sprintf("Creating generalized tables")))
 
-	worker := int(runtime.NumCPU() / 2)
+	worker := int(runtime.NumCPU())
 	if worker < 1 {
 		worker = 1
 	}
@@ -328,7 +328,7 @@ func (pg *PostGIS) generalizeTable(table *GeneralizedTableSpec) error {
 func (pg *PostGIS) Optimize() error {
 	defer log.StopStep(log.StartStep(fmt.Sprintf("Clustering on geometry")))
 
-	worker := int(runtime.NumCPU() / 2)
+	worker := int(runtime.NumCPU())
 	if worker < 1 {
 		worker = 1
 	}
