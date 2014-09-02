@@ -109,7 +109,7 @@ func TestZOrder(t *testing.T) {
 
 func TestMakeSuffixReplace(t *testing.T) {
 	field := Field{
-		"name", "name", "string_suffixreplace",
+		"name", "name", []Key{"string_suffixreplace"}, "linestring",
 		map[string]interface{}{"suffixes": map[string]interface{}{"Straße": "Str.", "straße": "str."}}}
 	suffixReplace, err := MakeSuffixReplace("name", FieldType{}, field)
 
