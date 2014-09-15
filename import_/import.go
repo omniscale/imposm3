@@ -123,7 +123,7 @@ func Import() {
 		osmCache.Close()
 		log.StopStep(step)
 		if config.ImportOptions.Diff {
-			diffstate := state.FromPbf(pbfFile)
+			diffstate := state.FromPbf(pbfFile, config.ImportOptions.DiffStateBefore)
 			if diffstate != nil {
 				os.MkdirAll(config.BaseOptions.DiffDir, 0755)
 				err := diffstate.WriteToFile(path.Join(config.BaseOptions.DiffDir, "last.state.txt"))

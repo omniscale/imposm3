@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 )
 
 type Config struct {
@@ -135,6 +136,7 @@ type _ImportOptions struct {
 	DeployProduction bool
 	RevertDeploy     bool
 	RemoveBackup     bool
+	DiffStateBefore  time.Duration
 }
 
 var BaseOptions = _BaseOptions{}
@@ -183,6 +185,7 @@ func init() {
 	ImportFlags.BoolVar(&ImportOptions.DeployProduction, "deployproduction", false, "deploy production")
 	ImportFlags.BoolVar(&ImportOptions.RevertDeploy, "revertdeploy", false, "revert deploy to production")
 	ImportFlags.BoolVar(&ImportOptions.RemoveBackup, "removebackup", false, "remove backups from deploy")
+	ImportFlags.DurationVar(&ImportOptions.DiffStateBefore, "diff-state-before", 2*time.Hour, "set initial diff sequence before")
 }
 
 func ParseImport(args []string) {

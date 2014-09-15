@@ -79,7 +79,7 @@ func ParseFromOsc(oscFile string) (*DiffState, error) {
 	return ParseFile(stateFile)
 }
 
-func FromPbf(pbfFile *pbf.Pbf) *DiffState {
+func FromPbf(pbfFile *pbf.Pbf, before time.Duration) *DiffState {
 	var timestamp time.Time
 	if pbfFile.Header.Time.Unix() != 0 {
 		timestamp = pbfFile.Header.Time
@@ -99,8 +99,8 @@ func FromPbf(pbfFile *pbf.Pbf) *DiffState {
 		return nil
 	}
 
-	// start two hours earlier
-	seq -= 120
+	// start earlier
+	seq -= int32(before.Minutes())
 	return &DiffState{Time: timestamp, Url: replicationUrl, Sequence: seq}
 }
 
