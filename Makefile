@@ -9,6 +9,7 @@ export PATH := $(GOPATH)/bin:$(PATH)
 
 GOLDFLAGS=-ldflags '-r $${ORIGIN}/lib'
 
+GO=godep go
 
 BUILD_DATE=$(shell date +%Y%m%d)
 BUILD_REV=$(shell git rev-parse --short HEAD)
@@ -24,7 +25,7 @@ revert_version:
 
 imposm3: $(GOFILES) $(PROTOFILES)
 	$(MAKE) update_version
-	go build $(GOLDFLAGS)
+	$(GO) build $(GOLDFLAGS)
 	$(MAKE) revert_version
 
 build: imposm3
@@ -36,8 +37,8 @@ clean:
 test: test-unit test-system
 
 test-unit: imposm3
-	go test ./... -i
-	go test ./...
+	$(GO) test ./... -i
+	$(GO) test ./...
 
 test-system: imposm3
 	(cd test && make test)

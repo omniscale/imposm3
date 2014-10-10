@@ -1,0 +1,22 @@
+{
+	"ImportPath": "github.com/omniscale/imposm3",
+	"GoVersion": "go1.3",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "code.google.com/p/goprotobuf/proto",
+			"Comment": "go.r60-152",
+			"Rev": "36be16571e14f67e114bb0af619e5de2c1591679"
+		},
+		{
+			"ImportPath": "github.com/jmhodges/levigo",
+			"Rev": "66a25e7fa9c57348e8bfd5f712542799b568b982"
+		},
+		{
+			"ImportPath": "github.com/lib/pq",
+			"Rev": "c6325123e6d45115749734a8bc35060ebac74d0e"
+		}
+	]
+}
