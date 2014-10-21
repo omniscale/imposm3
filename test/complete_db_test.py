@@ -254,7 +254,6 @@ def test_generalized_linestring_is_valid():
     assert road['geometry'].is_valid, road['geometry'].wkt
     assert road['geometry'].length > 1000000
 
-@unittest.skip("not implemented")
 def test_relation_with_gap():
     """Multipolygon with gap (overlapping but different endpoints) gets closed"""
     park = t.query_row(t.db_conf, 'osm_landusages', -7301)

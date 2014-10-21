@@ -2,25 +2,11 @@ package geom
 
 import (
 	"errors"
+	"sort"
+
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/geom/geos"
-	"sort"
 )
-
-func BuildRelation(rel *element.Relation, srid int) error {
-	rings, err := BuildRings(rel)
-	if err != nil {
-		return err
-	}
-
-	rel.Tags = relationTags(rel.Tags, rings[0].ways[0].Tags)
-
-	_, err = BuildRelGeometry(rel, rings, srid)
-	if err != nil {
-		return err
-	}
-	return nil
-}
 
 type preparedRelation struct {
 	rings []*Ring
@@ -28,8 +14,8 @@ type preparedRelation struct {
 	srid  int
 }
 
-func PrepareRelation(rel *element.Relation, srid int) (*preparedRelation, error) {
-	rings, err := BuildRings(rel)
+func PrepareRelation(rel *element.Relation, srid int, maxRingGap float64) (*preparedRelation, error) {
+	rings, err := BuildRings(rel, maxRingGap)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +43,7 @@ func destroyRings(g *geos.Geos, rings []*Ring) {
 	}
 }
 
-func BuildRings(rel *element.Relation) ([]*Ring, error) {
+func BuildRings(rel *element.Relation, maxRingGap float64) ([]*Ring, error) {
 	var rings []*Ring
 	var incompleteRings []*Ring
 	var completeRings []*Ring
@@ -101,7 +87,7 @@ func BuildRings(rel *element.Relation) ([]*Ring, error) {
 	}
 	// create geometries for merged rings
 	for _, ring := range mergedRings {
-		if !ring.IsClosed() {
+		if !ring.IsClosed() && !ring.TryClose(maxRingGap) {
 			err = ErrorNoRing // for defer
 			return nil, err
 		}

@@ -357,7 +357,7 @@
   <node id="7301" version="1" timestamp="2011-11-11T00:11:11Z" lat="60" lon="60"/>
   <node id="7302" version="1" timestamp="2011-11-11T00:11:11Z" lat="60" lon="62"/>
   <node id="7303" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="62"/>
-  <node id="7313" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="62"/>
+  <node id="7313" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="62.0000001"/>
   <node id="7314" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="60"/>
   <way id="7301" version="1" timestamp="2011-11-11T00:11:11Z">
     <nd ref="7301"/>

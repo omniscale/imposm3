@@ -1,10 +1,11 @@
 package geom
 
 import (
-	"github.com/omniscale/imposm3/element"
-	"github.com/omniscale/imposm3/geom/geos"
 	"math"
 	"testing"
+
+	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/geom/geos"
 )
 
 type coord struct {
@@ -23,6 +24,16 @@ func makeWay(id int64, tags element.Tags, coords []coord) element.Way {
 			element.Node{OSMElem: element.OSMElem{Id: coord.id}, Long: coord.long, Lat: coord.lat})
 	}
 	return way
+}
+
+func buildRelation(rel *element.Relation, srid int) error {
+	prep, err := PrepareRelation(rel, srid, 0.1)
+	if err != nil {
+		return err
+	}
+
+	_, err = prep.Build()
+	return err
 }
 
 func TestSimplePolygonWithHole(t *testing.T) {
@@ -48,7 +59,7 @@ func TestSimplePolygonWithHole(t *testing.T) {
 		{2, element.WAY, "inner", &w2},
 	}
 
-	BuildRelation(&rel, 3857)
+	buildRelation(&rel, 3857)
 	g := geos.NewGeos()
 	defer g.Finish()
 
@@ -88,7 +99,7 @@ func TestMultiPolygonWithHoleAndRelName(t *testing.T) {
 		{2, element.WAY, "inner", &w2},
 	}
 
-	BuildRelation(&rel, 3857)
+	buildRelation(&rel, 3857)
 	g := geos.NewGeos()
 	defer g.Finish()
 
@@ -139,7 +150,7 @@ func TestMultiPolygonWithMultipleHoles(t *testing.T) {
 		{3, element.WAY, "inner", &w3},
 	}
 
-	BuildRelation(&rel, 3857)
+	buildRelation(&rel, 3857)
 	g := geos.NewGeos()
 	defer g.Finish()
 
@@ -205,7 +216,7 @@ func TestMultiPolygonWithNeastedHoles(t *testing.T) {
 		{5, element.WAY, "inner", &w5},
 	}
 
-	BuildRelation(&rel, 3857)
+	buildRelation(&rel, 3857)
 	g := geos.NewGeos()
 	defer g.Finish()
 
@@ -247,7 +258,7 @@ func TestPolygonFromThreeWays(t *testing.T) {
 		{3, element.WAY, "inner", &w3},
 	}
 
-	BuildRelation(&rel, 3857)
+	buildRelation(&rel, 3857)
 	g := geos.NewGeos()
 	defer g.Finish()
 
@@ -296,7 +307,7 @@ func TestTouchingPolygonsWithHole(t *testing.T) {
 		{2, element.WAY, "outer", &w2},
 		{3, element.WAY, "inner", &w3},
 	}
-	BuildRelation(&rel, 3857)
+	buildRelation(&rel, 3857)
 	g := geos.NewGeos()
 	defer g.Finish()
 
@@ -335,7 +346,7 @@ func TestInsertedWaysDifferentTags(t *testing.T) {
 		{2, element.WAY, "inner", &w2},
 	}
 
-	BuildRelation(&rel, 3857)
+	buildRelation(&rel, 3857)
 	g := geos.NewGeos()
 	defer g.Finish()
 
@@ -374,7 +385,7 @@ func TestInsertMultipleTags(t *testing.T) {
 		{2, element.WAY, "inner", &w2},
 	}
 
-	BuildRelation(&rel, 3857)
+	buildRelation(&rel, 3857)
 	g := geos.NewGeos()
 	defer g.Finish()
 
@@ -420,7 +431,7 @@ func TestBrokenPolygonSelfIntersect(t *testing.T) {
 		{2, element.WAY, "inner", &w2},
 	}
 
-	err := BuildRelation(&rel1, 3857)
+	err := buildRelation(&rel1, 3857)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -461,7 +472,7 @@ func TestBrokenPolygonSelfIntersect(t *testing.T) {
 		{2, element.WAY, "inner", &w2},
 	}
 
-	err = BuildRelation(&rel2, 3857)
+	err = buildRelation(&rel2, 3857)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -510,7 +521,7 @@ func TestBrokenPolygonSelfIntersectTriangle(t *testing.T) {
 		{2, element.WAY, "inner", &w2},
 	}
 
-	err := BuildRelation(&rel, 3857)
+	err := buildRelation(&rel, 3857)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -550,7 +561,7 @@ func TestBrokenPolygonSelfIntersectTriangle(t *testing.T) {
 		{2, element.WAY, "inner", &w4},
 	}
 
-	err = BuildRelation(&rel, 3857)
+	err = buildRelation(&rel, 3857)
 	if err != nil {
 		t.Fatal(err)
 	}

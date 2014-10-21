@@ -19,6 +19,7 @@ type RelationWriter struct {
 	singleIdSpace  bool
 	rel            chan *element.Relation
 	polygonMatcher mapping.RelWayMatcher
+	maxRingGap     float64
 }
 
 func NewRelationWriter(
@@ -31,6 +32,10 @@ func NewRelationWriter(
 	matcher mapping.RelWayMatcher,
 	srid int,
 ) *OsmElemWriter {
+	maxRingGap := 1e-1 // 0.1m
+	if srid == 4326 {
+		maxRingGap = 1e-6 // ~0.1m
+	}
 	rw := RelationWriter{
 		OsmElemWriter: OsmElemWriter{
 			osmCache:  osmCache,
@@ -43,6 +48,7 @@ func NewRelationWriter(
 		singleIdSpace:  singleIdSpace,
 		polygonMatcher: matcher,
 		rel:            rel,
+		maxRingGap:     maxRingGap,
 	}
 	rw.OsmElemWriter.writer = &rw
 	return &rw.OsmElemWriter
@@ -90,7 +96,7 @@ NextRel:
 
 		// prepare relation first (build rings and compute actual
 		// relation tags)
-		prepedRel, err := geom.PrepareRelation(r, rw.srid)
+		prepedRel, err := geom.PrepareRelation(r, rw.srid, rw.maxRingGap)
 		if err != nil {
 			if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
 				log.Warn(err)
