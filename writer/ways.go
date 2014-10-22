@@ -19,6 +19,7 @@ type WayWriter struct {
 	ways           chan *element.Way
 	lineMatcher    mapping.WayMatcher
 	polygonMatcher mapping.WayMatcher
+	maxGap         float64
 }
 
 func NewWayWriter(
@@ -32,6 +33,10 @@ func NewWayWriter(
 	lineMatcher mapping.WayMatcher,
 	srid int,
 ) *OsmElemWriter {
+	maxGap := 1e-1 // 0.1m
+	if srid == 4326 {
+		maxGap = 1e-6 // ~0.1m
+	}
 	ww := WayWriter{
 		OsmElemWriter: OsmElemWriter{
 			osmCache:  osmCache,
@@ -45,6 +50,7 @@ func NewWayWriter(
 		lineMatcher:    lineMatcher,
 		polygonMatcher: polygonMatcher,
 		ways:           ways,
+		maxGap:         maxGap,
 	}
 	ww.OsmElemWriter.writer = &ww
 	return &ww.OsmElemWriter
@@ -91,7 +97,7 @@ func (ww *WayWriter) loop() {
 			}
 			inserted = true
 		}
-		if w.IsClosed() && !insertedAsRelation {
+		if !insertedAsRelation && (w.IsClosed() || w.TryClose(ww.maxGap)) {
 			// only add polygons that were not inserted as a MultiPolygon relation
 			if matches := ww.polygonMatcher.MatchWay(w); len(matches) > 0 {
 				err := ww.buildAndInsert(geos, w, matches, true)

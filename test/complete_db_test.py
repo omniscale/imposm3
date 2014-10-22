@@ -254,9 +254,12 @@ def test_generalized_linestring_is_valid():
     assert road['geometry'].is_valid, road['geometry'].wkt
     assert road['geometry'].length > 1000000
 
-def test_relation_with_gap():
-    """Multipolygon with gap (overlapping but different endpoints) gets closed"""
+def test_ring_with_gap():
+    """Multipolygon and way with gap (overlapping but different endpoints) gets closed"""
     park = t.query_row(t.db_conf, 'osm_landusages', -7301)
+    assert park['geometry'].is_valid, park
+
+    park = t.query_row(t.db_conf, 'osm_landusages', 7311)
     assert park['geometry'].is_valid, park
 
 def test_updated_nodes1():

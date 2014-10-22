@@ -2,6 +2,7 @@ package element
 
 import (
 	"fmt"
+	"math"
 	"sort"
 
 	"github.com/omniscale/imposm3/geom/geos"
@@ -38,6 +39,26 @@ type Geometry struct {
 
 func (w *Way) IsClosed() bool {
 	return len(w.Refs) >= 4 && w.Refs[0] == w.Refs[len(w.Refs)-1]
+}
+
+func (w *Way) TryClose(maxGap float64) bool {
+	return TryCloseWay(w.Refs, w.Nodes, maxGap)
+}
+
+// TryCloseWay closes the way if both end nodes are nearly identical.
+// Returns true if it succeeds.
+func TryCloseWay(refs []int64, nodes []Node, maxGap float64) bool {
+	if len(refs) < 4 {
+		return false
+	}
+	start, end := nodes[0], nodes[len(nodes)-1]
+	dist := math.Hypot(start.Lat-end.Lat, start.Long-end.Long)
+	if dist < maxGap {
+		refs[len(refs)-1] = refs[0]
+		nodes[len(nodes)-1] = nodes[0]
+		return true
+	}
+	return false
 }
 
 type MemberType int

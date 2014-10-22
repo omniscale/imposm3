@@ -353,7 +353,7 @@
     <tag k="name" v="self-intersecting"/>
   </way>
 
-  <!-- relation with "gap" (ways overlap, but are only sharing one endpoint) -->
+  <!-- relation/way with "gap" (ways overlap, but are only sharing one endpoint) -->
   <node id="7301" version="1" timestamp="2011-11-11T00:11:11Z" lat="60" lon="60"/>
   <node id="7302" version="1" timestamp="2011-11-11T00:11:11Z" lat="60" lon="62"/>
   <node id="7303" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="62"/>
@@ -376,6 +376,15 @@
     <tag k="landuse" v="park"/>
     <tag k="type" v="multipolygon"/>
   </relation>
+
+  <way id="7311" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="7313"/> <!-- same coord as 7303 -->
+    <nd ref="7314"/>
+    <nd ref="7301"/>
+    <nd ref="7302"/>
+    <nd ref="7303"/>
+    <tag k="landuse" v="park"/>
+  </way>
 
   <!-- test that single node ways or incomplete polygons are _not_ inserted -->
   <node id="30001" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="80"/>

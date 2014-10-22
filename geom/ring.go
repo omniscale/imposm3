@@ -1,8 +1,6 @@
 package geom
 
 import (
-	"math"
-
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/geom/geos"
 )
@@ -22,20 +20,8 @@ func (r *Ring) IsClosed() bool {
 	return len(r.refs) >= 4 && r.refs[0] == r.refs[len(r.refs)-1]
 }
 
-// TryClose closes the ring if both end nodes are nearly identical.
-// Returns true if it succeeds.
 func (r *Ring) TryClose(maxRingGap float64) bool {
-	if len(r.refs) < 4 {
-		return false
-	}
-	start, end := r.nodes[0], r.nodes[len(r.nodes)-1]
-	dist := math.Hypot(start.Lat-end.Lat, start.Long-end.Long)
-	if dist < maxRingGap {
-		r.refs[len(r.refs)-1] = r.refs[0]
-		r.nodes[len(r.nodes)-1] = r.nodes[0]
-		return true
-	}
-	return false
+	return element.TryCloseWay(r.refs, r.nodes, maxRingGap)
 }
 
 func (r *Ring) MarkInserted(tags element.Tags) {
