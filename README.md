@@ -1,7 +1,21 @@
 Imposm 3
 ========
 
-Imposm is an importer for OpenStreetMap data. It reads PBF files and
+Imposm is an importer for OpenStreetMap data.
+
+Debian installer
+================
+ 
+    apt-get install golang git mercurial libleveldb-dev libgeos-dev libgeos++-dev osmosis python-nose python-psycopg2 python-shapely postgis
+    mkdir src/github.com/omniscale/ && cd src/github.com/omniscale/ && git clone https://github.com/jmikedupont/imposm3.git
+    export GOPATH=`pwd`
+    go get github.com/tools/godep
+    make
+
+
+Details
+=======
+It reads PBF files and
 imports the data into PostgreSQL/PostGIS. It can also update the
 DB from diff files.
 
