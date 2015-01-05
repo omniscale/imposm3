@@ -785,6 +785,79 @@
     <tag k="railway" v="tram"/>
   </way>
 
+  <!-- test outer way not inserted (different tag but same table) -->
+  <node id="19001" version="1" timestamp="2011-11-11T00:11:11Z" lat="21" lon="89"/>
+  <node id="19002" version="1" timestamp="2011-11-11T00:11:11Z" lat="21" lon="90"/>
+  <node id="19003" version="1" timestamp="2011-11-11T00:11:11Z" lat="24" lon="90"/>
+  <node id="19004" version="1" timestamp="2011-11-11T00:11:11Z" lat="24" lon="89"/>
+  <node id="19011" version="1" timestamp="2011-11-11T00:11:11Z" lat="21.8" lon="89.8"/>
+  <node id="19012" version="1" timestamp="2011-11-11T00:11:11Z" lat="21.8" lon="89.9"/>
+  <node id="19013" version="1" timestamp="2011-11-11T00:11:11Z" lat="23.9" lon="89.9"/>
+  <node id="19014" version="1" timestamp="2011-11-11T00:11:11Z" lat="23.9" lon="89.8"/>
+
+  <way id="19001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="19001"/>
+    <nd ref="19002"/>
+    <nd ref="19003"/>
+    <nd ref="19004"/>
+    <nd ref="19001"/>
+    <tag k="name" v="farm"/>
+    <tag k="landuse" v="farm"/>
+  </way>
+  <way id="19002" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="19011"/>
+    <nd ref="19012"/>
+    <nd ref="19013"/>
+    <nd ref="19014"/>
+    <nd ref="19011"/>
+    <tag k="name" v="farmyard"/>
+    <tag k="landuse" v="farmyard"/>
+  </way>
+
+  <relation id="19001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="19001" role="outer"/>
+    <member type="way" ref="19002" role="inner"/>
+    <tag k="type" v="multipolygon"/>
+    <tag k="landuse" v="farmland"/>
+  </relation>
+
+  <!-- test outer way inserted (different tag and table) -->
+  <node id="19101" version="1" timestamp="2011-11-11T00:11:11Z" lat="31" lon="89"/>
+  <node id="19102" version="1" timestamp="2011-11-11T00:11:11Z" lat="31" lon="90"/>
+  <node id="19103" version="1" timestamp="2011-11-11T00:11:11Z" lat="34" lon="90"/>
+  <node id="19104" version="1" timestamp="2011-11-11T00:11:11Z" lat="34" lon="89"/>
+  <node id="19111" version="1" timestamp="2011-11-11T00:11:11Z" lat="31.8" lon="89.8"/>
+  <node id="19112" version="1" timestamp="2011-11-11T00:11:11Z" lat="31.8" lon="89.9"/>
+  <node id="19113" version="1" timestamp="2011-11-11T00:11:11Z" lat="33.9" lon="89.9"/>
+  <node id="19114" version="1" timestamp="2011-11-11T00:11:11Z" lat="33.9" lon="89.8"/>
+
+  <way id="19101" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="19101"/>
+    <nd ref="19102"/>
+    <nd ref="19103"/>
+    <nd ref="19104"/>
+    <nd ref="19101"/>
+    <tag k="name" v="farm"/>
+    <tag k="landuse" v="farm"/>
+  </way>
+  <way id="19102" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="19111"/>
+    <nd ref="19112"/>
+    <nd ref="19113"/>
+    <nd ref="19114"/>
+    <nd ref="19111"/>
+    <tag k="name" v="farmyard"/>
+    <tag k="landuse" v="farmyard"/>
+  </way>
+
+  <relation id="19101" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="19101" role="outer"/>
+    <member type="way" ref="19102" role="outer"/>
+    <tag k="type" v="multipolygon"/>
+    <tag k="boundary" v="administrative"/>
+  </relation>
+
+
   <!-- test that node (n:20001) does not reference way (w:20001) after it was deleted -->
   <node id="20001" version="1" timestamp="2011-11-11T00:11:11Z" lat="30" lon="10">
     <tag k="name" v="way 14001"/>

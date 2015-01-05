@@ -1,8 +1,6 @@
 package mapping
 
-import (
-	"github.com/omniscale/imposm3/element"
-)
+import "github.com/omniscale/imposm3/element"
 
 func (m *Mapping) PointMatcher() NodeMatcher {
 	mappings := make(TagTables)
@@ -124,7 +122,9 @@ func (tm *tagMatcher) match(tags *element.Tags) []Match {
 }
 
 // SelectRelationPolygons returns a slice of all members that are already
-// imported with a relation with tags.
+// imported as part of the relation.
+// Outer members are "imported" if they share the same destination table. Inner members
+// are "imported" when they also share the same key/value.
 func SelectRelationPolygons(polygonTagMatcher RelWayMatcher, rel *element.Relation) []element.Member {
 	relMatches := polygonTagMatcher.MatchRelation(rel)
 	result := []element.Member{}
@@ -133,19 +133,34 @@ func SelectRelationPolygons(polygonTagMatcher RelWayMatcher, rel *element.Relati
 			continue
 		}
 		memberMatches := polygonTagMatcher.MatchWay(m.Way)
-		if matchEquals(relMatches, memberMatches) {
+		if m.Role == "outer" && dstEquals(relMatches, memberMatches) {
+			result = append(result, m)
+		} else if matchEquals(relMatches, memberMatches) {
 			result = append(result, m)
 		}
 	}
 	return result
 }
 
+// matchEquals returns true if both matches share key/value and table
 func matchEquals(matchesA, matchesB []Match) bool {
 	for _, matchA := range matchesA {
 		for _, matchB := range matchesB {
 			if matchA.Key == matchB.Key &&
 				matchA.Value == matchB.Value &&
 				matchA.Table == matchB.Table {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// dstEquals returns true if both matches share a single destination table
+func dstEquals(matchesA, matchesB []Match) bool {
+	for _, matchA := range matchesA {
+		for _, matchB := range matchesB {
+			if matchA.Table == matchB.Table {
 				return true
 			}
 		}

@@ -124,6 +124,27 @@ def test_node_way_inserted_twice():
     assert rows[0]['type'] == 'residential'
     assert rows[1]['type'] == 'tram'
 
+def test_outer_way_not_inserted():
+    """Outer way with different tag is not inserted twice into same table"""
+    farm = t.query_row(t.db_conf, 'osm_landusages', -19001)
+    assert farm['type'] == 'farmland'
+    assert not t.query_row(t.db_conf, 'osm_landusages', 19001)
+
+    farmyard = t.query_row(t.db_conf, 'osm_landusages', 19002)
+    assert farmyard['type'] == 'farmyard'
+
+def test_outer_way_inserted():
+    """Outer way with different tag is inserted twice into different table"""
+    farm = t.query_row(t.db_conf, 'osm_landusages', 19101)
+    assert farm['type'] == 'farm'
+    assert not t.query_row(t.db_conf, 'osm_landusages', -19101)
+
+    farmyard = t.query_row(t.db_conf, 'osm_landusages', 19102)
+    assert farmyard['type'] == 'farmyard'
+
+    admin = t.query_row(t.db_conf, 'osm_admin', -19101)
+    assert admin['type'] == 'administrative'
+
 def test_node_way_ref_after_delete_1():
     """Nodes refereces way"""
     data = t.cache_query(nodes=[20001, 20002], deps=True)
@@ -159,6 +180,7 @@ def test_relation_ways_inserted():
     park = t.query_row(t.db_conf, 'osm_landusages', -9201)
     assert park['type'] == 'park'
     assert park['name'] == '9209'
+    assert not t.query_row(t.db_conf, 'osm_landusages', 9201)
 
     # outer ways of multipolygon stand for their own
     road = t.query_row(t.db_conf, 'osm_roads', 9209)

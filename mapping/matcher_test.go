@@ -26,8 +26,15 @@ func makeMember(id int64, tags element.Tags) element.Member {
 		element.OSMElem{id, tags, nil},
 		[]int64{0, 1, 2, 0}, // fake closed way, req. for SelectRelationPolygons
 		nil}
-	return element.Member{Id: id, Type: element.WAY, Role: "outer", Way: way}
+	return element.Member{Id: id, Type: element.WAY, Role: "", Way: way}
+}
 
+func makeMemberRole(id int64, tags element.Tags, role string) element.Member {
+	way := &element.Way{
+		element.OSMElem{id, tags, nil},
+		[]int64{0, 1, 2, 0}, // fake closed way, req. for SelectRelationPolygons
+		nil}
+	return element.Member{Id: id, Type: element.WAY, Role: role, Way: way}
 }
 
 func TestSelectRelationPolygonsSimple(t *testing.T) {
@@ -122,6 +129,31 @@ func TestSelectRelationPolygonsMultipleTags(t *testing.T) {
 	// TODO both should be filterd out, but we only get one,
 	// because we match only one tag per table
 	if len(filtered) != 1 {
+		t.Fatal(filtered)
+	}
+}
+
+func TestSelectRelationPolygonsMultipleTagsOnWay(t *testing.T) {
+	mapping, err := NewMapping("test_mapping.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := element.Relation{}
+	r.Tags = element.Tags{"waterway": "riverbank"}
+	r.Members = []element.Member{
+		makeMemberRole(0, element.Tags{"waterway": "riverbank", "natural": "water"}, "outer"),
+		makeMemberRole(1, element.Tags{"natural": "water"}, "inner"),
+		makeMemberRole(2, element.Tags{"place": "islet"}, "inner"),
+	}
+	filtered := SelectRelationPolygons(
+		mapping.PolygonMatcher(),
+		&r,
+	)
+
+	if len(filtered) != 1 {
+		t.Fatal(filtered)
+	}
+	if filtered[0].Id != 0 {
 		t.Fatal(filtered)
 	}
 }

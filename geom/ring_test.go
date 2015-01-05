@@ -1,9 +1,10 @@
 package geom
 
 import (
-	"github.com/omniscale/imposm3/element"
 	"sort"
 	"testing"
+
+	"github.com/omniscale/imposm3/element"
 )
 
 func TestRingMerge(t *testing.T) {
@@ -209,43 +210,4 @@ func TestRingMergePermutations(t *testing.T) {
 			}
 		}
 	}
-}
-
-func TestTagsSameOrEmpty(t *testing.T) {
-	var a, b element.Tags
-
-	a = element.Tags{"natural": "water"}
-	b = element.Tags{"natural": "water"}
-	if tagsSameOrEmpty(a, b) != true {
-		t.Fatal(a, b)
-	}
-
-	a = element.Tags{"natural": "water"}
-	b = element.Tags{"natural": "water", "name": "bar"}
-	if tagsSameOrEmpty(a, b) != true {
-		t.Fatal(a, b)
-	}
-	if tagsSameOrEmpty(b, a) != true {
-		t.Fatal(a, b)
-	}
-
-	a = element.Tags{"natural": "water"}
-	b = element.Tags{}
-	if tagsSameOrEmpty(a, b) != true {
-		t.Fatal(a, b)
-	}
-
-	if tagsSameOrEmpty(b, a) != false {
-		t.Fatal(a, b)
-	}
-
-	a = element.Tags{"natural": "water"}
-	b = element.Tags{"landusage": "forest", "natural": "water"}
-	if tagsSameOrEmpty(a, b) != false {
-		t.Fatal(a, b)
-	}
-	if tagsSameOrEmpty(b, a) != false {
-		t.Fatal(a, b)
-	}
-
 }

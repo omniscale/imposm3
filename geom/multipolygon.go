@@ -141,14 +141,17 @@ func BuildRelGeometry(rel *element.Relation, rings []*Ring, srid int) (*geos.Geo
 				// add ring as hole or shell
 				if ringIsHole(rings, j) {
 					rings[i].holes[rings[j]] = true
+					rings[i].outer = false
 				} else {
 					shells[rings[j]] = true
+					rings[i].outer = true
 				}
 			}
 		}
 		if rings[i].containedBy == -1 {
 			// add as shell if it is not a hole
 			shells[rings[i]] = true
+			rings[i].outer = true
 		}
 		g.PreparedDestroy(testGeom)
 	}
@@ -157,7 +160,6 @@ func BuildRelGeometry(rel *element.Relation, rings []*Ring, srid int) (*geos.Geo
 	for shell, _ := range shells {
 		var interiors []*geos.Geom
 		for hole, _ := range shell.holes {
-			hole.MarkInserted(rel.Tags)
 			ring := g.Clone(g.ExteriorRing(hole.geom))
 			g.Destroy(hole.geom)
 			if ring == nil {
@@ -165,7 +167,6 @@ func BuildRelGeometry(rel *element.Relation, rings []*Ring, srid int) (*geos.Geo
 			}
 			interiors = append(interiors, ring)
 		}
-		shell.MarkInserted(rel.Tags)
 		exterior := g.Clone(g.ExteriorRing(shell.geom))
 		g.Destroy(shell.geom)
 		if exterior == nil {
@@ -198,10 +199,20 @@ func BuildRelGeometry(rel *element.Relation, rings []*Ring, srid int) (*geos.Geo
 
 	g.DestroyLater(result)
 
-	insertedWays := make(map[int64]bool)
-	for _, r := range rings {
-		for id, _ := range r.inserted {
-			insertedWays[id] = true
+	outer := make(map[int64]struct{})
+	for i := range rings {
+		if rings[i].outer {
+			for _, w := range rings[i].ways {
+				outer[w.Id] = struct{}{}
+			}
+		}
+	}
+	for i := range rel.Members {
+		mid := rel.Members[i].Id
+		if _, ok := outer[mid]; ok {
+			rel.Members[i].Role = "outer"
+		} else {
+			rel.Members[i].Role = "inner"
 		}
 	}
 

@@ -13,6 +13,7 @@ type Ring struct {
 	holes       map[*Ring]bool
 	containedBy int
 	area        float64
+	outer       bool
 	inserted    map[int64]bool
 }
 
@@ -22,40 +23,6 @@ func (r *Ring) IsClosed() bool {
 
 func (r *Ring) TryClose(maxRingGap float64) bool {
 	return element.TryCloseWay(r.refs, r.nodes, maxRingGap)
-}
-
-func (r *Ring) MarkInserted(tags element.Tags) {
-	if r.inserted == nil {
-		r.inserted = make(map[int64]bool)
-	}
-	for _, w := range r.ways {
-		if tagsSameOrEmpty(tags, w.Tags) {
-			r.inserted[w.Id] = true
-		}
-	}
-}
-
-func tagsSameOrEmpty(a, b element.Tags) bool {
-	if len(b) == 0 {
-		return true
-	}
-	for k, v := range a {
-		if k == "name" {
-			continue
-		}
-		if cmp, ok := b[k]; !ok || v != cmp {
-			return false
-		}
-	}
-	for k, v := range b {
-		if k == "name" {
-			continue
-		}
-		if cmp, ok := a[k]; !ok || v != cmp {
-			return false
-		}
-	}
-	return true
 }
 
 func NewRing(way *element.Way) *Ring {
