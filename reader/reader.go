@@ -118,16 +118,23 @@ func ReadPbf(cache *osmcache.OSMCache, progress *stats.Statistics,
 				for i, _ := range ws {
 					m.Filter(&ws[i].Tags)
 					if withLimiter {
-						if !cache.Coords.FirstRefIsCached(ws[i].Refs) {
+						cached, err := cache.Coords.FirstRefIsCached(ws[i].Refs)
+						if err != nil {
+							log.Errorf("error while checking for cached refs of way %d: %v", ws[i].Id, err)
+							cached = true // don't skip in case of error
+						}
+						if cached {
+							hit += 1
+						} else {
 							ws[i].Id = osmcache.SKIP
 							skip += 1
-
-						} else {
-							hit += 1
 						}
 					}
 				}
-				cache.Ways.PutWays(ws)
+				err := cache.Ways.PutWays(ws)
+				if err != nil {
+					log.Errorf("error while caching ways: %v", err)
+				}
 				progress.AddWays(len(ws))
 			}
 
@@ -149,17 +156,23 @@ func ReadPbf(cache *osmcache.OSMCache, progress *stats.Statistics,
 						numWithTags += 1
 					}
 					if withLimiter {
-						if !cache.Ways.FirstMemberIsCached(rels[i].Members) {
-							skip += 1
-
-							rels[i].Id = osmcache.SKIP
-						} else {
+						cached, err := cache.Ways.FirstMemberIsCached(rels[i].Members)
+						if err != nil {
+							log.Errorf("error while checking for cached members of relation %d: %v", rels[i].Id, err)
+							cached = true // don't skip in case of error
+						}
+						if cached {
 							hit += 1
-
+						} else {
+							skip += 1
+							rels[i].Id = osmcache.SKIP
 						}
 					}
 				}
-				cache.Relations.PutRelations(rels)
+				err := cache.Relations.PutRelations(rels)
+				if err != nil {
+					log.Errorf("error while caching relation: %v", err)
+				}
 				progress.AddRelations(numWithTags)
 			}
 

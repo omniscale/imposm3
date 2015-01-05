@@ -2,10 +2,11 @@ package cache
 
 import (
 	"container/list"
-	"github.com/omniscale/imposm3/cache/binary"
-	"github.com/omniscale/imposm3/element"
 	"sort"
 	"sync"
+
+	"github.com/omniscale/imposm3/cache/binary"
+	"github.com/omniscale/imposm3/element"
 )
 
 type byId []element.Node
@@ -152,12 +153,15 @@ func (self *DeltaCoordsCache) SetLinearImport(v bool) {
 	self.linearImport = v
 }
 
-func (self *DeltaCoordsCache) Flush() {
+func (self *DeltaCoordsCache) Flush() error {
 	self.mu.Lock()
 	defer self.mu.Unlock()
 	for bunchId, bunch := range self.table {
 		if bunch.needsWrite {
-			self.putCoordsPacked(bunchId, bunch.coords)
+			err := self.putCoordsPacked(bunchId, bunch.coords)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -165,10 +169,15 @@ func (self *DeltaCoordsCache) Flush() {
 	for k, _ := range self.table {
 		delete(self.table, k)
 	}
+	return nil
 }
-func (self *DeltaCoordsCache) Close() {
-	self.Flush()
+func (self *DeltaCoordsCache) Close() error {
+	err := self.Flush()
+	if err != nil {
+		return err
+	}
 	self.cache.Close()
+	return nil
 }
 
 func (self *DeltaCoordsCache) SetReadOnly(val bool) {
@@ -270,7 +279,10 @@ func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) error {
 			if self.linearImport && int64(i) > self.bunchSize && int64(i) < int64(totalNodes)-self.bunchSize {
 				// no need to handle concurrent updates to the same
 				// bunch if we are not at the boundary of a self.bunchSize
-				self.putCoordsPacked(currentBunchId, nodes[start:i])
+				err := self.putCoordsPacked(currentBunchId, nodes[start:i])
+				if err != nil {
+					return err
+				}
 			} else {
 				bunch, err := self.getBunch(currentBunchId)
 				if err != nil {
@@ -389,8 +401,11 @@ func (self *DeltaCoordsCache) getBunch(bunchId int64) (*coordsBunch, error) {
 		self.lruList.MoveToFront(bunch.elem)
 	}
 	bunch.Lock()
-	self.CheckCapacity()
+	err := self.CheckCapacity()
 	self.mu.Unlock()
+	if err != nil {
+		return nil, err
+	}
 
 	if needsGet {
 		nodes, err := self.getCoordsPacked(bunchId, nodes)
@@ -403,14 +418,16 @@ func (self *DeltaCoordsCache) getBunch(bunchId int64) (*coordsBunch, error) {
 	return bunch, nil
 }
 
-func (self *DeltaCoordsCache) CheckCapacity() {
+func (self *DeltaCoordsCache) CheckCapacity() error {
 	for int64(len(self.table)) > self.capacity {
 		elem := self.lruList.Back()
 		bunchId := self.lruList.Remove(elem).(int64)
 		bunch := self.table[bunchId]
 		bunch.elem = nil
 		if bunch.needsWrite {
-			self.putCoordsPacked(bunchId, bunch.coords)
+			if err := self.putCoordsPacked(bunchId, bunch.coords); err != nil {
+				return err
+			}
 		}
 		select {
 		case freeNodes <- bunch.coords:
@@ -418,15 +435,19 @@ func (self *DeltaCoordsCache) CheckCapacity() {
 		}
 		delete(self.table, bunchId)
 	}
+	return nil
 }
 
-func (self *DeltaCoordsCache) FirstRefIsCached(refs []int64) bool {
+func (self *DeltaCoordsCache) FirstRefIsCached(refs []int64) (bool, error) {
 	if len(refs) <= 0 {
-		return false
+		return false, nil
 	}
 	_, err := self.GetCoord(refs[0])
-	if err != nil {
-		return false
+	if err == NotFound {
+		return false, nil
 	}
-	return true
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }

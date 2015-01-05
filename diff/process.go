@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
+	"runtime"
 
 	"github.com/omniscale/imposm3/cache"
 	"github.com/omniscale/imposm3/config"
@@ -154,31 +156,33 @@ For:
 			}
 			if elem.Del {
 				if err := deleter.Delete(elem); err != nil {
-					return err
+					return diffError(err, "delete element", elem)
 				}
 				if !elem.Add {
 					// no new or modified elem -> remove from cache
 					if elem.Rel != nil {
-						if err := osmCache.Relations.DeleteRelation(elem.Rel.Id); err != nil {
-							return err
+						if err := osmCache.Relations.DeleteRelation(elem.Rel.Id); err != nil && err != cache.NotFound {
+							return diffError(err, "delete relation %v", elem.Rel)
 						}
 					} else if elem.Way != nil {
-						if err := osmCache.Ways.DeleteWay(elem.Way.Id); err != nil {
-							return err
+						if err := osmCache.Ways.DeleteWay(elem.Way.Id); err != nil && err != cache.NotFound {
+							return diffError(err, "delete way %v", elem.Way)
 						}
-						diffCache.Ways.Delete(elem.Way.Id)
+						if err := diffCache.Ways.Delete(elem.Way.Id); err != nil && err != cache.NotFound {
+							return diffError(err, "delete way references %v", elem.Way)
+						}
 					} else if elem.Node != nil {
-						if err := osmCache.Nodes.DeleteNode(elem.Node.Id); err != nil {
-							return err
+						if err := osmCache.Nodes.DeleteNode(elem.Node.Id); err != nil && err != cache.NotFound {
+							return diffError(err, "delete node %v", elem.Node)
 						}
-						if err := osmCache.Coords.DeleteCoord(elem.Node.Id); err != nil {
-							return err
+						if err := osmCache.Coords.DeleteCoord(elem.Node.Id); err != nil && err != cache.NotFound {
+							return diffError(err, "delete coord %v", elem.Node)
 						}
 					}
 				} else if elem.Node != nil && elem.Node.Tags == nil {
 					// handle modifies where a node drops all tags
-					if err := osmCache.Nodes.DeleteNode(elem.Node.Id); err != nil {
-						return err
+					if err := osmCache.Nodes.DeleteNode(elem.Node.Id); err != nil && err != cache.NotFound {
+						return diffError(err, "delete node %v", elem.Node)
 					}
 				}
 			}
@@ -186,15 +190,29 @@ For:
 				if elem.Rel != nil {
 					// check if first member is cached to avoid caching
 					// unneeded relations (typical outside of our coverage)
-					if osmCache.Ways.FirstMemberIsCached(elem.Rel.Members) {
-						osmCache.Relations.PutRelation(elem.Rel)
+					cached, err := osmCache.Ways.FirstMemberIsCached(elem.Rel.Members)
+					if err != nil {
+						return diffError(err, "query first member %v", elem.Rel)
+					}
+					if cached {
+						err := osmCache.Relations.PutRelation(elem.Rel)
+						if err != nil {
+							return diffError(err, "put relation %v", elem.Rel)
+						}
 						relIds[elem.Rel.Id] = true
 					}
 				} else if elem.Way != nil {
 					// check if first coord is cached to avoid caching
 					// unneeded ways (typical outside of our coverage)
-					if osmCache.Coords.FirstRefIsCached(elem.Way.Refs) {
-						osmCache.Ways.PutWay(elem.Way)
+					cached, err := osmCache.Coords.FirstRefIsCached(elem.Way.Refs)
+					if err != nil {
+						return diffError(err, "query first ref %v", elem.Way)
+					}
+					if cached {
+						err := osmCache.Ways.PutWay(elem.Way)
+						if err != nil {
+							return diffError(err, "put way %v", elem.Way)
+						}
 						wayIds[elem.Way.Id] = true
 					}
 				} else if elem.Node != nil {
@@ -207,15 +225,21 @@ For:
 						}
 					}
 					if addNode {
-						osmCache.Nodes.PutNode(elem.Node)
-						osmCache.Coords.PutCoords([]element.Node{*elem.Node})
+						err := osmCache.Nodes.PutNode(elem.Node)
+						if err != nil {
+							return diffError(err, "put node %v", elem.Node)
+						}
+						err = osmCache.Coords.PutCoords([]element.Node{*elem.Node})
+						if err != nil {
+							return diffError(err, "put coord %v", elem.Node)
+						}
 						nodeIds[elem.Node.Id] = true
 					}
 				}
 			}
 		case err := <-errc:
 			if err != io.EOF {
-				return err
+				return diffError(err, "")
 			}
 			break For
 		}
@@ -253,7 +277,7 @@ For:
 		rel, err := osmCache.Relations.GetRelation(relId)
 		if err != nil {
 			if err != cache.NotFound {
-				log.Print(rel, err)
+				return diffError(err, "could not get relation %v", relId)
 			}
 			continue
 		}
@@ -266,7 +290,7 @@ For:
 		way, err := osmCache.Ways.GetWay(wayId)
 		if err != nil {
 			if err != cache.NotFound {
-				log.Print(way, err)
+				return diffError(err, "could not get way %v", wayId)
 			}
 			continue
 		}
@@ -279,7 +303,7 @@ For:
 		node, err := osmCache.Nodes.GetNode(nodeId)
 		if err != nil {
 			if err != cache.NotFound {
-				log.Print(node, err)
+				return diffError(err, "could not get node %v", nodeId)
 			}
 			// missing nodes can still be Coords
 			// no `continue` here
@@ -326,4 +350,10 @@ For:
 		}
 	}
 	return nil
+}
+
+func diffError(err error, msg string, args ...interface{}) error {
+	_, file, line, _ := runtime.Caller(1)
+	return fmt.Errorf("diff process error (%s:%d): %s %v",
+		filepath.Base(file), line, fmt.Sprintf(msg, args...), err)
 }

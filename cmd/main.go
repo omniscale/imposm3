@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/omniscale/imposm3/cache"
 	golog "log"
 	"os"
 	"runtime"
+
+	"github.com/omniscale/imposm3/cache"
 
 	"github.com/omniscale/imposm3/cache/query"
 	"github.com/omniscale/imposm3/config"
@@ -88,7 +89,7 @@ func Main(usage func()) {
 			if err != nil {
 				osmCache.Close()
 				diffCache.Close()
-				log.Fatal(err)
+				log.Fatalf("unable to process %s: %v", oscFile, err)
 			}
 		}
 		// explicitly Close since os.Exit prevents defers
