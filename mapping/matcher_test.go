@@ -1,8 +1,9 @@
 package mapping
 
 import (
-	"github.com/omniscale/imposm3/element"
 	"testing"
+
+	"github.com/omniscale/imposm3/element"
 )
 
 func BenchmarkTagMatch(b *testing.B) {
@@ -118,12 +119,9 @@ func TestSelectRelationPolygonsMultipleTags(t *testing.T) {
 		mapping.PolygonMatcher(),
 		&r,
 	)
-	// TODO both should be filterd out, but we only get the first one,
+	// TODO both should be filterd out, but we only get one,
 	// because we match only one tag per table
 	if len(filtered) != 1 {
-		t.Fatal(filtered)
-	}
-	if filtered[0].Id != 0 {
 		t.Fatal(filtered)
 	}
 }
