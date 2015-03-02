@@ -1,8 +1,9 @@
 package limit
 
 import (
-	"github.com/omniscale/imposm3/geom/geos"
 	"testing"
+
+	"github.com/omniscale/imposm3/geom/geos"
 )
 
 func TestTileBounds(t *testing.T) {
@@ -39,7 +40,7 @@ func TestSplitPolygonAtGrids(t *testing.T) {
 
 	geom := g.BoundsPolygon(geos.Bounds{0, 0, 0.15, 0.11})
 
-	geoms, _ := SplitPolygonAtGrid(g, geom, 0.05, 0.2)
+	geoms, _ := splitPolygonAtGrid(g, geom, 0.05, 0.2)
 	for _, geom := range geoms {
 		t.Log(geom.Bounds())
 	}
@@ -263,7 +264,7 @@ func TestFilterGeometryByType(t *testing.T) {
 func TestClipper(t *testing.T) {
 	g := geos.NewGeos()
 	defer g.Finish()
-	limiter, err := NewFromGeoJson("./hamburg_clip.geojson")
+	limiter, err := NewFromGeoJSON("./clipping.geojson", 0.0, 3857)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -305,16 +306,17 @@ func TestClipper(t *testing.T) {
 func TestClipperWithBuffer(t *testing.T) {
 	g := geos.NewGeos()
 	defer g.Finish()
-	limiter, err := NewFromGeoJsonWithBuffered("./hamburg_clip.geojson", 10000.0)
+	limiter, err := NewFromGeoJSON("./clipping.geojson", 0.1, 3857)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if limiter.IntersectsBuffer(g, 1106543, 7082055) != true {
+	if limiter.IntersectsBuffer(g, 9.94, 53.53) != true {
 		t.Fatal()
 	}
-	if limiter.IntersectsBuffer(g, 1006543, 7082055) != false {
+	if limiter.IntersectsBuffer(g, 9.04, 53.53) != false {
 		t.Fatal()
 	}
+
 }
 
 func TestSplitParams(t *testing.T) {
@@ -373,7 +375,7 @@ func TestSplitParams(t *testing.T) {
 func BenchmarkClipper(b *testing.B) {
 	g := geos.NewGeos()
 	defer g.Finish()
-	limiter, err := NewFromGeoJson("./hamburg_clip.geojson")
+	limiter, err := NewFromGeoJSON("./clipping.geojson", 1.0, 3857)
 	if err != nil {
 		b.Fatal(err)
 	}

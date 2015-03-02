@@ -15,7 +15,6 @@ import (
 	"github.com/omniscale/imposm3/logging"
 	"github.com/omniscale/imposm3/mapping"
 	"github.com/omniscale/imposm3/parser/pbf"
-	"github.com/omniscale/imposm3/proj"
 	"github.com/omniscale/imposm3/stats"
 	"github.com/omniscale/imposm3/util"
 )
@@ -193,9 +192,7 @@ func ReadPbf(cache *osmcache.OSMCache, progress *stats.Statistics,
 				}
 				if withLimiter {
 					for i, _ := range nds {
-						nd := element.Node{Long: nds[i].Long, Lat: nds[i].Lat}
-						proj.NodeToMerc(&nd)
-						if !limiter.IntersectsBuffer(g, nd.Long, nd.Lat) {
+						if !limiter.IntersectsBuffer(g, nds[i].Long, nds[i].Lat) {
 							skip += 1
 							nds[i].Id = osmcache.SKIP
 						} else {
@@ -228,9 +225,7 @@ func ReadPbf(cache *osmcache.OSMCache, progress *stats.Statistics,
 						numWithTags += 1
 					}
 					if withLimiter {
-						nd := element.Node{Long: nds[i].Long, Lat: nds[i].Lat}
-						proj.NodeToMerc(&nd)
-						if !limiter.IntersectsBuffer(g, nd.Long, nd.Lat) {
+						if !limiter.IntersectsBuffer(g, nds[i].Long, nds[i].Lat) {
 							nds[i].Id = osmcache.SKIP
 						}
 					}

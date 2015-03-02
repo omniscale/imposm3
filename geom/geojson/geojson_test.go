@@ -2,13 +2,12 @@ package geojson
 
 import (
 	"bytes"
-	"math"
 	"testing"
 )
 
 func TestParsePolygon(t *testing.T) {
-	r := bytes.NewBufferString(`{"type": "Polygon", "coordinates": [[[1000, 1000], [2000, 1000], [2000, 2000], [1000, 2000], [1000, 1000]]]}`)
-	features, err := ParseGeoJson(r)
+	r := bytes.NewBufferString(`{"type": "Polygon", "coordinates": [[[8, 50], [11, 50], [11, 53], [8, 53], [8, 50]]]}`)
+	features, err := ParseGeoJSON(r)
 
 	if err != nil {
 		t.Fatal(err)
@@ -18,13 +17,13 @@ func TestParsePolygon(t *testing.T) {
 		t.Fatal(features)
 	}
 
-	if math.Abs(features[0].Geom.Area()-1000000) > 0.00001 {
-		t.Fatal(features[0].Geom.Area())
+	if len(features[0].Polygon[0]) != 5 {
+		t.Fatal(features)
 	}
 
 	// ignore z values
-	r = bytes.NewBufferString(`{"type": "Polygon", "coordinates": [[[1000, 1000, 1000], [2000, 1000, 1000], [2000, 2000, 1000], [1000, 2000, 1000], [1000, 1000, 1000]]]}`)
-	features, err = ParseGeoJson(r)
+	r = bytes.NewBufferString(`{"type": "Polygon", "coordinates": [[[8, 50, 0], [11, 50, 0], [11, 53, 0], [8, 53, 0], [8, 50, 0]]]}`)
+	features, err = ParseGeoJSON(r)
 
 	if err != nil {
 		t.Fatal(err)
@@ -34,12 +33,17 @@ func TestParsePolygon(t *testing.T) {
 		t.Fatal(features)
 	}
 
-	if math.Abs(features[0].Geom.Area()-1000000) > 0.00001 {
-		t.Fatal(features[0].Geom.Area())
+	if len(features[0].Polygon[0]) != 5 {
+		t.Fatal(features)
 	}
 
-	r = bytes.NewBufferString(`{"type": "Polygon", "coordinates": [[[1000, 1000], [2000, 1000], [2000, 2000], [1000, 2000], [1000, 1000]], [[500, 500], [600, 500], [600, 600], [500, 600], [500, 500]]]}`)
-	features, err = ParseGeoJson(r)
+	if p := features[0].Polygon[0][0]; p.Long != 8.0 || p.Lat != 50 {
+		t.Fatal(features)
+	}
+
+	// with hole
+	r = bytes.NewBufferString(`{"type": "Polygon", "coordinates": [[[8, 50], [11, 50], [11, 53], [8, 53], [8, 50]], [[9, 51], [10, 51], [10, 52], [9, 52], [9, 51]]]}`)
+	features, err = ParseGeoJSON(r)
 
 	if err != nil {
 		t.Fatal(err)
@@ -49,18 +53,18 @@ func TestParsePolygon(t *testing.T) {
 		t.Fatal(features)
 	}
 
-	if math.Abs(features[0].Geom.Area()-990000) > 0.00001 {
-		t.Fatal(features[0].Geom.Area())
+	if len(features[0].Polygon) != 2 {
+		t.Fatal(features)
 	}
 
 }
 
 func TestParseMultiPolygon(t *testing.T) {
 	r := bytes.NewBufferString(`{"type": "MultiPolygon", "coordinates":
-        [[[[1000, 1000], [2000, 1000], [2000, 2000], [1000, 1000]]],
-        [[[1000, 1000], [2000, 1000], [2000, 2000], [1000, 1000]]]]
+        [[[[8, 50], [11, 50], [11, 53], [8, 50]]],
+        [[[8, 50], [11, 50], [11, 53], [8, 50]]]]
     }`)
-	features, err := ParseGeoJson(r)
+	features, err := ParseGeoJSON(r)
 
 	if err != nil {
 		t.Fatal(err)
@@ -73,9 +77,9 @@ func TestParseMultiPolygon(t *testing.T) {
 
 func TestParseFeature(t *testing.T) {
 	r := bytes.NewBufferString(`{"type": "Feature", "geometry": {
-        "type": "Polygon", "coordinates": [[[1000, 1000], [2000, 1000], [2000, 2000], [1000, 2000], [1000, 1000]]]
+        "type": "Polygon", "coordinates": [[[8, 50], [11, 50], [11, 53], [8, 53], [8, 50]]]
     }}`)
-	features, err := ParseGeoJson(r)
+	features, err := ParseGeoJSON(r)
 
 	if err != nil {
 		t.Fatal(err)
@@ -84,21 +88,21 @@ func TestParseFeature(t *testing.T) {
 	if len(features) != 1 {
 		t.Fatal(features)
 	}
-	if math.Abs(features[0].Geom.Area()-1000000) > 0.00001 {
-		t.Fatal(features[0].Geom.Area())
+	if len(features[0].Polygon[0]) != 5 {
+		t.Fatal(features)
 	}
 }
 
 func TestParseFeatureCollection(t *testing.T) {
 	r := bytes.NewBufferString(`{"type": "FeatureCollection", "features": [
         {"type": "Feature", "geometry":
-            {"type": "Polygon", "coordinates": [[[1000, 1000], [2000, 1000], [2000, 2000], [1000, 2000], [1000, 1000]]]}
+            {"type": "Polygon", "coordinates": [[[8, 50], [11, 50], [11, 53], [8, 53], [8, 50]]]}
         },
         {"type": "Feature", "geometry":
-            {"type": "Polygon", "coordinates": [[[1000, 1000], [2000, 1000], [2000, 2000], [1000, 2000], [1000, 1000]]]}
+            {"type": "Polygon", "coordinates": [[[8, 50], [11, 50], [11, 53], [8, 53], [8, 50]]]}
         }
     ]}`)
-	features, err := ParseGeoJson(r)
+	features, err := ParseGeoJSON(r)
 
 	if err != nil {
 		t.Fatal(err)
@@ -107,21 +111,24 @@ func TestParseFeatureCollection(t *testing.T) {
 	if len(features) != 2 {
 		t.Fatal(features)
 	}
-	if math.Abs(features[0].Geom.Area()-1000000) > 0.00001 {
-		t.Fatal(features[0].Geom.Area())
+	if len(features[0].Polygon[0]) != 5 {
+		t.Fatal(features)
+	}
+	if len(features[1].Polygon[0]) != 5 {
+		t.Fatal(features)
 	}
 }
 
-func TestParseGeoJson(t *testing.T) {
+func TestParseProperties(t *testing.T) {
 	r := bytes.NewBufferString(`{"type": "FeatureCollection", "features": [
         {"type": "Feature", "properties": {"foo": "bar", "baz": 42}, "geometry":
-            {"type": "Polygon", "coordinates": [[[1000, 1000], [2000, 1000], [2000, 2000], [1000, 2000], [1000, 1000]]]}
+            {"type": "Polygon", "coordinates": [[[8, 50], [11, 50], [11, 53], [8, 53], [8, 50]]]}
         },
         {"type": "Feature", "geometry":
-            {"type": "Polygon", "coordinates": [[[1000, 1000], [2000, 1000], [2000, 2000], [1000, 2000], [1000, 1000]]]}
+            {"type": "Polygon", "coordinates": [[[8, 50], [11, 50], [11, 53], [8, 53], [8, 50]]]}
         }
     ]}`)
-	features, err := ParseGeoJson(r)
+	features, err := ParseGeoJSON(r)
 
 	if err != nil {
 		t.Fatal(err)
@@ -137,31 +144,10 @@ func TestParseGeoJson(t *testing.T) {
 		t.Errorf("baz != 42, but '%v'", v)
 	}
 
-	if math.Abs(features[0].Geom.Area()-1000000) > 0.00001 {
-		t.Fatal(features[0].Geom.Area())
-	}
-}
-
-func TestParseGeoJsonTransform(t *testing.T) {
-	// automatically transforms WGS84 to webmercator
-	r := bytes.NewBufferString(`{"type": "FeatureCollection", "features": [
-        {"type": "Feature", "geometry":
-            {"type": "Polygon", "coordinates": [[[8, 53], [9, 53], [9, 54], [8, 54], [8, 53]]]}
-        },
-        {"type": "Feature", "geometry":
-            {"type": "Polygon", "coordinates": [[[9, 53], [10, 53], [10, 54], [9, 54], [9, 53]]]}
-        }
-    ]}`)
-	features, err := ParseGeoJson(r)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(features) != 2 {
+	if len(features[0].Polygon[0]) != 5 {
 		t.Fatal(features)
 	}
-	if math.Abs(features[0].Geom.Area()-20834374847.98027) > 0.01 {
-		t.Fatal(features[0].Geom.Area())
+	if len(features[1].Polygon[0]) != 5 {
+		t.Fatal(features)
 	}
 }

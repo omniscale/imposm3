@@ -170,7 +170,7 @@ def imposm3_update(db_conf, osc, mapping_file):
         print subprocess.check_output((
             "../imposm3 diff -connection %s"
             " -cachedir %s"
-            " -limitto clipping-3857.geojson"
+            " -limitto clipping.geojson"
             " -dbschema-production " + TEST_SCHEMA_PRODUCTION +
             " -mapping %s %s") % (
             conn, tmpdir, mapping_file, osc,

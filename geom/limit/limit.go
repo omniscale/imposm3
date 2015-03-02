@@ -2,13 +2,15 @@ package limit
 
 import (
 	"errors"
-	"github.com/omniscale/imposm3/geom/geojson"
-	"github.com/omniscale/imposm3/geom/geos"
-	"github.com/omniscale/imposm3/logging"
 	"math"
 	"os"
 	"strings"
 	"sync"
+
+	"github.com/omniscale/imposm3/geom/geojson"
+	"github.com/omniscale/imposm3/geom/geos"
+	"github.com/omniscale/imposm3/logging"
+	"github.com/omniscale/imposm3/proj"
 )
 
 var log = logging.NewLogger("limiter")
@@ -67,16 +69,16 @@ func splitParams(bounds geos.Bounds, maxGrids int, minGridWidth float64) (float6
 	return gridWidth, currentWidth
 }
 
-func SplitPolygonAtAutoGrid(g *geos.Geos, geom *geos.Geom) ([]*geos.Geom, error) {
+func splitPolygonAtAutoGrid(g *geos.Geos, geom *geos.Geom, minGridWidth float64) ([]*geos.Geom, error) {
 	geomBounds := geom.Bounds()
 	if geomBounds == geos.NilBounds {
 		return nil, errors.New("couldn't create bounds for geom")
 	}
-	gridWidth, currentGridWidth := splitParams(geomBounds, 32, 50000.0)
-	return SplitPolygonAtGrid(g, geom, gridWidth, currentGridWidth)
+	gridWidth, currentGridWidth := splitParams(geomBounds, 32, minGridWidth)
+	return splitPolygonAtGrid(g, geom, gridWidth, currentGridWidth)
 }
 
-func SplitPolygonAtGrid(g *geos.Geos, geom *geos.Geom, gridWidth, currentGridWidth float64) ([]*geos.Geom, error) {
+func splitPolygonAtGrid(g *geos.Geos, geom *geos.Geom, gridWidth, currentGridWidth float64) ([]*geos.Geom, error) {
 	var result []*geos.Geom
 	geomBounds := geom.Bounds()
 	if geomBounds == geos.NilBounds {
@@ -96,7 +98,7 @@ func SplitPolygonAtGrid(g *geos.Geos, geom *geos.Geom, gridWidth, currentGridWid
 			if gridWidth >= currentGridWidth {
 				result = append(result, part)
 			} else {
-				moreParts, err := SplitPolygonAtGrid(g, part, gridWidth, currentGridWidth/2.0)
+				moreParts, err := splitPolygonAtGrid(g, part, gridWidth, currentGridWidth/2.0)
 				g.Destroy(part)
 				if err != nil {
 					return nil, err
@@ -128,19 +130,14 @@ type Limiter struct {
 	bufferedPrepMu *sync.Mutex
 }
 
-func NewFromGeoJson(source string) (*Limiter, error) {
-	return NewFromGeoJsonWithBuffered(source, 0.0)
-}
-
-func NewFromGeoJsonWithBuffered(source string, buffer float64) (*Limiter, error) {
-
+func NewFromGeoJSON(source string, buffer float64, targetSRID int) (*Limiter, error) {
 	f, err := os.Open(source)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
 
-	features, err := geojson.ParseGeoJson(f)
+	features, err := geojson.ParseGeoJSON(f)
 	if err != nil {
 		return nil, err
 	}
@@ -158,9 +155,13 @@ func NewFromGeoJsonWithBuffered(source string, buffer float64) (*Limiter, error)
 		withBuffer = true
 	}
 
-	for _, feature := range features {
-		if withBuffer {
-			simplified := g.SimplifyPreserveTopology(feature.Geom, 1000)
+	if withBuffer {
+		for _, feature := range features {
+			geom, err := geosPolygon(g, feature.Polygon)
+			if err != nil {
+				return nil, err
+			}
+			simplified := g.SimplifyPreserveTopology(geom, 0.01)
 			if simplified == nil {
 				return nil, errors.New("couldn't simplify limitto")
 			}
@@ -172,9 +173,24 @@ func NewFromGeoJsonWithBuffered(source string, buffer float64) (*Limiter, error)
 			// buffered gets destroyed in UnionPolygons
 			bufferedPolygons = append(bufferedPolygons, buffered)
 		}
-		polygons = append(polygons, feature.Geom)
+	}
+	for _, feature := range features {
+		if targetSRID != 4326 {
+			// transforms polygon in-place
+			transformPolygon(feature.Polygon, targetSRID)
+		}
+		geom, err := geosPolygon(g, feature.Polygon)
+		if err != nil {
+			return nil, err
+		}
 
-		parts, err := SplitPolygonAtAutoGrid(g, feature.Geom)
+		polygons = append(polygons, geom)
+
+		minGridWidth := 50000.0
+		if targetSRID == 4326 {
+			minGridWidth = 0.5
+		}
+		parts, err := splitPolygonAtAutoGrid(g, geom, minGridWidth)
 
 		if err != nil {
 			return nil, err
@@ -191,7 +207,7 @@ func NewFromGeoJsonWithBuffered(source string, buffer float64) (*Limiter, error)
 		if union == nil {
 			return nil, errors.New("unable to union limitto polygons")
 		}
-		simplified := g.SimplifyPreserveTopology(union, 5000)
+		simplified := g.SimplifyPreserveTopology(union, 0.05)
 		if simplified == nil {
 			return nil, errors.New("unable to simplify limitto polygons")
 		}
@@ -254,6 +270,10 @@ func filterGeometryByType(g *geos.Geos, geom *geos.Geom, targetType string) []*g
 	return []*geos.Geom{}
 }
 
+// Clip returns geom (in targetSRID) clipped to the LimitTo geometry.
+// Returns nil if geom is outside of the LimitTo geometry.
+// Returns only similar geometry types (e.g. clipped Polygon will return
+// one or more Polygons, but no LineString or Point, etc.)
 func (l *Limiter) Clip(geom *geos.Geom) ([]*geos.Geom, error) {
 	g := geos.NewGeos()
 	defer g.Finish()
@@ -298,6 +318,8 @@ func (l *Limiter) Clip(geom *geos.Geom) ([]*geos.Geom, error) {
 	return mergeGeometries(g, intersections, geomType), nil
 }
 
+// IntersectsBuffer returns true if the point (EPSG:4326) intersects the buffered
+// LimitTo geometry.
 func (c *Limiter) IntersectsBuffer(g *geos.Geos, x, y float64) bool {
 	if c.bufferedPrep == nil {
 		return true
@@ -330,7 +352,7 @@ func flattenPolygons(g *geos.Geos, geoms []*geos.Geom) []*geos.Geom {
 		} else if g.Type(geom) == "Polygon" {
 			result = append(result, geom)
 		} else {
-			log.Printf("unexpected geometry type in flattenPolygons")
+			log.Printf("unexpected geometry type in flattenPolygons: %s", g.Type(geom))
 			g.Destroy(geom)
 		}
 	}
@@ -348,7 +370,7 @@ func flattenLineStrings(g *geos.Geos, geoms []*geos.Geom) []*geos.Geom {
 		} else if g.Type(geom) == "LineString" {
 			result = append(result, geom)
 		} else {
-			log.Printf("unexpected geometry type in flattenPolygons")
+			log.Printf("unexpected geometry type in flattenLineStrings: %s", g.Type(geom))
 			g.Destroy(geom)
 		}
 	}
@@ -400,5 +422,69 @@ func mergeGeometries(g *geos.Geos, geoms []*geos.Geom, geomType string) []*geos.
 		return nil
 	} else {
 		panic("unexpected geometry type" + geomType)
+	}
+}
+
+func geosRing(g *geos.Geos, ls geojson.LineString) (*geos.Geom, error) {
+	coordSeq, err := g.CreateCoordSeq(uint32(len(ls)), 2)
+	if err != nil {
+		return nil, err
+	}
+
+	// coordSeq inherited by LinearRing, no destroy
+	for i, p := range ls {
+		err := coordSeq.SetXY(g, uint32(i), p.Long, p.Lat)
+		if err != nil {
+			return nil, err
+		}
+	}
+	ring, err := coordSeq.AsLinearRing(g)
+	if err != nil {
+		// coordSeq gets Destroy by GEOS
+		return nil, err
+	}
+
+	return ring, nil
+}
+
+func geosPolygon(g *geos.Geos, polygon geojson.Polygon) (*geos.Geom, error) {
+	if len(polygon) == 0 {
+		return nil, errors.New("empty polygon")
+	}
+
+	shell, err := geosRing(g, polygon[0])
+	if err != nil {
+		return nil, err
+	}
+
+	holes := make([]*geos.Geom, len(polygon)-1)
+
+	for i, ls := range polygon[1:] {
+		hole, err := geosRing(g, ls)
+		if err != nil {
+			return nil, err
+		}
+		holes[i] = hole
+	}
+
+	geom := g.Polygon(shell, holes)
+	if geom == nil {
+		g.Destroy(shell)
+		for _, hole := range holes {
+			g.Destroy(hole)
+		}
+		return nil, errors.New("unable to create polygon")
+	}
+	return geom, nil
+}
+
+func transformPolygon(p geojson.Polygon, targetSRID int) {
+	if targetSRID != 3857 {
+		panic("transformation to non-4326/3856 not implemented")
+	}
+	for _, ls := range p {
+		for i := range ls {
+			ls[i].Long, ls[i].Lat = proj.WgsToMerc(ls[i].Long, ls[i].Lat)
+		}
 	}
 }

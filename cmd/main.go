@@ -62,9 +62,10 @@ func Main(usage func()) {
 		if config.BaseOptions.LimitTo != "" {
 			var err error
 			step := log.StartStep("Reading limitto geometries")
-			geometryLimiter, err = limit.NewFromGeoJsonWithBuffered(
+			geometryLimiter, err = limit.NewFromGeoJSON(
 				config.BaseOptions.LimitTo,
 				config.BaseOptions.LimitToCacheBuffer,
+				config.BaseOptions.Srid,
 			)
 			if err != nil {
 				log.Fatal(err)
