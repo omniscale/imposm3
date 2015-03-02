@@ -124,7 +124,7 @@ You need [Go >=1.1](http://golang.org).
 
 #### C/C++ libraries
 
-Other dependencies are [libleveldb][], [libgeos][], [protobuf][] and [libsqlite3][].
+Other dependencies are [libleveldb][], [libgeos][] and [protobuf][].
 Imposm 3 was tested with recent versions of these libraries, but you might succeed with older versions.
 GEOS >=3.2 is recommended, since it became much more robust when handling invalid geometries.
 For best performance use [HyperLevelDB][libhyperleveldb] as an in-place replacement for libleveldb.
@@ -133,17 +133,21 @@ For best performance use [HyperLevelDB][libhyperleveldb] as an in-place replacem
 [libleveldb]: https://code.google.com/p/leveldb/
 [libhyperleveldb]: https://github.com/rescrv/HyperLevelDB
 [libgeos]: http://trac.osgeo.org/geos/
-[libsqlite3]: http://www.sqlite.org/
 [protobuf]: https://code.google.com/p/protobuf/
 
 #### Go libraries
 
-Imposm3 uses the following libraries. `go get` will fetch these:
+Imposm3 uses the following libraries.
 
 - <https://github.com/jmhodges/levigo>
 - <https://code.google.com/p/goprotobuf/proto>
 - <https://code.google.com/p/goprotobuf/protoc-gen-go>
 - <https://github.com/lib/pq>
+
+`go get` will fetch these, but you can also use [godep][] to use a provided (vendorized) set of these dependencies.
+
+[godep]: https://github.com/tools/godep
+
 
 #### Other
 
@@ -163,15 +167,21 @@ Create a new [Go workspace](http://golang.org/doc/code.html):
 
 Get Imposm 3 and all dependencies:
 
-    git clone https://github.com/omniscale/imposm3 src/imposm3
-    go get imposm3
-    go install imposm3
+    go get github.com/omniscale/imposm3
+    go install github.com/omniscale/imposm3
 
 Done. You should now have an imposm3 binary in `$GOPATH/bin`.
 
 Go compiles to static binaries and so Imposm 3 has no runtime dependencies to Go.
 Just copy the `imposm3` binary to your server for deployment. The C/C++ libraries listed above are still required though.
 
+##### Godep
+
+Imposm contains a fixed set of the dependencies that are known to work. You need to install Imposm with [godep][] to compile with this set.
+
+    git clone https://github.com/omniscale/imposm3 src/github.com/omniscale/imposm3
+    cd src/github.com/omniscale/imposm3
+    godep go install ./...
 
 
 Usage
