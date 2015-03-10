@@ -44,8 +44,8 @@ func newPointFromCoords(coords []interface{}) (Point, error) {
 		return p, errors.New("invalid lat")
 	}
 
-	if p.Long >= 180.0 || p.Long <= -180.0 || p.Lat >= 90.0 || p.Lat <= -90.0 {
-		log.Warn("coordinates outside of world boundary. non-4326?")
+	if p.Long > 180.0 || p.Long < -180.0 || p.Lat > 90.0 || p.Lat < -90.0 {
+		log.Warn("coordinates outside of world boundary. non-4326?: ", p)
 	}
 
 	return p, nil
