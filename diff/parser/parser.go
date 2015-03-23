@@ -171,6 +171,8 @@ NextToken:
 				e.Rel = rel
 				rel = &element.Relation{}
 				newElem = true
+			case "osmChange":
+				return // done!
 			}
 
 			if newElem {
