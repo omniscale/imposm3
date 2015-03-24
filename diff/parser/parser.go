@@ -3,10 +3,11 @@ package parser
 import (
 	"compress/gzip"
 	"encoding/xml"
-	"github.com/omniscale/imposm3/element"
-	"github.com/omniscale/imposm3/logging"
 	"os"
 	"strconv"
+
+	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/logging"
 )
 
 var log = logging.NewLogger("osc parser")
@@ -171,6 +172,8 @@ NextToken:
 				e.Rel = rel
 				rel = &element.Relation{}
 				newElem = true
+			case "osmChange":
+				return
 			}
 
 			if newElem {

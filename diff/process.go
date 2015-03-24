@@ -3,7 +3,6 @@ package diff
 import (
 	"errors"
 	"fmt"
-	"io"
 	"path/filepath"
 	"runtime"
 
@@ -137,10 +136,14 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 	step := log.StartStep("Parsing changes, updating cache and removing elements")
 
 	g := geos.NewGeos()
-For:
+
 	for {
 		select {
-		case elem := <-elems:
+		case elem, ok := <-elems:
+			if !ok {
+				elems = nil
+				break
+			}
 			if elem.Rel != nil {
 				relTagFilter.Filter(&elem.Rel.Tags)
 				progress.AddRelations(1)
@@ -237,11 +240,15 @@ For:
 					}
 				}
 			}
-		case err := <-errc:
-			if err != io.EOF {
-				return diffError(err, "")
+		case err, ok := <-errc:
+			if !ok {
+				errc = nil
+				break
 			}
-			break For
+			return diffError(err, "")
+		}
+		if errc == nil && elems == nil {
+			break
 		}
 	}
 
