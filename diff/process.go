@@ -18,7 +18,6 @@ import (
 	"github.com/omniscale/imposm3/geom/limit"
 	"github.com/omniscale/imposm3/logging"
 	"github.com/omniscale/imposm3/mapping"
-	"github.com/omniscale/imposm3/proj"
 	"github.com/omniscale/imposm3/stats"
 	"github.com/omniscale/imposm3/writer"
 )
@@ -221,9 +220,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 				} else if elem.Node != nil {
 					addNode := true
 					if geometryLimiter != nil {
-						nd := element.Node{Long: elem.Node.Long, Lat: elem.Node.Lat}
-						proj.NodeToMerc(&nd)
-						if !geometryLimiter.IntersectsBuffer(g, nd.Long, nd.Lat) {
+						if !geometryLimiter.IntersectsBuffer(g, elem.Node.Long, elem.Node.Lat) {
 							addNode = false
 						}
 					}
