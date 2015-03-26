@@ -15,7 +15,7 @@ The most important part is the ``tables`` definition. Each table is a JSON objec
 ``type``
 ~~~~~~~~
 
-``type`` can be ``point``, ``linestring``, ``polygon`` or ``geometry``. ``geometry`` is a special case which is not discussed here.
+``type`` can be ``point``, ``linestring``, ``polygon`` or ``geometry``. ``geometry`` requires a special ``mapping``.
 
 
 ``mapping``
@@ -23,7 +23,7 @@ The most important part is the ``tables`` definition. Each table is a JSON objec
 
 ``mapping`` defines which OSM key/values an element needs to have to be imported into this table. ``mapping`` is a JSON object with the OSM `key` as the object key and a list of all OSM `values` to be matched as the object value.
 
-To import `tourism=zoo`, `natural=wood` and `natural=land` into the ``landusages`` table:
+To import all polygons with `tourism=zoo`, `natural=wood` or `natural=land` into the ``landusages`` table:
 
 .. code-block:: javascript
    :emphasize-lines: 4-11
@@ -31,6 +31,7 @@ To import `tourism=zoo`, `natural=wood` and `natural=land` into the ``landusages
     {
       "tables": {
         "landusages": {
+          "type": "polygon",
           "mapping": {
             "tourism": [
                "zoo"
@@ -156,7 +157,7 @@ Same as ``bool`` but stores a numeric ``1`` for ``true`` values, and ``0`` other
 ``string``
 ^^^^^^^^^^
 
-The value as-is.
+The value as-is. Missing values will be inserted as an empty string and not as ``null``.
 
 
 ``direction``
@@ -186,12 +187,16 @@ The ID of the OSM node, way or relation. Relation IDs are negated (-1234 for ID 
 
 The OSM `key` that was matched by this table mapping (`highway`, `building`, `nature`, `landuse`, etc.).
 
+..note::
+Imposm will choose a random key if an OSM element has multiple tags that match the table mapping.
+For example: `mapping_key` will use either `landuse` or `natural` for an OSM element with `landuse=forest` and `natural=wood` tags, if both are included in the mapping. You need to define an explicit column if you need to know if a specific tag was matched (e.g. `{"type": "string", "name": "landuse", "key": "landuse"}`).
 
 ``mapping_value``
 ^^^^^^^^^^^^^^^^^
 
 The OSM `value` that was matched by this table mapping (`primary`, `secondary`, `yes`, `forest`, etc.).
 
+..note:: The note of ``mapping_key`` above applies to ``mapping_values`` as well.
 
 ``geometry``
 ^^^^^^^^^^^^
@@ -199,14 +204,26 @@ The OSM `value` that was matched by this table mapping (`primary`, `secondary`, 
 The geometry of the OSM element.
 
 
+``validated_geometry``
+^^^^^^^^^^^^^^^^^^^^^^
+
+Like `geometry`, but the geometries will be validated and repaired when this table is used as a source for a generalized table. Must only be used for `polygon` tables.
+
+
 ``pseudoarea``
 ^^^^^^^^^^^^^^
 
-Area of polygon geometries in square meters. This area is calculated in the webmercator projection, so it is only accurate at the equator gets off the more you move to the poles. It's still good enough to sort features by area for rendering purposes.
+Area of polygon geometries in square meters. This area is calculated in the webmercator projection, so it is only accurate at the equator and gets off the more the geometry move to the poles. It's still good enough to sort features by area for rendering purposes.
+
+
+``wayzorder``
+^^^^^^^^^^^^^
+
+Calculate the z-order of an OSM highway or railway. Returns a numeric value that represents the importance of a way where ``motorway`` is the most important (9), and ``path`` or ``track`` are least important (0). ``bridge`` and ``tunnel``  will modify the value by -10/+10. ``layer`` will be multiplied by ten and added to the value. E.g. ``highway=motorway``, ``bridge=yes`` and ``layer=2`` will return 39.
+
 
 
 .. TODO
-.. "validated_geometry":   {"validated_geometry", "validated_geometry", Geometry, nil},
 .. "hstore_tags":          {"hstore_tags", "hstore_string", HstoreString, nil},
 .. "wayzorder":            {"wayzorder", "int32", WayZOrder, nil},
 .. "zorder":               {"zorder", "int32", nil, MakeZOrder},
