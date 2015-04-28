@@ -16,7 +16,6 @@ import (
 	"github.com/omniscale/imposm3/mapping"
 	"github.com/omniscale/imposm3/parser/pbf"
 	"github.com/omniscale/imposm3/stats"
-	"github.com/omniscale/imposm3/util"
 )
 
 var log = logging.NewLogger("reader")
@@ -71,36 +70,33 @@ func ReadPbf(cache *osmcache.OSMCache, progress *stats.Statistics,
 
 	parser := pbf.NewParser(pbfFile, coords, nodes, ways, relations)
 
-	coordsSynced := make(chan bool)
-	coordsSync := util.NewSyncPoint(int(nCoords+nNodes), func() {
-		coordsSynced <- true
-	})
-	parser.NotifyWays(func() {
+	// wait for all coords/nodes to be processed before continuing with
+	// ways. required for -limitto checks
+	coordsSync := sync.WaitGroup{}
+	parser.FinishedCoords(func() {
 		for i := 0; int64(i) < nCoords; i++ {
 			coords <- nil
 		}
 		for i := 0; int64(i) < nNodes; i++ {
 			nodes <- nil
 		}
-		<-coordsSynced
+		coordsSync.Wait()
 	})
 
-	waysSynced := make(chan bool)
-	waysSync := util.NewSyncPoint(int(nWays), func() {
-		waysSynced <- true
-	})
-	parser.NotifyRelations(func() {
+	// wait for all ways to be processed before continuing with
+	// relations. required for -limitto checks
+	waysSync := sync.WaitGroup{}
+	parser.FinishedWays(func() {
 		for i := 0; int64(i) < nWays; i++ {
 			ways <- nil
 		}
-		<-waysSynced
+		waysSync.Wait()
 	})
-
-	parser.Start()
 
 	waitWriter := sync.WaitGroup{}
 
 	for i := 0; int64(i) < nWays; i++ {
+		waysSync.Add(1)
 		waitWriter.Add(1)
 		go func() {
 			var skip, hit int
@@ -108,7 +104,8 @@ func ReadPbf(cache *osmcache.OSMCache, progress *stats.Statistics,
 			m := tagmapping.WayTagFilter()
 			for ws := range ways {
 				if ws == nil {
-					waysSync.Sync()
+					waysSync.Done()
+					waysSync.Wait()
 					continue
 				}
 				if skipWays {
@@ -180,6 +177,7 @@ func ReadPbf(cache *osmcache.OSMCache, progress *stats.Statistics,
 	}
 
 	for i := 0; int64(i) < nCoords; i++ {
+		coordsSync.Add(1)
 		waitWriter.Add(1)
 		go func() {
 			var skip, hit int
@@ -187,7 +185,8 @@ func ReadPbf(cache *osmcache.OSMCache, progress *stats.Statistics,
 			defer g.Finish()
 			for nds := range coords {
 				if nds == nil {
-					coordsSync.Sync()
+					coordsSync.Done()
+					coordsSync.Wait()
 					continue
 				}
 				if withLimiter {
@@ -208,6 +207,7 @@ func ReadPbf(cache *osmcache.OSMCache, progress *stats.Statistics,
 	}
 
 	for i := 0; int64(i) < nNodes; i++ {
+		coordsSync.Add(1)
 		waitWriter.Add(1)
 		go func() {
 			g := geos.NewGeos()
@@ -215,7 +215,8 @@ func ReadPbf(cache *osmcache.OSMCache, progress *stats.Statistics,
 			m := tagmapping.NodeTagFilter()
 			for nds := range nodes {
 				if nds == nil {
-					coordsSync.Sync()
+					coordsSync.Done()
+					coordsSync.Wait()
 					continue
 				}
 				numWithTags := 0
@@ -237,7 +238,7 @@ func ReadPbf(cache *osmcache.OSMCache, progress *stats.Statistics,
 		}()
 	}
 
-	parser.Close()
+	parser.Parse()
 	close(relations)
 	close(ways)
 	close(nodes)
