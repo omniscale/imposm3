@@ -55,10 +55,6 @@ func TestParser(t *testing.T) {
 	}()
 
 	p.Parse()
-	close(nodes)
-	close(coords)
-	close(ways)
-	close(relations)
 	wg.Wait()
 
 	if numCoords != 17233 {
@@ -72,6 +68,35 @@ func TestParser(t *testing.T) {
 	}
 	if numRelations != 108 {
 		t.Error("parsed an unexpected number of relations:", numRelations)
+	}
+}
+
+func TestParseCoords(t *testing.T) {
+	coords := make(chan []element.Node)
+
+	pbf, err := Open("monaco-20150428.osm.pbf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := NewParser(pbf, coords, nil, nil, nil)
+
+	wg := sync.WaitGroup{}
+
+	var numCoords int64
+
+	go func() {
+		wg.Add(1)
+		for nd := range coords {
+			numCoords += int64(len(nd))
+		}
+		wg.Done()
+	}()
+
+	p.Parse()
+	wg.Wait()
+
+	if numCoords != 17233 {
+		t.Error("parsed an unexpected number of coords:", numCoords)
 	}
 }
 
@@ -143,10 +168,6 @@ func TestParserNotify(t *testing.T) {
 	}()
 
 	p.Parse()
-	close(nodes)
-	close(coords)
-	close(ways)
-	close(relations)
 	wg.Wait()
 
 	if numCoords != 17233 {

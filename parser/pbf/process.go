@@ -49,14 +49,19 @@ func (p *parser) Parse() {
 		}()
 	}
 	p.wg.Wait()
-}
 
-func (p *parser) Wait() {
-	p.wg.Wait()
-}
-
-func (p *parser) Close() {
-	p.wg.Wait()
+	if p.nodes != nil {
+		close(p.nodes)
+	}
+	if p.coords != nil {
+		close(p.coords)
+	}
+	if p.ways != nil {
+		close(p.ways)
+	}
+	if p.relations != nil {
+		close(p.relations)
+	}
 }
 
 // FinishedCoords registers a single function that gets called when all

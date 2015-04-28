@@ -239,9 +239,5 @@ func ReadPbf(cache *osmcache.OSMCache, progress *stats.Statistics,
 	}
 
 	parser.Parse()
-	close(relations)
-	close(ways)
-	close(nodes)
-	close(coords)
 	waitWriter.Wait()
 }
