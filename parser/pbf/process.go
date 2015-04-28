@@ -63,7 +63,7 @@ func (p *parser) NotifyRelations(cb func()) {
 	p.relSync = util.NewSyncPoint(p.nParser, cb)
 }
 
-func (p *parser) parseBlock(pos Block) {
+func (p *parser) parseBlock(pos block) {
 	block := readPrimitiveBlock(pos)
 	stringtable := newStringTable(block.GetStringtable())
 

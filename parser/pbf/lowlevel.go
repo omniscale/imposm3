@@ -2,17 +2,24 @@ package pbf
 
 import (
 	"bytes"
-	"code.google.com/p/goprotobuf/proto"
 	"compress/zlib"
 	structs "encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/omniscale/imposm3/parser/pbf/osmpbf"
 	"io"
 	"log"
 	"os"
 	"time"
+
+	"code.google.com/p/goprotobuf/proto"
+	"github.com/omniscale/imposm3/parser/pbf/osmpbf"
 )
+
+type block struct {
+	filename string
+	offset   int64
+	size     int32
+}
 
 type parserError struct {
 	message       string
@@ -29,7 +36,7 @@ func newParserError(message string, err error) *parserError {
 
 var supportedFeatured = map[string]bool{"OsmSchema-V0.6": true, "DenseNodes": true}
 
-func readBlobData(pos Block) ([]byte, error) {
+func readBlobData(pos block) ([]byte, error) {
 	file, err := os.Open(pos.filename)
 	if err != nil {
 		return nil, newParserError("file open", err)
@@ -63,7 +70,7 @@ func readBlobData(pos Block) ([]byte, error) {
 	return raw, nil
 }
 
-func readPrimitiveBlock(pos Block) *osmpbf.PrimitiveBlock {
+func readPrimitiveBlock(pos block) *osmpbf.PrimitiveBlock {
 	raw, err := readBlobData(pos)
 	if err != nil {
 		log.Panic(err)
@@ -77,7 +84,7 @@ func readPrimitiveBlock(pos Block) *osmpbf.PrimitiveBlock {
 	return block
 }
 
-func readAndParseHeaderBlock(pos Block) (*pbfHeader, error) {
+func readAndParseHeaderBlock(pos block) (*pbfHeader, error) {
 	raw, err := readBlobData(pos)
 	if err != nil {
 		return nil, err
@@ -136,7 +143,7 @@ func (pbf *Pbf) parseHeader() error {
 		panic("invalid block type, expected OSMHeader, got " + header.GetType())
 	}
 	var err error
-	pbf.Header, err = readAndParseHeaderBlock(Block{pbf.Filename, offset, size})
+	pbf.Header, err = readAndParseHeaderBlock(block{pbf.Filename, offset, size})
 	return err
 }
 
@@ -150,8 +157,8 @@ func (pbf *Pbf) nextBlock() (offset int64, size int32, header *osmpbf.BlobHeader
 	return offset, size, header
 }
 
-func (pbf *Pbf) BlockPositions() (positions chan Block) {
-	positions = make(chan Block, 8)
+func (pbf *Pbf) BlockPositions() (positions chan block) {
+	positions = make(chan block, 8)
 	go func() {
 		for {
 			offset, size, header := pbf.nextBlock()
@@ -163,7 +170,7 @@ func (pbf *Pbf) BlockPositions() (positions chan Block) {
 			if header.GetType() != "OSMData" {
 				panic("invalid block type, expected OSMData, got " + header.GetType())
 			}
-			positions <- Block{pbf.Filename, offset, size}
+			positions <- block{pbf.Filename, offset, size}
 		}
 	}()
 	return
