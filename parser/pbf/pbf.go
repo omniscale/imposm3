@@ -3,14 +3,7 @@ package pbf
 import (
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/parser/pbf/osmpbf"
-	"log"
 )
-
-type Block struct {
-	filename string
-	offset   int64
-	size     int32
-}
 
 const coord_factor float64 = 11930464.7083 // ((2<<31)-1)/360.0
 
@@ -198,47 +191,4 @@ func newStringTable(source *osmpbf.StringTable) stringTable {
 		result[i] = string(bytes)
 	}
 	return result
-}
-
-func Blocks(filename string) chan Block {
-	pbf, err := Open(filename)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return pbf.BlockPositions()
-}
-
-func (pos *Block) Parse(coords chan []element.Node, nodes chan []element.Node, ways chan []element.Way, relations chan []element.Relation) {
-	block := readPrimitiveBlock(*pos)
-	stringtable := newStringTable(block.GetStringtable())
-
-	for _, group := range block.Primitivegroup {
-		dense := group.GetDense()
-		if dense != nil {
-			parsedCoords, parsedNodes := readDenseNodes(dense, block, stringtable)
-			if len(parsedCoords) > 0 {
-				coords <- parsedCoords
-			}
-			if len(parsedNodes) > 0 {
-				nodes <- parsedNodes
-			}
-		}
-		parsedCoords, parsedNodes := readNodes(group.Nodes, block, stringtable)
-		if len(parsedCoords) > 0 {
-			coords <- parsedCoords
-		}
-		if len(parsedNodes) > 0 {
-			nodes <- parsedNodes
-		}
-		parsedWays := readWays(group.Ways, block, stringtable)
-		if len(parsedWays) > 0 {
-			ways <- parsedWays
-		}
-		parsedRelations := readRelations(group.Relations, block, stringtable)
-		if len(parsedRelations) > 0 {
-			relations <- parsedRelations
-		}
-	}
-
 }
