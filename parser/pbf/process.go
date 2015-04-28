@@ -1,10 +1,11 @@
 package pbf
 
 import (
-	"github.com/omniscale/imposm3/element"
-	"github.com/omniscale/imposm3/util"
 	"runtime"
 	"sync"
+
+	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/util"
 )
 
 type parser struct {
@@ -70,29 +71,29 @@ func (p *parser) parseBlock(pos Block) {
 		dense := group.GetDense()
 		if dense != nil {
 			parsedCoords, parsedNodes := readDenseNodes(dense, block, stringtable)
-			if len(parsedCoords) > 0 {
+			if len(parsedCoords) > 0 && p.coords != nil {
 				p.coords <- parsedCoords
 			}
-			if len(parsedNodes) > 0 {
+			if len(parsedNodes) > 0 && p.nodes != nil {
 				p.nodes <- parsedNodes
 			}
 		}
 		parsedCoords, parsedNodes := readNodes(group.Nodes, block, stringtable)
-		if len(parsedCoords) > 0 {
+		if len(parsedCoords) > 0 && p.coords != nil {
 			p.coords <- parsedCoords
 		}
-		if len(parsedNodes) > 0 {
+		if len(parsedNodes) > 0 && p.nodes != nil {
 			p.nodes <- parsedNodes
 		}
 		parsedWays := readWays(group.Ways, block, stringtable)
-		if len(parsedWays) > 0 {
+		if len(parsedWays) > 0 && p.ways != nil {
 			if p.waySync != nil {
 				p.waySync.Sync()
 			}
 			p.ways <- parsedWays
 		}
 		parsedRelations := readRelations(group.Relations, block, stringtable)
-		if len(parsedRelations) > 0 {
+		if len(parsedRelations) > 0 && p.relations != nil {
 			if p.waySync != nil {
 				p.waySync.Sync()
 			}
