@@ -5,36 +5,36 @@ import (
 	"github.com/omniscale/imposm3/geom/geos"
 )
 
-type Ring struct {
+type ring struct {
 	ways        []*element.Way
 	refs        []int64
 	nodes       []element.Node
 	geom        *geos.Geom
-	holes       map[*Ring]bool
+	holes       map[*ring]bool
 	containedBy int
 	area        float64
 	outer       bool
 	inserted    map[int64]bool
 }
 
-func (r *Ring) IsClosed() bool {
+func (r *ring) isClosed() bool {
 	return len(r.refs) >= 4 && r.refs[0] == r.refs[len(r.refs)-1]
 }
 
-func (r *Ring) TryClose(maxRingGap float64) bool {
+func (r *ring) tryClose(maxRingGap float64) bool {
 	return element.TryCloseWay(r.refs, r.nodes, maxRingGap)
 }
 
-func NewRing(way *element.Way) *Ring {
-	ring := Ring{}
-	ring.ways = []*element.Way{way}
-	ring.refs = make([]int64, len(way.Refs))
-	ring.nodes = make([]element.Node, len(way.Nodes))
-	ring.containedBy = -1
-	ring.holes = make(map[*Ring]bool)
-	copy(ring.refs, way.Refs)
-	copy(ring.nodes, way.Nodes)
-	return &ring
+func newRing(way *element.Way) *ring {
+	r := ring{}
+	r.ways = []*element.Way{way}
+	r.refs = make([]int64, len(way.Refs))
+	r.nodes = make([]element.Node, len(way.Nodes))
+	r.containedBy = -1
+	r.holes = make(map[*ring]bool)
+	copy(r.refs, way.Refs)
+	copy(r.nodes, way.Nodes)
+	return &r
 }
 
 func reverseRefs(refs []int64) {
@@ -49,8 +49,8 @@ func reverseNodes(nodes []element.Node) {
 	}
 }
 
-func mergeRings(rings []*Ring) []*Ring {
-	endpoints := make(map[int64]*Ring)
+func mergeRings(rings []*ring) []*ring {
+	endpoints := make(map[int64]*ring)
 
 	for _, ring := range rings {
 		if len(ring.refs) < 2 {
@@ -114,11 +114,11 @@ func mergeRings(rings []*Ring) []*Ring {
 			endpoints[right] = ring
 		}
 	}
-	uniqueRings := make(map[*Ring]bool)
+	uniqueRings := make(map[*ring]bool)
 	for _, ring := range endpoints {
 		uniqueRings[ring] = true
 	}
-	result := make([]*Ring, 0, len(uniqueRings))
+	result := make([]*ring, 0, len(uniqueRings))
 	for ring, _ := range uniqueRings {
 		result = append(result, ring)
 	}

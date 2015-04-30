@@ -26,19 +26,19 @@ func (e *GeomError) Level() int {
 	return e.level
 }
 
-func NewGeomError(message string, level int) *GeomError {
+func newGeomError(message string, level int) *GeomError {
 	return &GeomError{message, level}
 }
 
 var (
-	ErrorOneNodeWay = NewGeomError("need at least two separate nodes for way", 0)
-	ErrorNoRing     = NewGeomError("linestrings do not form ring", 0)
+	ErrorOneNodeWay = newGeomError("need at least two separate nodes for way", 0)
+	ErrorNoRing     = newGeomError("linestrings do not form ring", 0)
 )
 
 func Point(g *geos.Geos, node element.Node) (*geos.Geom, error) {
 	geom := g.Point(node.Long, node.Lat)
 	if geom == nil {
-		return nil, NewGeomError("couldn't create point", 1)
+		return nil, newGeomError("couldn't create point", 1)
 	}
 	g.DestroyLater(geom)
 	return geom, nil

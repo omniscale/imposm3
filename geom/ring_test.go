@@ -16,7 +16,7 @@ func TestRingMerge(t *testing.T) {
 		element.Node{},
 		element.Node{},
 	}
-	r1 := NewRing(&w1)
+	r1 := newRing(&w1)
 
 	w2 := element.Way{}
 	w2.Id = 2
@@ -26,8 +26,8 @@ func TestRingMerge(t *testing.T) {
 		element.Node{},
 		element.Node{},
 	}
-	r2 := NewRing(&w2)
-	rings := []*Ring{r1, r2}
+	r2 := newRing(&w2)
+	rings := []*ring{r1, r2}
 
 	result := mergeRings(rings)
 	if len(result) != 1 {
@@ -52,14 +52,14 @@ func TestRingMergeMissingRefs(t *testing.T) {
 		element.Node{},
 		element.Node{},
 	}
-	r1 := NewRing(&w1)
+	r1 := newRing(&w1)
 
 	w2 := element.Way{}
 	w2.Id = 2
 	w2.Refs = []int64{}
 	w2.Nodes = []element.Node{}
-	r2 := NewRing(&w2)
-	rings := []*Ring{r1, r2}
+	r2 := newRing(&w2)
+	rings := []*ring{r1, r2}
 
 	result := mergeRings(rings)
 	if len(result) != 1 {
@@ -80,7 +80,7 @@ func TestRingMergeReverseEndpoints(t *testing.T) {
 		element.Node{},
 		element.Node{},
 	}
-	r1 := NewRing(&w1)
+	r1 := newRing(&w1)
 
 	w2 := element.Way{}
 	w2.Id = 2
@@ -90,7 +90,7 @@ func TestRingMergeReverseEndpoints(t *testing.T) {
 		element.Node{},
 		element.Node{},
 	}
-	r2 := NewRing(&w2)
+	r2 := newRing(&w2)
 
 	w3 := element.Way{}
 	w3.Id = 3
@@ -100,9 +100,9 @@ func TestRingMergeReverseEndpoints(t *testing.T) {
 		element.Node{},
 		element.Node{},
 	}
-	r3 := NewRing(&w3)
+	r3 := newRing(&w3)
 
-	rings := []*Ring{r1, r2, r3}
+	rings := []*ring{r1, r2, r3}
 
 	result := mergeRings(rings)
 	if len(result) != 1 {
@@ -168,11 +168,11 @@ func TestRingMergePermutations(t *testing.T) {
 			w4.Refs = ways[indices[3]]
 			w4.Nodes = []element.Node{element.Node{}, element.Node{}, element.Node{}, element.Node{}}
 
-			rings := []*Ring{
-				&Ring{ways: []*element.Way{&w1}, refs: w1.Refs, nodes: w1.Nodes},
-				&Ring{ways: []*element.Way{&w2}, refs: w2.Refs, nodes: w2.Nodes},
-				&Ring{ways: []*element.Way{&w3}, refs: w3.Refs, nodes: w3.Nodes},
-				&Ring{ways: []*element.Way{&w4}, refs: w4.Refs, nodes: w4.Nodes},
+			rings := []*ring{
+				&ring{ways: []*element.Way{&w1}, refs: w1.Refs, nodes: w1.Nodes},
+				&ring{ways: []*element.Way{&w2}, refs: w2.Refs, nodes: w2.Nodes},
+				&ring{ways: []*element.Way{&w3}, refs: w3.Refs, nodes: w3.Nodes},
+				&ring{ways: []*element.Way{&w4}, refs: w4.Refs, nodes: w4.Nodes},
 			}
 			result := mergeRings(rings)
 			if len(result) != 1 {
