@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"math"
 	"sort"
-
-	"github.com/omniscale/imposm3/geom/geos"
 )
 
 type Tags map[string]string
@@ -15,9 +13,8 @@ func (t *Tags) String() string {
 }
 
 type OSMElem struct {
-	Id   int64     `json:"-"`
-	Tags Tags      `json:"tags,omitempty"`
-	Geom *Geometry `json:"-"`
+	Id   int64 `json:"-"`
+	Tags Tags  `json:"tags,omitempty"`
 }
 
 type Node struct {
@@ -30,11 +27,6 @@ type Way struct {
 	OSMElem
 	Refs  []int64 `json:"refs"`
 	Nodes []Node  `json:"nodes,omitempty"`
-}
-
-type Geometry struct {
-	Geom *geos.Geom
-	Wkb  []byte
 }
 
 func (w *Way) IsClosed() bool {

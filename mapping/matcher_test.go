@@ -23,7 +23,7 @@ func BenchmarkTagMatch(b *testing.B) {
 
 func makeMember(id int64, tags element.Tags) element.Member {
 	way := &element.Way{
-		element.OSMElem{id, tags, nil},
+		element.OSMElem{id, tags},
 		[]int64{0, 1, 2, 0}, // fake closed way, req. for SelectRelationPolygons
 		nil}
 	return element.Member{Id: id, Type: element.WAY, Role: "", Way: way}
@@ -31,7 +31,7 @@ func makeMember(id int64, tags element.Tags) element.Member {
 
 func makeMemberRole(id int64, tags element.Tags, role string) element.Member {
 	way := &element.Way{
-		element.OSMElem{id, tags, nil},
+		element.OSMElem{id, tags},
 		[]int64{0, 1, 2, 0}, // fake closed way, req. for SelectRelationPolygons
 		nil}
 	return element.Member{Id: id, Type: element.WAY, Role: role, Way: way}

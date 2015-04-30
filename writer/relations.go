@@ -8,7 +8,7 @@ import (
 	"github.com/omniscale/imposm3/database"
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/expire"
-	"github.com/omniscale/imposm3/geom"
+	geomp "github.com/omniscale/imposm3/geom"
 	"github.com/omniscale/imposm3/geom/geos"
 	"github.com/omniscale/imposm3/mapping"
 	"github.com/omniscale/imposm3/stats"
@@ -96,7 +96,7 @@ NextRel:
 
 		// prepare relation first (build rings and compute actual
 		// relation tags)
-		prepedRel, err := geom.PrepareRelation(r, rw.srid, rw.maxGap)
+		prepedRel, err := geomp.PrepareRelation(r, rw.srid, rw.maxGap)
 		if err != nil {
 			if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
 				log.Warn(err)
@@ -111,10 +111,10 @@ NextRel:
 		}
 
 		// build the multipolygon
-		r, err = prepedRel.Build()
+		geom, err := prepedRel.Build()
 		if err != nil {
-			if r.Geom != nil && r.Geom.Geom != nil {
-				geos.Destroy(r.Geom.Geom)
+			if geom.Geom != nil {
+				geos.Destroy(geom.Geom)
 			}
 			if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
 				log.Warn(err)
@@ -124,7 +124,7 @@ NextRel:
 
 		if rw.limiter != nil {
 			start := time.Now()
-			parts, err := rw.limiter.Clip(r.Geom.Geom)
+			parts, err := rw.limiter.Clip(geom.Geom)
 			if err != nil {
 				log.Warn(err)
 				continue NextRel
@@ -135,8 +135,8 @@ NextRel:
 			for _, g := range parts {
 				rel := element.Relation(*r)
 				rel.Id = rw.relId(r.Id)
-				rel.Geom = &element.Geometry{Geom: g, Wkb: geos.AsEwkbHex(g)}
-				err := rw.inserter.InsertPolygon(rel.OSMElem, matches)
+				geom = geomp.Geometry{Geom: g, Wkb: geos.AsEwkbHex(g)}
+				err := rw.inserter.InsertPolygon(rel.OSMElem, geom, matches)
 				if err != nil {
 					if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
 						log.Warn(err)
@@ -147,7 +147,7 @@ NextRel:
 		} else {
 			rel := element.Relation(*r)
 			rel.Id = rw.relId(r.Id)
-			err := rw.inserter.InsertPolygon(rel.OSMElem, matches)
+			err := rw.inserter.InsertPolygon(rel.OSMElem, geom, matches)
 			if err != nil {
 				if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
 					log.Warn(err)
@@ -177,7 +177,7 @@ NextRel:
 				}
 			}
 		}
-		geos.Destroy(r.Geom.Geom)
+		geos.Destroy(geom.Geom)
 	}
 	rw.wg.Done()
 }

@@ -2,14 +2,20 @@ package geom
 
 import (
 	"errors"
+	"math"
+
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/geom/geos"
-	"math"
 )
 
 type GeomError struct {
 	message string
 	level   int
+}
+
+type Geometry struct {
+	Geom *geos.Geom
+	Wkb  []byte
 }
 
 func (e *GeomError) Error() string {
@@ -130,13 +136,13 @@ func Polygon(g *geos.Geos, nodes []element.Node) (*geos.Geom, error) {
 	return geom, nil
 }
 
-func AsGeomElement(g *geos.Geos, geom *geos.Geom) (*element.Geometry, error) {
+func AsGeomElement(g *geos.Geos, geom *geos.Geom) (Geometry, error) {
 	wkb := g.AsEwkbHex(geom)
 	if wkb == nil {
-		return nil, errors.New("could not create wkb")
+		return Geometry{}, errors.New("could not create wkb")
 	}
 
-	return &element.Geometry{
+	return Geometry{
 		Wkb:  wkb,
 		Geom: geom,
 	}, nil

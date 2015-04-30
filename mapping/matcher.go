@@ -1,6 +1,9 @@
 package mapping
 
-import "github.com/omniscale/imposm3/element"
+import (
+	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/geom"
+)
 
 func (m *Mapping) PointMatcher() NodeMatcher {
 	mappings := make(TagTables)
@@ -53,8 +56,8 @@ type tagMatcher struct {
 	matchAreas bool
 }
 
-func (m *Match) Row(elem *element.OSMElem) []interface{} {
-	return m.tableFields.MakeRow(elem, *m)
+func (m *Match) Row(elem *element.OSMElem, geom *geom.Geometry) []interface{} {
+	return m.tableFields.MakeRow(elem, geom, *m)
 }
 
 func (tm *tagMatcher) MatchNode(node *element.Node) []Match {

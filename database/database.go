@@ -2,9 +2,11 @@ package database
 
 import (
 	"errors"
-	"github.com/omniscale/imposm3/element"
-	"github.com/omniscale/imposm3/mapping"
 	"strings"
+
+	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/geom"
+	"github.com/omniscale/imposm3/mapping"
 )
 
 type Config struct {
@@ -31,9 +33,9 @@ type BulkBeginner interface {
 type Inserter interface {
 	// InsertXxx inserts element of that type into the database.
 	// element.Geom is set to that type.
-	InsertPoint(element.OSMElem, []mapping.Match) error
-	InsertLineString(element.OSMElem, []mapping.Match) error
-	InsertPolygon(element.OSMElem, []mapping.Match) error
+	InsertPoint(element.OSMElem, geom.Geometry, []mapping.Match) error
+	InsertLineString(element.OSMElem, geom.Geometry, []mapping.Match) error
+	InsertPolygon(element.OSMElem, geom.Geometry, []mapping.Match) error
 }
 
 type Deployer interface {
@@ -93,14 +95,14 @@ func Open(conf Config, m *mapping.Mapping) (DB, error) {
 // nullDb is a dummy database that imports into /dev/null
 type nullDb struct{}
 
-func (n *nullDb) Init() error                                             { return nil }
-func (n *nullDb) Begin() error                                            { return nil }
-func (n *nullDb) End() error                                              { return nil }
-func (n *nullDb) Close() error                                            { return nil }
-func (n *nullDb) Abort() error                                            { return nil }
-func (n *nullDb) InsertPoint(element.OSMElem, []mapping.Match) error      { return nil }
-func (n *nullDb) InsertLineString(element.OSMElem, []mapping.Match) error { return nil }
-func (n *nullDb) InsertPolygon(element.OSMElem, []mapping.Match) error    { return nil }
+func (n *nullDb) Init() error                                                            { return nil }
+func (n *nullDb) Begin() error                                                           { return nil }
+func (n *nullDb) End() error                                                             { return nil }
+func (n *nullDb) Close() error                                                           { return nil }
+func (n *nullDb) Abort() error                                                           { return nil }
+func (n *nullDb) InsertPoint(element.OSMElem, geom.Geometry, []mapping.Match) error      { return nil }
+func (n *nullDb) InsertLineString(element.OSMElem, geom.Geometry, []mapping.Match) error { return nil }
+func (n *nullDb) InsertPolygon(element.OSMElem, geom.Geometry, []mapping.Match) error    { return nil }
 
 func newNullDb(conf Config, m *mapping.Mapping) (DB, error) {
 	return &nullDb{}, nil

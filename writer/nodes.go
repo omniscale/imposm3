@@ -1,14 +1,15 @@
 package writer
 
 import (
+	"sync"
+
 	"github.com/omniscale/imposm3/cache"
 	"github.com/omniscale/imposm3/database"
 	"github.com/omniscale/imposm3/element"
-	"github.com/omniscale/imposm3/geom"
+	geomp "github.com/omniscale/imposm3/geom"
 	"github.com/omniscale/imposm3/geom/geos"
 	"github.com/omniscale/imposm3/mapping"
 	"github.com/omniscale/imposm3/stats"
-	"sync"
 )
 
 type NodeWriter struct {
@@ -52,7 +53,7 @@ func (nw *NodeWriter) loop() {
 			if nw.expireor != nil {
 				nw.expireor.Expire(n.Long, n.Lat)
 			}
-			point, err := geom.Point(geos, *n)
+			point, err := geomp.Point(geos, *n)
 			if err != nil {
 				if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
 					log.Warn(err)
@@ -60,26 +61,26 @@ func (nw *NodeWriter) loop() {
 				continue
 			}
 
-			n.Geom, err = geom.AsGeomElement(geos, point)
+			geom, err := geomp.AsGeomElement(geos, point)
 			if err != nil {
 				log.Warn(err)
 				continue
 			}
 
 			if nw.limiter != nil {
-				parts, err := nw.limiter.Clip(n.Geom.Geom)
+				parts, err := nw.limiter.Clip(geom.Geom)
 				if err != nil {
 					log.Warn(err)
 					continue
 				}
 				if len(parts) >= 1 {
-					if err := nw.inserter.InsertPoint(n.OSMElem, matches); err != nil {
+					if err := nw.inserter.InsertPoint(n.OSMElem, geom, matches); err != nil {
 						log.Warn(err)
 						continue
 					}
 				}
 			} else {
-				if err := nw.inserter.InsertPoint(n.OSMElem, matches); err != nil {
+				if err := nw.inserter.InsertPoint(n.OSMElem, geom, matches); err != nil {
 					log.Warn(err)
 					continue
 				}

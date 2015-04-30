@@ -7,7 +7,7 @@ import (
 	"github.com/omniscale/imposm3/database"
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/expire"
-	"github.com/omniscale/imposm3/geom"
+	geomp "github.com/omniscale/imposm3/geom"
 	"github.com/omniscale/imposm3/geom/geos"
 	"github.com/omniscale/imposm3/mapping"
 	"github.com/omniscale/imposm3/stats"
@@ -128,44 +128,44 @@ func (ww *WayWriter) buildAndInsert(g *geos.Geos, w *element.Way, matches []mapp
 	way := element.Way(*w)
 
 	if isPolygon {
-		geosgeom, err = geom.Polygon(g, way.Nodes)
+		geosgeom, err = geomp.Polygon(g, way.Nodes)
 	} else {
-		geosgeom, err = geom.LineString(g, way.Nodes)
+		geosgeom, err = geomp.LineString(g, way.Nodes)
 	}
 	if err != nil {
 		return err
 	}
 
-	way.Geom, err = geom.AsGeomElement(g, geosgeom)
+	geom, err := geomp.AsGeomElement(g, geosgeom)
 	if err != nil {
 		return err
 	}
 
 	if ww.limiter != nil {
-		parts, err := ww.limiter.Clip(way.Geom.Geom)
+		parts, err := ww.limiter.Clip(geom.Geom)
 		if err != nil {
 			return err
 		}
 		for _, p := range parts {
 			way := element.Way(*w)
-			way.Geom = &element.Geometry{Geom: p, Wkb: g.AsEwkbHex(p)}
+			geom = geomp.Geometry{Geom: p, Wkb: g.AsEwkbHex(p)}
 			if isPolygon {
-				if err := ww.inserter.InsertPolygon(way.OSMElem, matches); err != nil {
+				if err := ww.inserter.InsertPolygon(way.OSMElem, geom, matches); err != nil {
 					return err
 				}
 			} else {
-				if err := ww.inserter.InsertLineString(way.OSMElem, matches); err != nil {
+				if err := ww.inserter.InsertLineString(way.OSMElem, geom, matches); err != nil {
 					return err
 				}
 			}
 		}
 	} else {
 		if isPolygon {
-			if err := ww.inserter.InsertPolygon(way.OSMElem, matches); err != nil {
+			if err := ww.inserter.InsertPolygon(way.OSMElem, geom, matches); err != nil {
 				return err
 			}
 		} else {
-			if err := ww.inserter.InsertLineString(way.OSMElem, matches); err != nil {
+			if err := ww.inserter.InsertLineString(way.OSMElem, geom, matches); err != nil {
 				return err
 			}
 		}

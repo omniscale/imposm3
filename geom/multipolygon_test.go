@@ -26,14 +26,13 @@ func makeWay(id int64, tags element.Tags, coords []coord) element.Way {
 	return way
 }
 
-func buildRelation(rel *element.Relation, srid int) error {
+func buildRelation(rel *element.Relation, srid int) (Geometry, error) {
 	prep, err := PrepareRelation(rel, srid, 0.1)
 	if err != nil {
-		return err
+		return Geometry{}, err
 	}
 
-	_, err = prep.Build()
-	return err
+	return prep.Build()
 }
 
 func TestSimplePolygonWithHole(t *testing.T) {
@@ -59,7 +58,10 @@ func TestSimplePolygonWithHole(t *testing.T) {
 		{2, element.WAY, "inner", &w2},
 	}
 
-	buildRelation(&rel, 3857)
+	geom, err := buildRelation(&rel, 3857)
+	if err != nil {
+		t.Fatal(err)
+	}
 	g := geos.NewGeos()
 	defer g.Finish()
 
@@ -67,11 +69,11 @@ func TestSimplePolygonWithHole(t *testing.T) {
 		t.Fatal("wrong rel tags", rel.Tags)
 	}
 
-	if !g.IsValid(rel.Geom.Geom) {
-		t.Fatal("geometry not valid", g.AsWkt(rel.Geom.Geom))
+	if !g.IsValid(geom.Geom) {
+		t.Fatal("geometry not valid", g.AsWkt(geom.Geom))
 	}
 
-	if area := rel.Geom.Geom.Area(); area != 100-36 {
+	if area := geom.Geom.Area(); area != 100-36 {
 		t.Fatal("area invalid", area)
 	}
 }
@@ -99,7 +101,10 @@ func TestMultiPolygonWithHoleAndRelName(t *testing.T) {
 		{2, element.WAY, "inner", &w2},
 	}
 
-	buildRelation(&rel, 3857)
+	geom, err := buildRelation(&rel, 3857)
+	if err != nil {
+		t.Fatal(err)
+	}
 	g := geos.NewGeos()
 	defer g.Finish()
 
@@ -110,11 +115,11 @@ func TestMultiPolygonWithHoleAndRelName(t *testing.T) {
 		t.Fatal("wrong rel tags", rel.Tags)
 	}
 
-	if !g.IsValid(rel.Geom.Geom) {
-		t.Fatal("geometry not valid", g.AsWkt(rel.Geom.Geom))
+	if !g.IsValid(geom.Geom) {
+		t.Fatal("geometry not valid", g.AsWkt(geom.Geom))
 	}
 
-	if area := rel.Geom.Geom.Area(); area != 64 {
+	if area := geom.Geom.Area(); area != 64 {
 		t.Fatal("aread not 64", area)
 	}
 }
@@ -150,7 +155,10 @@ func TestMultiPolygonWithMultipleHoles(t *testing.T) {
 		{3, element.WAY, "inner", &w3},
 	}
 
-	buildRelation(&rel, 3857)
+	geom, err := buildRelation(&rel, 3857)
+	if err != nil {
+		t.Fatal(err)
+	}
 	g := geos.NewGeos()
 	defer g.Finish()
 
@@ -161,11 +169,11 @@ func TestMultiPolygonWithMultipleHoles(t *testing.T) {
 		t.Fatal("wrong rel tags", rel.Tags)
 	}
 
-	if !g.IsValid(rel.Geom.Geom) {
-		t.Fatal("geometry not valid", g.AsWkt(rel.Geom.Geom))
+	if !g.IsValid(geom.Geom) {
+		t.Fatal("geometry not valid", g.AsWkt(geom.Geom))
 	}
 
-	if area := rel.Geom.Geom.Area(); area != 100-1-1 {
+	if area := geom.Geom.Area(); area != 100-1-1 {
 		t.Fatal("area invalid", area)
 	}
 }
@@ -216,7 +224,10 @@ func TestMultiPolygonWithNeastedHoles(t *testing.T) {
 		{5, element.WAY, "inner", &w5},
 	}
 
-	buildRelation(&rel, 3857)
+	geom, err := buildRelation(&rel, 3857)
+	if err != nil {
+		t.Fatal(err)
+	}
 	g := geos.NewGeos()
 	defer g.Finish()
 
@@ -227,11 +238,11 @@ func TestMultiPolygonWithNeastedHoles(t *testing.T) {
 		t.Fatal("wrong rel tags", rel.Tags)
 	}
 
-	if !g.IsValid(rel.Geom.Geom) {
-		t.Fatal("geometry not valid", g.AsWkt(rel.Geom.Geom))
+	if !g.IsValid(geom.Geom) {
+		t.Fatal("geometry not valid", g.AsWkt(geom.Geom))
 	}
 
-	if area := rel.Geom.Geom.Area(); area != 100-64+36-16+4 {
+	if area := geom.Geom.Area(); area != 100-64+36-16+4 {
 		t.Fatal("area invalid", area)
 	}
 }
@@ -258,7 +269,10 @@ func TestPolygonFromThreeWays(t *testing.T) {
 		{3, element.WAY, "inner", &w3},
 	}
 
-	buildRelation(&rel, 3857)
+	geom, err := buildRelation(&rel, 3857)
+	if err != nil {
+		t.Fatal(err)
+	}
 	g := geos.NewGeos()
 	defer g.Finish()
 
@@ -269,11 +283,11 @@ func TestPolygonFromThreeWays(t *testing.T) {
 		t.Fatal("wrong rel tags", rel.Tags)
 	}
 
-	if !g.IsValid(rel.Geom.Geom) {
-		t.Fatal("geometry not valid", g.AsWkt(rel.Geom.Geom))
+	if !g.IsValid(geom.Geom) {
+		t.Fatal("geometry not valid", g.AsWkt(geom.Geom))
 	}
 
-	if area := rel.Geom.Geom.Area(); area != 100 {
+	if area := geom.Geom.Area(); area != 100 {
 		t.Fatal("area invalid", area)
 	}
 }
@@ -307,7 +321,10 @@ func TestTouchingPolygonsWithHole(t *testing.T) {
 		{2, element.WAY, "outer", &w2},
 		{3, element.WAY, "inner", &w3},
 	}
-	buildRelation(&rel, 3857)
+	geom, err := buildRelation(&rel, 3857)
+	if err != nil {
+		t.Fatal(err)
+	}
 	g := geos.NewGeos()
 	defer g.Finish()
 
@@ -319,11 +336,11 @@ func TestTouchingPolygonsWithHole(t *testing.T) {
 		t.Fatal("wrong rel tags", rel.Tags)
 	}
 
-	if !g.IsValid(rel.Geom.Geom) {
-		t.Fatal("geometry not valid", g.AsWkt(rel.Geom.Geom))
+	if !g.IsValid(geom.Geom) {
+		t.Fatal("geometry not valid", g.AsWkt(geom.Geom))
 	}
 
-	if area := rel.Geom.Geom.Area(); area != 100+200-36 {
+	if area := geom.Geom.Area(); area != 100+200-36 {
 		t.Fatal("area invalid", area)
 	}
 }
@@ -346,7 +363,10 @@ func TestInsertedWaysDifferentTags(t *testing.T) {
 		{2, element.WAY, "inner", &w2},
 	}
 
-	buildRelation(&rel, 3857)
+	geom, err := buildRelation(&rel, 3857)
+	if err != nil {
+		t.Fatal(err)
+	}
 	g := geos.NewGeos()
 	defer g.Finish()
 
@@ -358,11 +378,11 @@ func TestInsertedWaysDifferentTags(t *testing.T) {
 		t.Fatal("wrong rel tags", rel.Tags)
 	}
 
-	if !g.IsValid(rel.Geom.Geom) {
-		t.Fatal("geometry not valid", g.AsWkt(rel.Geom.Geom))
+	if !g.IsValid(geom.Geom) {
+		t.Fatal("geometry not valid", g.AsWkt(geom.Geom))
 	}
 
-	if area := rel.Geom.Geom.Area(); area != 100 {
+	if area := geom.Geom.Area(); area != 100 {
 		t.Fatal("area invalid", area)
 	}
 }
@@ -385,7 +405,10 @@ func TestInsertMultipleTags(t *testing.T) {
 		{2, element.WAY, "inner", &w2},
 	}
 
-	buildRelation(&rel, 3857)
+	geom, err := buildRelation(&rel, 3857)
+	if err != nil {
+		t.Fatal(err)
+	}
 	g := geos.NewGeos()
 	defer g.Finish()
 
@@ -393,11 +416,11 @@ func TestInsertMultipleTags(t *testing.T) {
 		t.Fatal("wrong rel tags", rel.Tags)
 	}
 
-	if !g.IsValid(rel.Geom.Geom) {
-		t.Fatal("geometry not valid", g.AsWkt(rel.Geom.Geom))
+	if !g.IsValid(geom.Geom) {
+		t.Fatal("geometry not valid", g.AsWkt(geom.Geom))
 	}
 
-	if area := rel.Geom.Geom.Area(); area != 100 {
+	if area := geom.Geom.Area(); area != 100 {
 		t.Fatal("area invalid", area)
 	}
 }
@@ -431,7 +454,7 @@ func TestBrokenPolygonSelfIntersect(t *testing.T) {
 		{2, element.WAY, "inner", &w2},
 	}
 
-	err := buildRelation(&rel1, 3857)
+	geom1, err := buildRelation(&rel1, 3857)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -442,11 +465,11 @@ func TestBrokenPolygonSelfIntersect(t *testing.T) {
 		t.Fatal("wrong rel tags", rel1.Tags)
 	}
 
-	if !g.IsValid(rel1.Geom.Geom) {
-		t.Fatal("geometry not valid", g.AsWkt(rel1.Geom.Geom))
+	if !g.IsValid(geom1.Geom) {
+		t.Fatal("geometry not valid", g.AsWkt(geom1.Geom))
 	}
 
-	if area := rel1.Geom.Geom.Area(); area != 200-36 {
+	if area := geom1.Geom.Area(); area != 200-36 {
 		t.Fatal("area invalid", area)
 	}
 
@@ -472,7 +495,7 @@ func TestBrokenPolygonSelfIntersect(t *testing.T) {
 		{2, element.WAY, "inner", &w2},
 	}
 
-	err = buildRelation(&rel2, 3857)
+	geom2, err := buildRelation(&rel2, 3857)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -484,11 +507,11 @@ func TestBrokenPolygonSelfIntersect(t *testing.T) {
 		t.Fatal("wrong rel tags", rel2.Tags)
 	}
 
-	if !g.IsValid(rel2.Geom.Geom) {
-		t.Fatal("geometry not valid", g.AsWkt(rel2.Geom.Geom))
+	if !g.IsValid(geom2.Geom) {
+		t.Fatal("geometry not valid", g.AsWkt(geom2.Geom))
 	}
 
-	if area := rel2.Geom.Geom.Area(); area != 200-36 {
+	if area := geom2.Geom.Area(); area != 200-36 {
 		t.Fatal("area invalid", area)
 	}
 }
@@ -521,7 +544,7 @@ func TestBrokenPolygonSelfIntersectTriangle(t *testing.T) {
 		{2, element.WAY, "inner", &w2},
 	}
 
-	err := buildRelation(&rel, 3857)
+	geom, err := buildRelation(&rel, 3857)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -529,11 +552,11 @@ func TestBrokenPolygonSelfIntersectTriangle(t *testing.T) {
 	g := geos.NewGeos()
 	defer g.Finish()
 
-	if !g.IsValid(rel.Geom.Geom) {
-		t.Fatal("geometry not valid", g.AsWkt(rel.Geom.Geom))
+	if !g.IsValid(geom.Geom) {
+		t.Fatal("geometry not valid", g.AsWkt(geom.Geom))
 	}
 
-	area := rel.Geom.Geom.Area()
+	area := geom.Geom.Area()
 	// as for python assertAlmostEqual(a, b)	round(a-b, 7) == 0
 	if math.Abs(area-(100*100/2-100)) > 0.01 {
 		t.Fatal("area invalid", area)
@@ -561,16 +584,16 @@ func TestBrokenPolygonSelfIntersectTriangle(t *testing.T) {
 		{2, element.WAY, "inner", &w4},
 	}
 
-	err = buildRelation(&rel, 3857)
+	geom, err = buildRelation(&rel, 3857)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if !g.IsValid(rel.Geom.Geom) {
-		t.Fatal("geometry not valid", g.AsWkt(rel.Geom.Geom))
+	if !g.IsValid(geom.Geom) {
+		t.Fatal("geometry not valid", g.AsWkt(geom.Geom))
 	}
 
-	area = rel.Geom.Geom.Area()
+	area = geom.Geom.Area()
 	if math.Abs((area - (100*98/2 - 100))) > 10 {
 		t.Fatal("area invalid", area)
 

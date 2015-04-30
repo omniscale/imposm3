@@ -8,30 +8,42 @@ import (
 	"github.com/omniscale/imposm3/geom/geos"
 )
 
-type preparedRelation struct {
+type PreparedRelation struct {
 	rings []*Ring
 	rel   *element.Relation
 	srid  int
 }
 
-func PrepareRelation(rel *element.Relation, srid int, maxRingGap float64) (*preparedRelation, error) {
-	rings, err := BuildRings(rel, maxRingGap)
+// PrepareRelation is the first step in building a (multi-)polygon of a Relation.
+// It builds rings from all ways and returns an error if there are unclosed rings.
+// It also merges the Relation.Tags with the Tags of the outer way.
+func PrepareRelation(rel *element.Relation, srid int, maxRingGap float64) (PreparedRelation, error) {
+	rings, err := buildRings(rel, maxRingGap)
 	if err != nil {
-		return nil, err
+		return PreparedRelation{}, err
 	}
 
 	rel.Tags = relationTags(rel.Tags, rings[0].ways[0].Tags)
 
-	return &preparedRelation{rings, rel, srid}, nil
+	return PreparedRelation{rings, rel, srid}, nil
 }
 
-func (prep *preparedRelation) Build() (*element.Relation, error) {
-	_, err := BuildRelGeometry(prep.rel, prep.rings, prep.srid)
-	if err != nil {
-		return nil, err
-	}
-	return prep.rel, nil
+// Build creates the (multi)polygon Geometry of the Relation.
+func (prep *PreparedRelation) Build() (Geometry, error) {
+	g := geos.NewGeos()
+	g.SetHandleSrid(prep.srid)
+	defer g.Finish()
 
+	geom, err := buildRelGeometry(g, prep.rel, prep.rings)
+	if err != nil {
+		return Geometry{}, err
+	}
+
+	wkb := g.AsEwkbHex(geom)
+	if wkb == nil {
+		return Geometry{}, errors.New("unable to create WKB for relation")
+	}
+	return Geometry{Geom: geom, Wkb: wkb}, nil
 }
 
 func destroyRings(g *geos.Geos, rings []*Ring) {
@@ -43,7 +55,7 @@ func destroyRings(g *geos.Geos, rings []*Ring) {
 	}
 }
 
-func BuildRings(rel *element.Relation, maxRingGap float64) ([]*Ring, error) {
+func buildRings(rel *element.Relation, maxRingGap float64) ([]*Ring, error) {
 	var rings []*Ring
 	var incompleteRings []*Ring
 	var completeRings []*Ring
@@ -114,13 +126,9 @@ func (r SortableRingsDesc) Len() int           { return len(r) }
 func (r SortableRingsDesc) Less(i, j int) bool { return r[i].area > r[j].area }
 func (r SortableRingsDesc) Swap(i, j int)      { r[i], r[j] = r[j], r[i] }
 
-// BuildRelGeometry builds the geometry of rel by creating a multipolygon of all rings.
+// buildRelGeometry builds the geometry of rel by creating a multipolygon of all rings.
 // rings need to be sorted by area (large to small).
-func BuildRelGeometry(rel *element.Relation, rings []*Ring, srid int) (*geos.Geom, error) {
-	g := geos.NewGeos()
-	g.SetHandleSrid(srid)
-	defer g.Finish()
-
+func buildRelGeometry(g *geos.Geos, rel *element.Relation, rings []*Ring) (*geos.Geom, error) {
 	totalRings := len(rings)
 	shells := map[*Ring]bool{rings[0]: true}
 	for i := 0; i < totalRings; i++ {
@@ -215,12 +223,6 @@ func BuildRelGeometry(rel *element.Relation, rings []*Ring, srid int) (*geos.Geo
 			rel.Members[i].Role = "inner"
 		}
 	}
-
-	wkb := g.AsEwkbHex(result)
-	if wkb == nil {
-		return nil, errors.New("unable to create WKB for relation")
-	}
-	rel.Geom = &element.Geometry{Geom: result, Wkb: wkb}
 
 	return result, nil
 }

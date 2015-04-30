@@ -10,6 +10,7 @@ import (
 	pq "github.com/lib/pq"
 	"github.com/omniscale/imposm3/database"
 	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/geom"
 	"github.com/omniscale/imposm3/logging"
 	"github.com/omniscale/imposm3/mapping"
 )
@@ -422,9 +423,9 @@ func (pg *PostGIS) Open() error {
 	return nil
 }
 
-func (pg *PostGIS) InsertPoint(elem element.OSMElem, matches []mapping.Match) error {
+func (pg *PostGIS) InsertPoint(elem element.OSMElem, geom geom.Geometry, matches []mapping.Match) error {
 	for _, match := range matches {
-		row := match.Row(&elem)
+		row := match.Row(&elem, &geom)
 		if err := pg.txRouter.Insert(match.Table.Name, row); err != nil {
 			return err
 		}
@@ -432,9 +433,9 @@ func (pg *PostGIS) InsertPoint(elem element.OSMElem, matches []mapping.Match) er
 	return nil
 }
 
-func (pg *PostGIS) InsertLineString(elem element.OSMElem, matches []mapping.Match) error {
+func (pg *PostGIS) InsertLineString(elem element.OSMElem, geom geom.Geometry, matches []mapping.Match) error {
 	for _, match := range matches {
-		row := match.Row(&elem)
+		row := match.Row(&elem, &geom)
 		if err := pg.txRouter.Insert(match.Table.Name, row); err != nil {
 			return err
 		}
@@ -447,9 +448,9 @@ func (pg *PostGIS) InsertLineString(elem element.OSMElem, matches []mapping.Matc
 	return nil
 }
 
-func (pg *PostGIS) InsertPolygon(elem element.OSMElem, matches []mapping.Match) error {
+func (pg *PostGIS) InsertPolygon(elem element.OSMElem, geom geom.Geometry, matches []mapping.Match) error {
 	for _, match := range matches {
-		row := match.Row(&elem)
+		row := match.Row(&elem, &geom)
 		if err := pg.txRouter.Insert(match.Table.Name, row); err != nil {
 			return err
 		}

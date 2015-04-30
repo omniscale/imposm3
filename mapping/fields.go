@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/geom"
 	"github.com/omniscale/imposm3/logging"
 )
 
@@ -34,7 +35,7 @@ func init() {
 	}
 }
 
-type MakeValue func(string, *element.OSMElem, Match) interface{}
+type MakeValue func(string, *element.OSMElem, *geom.Geometry, Match) interface{}
 
 type MakeMakeValue func(string, FieldType, Field) (MakeValue, error)
 
@@ -46,9 +47,9 @@ type FieldSpec struct {
 	Type FieldType
 }
 
-func (f *FieldSpec) Value(elem *element.OSMElem, match Match) interface{} {
+func (f *FieldSpec) Value(elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
 	if f.Type.Func != nil {
-		return f.Type.Func(elem.Tags[string(f.Key)], elem, match)
+		return f.Type.Func(elem.Tags[string(f.Key)], elem, geom, match)
 	}
 	return nil
 }
@@ -57,10 +58,10 @@ type TableFields struct {
 	fields []FieldSpec
 }
 
-func (t *TableFields) MakeRow(elem *element.OSMElem, match Match) []interface{} {
+func (t *TableFields) MakeRow(elem *element.OSMElem, geom *geom.Geometry, match Match) []interface{} {
 	var row []interface{}
 	for _, field := range t.fields {
-		row = append(row, field.Value(elem, match))
+		row = append(row, field.Value(elem, geom, match))
 	}
 	return row
 }
@@ -105,25 +106,25 @@ type FieldType struct {
 	MakeFunc MakeMakeValue
 }
 
-func Bool(val string, elem *element.OSMElem, match Match) interface{} {
+func Bool(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
 	if val == "" || val == "0" || val == "false" || val == "no" {
 		return false
 	}
 	return true
 }
 
-func BoolInt(val string, elem *element.OSMElem, match Match) interface{} {
+func BoolInt(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
 	if val == "" || val == "0" || val == "false" || val == "no" {
 		return 0
 	}
 	return 1
 }
 
-func String(val string, elem *element.OSMElem, match Match) interface{} {
+func String(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
 	return val
 }
 
-func Integer(val string, elem *element.OSMElem, match Match) interface{} {
+func Integer(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
 	v, err := strconv.ParseInt(val, 10, 32)
 	if err != nil {
 		return nil
@@ -131,19 +132,19 @@ func Integer(val string, elem *element.OSMElem, match Match) interface{} {
 	return v
 }
 
-func Id(val string, elem *element.OSMElem, match Match) interface{} {
+func Id(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
 	return elem.Id
 }
 
-func KeyName(val string, elem *element.OSMElem, match Match) interface{} {
+func KeyName(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
 	return match.Key
 }
 
-func ValueName(val string, elem *element.OSMElem, match Match) interface{} {
+func ValueName(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
 	return match.Value
 }
 
-func Direction(val string, elem *element.OSMElem, match Match) interface{} {
+func Direction(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
 	if val == "1" || val == "yes" || val == "true" {
 		return 1
 	} else if val == "-1" {
@@ -153,12 +154,12 @@ func Direction(val string, elem *element.OSMElem, match Match) interface{} {
 	}
 }
 
-func Geometry(val string, elem *element.OSMElem, match Match) interface{} {
-	return string(elem.Geom.Wkb)
+func Geometry(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
+	return string(geom.Wkb)
 }
 
-func PseudoArea(val string, elem *element.OSMElem, match Match) interface{} {
-	area := elem.Geom.Geom.Area()
+func PseudoArea(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
+	area := geom.Geom.Area()
 	if area == 0.0 {
 		return nil
 	}
@@ -167,7 +168,7 @@ func PseudoArea(val string, elem *element.OSMElem, match Match) interface{} {
 
 var hstoreReplacer = strings.NewReplacer("\\", "\\\\", "\"", "\\\"")
 
-func HstoreString(val string, elem *element.OSMElem, match Match) interface{} {
+func HstoreString(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
 	tags := make([]string, 0, len(elem.Tags))
 	for k, v := range elem.Tags {
 		tags = append(tags, `"`+hstoreReplacer.Replace(k)+`"=>"`+hstoreReplacer.Replace(v)+`"`)
@@ -196,7 +197,7 @@ func init() {
 	}
 }
 
-func WayZOrder(val string, elem *element.OSMElem, match Match) interface{} {
+func WayZOrder(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
 	var z int32
 	layer, _ := strconv.ParseInt(elem.Tags["layer"], 10, 64)
 	z += int32(layer) * 10
@@ -252,7 +253,7 @@ func MakeZOrder(fieldName string, fieldType FieldType, field Field) (MakeValue, 
 		ranks[rankName] = len(rankList) - i
 	}
 
-	zOrder := func(val string, elem *element.OSMElem, match Match) interface{} {
+	zOrder := func(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
 		if key != "" {
 			if r, ok := ranks[elem.Tags[key]]; ok {
 				return r
@@ -290,7 +291,7 @@ func MakeSuffixReplace(fieldName string, fieldType FieldType, field Field) (Make
 		return changes[match].(string)
 	}
 
-	suffixReplace := func(val string, elem *element.OSMElem, match Match) interface{} {
+	suffixReplace := func(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
 		if val != "" {
 			return re.ReplaceAllStringFunc(val, replFunc)
 		}
