@@ -86,23 +86,15 @@ Import of Europe 11GB PBF with generalized tables:
 Current status
 --------------
 
-Imposm 3 is in alpha stadium and there is no official release yet.
-The import itself is working however and it is already used for production databases.
+Imposm 3 is used in production but there is no official release yet.
 
 ### Missing ###
 
 Compared to Imposm 2:
 
-* Documentation
-* Support for other projections than EPSG:3857
-* Import of XML files
-
-Other missing features:
-
-* Automatic download of diff files
-* Tile expire list for re-rendering updated areas
-* Background mode for diff-import (update DB in background)
-* Improve parallelization of diff import
+* Support for other projections than EPSG:3857 or EPSG:4326
+* Import of XML files (unlikely to be implemented in the future, use [osmosis](http://wiki.openstreetmap.org/wiki/Osmosis) to convert XML to PBF first)
+* Custom field/filter functions
 
 Installation
 ------------
@@ -110,9 +102,8 @@ Installation
 ### Binary
 
 There are no official releases, but you find development builds at <http://imposm.org/static/rel/>.
-These builds are for x86 64bit Linux and require *no* further depedecies. Download, untar and start `imposm3`.
-(Note: These binaries require glibc >= 2.15 at the moment.
-Ubuntu 12.04 is recent enough, Debian 7 not. Future binary releases will work on older versions as well.)
+These builds are for x86 64bit Linux and require *no* further dependencies. Download, untar and start `imposm3`.
+(Note: These binaries require glibc >= 2.15 at the moment. Ubuntu 12.04 is recent enough, Debian 7 not.)
 
 ### Source
 
@@ -217,8 +208,6 @@ To use that config:
 For more options see:
 
     imposm3 import -help
-
-Sorry, that's all documentation for the moment.
 
 
 Note: TLS/SSL support is disabled by default due to the lack of renegotiation support in Go's TLS implementation. You can re-enable encryption by setting the `PGSSLMODE` environment variable or the `sslmode` connection option to `require` or `verify-full`, eg: `-connect postgis://host/dbname?sslmode=require`. You will need to disable renegotiation support on your server to prevent connection errors on larger imports. You can do this by setting `ssl_renegotiation_limit` to 0 in your PostgreSQL server configuration.
