@@ -213,6 +213,11 @@ For more options see:
 Note: TLS/SSL support is disabled by default due to the lack of renegotiation support in Go's TLS implementation. You can re-enable encryption by setting the `PGSSLMODE` environment variable or the `sslmode` connection option to `require` or `verify-full`, eg: `-connect postgis://host/dbname?sslmode=require`. You will need to disable renegotiation support on your server to prevent connection errors on larger imports. You can do this by setting `ssl_renegotiation_limit` to 0 in your PostgreSQL server configuration.
 
 
+Documentation
+-------------
+
+The latest documentation can be found here: <http://imposm.org/docs/imposm3/latest/>
+
 Support
 -------
 
