@@ -232,7 +232,7 @@ func (db *DB) Write(wo *WriteOptions, w *WriteBatch) error {
 // data. This can be done by calling SetFillCache(false) on the ReadOptions
 // before passing it here.
 //
-// Similiarly, ReadOptions.SetSnapshot is also useful.
+// Similarly, ReadOptions.SetSnapshot is also useful.
 //
 // The ReadOptions passed in can be reused by multiple calls to this
 // and other methods if the ReadOptions is left unchanged.

@@ -34,7 +34,7 @@ type ReadOptions struct {
 	Opt *C.leveldb_readoptions_t
 }
 
-// WriteOptions represent all of the available options when writeing from a
+// WriteOptions represent all of the available options when writing from a
 // database.
 //
 // To prevent memory leaks, Close must called on a WriteOptions when the
@@ -219,7 +219,7 @@ func (wo *WriteOptions) Close() {
 // be flushed from the operating system buffer cache before the write is
 // considered complete.
 //
-// If called with true, this will signficantly slow down writes. If called
+// If called with true, this will significantly slow down writes. If called
 // with false, and the host machine crashes, some recent writes may be
 // lost. The default is false.
 //

@@ -4,27 +4,34 @@ import (
 	"bufio"
 	"crypto/md5"
 	"crypto/tls"
+	"crypto/x509"
 	"database/sql"
 	"database/sql/driver"
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/lib/pq/oid"
 	"io"
+	"io/ioutil"
 	"net"
 	"os"
+	"os/user"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/lib/pq/oid"
 )
 
 // Common error types
 var (
-	ErrSSLNotSupported     = errors.New("pq: SSL is not enabled on the server")
-	ErrNotSupported        = errors.New("pq: Unsupported command")
-	ErrInFailedTransaction = errors.New("pq: Could not complete operation in a failed transaction")
+	ErrNotSupported              = errors.New("pq: Unsupported command")
+	ErrInFailedTransaction       = errors.New("pq: Could not complete operation in a failed transaction")
+	ErrSSLNotSupported           = errors.New("pq: SSL is not enabled on the server")
+	ErrSSLKeyHasWorldPermissions = errors.New("pq: Private key file has group or world access. Permissions should be u=rw (0600) or less.")
+	ErrCouldNotDetectUsername    = errors.New("pq: Could not detect default username. Please provide one explicitly.")
 )
 
 type drv struct{}
@@ -66,6 +73,7 @@ func (s transactionStatus) String() string {
 	default:
 		errorf("unknown transactionStatus %d", s)
 	}
+
 	panic("not reached")
 }
 
@@ -93,7 +101,7 @@ type conn struct {
 	parameterStatus parameterStatus
 
 	saveMessageType   byte
-	saveMessageBuffer *readBuf
+	saveMessageBuffer []byte
 
 	// If true, this connection is bad and all public-facing functions should
 	// return ErrBadConn.
@@ -111,22 +119,11 @@ func Open(name string) (_ driver.Conn, err error) {
 }
 
 func DialOpen(d Dialer, name string) (_ driver.Conn, err error) {
-	defer func() {
-		// Handle any panics during connection initialization.  Note that we
-		// specifically do *not* want to use errRecover(), as that would turn
-		// any connection errors into ErrBadConns, hiding the real error
-		// message from the user.
-		e := recover()
-		if e == nil {
-			// Do nothing
-			return
-		}
-		var ok bool
-		err, ok = e.(error)
-		if !ok {
-			err = fmt.Errorf("pq: unexpected error: %#v", e)
-		}
-	}()
+	// Handle any panics during connection initialization.  Note that we
+	// specifically do *not* want to use errRecover(), as that would turn any
+	// connection errors into ErrBadConns, hiding the real error message from
+	// the user.
+	defer errRecoverNoErrBadConn(&err)
 
 	o := make(values)
 
@@ -144,7 +141,7 @@ func DialOpen(d Dialer, name string) (_ driver.Conn, err error) {
 		o.Set(k, v)
 	}
 
-	if strings.HasPrefix(name, "postgres://") {
+	if strings.HasPrefix(name, "postgres://") || strings.HasPrefix(name, "postgresql://") {
 		name, err = ParseURL(name)
 		if err != nil {
 			return nil, err
@@ -161,7 +158,6 @@ func DialOpen(d Dialer, name string) (_ driver.Conn, err error) {
 			o.Set("application_name", fallback)
 		}
 	}
-	o.Unset("fallback_application_name")
 
 	// We can't work with any client_encoding other than UTF-8 currently.
 	// However, we have historically allowed the user to set it to UTF-8
@@ -206,19 +202,21 @@ func DialOpen(d Dialer, name string) (_ driver.Conn, err error) {
 	cn.buf = bufio.NewReader(cn.c)
 	cn.startup(o)
 	// reset the deadline, in case one was set (see dial)
-	err = cn.c.SetDeadline(time.Time{})
+	if timeout := o.Get("connect_timeout"); timeout != "" && timeout != "0" {
+		err = cn.c.SetDeadline(time.Time{})
+	}
 	return cn, err
 }
 
 func dial(d Dialer, o values) (net.Conn, error) {
 	ntw, addr := network(o)
-
-	timeout := o.Get("connect_timeout")
-	// Ensure the option will not be sent.
-	o.Unset("connect_timeout")
+	// SSL is not necessary or supported over UNIX domain sockets
+	if ntw == "unix" {
+		o["sslmode"] = "disable"
+	}
 
 	// Zero or not specified means wait indefinitely.
-	if timeout != "" && timeout != "0" {
+	if timeout := o.Get("connect_timeout"); timeout != "" && timeout != "0" {
 		seconds, err := strconv.ParseInt(timeout, 10, 0)
 		if err != nil {
 			return nil, fmt.Errorf("invalid value for parameter connect_timeout: %s", err)
@@ -263,10 +261,6 @@ func (vs values) Get(k string) (v string) {
 func (vs values) Isset(k string) bool {
 	_, ok := vs[k]
 	return ok
-}
-
-func (vs values) Unset(k string) {
-	delete(vs, k)
 }
 
 // scanner implements a tokenizer for libpq-style option strings.
@@ -404,9 +398,11 @@ func (cn *conn) Begin() (_ driver.Tx, err error) {
 		return nil, err
 	}
 	if commandTag != "BEGIN" {
+		cn.bad = true
 		return nil, fmt.Errorf("unexpected command tag %s", commandTag)
 	}
 	if cn.txnStatus != txnStatusIdleInTransaction {
+		cn.bad = true
 		return nil, fmt.Errorf("unexpected transaction status %v", cn.txnStatus)
 	}
 	return cn, nil
@@ -434,9 +430,13 @@ func (cn *conn) Commit() (err error) {
 
 	_, commandTag, err := cn.simpleExec("COMMIT")
 	if err != nil {
+		if cn.isInTransaction() {
+			cn.bad = true
+		}
 		return err
 	}
 	if commandTag != "COMMIT" {
+		cn.bad = true
 		return fmt.Errorf("unexpected command tag %s", commandTag)
 	}
 	cn.checkIsInTransaction(false)
@@ -452,6 +452,9 @@ func (cn *conn) Rollback() (err error) {
 	cn.checkIsInTransaction(true)
 	_, commandTag, err := cn.simpleExec("ROLLBACK")
 	if err != nil {
+		if cn.isInTransaction() {
+			cn.bad = true
+		}
 		return err
 	}
 	if commandTag != "ROLLBACK" {
@@ -489,13 +492,12 @@ func (cn *conn) simpleExec(q string) (res driver.Result, commandTag string, err 
 			errorf("unknown response for simple query: %q", t)
 		}
 	}
-	panic("not reached")
 }
 
 func (cn *conn) simpleQuery(q string) (res driver.Rows, err error) {
 	defer cn.errRecover(&err)
 
-	st := &stmt{cn: cn, name: "", query: q}
+	st := &stmt{cn: cn, name: ""}
 
 	b := cn.writeBuf('Q')
 	b.string(q)
@@ -542,13 +544,10 @@ func (cn *conn) simpleQuery(q string) (res driver.Rows, err error) {
 			errorf("unknown response for simple query: %q", t)
 		}
 	}
-	panic("not reached")
 }
 
 func (cn *conn) prepareTo(q, stmtName string) (_ *stmt, err error) {
-	defer cn.errRecover(&err)
-
-	st := &stmt{cn: cn, name: stmtName, query: q}
+	st := &stmt{cn: cn, name: stmtName}
 
 	b := cn.writeBuf('P')
 	b.string(st.name)
@@ -588,14 +587,13 @@ func (cn *conn) prepareTo(q, stmtName string) (_ *stmt, err error) {
 			errorf("unexpected describe rows response: %q", t)
 		}
 	}
-
-	panic("not reached")
 }
 
-func (cn *conn) Prepare(q string) (driver.Stmt, error) {
+func (cn *conn) Prepare(q string) (_ driver.Stmt, err error) {
 	if cn.bad {
 		return nil, driver.ErrBadConn
 	}
+	defer cn.errRecover(&err)
 
 	if len(q) >= 4 && strings.EqualFold(q[:4], "COPY") {
 		return cn.prepareCopyIn(q)
@@ -706,24 +704,25 @@ func (cn *conn) saveMessage(typ byte, buf *readBuf) {
 		errorf("unexpected saveMessageType %d", cn.saveMessageType)
 	}
 	cn.saveMessageType = typ
-	cn.saveMessageBuffer = buf
+	cn.saveMessageBuffer = *buf
 }
 
 // recvMessage receives any message from the backend, or returns an error if
 // a problem occurred while reading the message.
-func (cn *conn) recvMessage() (byte, *readBuf, error) {
+func (cn *conn) recvMessage(r *readBuf) (byte, error) {
 	// workaround for a QueryRow bug, see exec
 	if cn.saveMessageType != 0 {
-		t, r := cn.saveMessageType, cn.saveMessageBuffer
+		t := cn.saveMessageType
+		*r = cn.saveMessageBuffer
 		cn.saveMessageType = 0
 		cn.saveMessageBuffer = nil
-		return t, r, nil
+		return t, nil
 	}
 
 	x := cn.scratch[:5]
 	_, err := io.ReadFull(cn.buf, x)
 	if err != nil {
-		return 0, nil, err
+		return 0, err
 	}
 
 	// read the type and length of the message that follows
@@ -737,10 +736,10 @@ func (cn *conn) recvMessage() (byte, *readBuf, error) {
 	}
 	_, err = io.ReadFull(cn.buf, y)
 	if err != nil {
-		return 0, nil, err
+		return 0, err
 	}
-
-	return t, (*readBuf)(&y), nil
+	*r = y
+	return t, nil
 }
 
 // recv receives a message from the backend, but if an error happened while
@@ -750,7 +749,8 @@ func (cn *conn) recvMessage() (byte, *readBuf, error) {
 func (cn *conn) recv() (t byte, r *readBuf) {
 	for {
 		var err error
-		t, r, err = cn.recvMessage()
+		r = &readBuf{}
+		t, err = cn.recvMessage(r)
 		if err != nil {
 			panic(err)
 		}
@@ -764,17 +764,13 @@ func (cn *conn) recv() (t byte, r *readBuf) {
 			return
 		}
 	}
-
-	panic("not reached")
 }
 
-// recv1 receives a message from the backend, panicking if an error occurs
-// while attempting to read it.  All asynchronous messages are ignored, with
-// the exception of ErrorResponse.
-func (cn *conn) recv1() (t byte, r *readBuf) {
+// recv1Buf is exactly equivalent to recv1, except it uses a buffer supplied by
+// the caller to avoid an allocation.
+func (cn *conn) recv1Buf(r *readBuf) byte {
 	for {
-		var err error
-		t, r, err = cn.recvMessage()
+		t, err := cn.recvMessage(r)
 		if err != nil {
 			panic(err)
 		}
@@ -785,18 +781,31 @@ func (cn *conn) recv1() (t byte, r *readBuf) {
 		case 'S':
 			cn.processParameterStatus(r)
 		default:
-			return
+			return t
 		}
 	}
+}
 
-	panic("not reached")
+// recv1 receives a message from the backend, panicking if an error occurs
+// while attempting to read it.  All asynchronous messages are ignored, with
+// the exception of ErrorResponse.
+func (cn *conn) recv1() (t byte, r *readBuf) {
+	r = &readBuf{}
+	t = cn.recv1Buf(r)
+	return t, r
 }
 
 func (cn *conn) ssl(o values) {
+	verifyCaOnly := false
 	tlsConf := tls.Config{}
 	switch mode := o.Get("sslmode"); mode {
 	case "require", "":
 		tlsConf.InsecureSkipVerify = true
+	case "verify-ca":
+		// We must skip TLS's own verification since it requires full
+		// verification since Go 1.3.
+		tlsConf.InsecureSkipVerify = true
+		verifyCaOnly = true
 	case "verify-full":
 		tlsConf.ServerName = o.Get("host")
 	case "disable":
@@ -804,6 +813,9 @@ func (cn *conn) ssl(o values) {
 	default:
 		errorf(`unsupported sslmode %q; only "require" (default), "verify-full", and "disable" supported`, mode)
 	}
+
+	cn.setupSSLClientCertificates(&tlsConf, o)
+	cn.setupSSLCA(&tlsConf, o)
 
 	w := cn.writeBuf(0)
 	w.int32(80877103)
@@ -819,7 +831,135 @@ func (cn *conn) ssl(o values) {
 		panic(ErrSSLNotSupported)
 	}
 
-	cn.c = tls.Client(cn.c, &tlsConf)
+	client := tls.Client(cn.c, &tlsConf)
+	if verifyCaOnly {
+		cn.verifyCA(client, &tlsConf)
+	}
+	cn.c = client
+}
+
+// verifyCA carries out a TLS handshake to the server and verifies the
+// presented certificate against the effective CA, i.e. the one specified in
+// sslrootcert or the system CA if sslrootcert was not specified.
+func (cn *conn) verifyCA(client *tls.Conn, tlsConf *tls.Config) {
+	err := client.Handshake()
+	if err != nil {
+		panic(err)
+	}
+	certs := client.ConnectionState().PeerCertificates
+	opts := x509.VerifyOptions{
+		DNSName:       client.ConnectionState().ServerName,
+		Intermediates: x509.NewCertPool(),
+		Roots:         tlsConf.RootCAs,
+	}
+	for i, cert := range certs {
+		if i == 0 {
+			continue
+		}
+		opts.Intermediates.AddCert(cert)
+	}
+	_, err = certs[0].Verify(opts)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// This function sets up SSL client certificates based on either the "sslkey"
+// and "sslcert" settings (possibly set via the environment variables PGSSLKEY
+// and PGSSLCERT, respectively), or if they aren't set, from the .postgresql
+// directory in the user's home directory.  If the file paths are set
+// explicitly, the files must exist.  The key file must also not be
+// world-readable, or this function will panic with
+// ErrSSLKeyHasWorldPermissions.
+func (cn *conn) setupSSLClientCertificates(tlsConf *tls.Config, o values) {
+	var missingOk bool
+
+	sslkey := o.Get("sslkey")
+	sslcert := o.Get("sslcert")
+	if sslkey != "" && sslcert != "" {
+		// If the user has set an sslkey and sslcert, they *must* exist.
+		missingOk = false
+	} else {
+		// Automatically load certificates from ~/.postgresql.
+		user, err := user.Current()
+		if err != nil {
+			// user.Current() might fail when cross-compiling.  We have to
+			// ignore the error and continue without client certificates, since
+			// we wouldn't know where to load them from.
+			return
+		}
+
+		sslkey = filepath.Join(user.HomeDir, ".postgresql", "postgresql.key")
+		sslcert = filepath.Join(user.HomeDir, ".postgresql", "postgresql.crt")
+		missingOk = true
+	}
+
+	// Check that both files exist, and report the error or stop, depending on
+	// which behaviour we want.  Note that we don't do any more extensive
+	// checks than this (such as checking that the paths aren't directories);
+	// LoadX509KeyPair() will take care of the rest.
+	keyfinfo, err := os.Stat(sslkey)
+	if err != nil && missingOk {
+		return
+	} else if err != nil {
+		panic(err)
+	}
+	_, err = os.Stat(sslcert)
+	if err != nil && missingOk {
+		return
+	} else if err != nil {
+		panic(err)
+	}
+
+	// If we got this far, the key file must also have the correct permissions
+	kmode := keyfinfo.Mode()
+	if kmode != kmode&0600 {
+		panic(ErrSSLKeyHasWorldPermissions)
+	}
+
+	cert, err := tls.LoadX509KeyPair(sslcert, sslkey)
+	if err != nil {
+		panic(err)
+	}
+	tlsConf.Certificates = []tls.Certificate{cert}
+}
+
+// Sets up RootCAs in the TLS configuration if sslrootcert is set.
+func (cn *conn) setupSSLCA(tlsConf *tls.Config, o values) {
+	if sslrootcert := o.Get("sslrootcert"); sslrootcert != "" {
+		tlsConf.RootCAs = x509.NewCertPool()
+
+		cert, err := ioutil.ReadFile(sslrootcert)
+		if err != nil {
+			panic(err)
+		}
+
+		ok := tlsConf.RootCAs.AppendCertsFromPEM(cert)
+		if !ok {
+			errorf("couldn't parse pem in sslrootcert")
+		}
+	}
+}
+
+// isDriverSetting returns true iff a setting is purely for configuring the
+// driver's options and should not be sent to the server in the connection
+// startup packet.
+func isDriverSetting(key string) bool {
+	switch key {
+	case "host", "port":
+		return true
+	case "password":
+		return true
+	case "sslmode", "sslcert", "sslkey", "sslrootcert":
+		return true
+	case "fallback_application_name":
+		return true
+	case "connect_timeout":
+		return true
+
+	default:
+		return false
+	}
 }
 
 func (cn *conn) startup(o values) {
@@ -830,9 +970,8 @@ func (cn *conn) startup(o values) {
 	// parameters potentially included in the connection string.  If the server
 	// doesn't recognize any of them, it will reply with an error.
 	for k, v := range o {
-		// skip options which can't be run-time parameters
-		if k == "password" || k == "host" ||
-			k == "port" || k == "sslmode" {
+		if isDriverSetting(k) {
+			// skip options which can't be run-time parameters
 			continue
 		}
 		// The protocol requires us to supply the database name as "database"
@@ -902,7 +1041,6 @@ func (cn *conn) auth(r *readBuf, o values) {
 type stmt struct {
 	cn        *conn
 	name      string
-	query     string
 	cols      []string
 	rowTyps   []oid.Oid
 	paramTyps []oid.Oid
@@ -958,11 +1096,6 @@ func (st *stmt) Exec(v []driver.Value) (res driver.Result, err error) {
 	}
 	defer st.cn.errRecover(&err)
 
-	if len(v) == 0 {
-		// ignore commandTag, our caller doesn't care
-		r, _, err := st.cn.simpleExec(st.query)
-		return r, err
-	}
 	st.exec(v)
 
 	for {
@@ -976,15 +1109,13 @@ func (st *stmt) Exec(v []driver.Value) (res driver.Result, err error) {
 			st.cn.processReadyForQuery(r)
 			// done
 			return
-		case 'T', 'D':
+		case 'T', 'D', 'I':
 			// ignore any results
 		default:
 			st.cn.bad = true
 			errorf("unknown exec response: %q", t)
 		}
 	}
-
-	panic("not reached")
 }
 
 func (st *stmt) exec(v []driver.Value) {
@@ -1131,6 +1262,7 @@ func (cn *conn) parseComplete(commandTag string) (driver.Result, string) {
 type rows struct {
 	st   *stmt
 	done bool
+	rb   readBuf
 }
 
 func (rs *rows) Close() error {
@@ -1145,7 +1277,6 @@ func (rs *rows) Close() error {
 			return err
 		}
 	}
-	panic("not reached")
 }
 
 func (rs *rows) Columns() []string {
@@ -1164,39 +1295,37 @@ func (rs *rows) Next(dest []driver.Value) (err error) {
 	defer conn.errRecover(&err)
 
 	for {
-		t, r := conn.recv1()
+		t := conn.recv1Buf(&rs.rb)
 		switch t {
 		case 'E':
-			err = parseError(r)
+			err = parseError(&rs.rb)
 		case 'C', 'I':
 			continue
 		case 'Z':
-			conn.processReadyForQuery(r)
+			conn.processReadyForQuery(&rs.rb)
 			rs.done = true
 			if err != nil {
 				return err
 			}
 			return io.EOF
 		case 'D':
-			n := r.int16()
+			n := rs.rb.int16()
 			if n < len(dest) {
 				dest = dest[:n]
 			}
 			for i := range dest {
-				l := r.int32()
+				l := rs.rb.int32()
 				if l == -1 {
 					dest[i] = nil
 					continue
 				}
-				dest[i] = decode(&conn.parameterStatus, r.next(l), rs.st.rowTyps[i])
+				dest[i] = decode(&conn.parameterStatus, rs.rb.next(l), rs.st.rowTyps[i])
 			}
 			return
 		default:
 			errorf("unexpected message after execute: %q", t)
 		}
 	}
-
-	panic("not reached")
 }
 
 // QuoteIdentifier quotes an "identifier" (e.g. a table or a column name) to be
@@ -1313,7 +1442,13 @@ func parseEnviron(env []string) (out map[string]string) {
 			accrue("application_name")
 		case "PGSSLMODE":
 			accrue("sslmode")
-		case "PGREQUIRESSL", "PGSSLCERT", "PGSSLKEY", "PGSSLROOTCERT", "PGSSLCRL":
+		case "PGSSLCERT":
+			accrue("sslcert")
+		case "PGSSLKEY":
+			accrue("sslkey")
+		case "PGSSLROOTCERT":
+			accrue("sslrootcert")
+		case "PGREQUIRESSL", "PGSSLCRL":
 			unsupported()
 		case "PGREQUIREPEER":
 			unsupported()

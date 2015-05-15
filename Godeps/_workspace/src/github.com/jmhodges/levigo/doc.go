@@ -29,9 +29,7 @@ ReadOptions you use when creating the Iterator.
 	ro.SetFillCache(false)
 	it := db.NewIterator(ro)
 	defer it.Close()
-	it.Seek(mykey)
-	for it.Valid() {
-		it.Next()
+	for it.Seek(mykey); it.Valid(); it.Next() {
 		munge(it.Key(), it.Value())
 	}
 	if err := it.GetError(); err != nil {

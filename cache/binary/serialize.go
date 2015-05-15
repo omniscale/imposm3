@@ -1,7 +1,7 @@
 package binary
 
 import (
-	"code.google.com/p/goprotobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/omniscale/imposm3/element"
 )
 

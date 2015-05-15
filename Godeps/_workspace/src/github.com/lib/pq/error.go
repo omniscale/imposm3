@@ -459,12 +459,26 @@ func errorf(s string, args ...interface{}) {
 	panic(fmt.Errorf("pq: %s", fmt.Sprintf(s, args...)))
 }
 
+func errRecoverNoErrBadConn(err *error) {
+	e := recover()
+	if e == nil {
+		// Do nothing
+		return
+	}
+	var ok bool
+	*err, ok = e.(error)
+	if !ok {
+		*err = fmt.Errorf("pq: unexpected error: %#v", e)
+	}
+}
+
 func (c *conn) errRecover(err *error) {
 	e := recover()
 	switch v := e.(type) {
 	case nil:
 		// Do nothing
 	case runtime.Error:
+		c.bad = true
 		panic(v)
 	case *Error:
 		if v.Fatal() {
@@ -482,6 +496,7 @@ func (c *conn) errRecover(err *error) {
 		}
 
 	default:
+		c.bad = true
 		panic(fmt.Sprintf("unknown error: %#v", e))
 	}
 
