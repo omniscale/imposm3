@@ -2,15 +2,25 @@
 // source: cache/binary/messages.proto
 // DO NOT EDIT!
 
+/*
+Package binary is a generated protocol buffer package.
+
+It is generated from these files:
+	cache/binary/messages.proto
+
+It has these top-level messages:
+	Node
+	Way
+	Relation
+	DeltaCoords
+*/
 package binary
 
 import proto "github.com/golang/protobuf/proto"
-import json "encoding/json"
 import math "math"
 
-// Reference proto, json, and math imports to suppress error if they are not otherwise used.
+// Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
-var _ = &json.SyntaxError{}
 var _ = math.Inf
 
 type Relation_MemberType int32
@@ -39,9 +49,6 @@ func (x Relation_MemberType) Enum() *Relation_MemberType {
 }
 func (x Relation_MemberType) String() string {
 	return proto.EnumName(Relation_MemberType_name, int32(x))
-}
-func (x Relation_MemberType) MarshalJSON() ([]byte, error) {
-	return json.Marshal(x.String())
 }
 func (x *Relation_MemberType) UnmarshalJSON(data []byte) error {
 	value, err := proto.UnmarshalJSONEnum(Relation_MemberType_value, data, "Relation_MemberType")
