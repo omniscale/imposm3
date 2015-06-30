@@ -2,6 +2,7 @@ package mapping
 
 import (
 	"github.com/omniscale/imposm3/element"
+        "path"
 )
 
 func (m *Mapping) NodeTagFilter() TagFilterer {
@@ -70,8 +71,10 @@ func newExcludeFilter(tags []Key) *ExcludeFilter {
 
 func (f *ExcludeFilter) Filter(tags *element.Tags) bool {
 	for k, _ := range *tags {
-		if _, ok := f.exclude[Key(k)]; ok {
-			delete(*tags, k)
+		for exkey, _ := range f.exclude {
+			if ok, _ := path.Match(string(exkey),k); ok {
+				delete(*tags, k)
+			}
 		}
 	}
 	return true
