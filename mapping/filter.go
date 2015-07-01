@@ -74,6 +74,7 @@ func (f *ExcludeFilter) Filter(tags *element.Tags) bool {
 		for exkey, _ := range f.exclude {
 			if ok, _ := path.Match(string(exkey),k); ok {
 				delete(*tags, k)
+				break;
 			}
 		}
 	}

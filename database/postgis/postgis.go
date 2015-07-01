@@ -574,6 +574,8 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 	}
 	params = disableDefaultSsl(params)
 	params, db.Prefix = stripPrefixFromConnectionParams(params)
+	
+	fmt.Printf("prefix: %s %&s",params, db.Prefix)
 
 	for name, table := range m.Tables {
 		db.Tables[name] = NewTableSpec(db, table)
