@@ -122,11 +122,11 @@ The mapping below will create a ``tracks`` table with the following columns:
           ],
           "type": "linestring",
           "mapping": {
-            "highway": {
+            "highway": [
                 "path",
                 "track",
                 "unclassified"
-            }
+            ]
           }
         }
       }
