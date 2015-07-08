@@ -175,7 +175,7 @@ Value types
 ``bool``
 ^^^^^^^^
 
-Convert ``true``, ``yes`` and ``1``` values to ``true``, otherwise use ``false``.
+Convert ``true``, ``yes`` and ``1`` values to ``true``, otherwise use ``false``.
 
 ``boolint``
 ^^^^^^^^^^^
