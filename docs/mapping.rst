@@ -122,11 +122,11 @@ The mapping below will create a ``tracks`` table with the following columns:
           ],
           "type": "linestring",
           "mapping": {
-            "highway": {
+            "highway": [
                 "path",
                 "track",
                 "unclassified"
-            }
+            ]
           }
         }
       }
@@ -175,7 +175,7 @@ Value types
 ``bool``
 ^^^^^^^^
 
-Convert ``true``, ``yes`` and ``1``` values to ``true``, otherwise use ``false``.
+Convert ``true``, ``yes`` and ``1`` values to ``true``, otherwise use ``false``.
 
 ``boolint``
 ^^^^^^^^^^^
