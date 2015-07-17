@@ -1,8 +1,10 @@
 package mapping
 
 import (
-	"github.com/omniscale/imposm3/element"
+	"reflect"
 	"testing"
+
+	"github.com/omniscale/imposm3/element"
 )
 
 var mapping *Mapping
@@ -399,6 +401,35 @@ func TestFilterNodes(t *testing.T) {
 	}
 }
 
+func TestExcludeFilter(t *testing.T) {
+	var f TagFilterer
+	var tags element.Tags
+
+	// no matches
+	f = newExcludeFilter([]Key{})
+	tags = element.Tags{"source": "1", "tiger:foo": "1", "source:foo": "1"}
+	f.Filter(&tags)
+	if !reflect.DeepEqual(tags, element.Tags{"source": "1", "tiger:foo": "1", "source:foo": "1"}) {
+		t.Error("unexpected filter result", tags)
+	}
+
+	// match all
+	f = newExcludeFilter([]Key{"*"})
+	tags = element.Tags{"source": "1", "tiger:foo": "1", "source:foo": "1"}
+	f.Filter(&tags)
+	if !reflect.DeepEqual(tags, element.Tags{}) {
+		t.Error("unexpected filter result", tags)
+	}
+
+	// fixed string and wildcard match
+	f = newExcludeFilter([]Key{"source", "tiger:*"})
+	tags = element.Tags{"source": "1", "tiger:foo": "1", "source:foo": "1"}
+	f.Filter(&tags)
+	if !reflect.DeepEqual(tags, element.Tags{"source:foo": "1"}) {
+		t.Error("unexpected filter result", tags)
+	}
+}
+
 func BenchmarkFilterNodes(b *testing.B) {
 	var tags element.Tags
 
@@ -417,5 +448,4 @@ func BenchmarkFilterNodes(b *testing.B) {
 			b.Fatal("Filter result not expected", tags)
 		}
 	}
-
 }

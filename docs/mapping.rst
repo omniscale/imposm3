@@ -296,15 +296,16 @@ Tags
 
 Imposm caches only tags that are required for a ``mapping`` or for any ``columns``. This keeps the cache small as it does not store any tags that are not required for the import. You can change this if you want to import all tags, e.g with the ``hstore_tags`` column type.
 
-Add ``load_all`` to the ``tags`` object inside your mapping JSON file. You still manually can exclude single tags with the ``exclude`` option.
+Add ``load_all`` to the ``tags`` object inside your mapping JSON file. You still manually can exclude ags with the ``exclude`` option. ``exclude`` supports a simple shell file name pattern matching.
 
-To load all tags exepct ``created_by`` and ``source``::
+To load all tags except ``created_by``, ``source``, and ``tiger:county``, ``tiger:tlid``, ``tiger:upload_uuid``, etc::
 
     "tags": {
         "load_all": true,
         "exclude": [
             "created_by",
-            "source"
+            "source",
+            "tiger:*"
         ]
     },
 

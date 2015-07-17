@@ -1,6 +1,9 @@
 package mapping
 
 import (
+	"path"
+	"strings"
+
 	"github.com/omniscale/imposm3/element"
 )
 
@@ -57,21 +60,36 @@ type RelationTagFilter struct {
 }
 
 type ExcludeFilter struct {
-	exclude map[Key]struct{}
+	keys    map[Key]struct{}
+	matches []string
 }
 
 func newExcludeFilter(tags []Key) *ExcludeFilter {
-	f := ExcludeFilter{make(map[Key]struct{}, len(tags))}
-	for _, tag := range tags {
-		f.exclude[tag] = struct{}{}
+	f := ExcludeFilter{
+		keys:    make(map[Key]struct{}),
+		matches: make([]string, 0),
+	}
+	for _, t := range tags {
+		if strings.ContainsAny(string(t), "?*[") {
+			f.matches = append(f.matches, string(t))
+		} else {
+			f.keys[t] = struct{}{}
+		}
 	}
 	return &f
 }
 
 func (f *ExcludeFilter) Filter(tags *element.Tags) bool {
 	for k, _ := range *tags {
-		if _, ok := f.exclude[Key(k)]; ok {
+		if _, ok := f.keys[Key(k)]; ok {
 			delete(*tags, k)
+		} else if f.matches != nil {
+			for _, exkey := range f.matches {
+				if ok, _ := path.Match(exkey, k); ok {
+					delete(*tags, k)
+					break
+				}
+			}
 		}
 	}
 	return true
