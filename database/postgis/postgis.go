@@ -81,6 +81,17 @@ func addGeometryColumn(tx *sql.Tx, tableName string, spec TableSpec) error {
 	return nil
 }
 
+func isPostGIS2(tx *sql.Tx) (bool, error) {
+	sql := fmt.Sprintf("SELECT PostGIS_lib_version();")
+	row := tx.QueryRow(sql)
+	var version string
+	err := row.Scan(&version)
+	if err != nil {
+		return false, &SQLError{sql, err}
+	}
+	return strings.HasPrefix(version, "2."), nil
+}
+
 func populateGeometryColumn(tx *sql.Tx, tableName string, spec TableSpec) error {
 	sql := fmt.Sprintf("SELECT Populate_Geometry_Columns('%s.%s'::regclass);",
 		spec.Schema, tableName)
@@ -313,9 +324,15 @@ func (pg *PostGIS) generalizeTable(table *GeneralizedTableSpec) error {
 		return &SQLError{sql, err}
 	}
 
-	err = populateGeometryColumn(tx, table.FullName, *table.Source)
+	isPG2, err := isPostGIS2(tx)
 	if err != nil {
 		return err
+	}
+	if !isPG2 {
+		err = populateGeometryColumn(tx, table.FullName, *table.Source)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = tx.Commit()
