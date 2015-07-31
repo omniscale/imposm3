@@ -124,6 +124,13 @@ func init() {
 	addCommonKey("addr:postcode")
 	addCommonKey("addr:housenumber")
 
+	addCommonKey("osm_changeset")
+	addCommonKey("osm_version")
+	addCommonKey("osm_user")
+	addCommonKey("osm_uid")
+	addCommonKey("osm_timestamp")
+
+
 	// most used tags for ways
 	//
 	addTagCodePoint("building", "yes")
