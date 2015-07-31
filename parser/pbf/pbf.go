@@ -1,8 +1,11 @@
 package pbf
 
 import (
+	_ "fmt"
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/parser/pbf/osmpbf"
+	"strconv"
+	"time"
 )
 
 const coord_factor float64 = 11930464.7083 // ((2<<31)-1)/360.0
@@ -14,6 +17,7 @@ func coordToInt(coord float64) uint32 {
 func intToCoord(coord uint32) float64 {
 	return float64((float64(coord) / coord_factor) - 180.0)
 }
+
 
 func readDenseNodes(
 	dense *osmpbf.DenseNodes,
@@ -30,20 +34,47 @@ func readDenseNodes(
 	coordScale := 0.000000001
 	lastKeyValPos := 0
 
+	var lastDenseinfoTimestamp int64
+	var lastDenseinfoChangeset int64
+	var lastDenseinfoUid int32
+	var lastDenseinfoUserSid int32
+
 	for i := range coords {
 		lastId += dense.Id[i]
 		lastLon += dense.Lon[i]
 		lastLat += dense.Lat[i]
+
+		lastDenseinfoTimestamp += dense.Denseinfo.Timestamp[i]
+		lastDenseinfoChangeset += dense.Denseinfo.Changeset[i]
+		lastDenseinfoUid += dense.Denseinfo.Uid[i]
+		lastDenseinfoUserSid += dense.Denseinfo.UserSid[i]
+
 		coords[i].Id = lastId
 		coords[i].Long = (coordScale * float64(lonOffset+(granularity*lastLon)))
 		coords[i].Lat = (coordScale * float64(latOffset+(granularity*lastLat)))
+
+		DenseinfoVersion := dense.Denseinfo.Version[i]
+
+		DenseinfoTimestamp := time.Unix(lastDenseinfoTimestamp, 0)
+		DenseinfoChangeset := lastDenseinfoChangeset
+		DenseinfoUid := lastDenseinfoUid
+		DenseinfoUserSid := lastDenseinfoUserSid
+
 		if stringtable != nil && len(dense.KeysVals) > 0 {
 			if dense.KeysVals[lastKeyValPos] != 0 {
 				tags := parseDenseNodeTags(stringtable, &dense.KeysVals, &lastKeyValPos)
+
 				if tags != nil {
+
 					if _, ok := tags["created_by"]; ok && len(tags) == 1 {
 						// don't add nodes with only created_by tag to nodes cache
 					} else {
+						tags["osm_version"] = strconv.FormatInt(int64(DenseinfoVersion), 10)
+						tags["osm_timestamp"] = DenseinfoTimestamp.Format(time.RFC3339)
+						tags["osm_changeset"] = strconv.FormatInt(DenseinfoChangeset, 10)
+						tags["osm_uid"] = strconv.FormatInt(int64(DenseinfoUid), 10)
+						tags["osm_user"] = stringtable[DenseinfoUserSid]
+
 						nd := coords[i]
 						nd.Tags = tags
 						nodes = append(nodes, nd)
@@ -113,10 +144,17 @@ func readNodes(
 		coords[i].Lat = (coordScale * float64(latOffset+(granularity*lat)))
 		if stringtable != nil {
 			tags := parseTags(stringtable, nodes[i].Keys, nodes[i].Vals)
+
 			if tags != nil {
 				if _, ok := tags["created_by"]; ok && len(tags) == 1 {
 					// don't add nodes with only created_by tag to nodes cache
 				} else {
+					tags["osm_version"] = strconv.FormatInt(int64(*nodes[i].Info.Version), 10)
+					tags["osm_timestamp"] = time.Unix(*nodes[i].Info.Timestamp, 0).Format(time.RFC3339)
+					tags["osm_changeset"] = strconv.FormatInt(int64(*nodes[i].Info.Changeset), 10)
+					tags["osm_uid"] = strconv.FormatInt(int64(*nodes[i].Info.Uid), 10)
+					tags["osm_user"] = stringtable[nodes[i].GetInfo().GetUserSid()]
+
 					nd := coords[i]
 					nd.Tags = tags
 					nds = append(nds, nd)
@@ -150,6 +188,14 @@ func readWays(
 		result[i].Id = id
 		result[i].Tags = parseTags(stringtable, ways[i].Keys, ways[i].Vals)
 		result[i].Refs = parseDeltaRefs(ways[i].Refs)
+
+		if (ways[i].Info != nil) && (len(result[i].Tags) > 0) {
+			result[i].Tags["osm_version"] = strconv.FormatInt(int64(*ways[i].Info.Version), 10)
+			result[i].Tags["osm_timestamp"] = time.Unix(*ways[i].Info.Timestamp, 0).Format(time.RFC3339)
+			result[i].Tags["osm_changeset"] = strconv.FormatInt(int64(*ways[i].Info.Changeset), 10)
+			result[i].Tags["osm_uid"] = strconv.FormatInt(int64(*ways[i].Info.Uid), 10)
+			result[i].Tags["osm_user"] = stringtable[ways[i].GetInfo().GetUserSid()]
+		}
 	}
 	return result
 }
@@ -179,6 +225,14 @@ func readRelations(
 		result[i].Id = id
 		result[i].Tags = parseTags(stringtable, relations[i].Keys, relations[i].Vals)
 		result[i].Members = parseRelationMembers(relations[i], stringtable)
+
+		if (relations[i].Info != nil) && (len(result[i].Tags) > 0) {
+			result[i].Tags["osm_version"] = strconv.FormatInt(int64(*relations[i].Info.Version), 10)
+			result[i].Tags["osm_timestamp"] = time.Unix(*relations[i].Info.Timestamp, 0).Format(time.RFC3339)
+			result[i].Tags["osm_changeset"] = strconv.FormatInt(int64(*relations[i].Info.Changeset), 10)
+			result[i].Tags["osm_uid"] = strconv.FormatInt(int64(*relations[i].Info.Uid), 10)
+			result[i].Tags["osm_user"] = stringtable[relations[i].GetInfo().GetUserSid()]
+		}
 	}
 	return result
 }

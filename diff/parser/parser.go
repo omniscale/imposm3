@@ -3,11 +3,10 @@ package parser
 import (
 	"compress/gzip"
 	"encoding/xml"
-	"os"
-	"strconv"
-
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/logging"
+	"os"
+	"strconv"
 )
 
 var log = logging.NewLogger("osc parser")
@@ -21,6 +20,7 @@ type DiffElem struct {
 	Rel  *element.Relation
 }
 
+
 func Parse(diff string) (chan DiffElem, chan error) {
 	elems := make(chan DiffElem)
 	errc := make(chan error)
@@ -31,6 +31,12 @@ func Parse(diff string) (chan DiffElem, chan error) {
 func parse(diff string, elems chan DiffElem, errc chan error) {
 	defer close(elems)
 	defer close(errc)
+
+	var osm_user string
+	var osm_uid int64
+	var osm_changeset int64
+	var osm_version int64
+	var osm_timestamp string
 
 	file, err := os.Open(diff)
 	if err != nil {
@@ -85,24 +91,91 @@ NextToken:
 					switch attr.Name.Local {
 					case "id":
 						node.Id, _ = strconv.ParseInt(attr.Value, 10, 64)
+
+						// clean Info
+						osm_user = ""
+						osm_uid = 0
+						osm_changeset = 0
+						osm_version = 0
+						osm_timestamp = ""
+
 					case "lat":
 						node.Lat, _ = strconv.ParseFloat(attr.Value, 64)
 					case "lon":
 						node.Long, _ = strconv.ParseFloat(attr.Value, 64)
+
+						// version="2" timestamp="2014-08-04T20:12:51Z" uid="1556747" user="Maris33" changeset="17219283"
+
+					case "version":
+						osm_version, _ = strconv.ParseInt(attr.Value, 10, 64)
+						//log.Warn("node id, osm_version=",node.Id,  osm_version)
+					case "user":
+						osm_user = attr.Value
+						//log.Warn("node osm_user=",osm_user)
+					case "uid":
+						osm_uid, _ = strconv.ParseInt(attr.Value, 10, 64)
+						//log.Warn("node osm_uid=",osm_uid)
+					case "changeset":
+						osm_changeset, _ = strconv.ParseInt(attr.Value, 10, 64)
+						//log.Warn("node osm_changeset=",osm_changeset)
+					case "timestamp":
+						osm_timestamp = attr.Value
+						// osm_timestamp, _ = time.Parse( time.RFC3339 ,attr.Value  )
+						//log.Warn("node osm_timestamp=",osm_timestamp )
+
 					}
 				}
 			case "way":
 				for _, attr := range tok.Attr {
-					if attr.Name.Local == "id" {
+					switch attr.Name.Local {
+					case "id":
 						way.Id, _ = strconv.ParseInt(attr.Value, 10, 64)
+
+						// clean Info
+						osm_user = ""
+						osm_uid = 0
+						osm_changeset = 0
+						osm_version = 0
+						osm_timestamp = ""
+
+					case "version":
+						osm_version, _ = strconv.ParseInt(attr.Value, 10, 64)
+					case "user":
+						osm_user = attr.Value
+					case "uid":
+						osm_uid, _ = strconv.ParseInt(attr.Value, 10, 64)
+					case "changeset":
+						osm_changeset, _ = strconv.ParseInt(attr.Value, 10, 64)
+					case "timestamp":
+						osm_timestamp = attr.Value
 					}
 				}
 			case "relation":
 				for _, attr := range tok.Attr {
-					if attr.Name.Local == "id" {
+					switch attr.Name.Local {
+					case "id":
 						rel.Id, _ = strconv.ParseInt(attr.Value, 10, 64)
+
+						// clean Info
+						osm_user = ""
+						osm_uid = 0
+						osm_changeset = 0
+						osm_version = 0
+						osm_timestamp = ""
+
+					case "version":
+						osm_version, _ = strconv.ParseInt(attr.Value, 10, 64)
+					case "user":
+						osm_user = attr.Value
+					case "uid":
+						osm_uid, _ = strconv.ParseInt(attr.Value, 10, 64)
+					case "changeset":
+						osm_changeset, _ = strconv.ParseInt(attr.Value, 10, 64)
+					case "timestamp":
+						osm_timestamp = attr.Value
 					}
 				}
+
 			case "nd":
 				for _, attr := range tok.Attr {
 					if attr.Name.Local == "ref" {
@@ -153,6 +226,13 @@ NextToken:
 			switch tok.Name.Local {
 			case "node":
 				if len(tags) > 0 {
+
+					tags["osm_changeset"] = strconv.FormatInt(osm_changeset, 10)
+					tags["osm_version"] = strconv.FormatInt(osm_version, 10)
+					tags["osm_user"] = osm_user
+					tags["osm_uid"] = strconv.FormatInt(osm_uid, 10)
+					tags["osm_timestamp"] = osm_timestamp
+
 					node.Tags = tags
 				}
 				e.Node = node
@@ -160,6 +240,13 @@ NextToken:
 				newElem = true
 			case "way":
 				if len(tags) > 0 {
+
+					tags["osm_changeset"] = strconv.FormatInt(osm_changeset, 10)
+					tags["osm_version"] = strconv.FormatInt(osm_version, 10)
+					tags["osm_user"] = osm_user
+					tags["osm_uid"] = strconv.FormatInt(osm_uid, 10)
+					tags["osm_timestamp"] = osm_timestamp
+
 					way.Tags = tags
 				}
 				e.Way = way
@@ -167,6 +254,13 @@ NextToken:
 				newElem = true
 			case "relation":
 				if len(tags) > 0 {
+
+					tags["osm_changeset"] = strconv.FormatInt(osm_changeset, 10)
+					tags["osm_version"] = strconv.FormatInt(osm_version, 10)
+					tags["osm_user"] = osm_user
+					tags["osm_uid"] = strconv.FormatInt(osm_uid, 10)
+					tags["osm_timestamp"] = osm_timestamp
+
 					rel.Tags = tags
 				}
 				e.Rel = rel
