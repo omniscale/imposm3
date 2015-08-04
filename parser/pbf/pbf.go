@@ -2,10 +2,12 @@ package pbf
 
 import (
 	_ "fmt"
-	"github.com/omniscale/imposm3/element"
-	"github.com/omniscale/imposm3/parser/pbf/osmpbf"
 	"strconv"
 	"time"
+
+	"github.com/omniscale/imposm3/config"
+	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/parser/pbf/osmpbf"
 )
 
 const coord_factor float64 = 11930464.7083 // ((2<<31)-1)/360.0
@@ -17,7 +19,6 @@ func coordToInt(coord float64) uint32 {
 func intToCoord(coord uint32) float64 {
 	return float64((float64(coord) / coord_factor) - 180.0)
 }
-
 
 func readDenseNodes(
 	dense *osmpbf.DenseNodes,
@@ -34,31 +35,40 @@ func readDenseNodes(
 	coordScale := 0.000000001
 	lastKeyValPos := 0
 
-	var lastDenseinfoTimestamp int64
-	var lastDenseinfoChangeset int64
-	var lastDenseinfoUid int32
-	var lastDenseinfoUserSid int32
+	//if config.ParseMetadata {
+	var lastDenseInfoTimestamp int64
+	var lastDenseInfoChangeset int64
+	var lastDenseInfoUid int32
+	var lastDenseInfoUserSid int32
+
+	var denseInfoVersion int32
+	var denseInfoTimestamp time.Time
+	var denseInfoChangeset int64
+	var denseInfoUid int32
+	var denseInfoUserSid int32
+	//}    //endif config.ParseMetadata
 
 	for i := range coords {
 		lastId += dense.Id[i]
 		lastLon += dense.Lon[i]
 		lastLat += dense.Lat[i]
 
-		lastDenseinfoTimestamp += dense.Denseinfo.Timestamp[i]
-		lastDenseinfoChangeset += dense.Denseinfo.Changeset[i]
-		lastDenseinfoUid += dense.Denseinfo.Uid[i]
-		lastDenseinfoUserSid += dense.Denseinfo.UserSid[i]
-
 		coords[i].Id = lastId
 		coords[i].Long = (coordScale * float64(lonOffset+(granularity*lastLon)))
 		coords[i].Lat = (coordScale * float64(latOffset+(granularity*lastLat)))
 
-		DenseinfoVersion := dense.Denseinfo.Version[i]
+		if config.ParseMetadata {
+			lastDenseInfoTimestamp += dense.Denseinfo.Timestamp[i]
+			lastDenseInfoChangeset += dense.Denseinfo.Changeset[i]
+			lastDenseInfoUid += dense.Denseinfo.Uid[i]
+			lastDenseInfoUserSid += dense.Denseinfo.UserSid[i]
 
-		DenseinfoTimestamp := time.Unix(lastDenseinfoTimestamp, 0)
-		DenseinfoChangeset := lastDenseinfoChangeset
-		DenseinfoUid := lastDenseinfoUid
-		DenseinfoUserSid := lastDenseinfoUserSid
+			denseInfoVersion = dense.Denseinfo.Version[i]
+			denseInfoTimestamp = time.Unix(lastDenseInfoTimestamp, 0)
+			denseInfoChangeset = lastDenseInfoChangeset
+			denseInfoUid = lastDenseInfoUid
+			denseInfoUserSid = lastDenseInfoUserSid
+		}
 
 		if stringtable != nil && len(dense.KeysVals) > 0 {
 			if dense.KeysVals[lastKeyValPos] != 0 {
@@ -69,11 +79,26 @@ func readDenseNodes(
 					if _, ok := tags["created_by"]; ok && len(tags) == 1 {
 						// don't add nodes with only created_by tag to nodes cache
 					} else {
-						tags["osm_version"] = strconv.FormatInt(int64(DenseinfoVersion), 10)
-						tags["osm_timestamp"] = DenseinfoTimestamp.Format(time.RFC3339)
-						tags["osm_changeset"] = strconv.FormatInt(DenseinfoChangeset, 10)
-						tags["osm_uid"] = strconv.FormatInt(int64(DenseinfoUid), 10)
-						tags["osm_user"] = stringtable[DenseinfoUserSid]
+
+						if config.ParseMetadata {
+
+							if config.ParseMetadataVarVersion {
+								tags[config.ParseMetadataPrefix+"version"] = strconv.FormatInt(int64(denseInfoVersion), 10)
+							}
+							if config.ParseMetadataVarTimestamp {
+								tags[config.ParseMetadataPrefix+"timestamp"] = denseInfoTimestamp.Format(time.RFC3339)
+							}
+							if config.ParseMetadataVarChangeset {
+								tags[config.ParseMetadataPrefix+"changeset"] = strconv.FormatInt(denseInfoChangeset, 10)
+							}
+							if config.ParseMetadataVarUid {
+								tags[config.ParseMetadataPrefix+"uid"] = strconv.FormatInt(int64(denseInfoUid), 10)
+							}
+							if config.ParseMetadataVarUser {
+								tags[config.ParseMetadataPrefix+"user"] = stringtable[denseInfoUserSid]
+							}
+
+						}
 
 						nd := coords[i]
 						nd.Tags = tags
@@ -149,11 +174,25 @@ func readNodes(
 				if _, ok := tags["created_by"]; ok && len(tags) == 1 {
 					// don't add nodes with only created_by tag to nodes cache
 				} else {
-					tags["osm_version"] = strconv.FormatInt(int64(*nodes[i].Info.Version), 10)
-					tags["osm_timestamp"] = time.Unix(*nodes[i].Info.Timestamp, 0).Format(time.RFC3339)
-					tags["osm_changeset"] = strconv.FormatInt(int64(*nodes[i].Info.Changeset), 10)
-					tags["osm_uid"] = strconv.FormatInt(int64(*nodes[i].Info.Uid), 10)
-					tags["osm_user"] = stringtable[nodes[i].GetInfo().GetUserSid()]
+
+					if config.ParseMetadata {
+
+						if config.ParseMetadataVarVersion {
+							tags[config.ParseMetadataPrefix+"version"] = strconv.FormatInt(int64(*nodes[i].Info.Version), 10)
+						}
+						if config.ParseMetadataVarTimestamp {
+							tags[config.ParseMetadataPrefix+"timestamp"] = time.Unix(*nodes[i].Info.Timestamp, 0).Format(time.RFC3339)
+						}
+						if config.ParseMetadataVarChangeset {
+							tags[config.ParseMetadataPrefix+"changeset"] = strconv.FormatInt(int64(*nodes[i].Info.Changeset), 10)
+						}
+						if config.ParseMetadataVarUid {
+							tags[config.ParseMetadataPrefix+"uid"] = strconv.FormatInt(int64(*nodes[i].Info.Uid), 10)
+						}
+						if config.ParseMetadataVarUser {
+							tags[config.ParseMetadataPrefix+"user"] = stringtable[nodes[i].GetInfo().GetUserSid()]
+						}
+					}
 
 					nd := coords[i]
 					nd.Tags = tags
@@ -189,12 +228,24 @@ func readWays(
 		result[i].Tags = parseTags(stringtable, ways[i].Keys, ways[i].Vals)
 		result[i].Refs = parseDeltaRefs(ways[i].Refs)
 
-		if (ways[i].Info != nil) && (len(result[i].Tags) > 0) {
-			result[i].Tags["osm_version"] = strconv.FormatInt(int64(*ways[i].Info.Version), 10)
-			result[i].Tags["osm_timestamp"] = time.Unix(*ways[i].Info.Timestamp, 0).Format(time.RFC3339)
-			result[i].Tags["osm_changeset"] = strconv.FormatInt(int64(*ways[i].Info.Changeset), 10)
-			result[i].Tags["osm_uid"] = strconv.FormatInt(int64(*ways[i].Info.Uid), 10)
-			result[i].Tags["osm_user"] = stringtable[ways[i].GetInfo().GetUserSid()]
+		if config.ParseMetadata && (ways[i].Info != nil) && (len(result[i].Tags) > 0) {
+
+			if config.ParseMetadataVarVersion {
+				result[i].Tags[config.ParseMetadataPrefix+"version"] = strconv.FormatInt(int64(*ways[i].Info.Version), 10)
+			}
+			if config.ParseMetadataVarTimestamp {
+				result[i].Tags[config.ParseMetadataPrefix+"timestamp"] = time.Unix(*ways[i].Info.Timestamp, 0).Format(time.RFC3339)
+			}
+			if config.ParseMetadataVarChangeset {
+				result[i].Tags[config.ParseMetadataPrefix+"changeset"] = strconv.FormatInt(int64(*ways[i].Info.Changeset), 10)
+			}
+			if config.ParseMetadataVarUid {
+				result[i].Tags[config.ParseMetadataPrefix+"uid"] = strconv.FormatInt(int64(*ways[i].Info.Uid), 10)
+			}
+			if config.ParseMetadataVarUser {
+				result[i].Tags[config.ParseMetadataPrefix+"user"] = stringtable[ways[i].GetInfo().GetUserSid()]
+			}
+
 		}
 	}
 	return result
@@ -226,12 +277,24 @@ func readRelations(
 		result[i].Tags = parseTags(stringtable, relations[i].Keys, relations[i].Vals)
 		result[i].Members = parseRelationMembers(relations[i], stringtable)
 
-		if (relations[i].Info != nil) && (len(result[i].Tags) > 0) {
-			result[i].Tags["osm_version"] = strconv.FormatInt(int64(*relations[i].Info.Version), 10)
-			result[i].Tags["osm_timestamp"] = time.Unix(*relations[i].Info.Timestamp, 0).Format(time.RFC3339)
-			result[i].Tags["osm_changeset"] = strconv.FormatInt(int64(*relations[i].Info.Changeset), 10)
-			result[i].Tags["osm_uid"] = strconv.FormatInt(int64(*relations[i].Info.Uid), 10)
-			result[i].Tags["osm_user"] = stringtable[relations[i].GetInfo().GetUserSid()]
+		if config.ParseMetadata && (relations[i].Info != nil) && (len(result[i].Tags) > 0) {
+
+			if config.ParseMetadataVarVersion {
+				result[i].Tags[config.ParseMetadataPrefix+"version"] = strconv.FormatInt(int64(*relations[i].Info.Version), 10)
+			}
+			if config.ParseMetadataVarTimestamp {
+				result[i].Tags[config.ParseMetadataPrefix+"timestamp"] = time.Unix(*relations[i].Info.Timestamp, 0).Format(time.RFC3339)
+			}
+			if config.ParseMetadataVarChangeset {
+				result[i].Tags[config.ParseMetadataPrefix+"changeset"] = strconv.FormatInt(int64(*relations[i].Info.Changeset), 10)
+			}
+			if config.ParseMetadataVarUid {
+				result[i].Tags[config.ParseMetadataPrefix+"uid"] = strconv.FormatInt(int64(*relations[i].Info.Uid), 10)
+			}
+			if config.ParseMetadataVarUser {
+				result[i].Tags[config.ParseMetadataPrefix+"user"] = stringtable[relations[i].GetInfo().GetUserSid()]
+			}
+
 		}
 	}
 	return result

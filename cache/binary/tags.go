@@ -15,8 +15,10 @@ package binary
 // etc.) are converted to a single ASCII control char (0x01-0x1f)
 
 import (
-	"github.com/omniscale/imposm3/element"
 	"unicode/utf8"
+
+	"github.com/omniscale/imposm3/config"
+	"github.com/omniscale/imposm3/element"
 )
 
 type codepoint rune
@@ -124,12 +126,13 @@ func init() {
 	addCommonKey("addr:postcode")
 	addCommonKey("addr:housenumber")
 
-	addCommonKey("osm_changeset")
-	addCommonKey("osm_version")
-	addCommonKey("osm_user")
-	addCommonKey("osm_uid")
-	addCommonKey("osm_timestamp")
-
+	if config.ParseMetadata {
+		addCommonKey(config.ParseMetadataPrefix + "changeset")
+		addCommonKey(config.ParseMetadataPrefix + "version")
+		addCommonKey(config.ParseMetadataPrefix + "user")
+		addCommonKey(config.ParseMetadataPrefix + "uid")
+		addCommonKey(config.ParseMetadataPrefix + "timestamp")
+	}
 
 	// most used tags for ways
 	//
