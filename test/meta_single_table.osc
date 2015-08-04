@@ -1,0 +1,53 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osmChange version="0.6" generator="hand_made">
+  <modify>
+    
+  <!-- source nodes for meta tests below -->
+  <node id="31001" lat="47.1" lon="80"  version="12" timestamp="2012-22-22T00:22:11Z" changeset="4000001" uid="311" user="node311"/>
+  <node id="31002" lat="47.1" lon="82"  version="12" timestamp="2012-22-22T00:22:11Z" changeset="4000001" uid="311" user="node311"/>
+  <node id="31003" lat="49.1" lon="82"  version="12" timestamp="2012-22-22T00:22:11Z" changeset="4000001" uid="311" user="node311"/>
+  <node id="31004" lat="49.1" lon="80"  version="12" timestamp="2012-22-22T00:22:11Z" changeset="4000001" uid="311" user="node311"/>
+  
+  <node id="31101" lat="47.1" lon="80"  version="12" timestamp="2012-22-22T00:22:11Z" changeset="4000001" uid="311" user="user311">
+    <tag k="amenity" v="restaurant"/>
+  </node>
+
+   
+  <!-- source wayss for meta tests below -->      
+  <way  id="31002"                      version="22" timestamp="2012-22-22T00:22:22Z" changeset="4000002" uid="312" user="way312">
+    <nd ref="31001"/>
+    <nd ref="31002"/>
+    <tag k="barrier" v="fence"/>
+    <tag k="access"  v="private"/>
+  </way>
+
+  <way id="31003"                       version="22" timestamp="2012-22-22T00:22:22Z" changeset="4000002" uid="312" user="way312">
+    <nd ref="31002"/>
+    <nd ref="31003"/>
+    <nd ref="31004"/>
+    <nd ref="31001"/>
+  </way>
+
+  <way id="31101"                       version="22" timestamp="2012-22-22T00:22:22Z" changeset="4000002" uid="312" user="way312">
+    <nd ref="31001"/>
+    <nd ref="31002"/>
+    <nd ref="31003"/>
+    <nd ref="31004"/>
+    <nd ref="31001"/>
+    <tag k="highway" v="secondary"/>
+    <tag k="landuse" v="park"/>
+  </way>
+
+
+  <!-- source relations for meta tests below -->
+  <relation id="31101"                 version="32" timestamp="2012-22-22T00:22:33Z"  changeset="4000003" uid="313" user="rel313">
+    <member type="way" ref="31002" role="outer"/>
+    <member type="way" ref="31003" role="outer"/>
+    <tag k="type" v="multipolygon"/>
+    <tag k="building" v="yes"/>
+    <tag k="amenity" v="pub"/>
+  </relation>
+    
+    
+  </modify>
+</osmChange>
