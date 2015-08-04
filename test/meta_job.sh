@@ -3,7 +3,7 @@ set -ex
 
 
 # calling:
-#  ./meta_job.sh parsematadata
+#  ./meta_job.sh parsemetadata
 #  ./meta_job.sh 
 #
 ##### environment variables
