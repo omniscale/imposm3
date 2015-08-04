@@ -33,16 +33,6 @@ const defaultSchemaImport = "import"
 const defaultSchemaProduction = "public"
 const defaultSchemaBackup = "backup"
 
-// add special parsed meta tags to key list ( version , user, ... )
-const ParseMetadata = true
-const ParseMetadataPrefix = "osm_"
-
-const ParseMetadataVarVersion = true
-const ParseMetadataVarTimestamp = true
-const ParseMetadataVarChangeset = true
-const ParseMetadataVarUid = true
-const ParseMetadataVarUser = true
-
 var ImportFlags = flag.NewFlagSet("import", flag.ExitOnError)
 var DiffFlags = flag.NewFlagSet("diff", flag.ExitOnError)
 
