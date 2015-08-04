@@ -1,8 +1,7 @@
 
 ### Imposm3 - add osm metadata 
 
-Implementing "osm2pgsql --extra-attributes " option
-
+Implementing "osm2pgsql --extra-attributes " functionality 
 Only a simple "proof of concept" ( I am still learning golang )
 
 This patch add 5 osm_* meta key-values to the other tags:  
@@ -12,13 +11,69 @@ This patch add 5 osm_* meta key-values to the other tags:
 * osm_uid 
 * osm_timestamp  
 
-Status ( not finished! ) :
+example
+```json
+{
+  "nodes": {
+    "31101": {
+      "tags": {
+        "amenity": "cafe",
+        "osm_changeset": "3000001",
+        "osm_timestamp": "2011-11-11T00:11:11Z",
+        "osm_uid": "301",
+        "osm_user": "user301",
+        "osm_version": "11"
+      },
+      "lat": 46.9999999342775,
+      "lon": 79.99999998675656
+    }
+  }
+}
+```
+Be careful, this mode
+* increase the size of cache files!!!
+* slow down the performance
+
+
+if you want switch on this functionality, use go build tag **'parsemetadata'**, 
+example:  **"go build -tags parsemetadata  . "** 
+
+Status ( 2014-08-04 ) :
 - [x] "import" mode 
 - [x] "diff" mode
-- [ ] imposm3 options to change mode 
+- [x] go build tag : **"parsemetadata"**
+  - [x]  parse mode:   **"go build -tags parsemetadata  . "**
+  - [x] normal mode:   **"go build .  "**
+- [x] internal config parameters for easy hackability and minimal cache files ( prefix, choosing meta vars )  ./config/parsemetadata_yes.go   
+  - [x] ParseMetadataPrefix = "osm_"
+  - [x] ParseMetadataVarVersion   ( add : "osm_version": "11" )
+  - [x] ParseMetadataVarTimestamp ( add : "osm_timestamp": "2011-11-11T00:11:11Z", )
+  - [x] ParseMetadataVarChangeset ( add : "osm_changeset": "3000001", )
+  - [x] ParseMetadataVarUid       ( add : "osm_uid": "301", )   
+  - [x] ParseMetadataVarUser      ( add : "osm_user": "user301", )
+- [ ] suggestions: external config parameters  ( prefix, choosing meta vars) 
+  - [ ] --ParseMetadataPrefix = "osm_"
+  - [ ] --ParseMetadataVarVersion   ( add : "osm_version": "11" )
+  - [ ] --ParseMetadataVarTimestamp ( add : "osm_timestamp": "2011-11-11T00:11:11Z", )
+  - [ ] --ParseMetadataVarChangeset ( add : "osm_changeset": "3000001", )
+  - [ ] --ParseMetadataVarUid       ( add : "osm_uid": "301", )   
+  - [ ] --ParseMetadataVarUser      ( add : "osm_user": "user301", ) 
+  - [ ] or a simple:  --ParseMetadata ?  
+- [ ] makefile integration
+  - [ ] ?? more executables for compatibility and performance?  **"imposm3_meta"** ?
+  - [ ] ?? custom builds?  
 - [ ] optimal code
-- [ ] test code
+- [ ] minimal test data and code:
+  - [x] **"./test/meta_job.sh  parsemetadata"**    for testing "parsemetadata" mode
+  - [x] **"./test/meta_job.sh "**                  for testing normal mode 
+  - [x] ./test/meta_single_table_mapping.json  
+  - [x] ./test/meta_single_table.osm
+  - [x] ./test/meta_single_table.osc  
+  - [ ] ./test/meta_single_table_test.py    
+- [ ] full test code ( python )
+- [ ] performance testing
 - [ ] documentation
+- [ ] tutorial
 
 ### Preparation
 
@@ -35,30 +90,26 @@ wget -O - http://m.m.i24.cc/osmconvert.c | cc -x c - -lz -O3 -o osmconvert
 ```
 
 
-#### install my "osm_metadata" branch  and build
+#### install code
 ```bash
 cd /gopath/src  
+
+#before accepting pull request, you can test with this :
 git clone  https://github.com/ImreSamu/imposm3.git -b osm_metadata --single-branch /gopath/src/github.com/omniscale/imposm3 
+#after use the standard :   go get github.com/omniscale/imposm3
+
 cd /gopath/src/github.com/omniscale/imposm3 
-go build .
+go build -tags parsemetadata  . 
 ```
 
-#### Simple example files:
 
-test files | desc 
------ | ---
-./test/meta_single_table.osm |  OpenStreetMap data
-./test/meta_single_table.osc |  OpenStreetMap change file 
-./test/meta_single_table_mapping.json | example mapping
-./test/meta_job.sh |  example code
-./test/meta_job_doc.md | this file
-
-### Log files ( ./test/meta_job.sh  )
+### Log files ( "./test/meta_job.sh parsemetadata"  )
 
 set parameters and convert osm,osc files to pbf and osc.gz:
 
 ```bash
 cd /gopath/src/github.com/omniscale/imposm3
+go build -tags parsemetadata  . 
 impconnection=postgis://osm:osm@172.17.42.1/imposm4
 impdata_osm=./test/meta_single_table.osm
 impdata_osc=./test/meta_single_table.osc
