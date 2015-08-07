@@ -244,10 +244,24 @@ You can report any issues at: <https://github.com/omniscale/imposm3/issues>
 
 #### System tests ####
 
-There is a system test that imports and updates OSM data and verifies the database content.
-This test is written in Python and requires `nose`, `shapely` and `psycopg2`. You also need `osmosis` to create test PBF files.
+There are system test that import and update OSM data and verify the database content.
+
+##### Dependencies #####
+
+These tests are written in Python and requires `nose`, `shapely` and `psycopg2`.
+
+On a recent Ubuntu can install the following packages for that: `python-nose python-shapely python-psycopg2`
+Or you can [install a Python virtualenv](https://virtualenv.pypa.io/en/latest/installation.html):
+
+    virtualenv imposm3test
+    source imposm3test/bin/activate
+    pip install nose shapely psycopg2
+
+You also need `osmosis` to create test PBF files.
 There is a Makefile that (re)builds `imposm3` and creates all test files if necessary and then runs the test itself.
 
     make test
 
-WARNING: It uses your local PostgeSQL database (`import` schema), if you have one. Change the database with the standard PGXXX environment variables.
+Call `make test-system` to skip the unit tests.
+
+WARNING: It uses your local PostgeSQL database (`import` schema). Change the database with the standard `PGDATABASE`, `PGHOST`, etc. environment variables.
