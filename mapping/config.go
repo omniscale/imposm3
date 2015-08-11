@@ -1,11 +1,12 @@
 package mapping
 
 import (
-	"encoding/json"
 	"errors"
-	"os"
+	"io/ioutil"
 
 	"github.com/omniscale/imposm3/element"
+
+	"github.com/ghodss/yaml"
 )
 
 type Field struct {
@@ -103,15 +104,13 @@ const (
 )
 
 func NewMapping(filename string) (*Mapping, error) {
-	f, err := os.Open(filename)
+	f, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
-	decoder := json.NewDecoder(f)
 
 	mapping := Mapping{}
-	err = decoder.Decode(&mapping)
+	err = yaml.Unmarshal(f, &mapping)
 	if err != nil {
 		return nil, err
 	}

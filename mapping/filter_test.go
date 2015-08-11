@@ -11,7 +11,7 @@ var mapping *Mapping
 
 func init() {
 	var err error
-	mapping, err = NewMapping("./test_mapping.json")
+	mapping, err = NewMapping("./test_mapping.yml")
 	if err != nil {
 		panic(err)
 	}
