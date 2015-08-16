@@ -76,8 +76,9 @@ func readDenseNodes(
 
 				if tags != nil {
 
-					if _, ok := tags["created_by"]; ok && len(tags) == 1 {
+					if _, ok := tags["created_by"]; ok && config.ParseDontAddOnlyCreatedByTag && (len(tags) == 1) {
 						// don't add nodes with only created_by tag to nodes cache
+
 					} else {
 
 						if config.ParseMetadata {
@@ -171,7 +172,7 @@ func readNodes(
 			tags := parseTags(stringtable, nodes[i].Keys, nodes[i].Vals)
 
 			if tags != nil {
-				if _, ok := tags["created_by"]; ok && len(tags) == 1 {
+				if _, ok := tags["created_by"]; ok && config.ParseDontAddOnlyCreatedByTag && (len(tags) == 1) {
 					// don't add nodes with only created_by tag to nodes cache
 				} else {
 

@@ -34,6 +34,19 @@ def test_parsemetadata_deploy():
     assert not t.table_exists('osm_parsemetadata', schema=t.TEST_SCHEMA_IMPORT)
 
 
+def test_parsemetadata_pbf_created_by():
+    """parsemetadata=yes test : PBF-node key:created_by test   ( config.ParseDontAddOnlyCreatedByTag )  """     
+
+    assert t.query_row(t.db_conf, 'osm_parsemetadata', 31002 ) == None
+    assert t.query_row(t.db_conf, 'osm_parsemetadata', 31003 ) == None
+    assert t.query_row(t.db_conf, 'osm_parsemetadata', 31004 ) == None
+
+    assert t.query_row(t.db_conf, 'osm_parsemetadata', 31001)
+    assert t.query_row(t.db_conf, 'osm_parsemetadata', 31001)['tags']['created_by'] == "JOSM" 
+    assert t.query_row(t.db_conf, 'osm_parsemetadata', 31101)
+    assert t.query_row(t.db_conf, 'osm_parsemetadata', 31101)['tags']['created_by'] == "iDEditor"
+ 
+
 def test_parsemetadata_pbf_n31101():
     """parsemetadata=yes test : PBF-node osm_id=n31101 : keys:testnote_*  should equal with keys:osm_*  """     
     element = t.query_row(t.db_conf, 'osm_parsemetadata', 31101)
@@ -102,6 +115,18 @@ def test_parsemetadata_update():
     t.imposm3_update(t.db_conf, './build/parsemetadata_data.osc.gz', mapping_file)
 
 #######################################################################
+
+def test_parsemetadata_osc_created_by():
+    """parsemetadata=yes test : PBF-node key:created_by test   ( config.ParseDontAddOnlyCreatedByTag )  """  
+    
+    assert t.query_row(t.db_conf, 'osm_parsemetadata', 31001 ) == None
+    assert t.query_row(t.db_conf, 'osm_parsemetadata', 31002)
+    assert t.query_row(t.db_conf, 'osm_parsemetadata', 31002)['tags']['created_by'] == "iDEditor"
+    assert t.query_row(t.db_conf, 'osm_parsemetadata', 31003 ) == None
+    assert t.query_row(t.db_conf, 'osm_parsemetadata', 31004 ) == None
+    assert t.query_row(t.db_conf, 'osm_parsemetadata', 31101)
+    assert t.query_row(t.db_conf, 'osm_parsemetadata', 31101)['tags']['created_by'] == "JOSM" 
+
 
 def test_parsemetadata_osc_n31101():
     """parsemetadata=yes test : OSC-node osm_id=n31101 : keys:testnote_*  should equal with keys:osm_*  """

@@ -36,9 +36,34 @@ def test_parsemetadata_deploy():
     assert not t.table_exists('osm_parsemetadata', schema=t.TEST_SCHEMA_IMPORT)
 
 
+def test_parsemetadata_pbf_created_by():
+    """parsemetadata=no  test : PBF-node key:created_by test   ( config.ParseDontAddOnlyCreatedByTag )  """     
+
+    assert t.query_row(t.db_conf, 'osm_parsemetadata', 31001 ) == None
+    assert t.query_row(t.db_conf, 'osm_parsemetadata', 31002 ) == None
+    assert t.query_row(t.db_conf, 'osm_parsemetadata', 31003 ) == None
+    assert t.query_row(t.db_conf, 'osm_parsemetadata', 31004 ) == None
+
+    assert t.query_row(t.db_conf, 'osm_parsemetadata', 31101)
+    assert t.query_row(t.db_conf, 'osm_parsemetadata', 31101)['tags']['created_by'] == "iDEditor"
+ 
+
 
 def test_parsemetadata_pbf_n1():
-    """parsemetadata=no  test : PBF-node osm_id=n1 : keys:osm_*  should  not be overwritten ---------- """     
+    """parsemetadata=no  test : PBF-node osm_id=n1 : keys:osm_* will not have been overwritten ------- """      
+    element = t.query_row(t.db_conf, 'osm_parsemetadata', 1)
+    
+    assert element['osm_changeset']             == "OpenStreetMap_node_osm_changeset"   
+    assert element['osm_version']               == "OpenStreetMap_node_osm_version"
+    assert element['osm_user']                  == "OpenStreetMap_node_osm_user" 
+    assert element['osm_uid']                   == "OpenStreetMap_node_osm_uid"  
+    assert element['osm_timestamp']             == "OpenStreetMap_node_osm_timestamp"
+
+
+
+
+def test_parsemetadata_pbf_n1():
+    """parsemetadata=no  test : PBF-node osm_id=n1 : keys:osm_* will not have been overwritten ------- """      
     element = t.query_row(t.db_conf, 'osm_parsemetadata', 1)
     
     assert element['osm_changeset']             == "OpenStreetMap_node_osm_changeset"   
@@ -48,7 +73,7 @@ def test_parsemetadata_pbf_n1():
     assert element['osm_timestamp']             == "OpenStreetMap_node_osm_timestamp"
   
 def test_parsemetadata_pbf_w1():
-    """parsemetadata=no  test : PBF-node osm_id=w1 : keys:osm_*  should  not be overwritten ---------- """     
+    """parsemetadata=no  test : PBF-way  osm_id=w1 : keys:osm_* will not have been overwritten ------- """     
     element = t.query_row(t.db_conf, 'osm_parsemetadata', -1)
     
     assert element['osm_changeset']             == "OpenStreetMap_way_osm_changeset"   
@@ -58,7 +83,7 @@ def test_parsemetadata_pbf_w1():
     assert element['osm_timestamp']             == "OpenStreetMap_way_osm_timestamp"
   
 def test_parsemetadata_pbf_r1():
-    """parsemetadata=no  test : PBF-node osm_id=r1 : keys:osm_*  should  not be overwritten ---------- """     
+    """parsemetadata=no  test : PBF-rel  osm_id=r1 : keys:osm_* will not have been overwritten ------- """     
     element = t.query_row(t.db_conf, 'osm_parsemetadata', -100000000000000001  )
     
     assert element['osm_changeset']             == "OpenStreetMap_rel_osm_changeset"   
@@ -141,6 +166,19 @@ def test_parsemetadata_update():
     t.imposm3_update(t.db_conf, './build/parsemetadata_data.osc.gz', mapping_file)
 
 #######################################################################
+
+
+def test_parsemetadata_osc_created_by():
+    """parsemetadata=no  test : PBF-node key:created_by test   ( config.ParseDontAddOnlyCreatedByTag )  """  
+    
+    assert t.query_row(t.db_conf, 'osm_parsemetadata', 31001 ) == None
+    assert t.query_row(t.db_conf, 'osm_parsemetadata', 31002 ) == None
+    assert t.query_row(t.db_conf, 'osm_parsemetadata', 31003 ) == None
+    assert t.query_row(t.db_conf, 'osm_parsemetadata', 31004 ) == None
+    assert t.query_row(t.db_conf, 'osm_parsemetadata', 31101)
+    assert t.query_row(t.db_conf, 'osm_parsemetadata', 31101)['tags']['created_by'] == "JOSM" 
+
+
 
 def test_parsemetadata_osc_n31101():
     """parsemetadata=no  test : OSC-node osm_id=n31101 : keys:osm_*  should be empty -----------------  """

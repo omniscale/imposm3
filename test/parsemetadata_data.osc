@@ -4,13 +4,16 @@
  
   <!-- source nodes for meta tests below -->
   <node id="31001" lat="47.1" lon="80"  version="12" timestamp="2012-22-22T00:22:11Z" changeset="4000001" uid="311" user="node311"/>
-  <node id="31002" lat="47.1" lon="82"  version="12" timestamp="2012-22-22T00:22:11Z" changeset="4000001" uid="311" user="node311"/>
+  <node id="31002" lat="47.1" lon="82"  version="12" timestamp="2012-22-22T00:22:11Z" changeset="4000001" uid="311" user="node311">
+       <tag k="created_by"   v="iDEditor"/>
+  </node>
   <node id="31003" lat="49.1" lon="82"  version="12" timestamp="2012-22-22T00:22:11Z" changeset="4000001" uid="311" user="node311"/>
   <node id="31004" lat="49.1" lon="80"  version="12" timestamp="2012-22-22T00:22:11Z" changeset="4000001" uid="311" user="node311"/>
   
   <node id="31101" lat="47.1" lon="80"  version="12" timestamp="2012-22-22T00:22:11Z" changeset="4000001" uid="311" user="node311">
-    <tag k="amenity" v="restaurant"/>
-    
+    <tag k="amenity"      v="restaurant"/>
+    <tag k="created_by"   v="JOSM"/>
+           
     <tag k="testnote_version"   v="12"/> 
     <tag k="testnote_timestamp" v="2012-22-22T00:22:11Z"/> 
     <tag k="testnote_changeset" v="4000001" />
