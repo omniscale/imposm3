@@ -83,19 +83,19 @@ func readDenseNodes(
 						if config.ParseMetadata {
 
 							if config.ParseMetadataVarVersion {
-								tags[config.ParseMetadataPrefix+"version"] = strconv.FormatInt(int64(denseInfoVersion), 10)
+								tags[config.ParseMetadataKeynameVersion] = strconv.FormatInt(int64(denseInfoVersion), 10)
 							}
 							if config.ParseMetadataVarTimestamp {
-								tags[config.ParseMetadataPrefix+"timestamp"] = denseInfoTimestamp.UTC().Format(time.RFC3339)
+								tags[config.ParseMetadataKeynameTimestamp] = denseInfoTimestamp.UTC().Format(time.RFC3339)
 							}
 							if config.ParseMetadataVarChangeset {
-								tags[config.ParseMetadataPrefix+"changeset"] = strconv.FormatInt(denseInfoChangeset, 10)
+								tags[config.ParseMetadataKeynameChangeset] = strconv.FormatInt(denseInfoChangeset, 10)
 							}
 							if config.ParseMetadataVarUid {
-								tags[config.ParseMetadataPrefix+"uid"] = strconv.FormatInt(int64(denseInfoUid), 10)
+								tags[config.ParseMetadataKeynameUid] = strconv.FormatInt(int64(denseInfoUid), 10)
 							}
 							if config.ParseMetadataVarUser {
-								tags[config.ParseMetadataPrefix+"user"] = stringtable[denseInfoUserSid]
+								tags[config.ParseMetadataKeynameUser] = stringtable[denseInfoUserSid]
 							}
 
 						}
@@ -178,19 +178,19 @@ func readNodes(
 					if config.ParseMetadata {
 
 						if config.ParseMetadataVarVersion {
-							tags[config.ParseMetadataPrefix+"version"] = strconv.FormatInt(int64(*nodes[i].Info.Version), 10)
+							tags[config.ParseMetadataKeynameVersion] = strconv.FormatInt(int64(*nodes[i].Info.Version), 10)
 						}
 						if config.ParseMetadataVarTimestamp {
-							tags[config.ParseMetadataPrefix+"timestamp"] = time.Unix(*nodes[i].Info.Timestamp, 0).UTC().Format(time.RFC3339)
+							tags[config.ParseMetadataKeynameTimestamp] = time.Unix(*nodes[i].Info.Timestamp, 0).UTC().Format(time.RFC3339)
 						}
 						if config.ParseMetadataVarChangeset {
-							tags[config.ParseMetadataPrefix+"changeset"] = strconv.FormatInt(int64(*nodes[i].Info.Changeset), 10)
+							tags[config.ParseMetadataKeynameChangeset] = strconv.FormatInt(int64(*nodes[i].Info.Changeset), 10)
 						}
 						if config.ParseMetadataVarUid {
-							tags[config.ParseMetadataPrefix+"uid"] = strconv.FormatInt(int64(*nodes[i].Info.Uid), 10)
+							tags[config.ParseMetadataKeynameUid] = strconv.FormatInt(int64(*nodes[i].Info.Uid), 10)
 						}
 						if config.ParseMetadataVarUser {
-							tags[config.ParseMetadataPrefix+"user"] = stringtable[nodes[i].GetInfo().GetUserSid()]
+							tags[config.ParseMetadataKeynameUser] = stringtable[nodes[i].GetInfo().GetUserSid()]
 						}
 					}
 
@@ -231,19 +231,19 @@ func readWays(
 		if config.ParseMetadata && (ways[i].Info != nil) && (len(result[i].Tags) > 0) {
 
 			if config.ParseMetadataVarVersion {
-				result[i].Tags[config.ParseMetadataPrefix+"version"] = strconv.FormatInt(int64(*ways[i].Info.Version), 10)
+				result[i].Tags[config.ParseMetadataKeynameVersion] = strconv.FormatInt(int64(*ways[i].Info.Version), 10)
 			}
 			if config.ParseMetadataVarTimestamp {
-				result[i].Tags[config.ParseMetadataPrefix+"timestamp"] = time.Unix(*ways[i].Info.Timestamp, 0).UTC().Format(time.RFC3339)
+				result[i].Tags[config.ParseMetadataKeynameTimestamp] = time.Unix(*ways[i].Info.Timestamp, 0).UTC().Format(time.RFC3339)
 			}
 			if config.ParseMetadataVarChangeset {
-				result[i].Tags[config.ParseMetadataPrefix+"changeset"] = strconv.FormatInt(int64(*ways[i].Info.Changeset), 10)
+				result[i].Tags[config.ParseMetadataKeynameChangeset] = strconv.FormatInt(int64(*ways[i].Info.Changeset), 10)
 			}
 			if config.ParseMetadataVarUid {
-				result[i].Tags[config.ParseMetadataPrefix+"uid"] = strconv.FormatInt(int64(*ways[i].Info.Uid), 10)
+				result[i].Tags[config.ParseMetadataKeynameUid] = strconv.FormatInt(int64(*ways[i].Info.Uid), 10)
 			}
 			if config.ParseMetadataVarUser {
-				result[i].Tags[config.ParseMetadataPrefix+"user"] = stringtable[ways[i].GetInfo().GetUserSid()]
+				result[i].Tags[config.ParseMetadataKeynameUser] = stringtable[ways[i].GetInfo().GetUserSid()]
 			}
 
 		}
@@ -280,19 +280,19 @@ func readRelations(
 		if config.ParseMetadata && (relations[i].Info != nil) && (len(result[i].Tags) > 0) {
 
 			if config.ParseMetadataVarVersion {
-				result[i].Tags[config.ParseMetadataPrefix+"version"] = strconv.FormatInt(int64(*relations[i].Info.Version), 10)
+				result[i].Tags[config.ParseMetadataKeynameVersion] = strconv.FormatInt(int64(*relations[i].Info.Version), 10)
 			}
 			if config.ParseMetadataVarTimestamp {
-				result[i].Tags[config.ParseMetadataPrefix+"timestamp"] = time.Unix(*relations[i].Info.Timestamp, 0).UTC().Format(time.RFC3339)
+				result[i].Tags[config.ParseMetadataKeynameTimestamp] = time.Unix(*relations[i].Info.Timestamp, 0).UTC().Format(time.RFC3339)
 			}
 			if config.ParseMetadataVarChangeset {
-				result[i].Tags[config.ParseMetadataPrefix+"changeset"] = strconv.FormatInt(int64(*relations[i].Info.Changeset), 10)
+				result[i].Tags[config.ParseMetadataKeynameChangeset] = strconv.FormatInt(int64(*relations[i].Info.Changeset), 10)
 			}
 			if config.ParseMetadataVarUid {
-				result[i].Tags[config.ParseMetadataPrefix+"uid"] = strconv.FormatInt(int64(*relations[i].Info.Uid), 10)
+				result[i].Tags[config.ParseMetadataKeynameUid] = strconv.FormatInt(int64(*relations[i].Info.Uid), 10)
 			}
 			if config.ParseMetadataVarUser {
-				result[i].Tags[config.ParseMetadataPrefix+"user"] = stringtable[relations[i].GetInfo().GetUserSid()]
+				result[i].Tags[config.ParseMetadataKeynameUser] = stringtable[relations[i].GetInfo().GetUserSid()]
 			}
 
 		}

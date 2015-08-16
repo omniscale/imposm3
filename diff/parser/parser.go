@@ -236,19 +236,19 @@ NextToken:
 					if config.ParseMetadata {
 
 						if config.ParseMetadataVarChangeset {
-							tags[config.ParseMetadataPrefix+"changeset"] = strconv.FormatInt(changeset, 10)
+							tags[config.ParseMetadataKeynameChangeset] = strconv.FormatInt(changeset, 10)
 						}
 						if config.ParseMetadataVarVersion {
-							tags[config.ParseMetadataPrefix+"version"] = strconv.FormatInt(version, 10)
+							tags[config.ParseMetadataKeynameVersion] = strconv.FormatInt(version, 10)
 						}
 						if config.ParseMetadataVarUser {
-							tags[config.ParseMetadataPrefix+"user"] = user
+							tags[config.ParseMetadataKeynameUser] = user
 						}
 						if config.ParseMetadataVarUid {
-							tags[config.ParseMetadataPrefix+"uid"] = strconv.FormatInt(uid, 10)
+							tags[config.ParseMetadataKeynameUid] = strconv.FormatInt(uid, 10)
 						}
 						if config.ParseMetadataVarTimestamp {
-							tags[config.ParseMetadataPrefix+"timestamp"] = timestamp
+							tags[config.ParseMetadataKeynameTimestamp] = timestamp
 						}
 					}
 
@@ -264,19 +264,19 @@ NextToken:
 					if config.ParseMetadata {
 
 						if config.ParseMetadataVarChangeset {
-							tags[config.ParseMetadataPrefix+"changeset"] = strconv.FormatInt(changeset, 10)
+							tags[config.ParseMetadataKeynameChangeset] = strconv.FormatInt(changeset, 10)
 						}
 						if config.ParseMetadataVarVersion {
-							tags[config.ParseMetadataPrefix+"version"] = strconv.FormatInt(version, 10)
+							tags[config.ParseMetadataKeynameVersion] = strconv.FormatInt(version, 10)
 						}
 						if config.ParseMetadataVarUser {
-							tags[config.ParseMetadataPrefix+"user"] = user
+							tags[config.ParseMetadataKeynameUser] = user
 						}
 						if config.ParseMetadataVarUid {
-							tags[config.ParseMetadataPrefix+"uid"] = strconv.FormatInt(uid, 10)
+							tags[config.ParseMetadataKeynameUid] = strconv.FormatInt(uid, 10)
 						}
 						if config.ParseMetadataVarTimestamp {
-							tags[config.ParseMetadataPrefix+"timestamp"] = timestamp
+							tags[config.ParseMetadataKeynameTimestamp] = timestamp
 						}
 					}
 
@@ -292,19 +292,19 @@ NextToken:
 					if config.ParseMetadata {
 
 						if config.ParseMetadataVarChangeset {
-							tags[config.ParseMetadataPrefix+"changeset"] = strconv.FormatInt(changeset, 10)
+							tags[config.ParseMetadataKeynameChangeset] = strconv.FormatInt(changeset, 10)
 						}
 						if config.ParseMetadataVarVersion {
-							tags[config.ParseMetadataPrefix+"version"] = strconv.FormatInt(version, 10)
+							tags[config.ParseMetadataKeynameVersion] = strconv.FormatInt(version, 10)
 						}
 						if config.ParseMetadataVarUser {
-							tags[config.ParseMetadataPrefix+"user"] = user
+							tags[config.ParseMetadataKeynameUser] = user
 						}
 						if config.ParseMetadataVarUid {
-							tags[config.ParseMetadataPrefix+"uid"] = strconv.FormatInt(uid, 10)
+							tags[config.ParseMetadataKeynameUid] = strconv.FormatInt(uid, 10)
 						}
 						if config.ParseMetadataVarTimestamp {
-							tags[config.ParseMetadataPrefix+"timestamp"] = timestamp
+							tags[config.ParseMetadataKeynameTimestamp] = timestamp
 						}
 					}
 
