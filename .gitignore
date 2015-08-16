@@ -1,8 +1,12 @@
 .DS_Store
 imposm3
+imposm3_parsemetadata
 docs/_build
 mapping.json
 config.json
 test/build
 test/.lasttestrun*
 test/*.pyc
+*~
+*.swp
+*.swo

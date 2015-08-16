@@ -12,6 +12,7 @@ import binascii
 import unittest
 
 __all__ = [
+    "TEST_IMPOSM3" 
     "assert_almost_equal",
     "query_row",
     "cache_query",
@@ -31,6 +32,9 @@ __all__ = [
     "assert_cached_node",
     "assert_cached_way",
 ]
+
+
+TEST_IMPOSM3="../imposm3"
 
 class Dummy(unittest.TestCase):
     def nop():
@@ -96,7 +100,7 @@ def imposm3_import(db_conf, pbf, mapping_file):
 
     try:
         print subprocess.check_output((
-            "../imposm3 import -connection %s -read %s"
+            TEST_IMPOSM3+" import -connection %s -read %s"
             " -write"
             " -cachedir %s"
             " -diff"
@@ -116,7 +120,7 @@ def imposm3_deploy(db_conf, mapping_file):
 
     try:
         print subprocess.check_output((
-            "../imposm3 import -connection %s"
+            TEST_IMPOSM3+" import -connection %s"
             " -dbschema-import " + TEST_SCHEMA_IMPORT +
             " -dbschema-production " + TEST_SCHEMA_PRODUCTION +
             " -dbschema-backup " + TEST_SCHEMA_BACKUP +
@@ -134,7 +138,7 @@ def imposm3_revert_deploy(db_conf, mapping_file):
 
     try:
         print subprocess.check_output((
-            "../imposm3 import -connection %s"
+            TEST_IMPOSM3+" import -connection %s"
             " -dbschema-import " + TEST_SCHEMA_IMPORT +
             " -dbschema-production " + TEST_SCHEMA_PRODUCTION +
             " -dbschema-backup " + TEST_SCHEMA_BACKUP +
@@ -152,7 +156,7 @@ def imposm3_remove_backups(db_conf, mapping_file):
 
     try:
         print subprocess.check_output((
-            "../imposm3 import -connection %s"
+            TEST_IMPOSM3+" import -connection %s"
             " -dbschema-backup " + TEST_SCHEMA_BACKUP +
             " -removebackup"
             " -mapping %s ") % (
@@ -168,7 +172,7 @@ def imposm3_update(db_conf, osc, mapping_file):
 
     try:
         print subprocess.check_output((
-            "../imposm3 diff -connection %s"
+            TEST_IMPOSM3+" diff -connection %s"
             " -cachedir %s"
             " -limitto clipping.geojson"
             " -dbschema-production " + TEST_SCHEMA_PRODUCTION +
@@ -191,7 +195,7 @@ def cache_query(nodes='', ways='', relations='', deps='', full=''):
     if full:
         full = '-full'
     out = subprocess.check_output(
-        "../imposm3 query-cache -cachedir %s %s %s %s %s %s" % (
+        TEST_IMPOSM3+" query-cache -cachedir %s %s %s %s %s %s" % (
             tmpdir, nodes, ways, relations, deps, full),
         shell=True)
     print out
