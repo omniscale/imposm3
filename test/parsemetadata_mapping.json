@@ -1,10 +1,6 @@
 {
     "tags": {
-        "load_all": true,
-        "exclude": [
-            "created_by",
-            "source"
-        ]
+        "load_all": true
     },
     "use_single_id_space": true,
     "tables": {
@@ -54,6 +50,7 @@
             "type": "geometry",
             "type_mappings": {
                 "points": {
+                     "created_by": ["__any__"],
                      "amenity": ["__any__"],
                      "poi":     ["__any__"],
                      "shop":    ["__any__"]

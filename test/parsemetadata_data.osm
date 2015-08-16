@@ -1,14 +1,18 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <osm version="0.6" generator="manual test">
 
-  <!-- source nodes for meta tests below -->
-  <node id="31001" version="1" timestamp="2000-11-11T00:11:11Z" lat="47" lon="80"  changeset="3000000" uid="1" user="u1"/>
+  <!-- source nodes for parsemetadata tests below -->
+   <node id="31001" version="1" timestamp="2000-11-11T00:11:11Z" lat="47" lon="80"  changeset="3000000" uid="1" user="u1">
+     <tag k="created_by"   v="JOSM"/>
+   </node>
+          
   <node id="31002" version="1" timestamp="2000-11-11T00:11:11Z" lat="47" lon="82"  changeset="3000000" uid="1" user="u1"/>
   <node id="31003" version="1" timestamp="2000-11-11T00:11:11Z" lat="49" lon="82"  changeset="3000000" uid="1" user="u1"/>
   <node id="31004" version="1" timestamp="2000-11-11T00:11:11Z" lat="49" lon="80"  changeset="3000000" uid="1" user="u1"/>
   
   <node id="31101"  lat="47" lon="80"  version="11" timestamp="2011-11-11T01:11:11Z" changeset="3000001" uid="301" user="node301">
-    <tag k="amenity"   v="cafe"/>
+    <tag k="amenity"      v="cafe"/>
+    <tag k="created_by"   v="iDEditor"/>
     
     <tag k="testnote_version"   v="11"/> 
     <tag k="testnote_timestamp" v="2011-11-11T01:11:11Z"/> 

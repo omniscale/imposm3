@@ -2,12 +2,9 @@
 
 package config
 
-
-
 //
-// Configuration file for parsing OSM metadata 
+// Configuration file for parsing OSM metadata
 //
-
 
 // for compatibility - not change this parameters!!!
 // and for documentation see : parsemetadata_yes.go
@@ -26,5 +23,5 @@ const ParseMetadataKeynameUser = "osm_user"
 
 const ParseMetadata = false
 
-
-
+// don't add nodes with only "created_by" tag to nodes cache  = TRUE
+const ParseDontAddOnlyCreatedByTag = true

@@ -231,29 +231,36 @@ NextToken:
 			var e DiffElem
 			switch tok.Name.Local {
 			case "node":
-				if len(tags) > 0 {
 
-					if config.ParseMetadata {
+				if _, ok := tags["created_by"]; ok && len(tags) == 1 && config.ParseDontAddOnlyCreatedByTag {
+					// don't add nodes with only created_by tag to nodes cache
+				} else {
 
-						if config.ParseMetadataVarChangeset {
-							tags[config.ParseMetadataKeynameChangeset] = strconv.FormatInt(changeset, 10)
+					if len(tags) > 0 {
+
+						if config.ParseMetadata {
+
+							if config.ParseMetadataVarChangeset {
+								tags[config.ParseMetadataKeynameChangeset] = strconv.FormatInt(changeset, 10)
+							}
+							if config.ParseMetadataVarVersion {
+								tags[config.ParseMetadataKeynameVersion] = strconv.FormatInt(version, 10)
+							}
+							if config.ParseMetadataVarUser {
+								tags[config.ParseMetadataKeynameUser] = user
+							}
+							if config.ParseMetadataVarUid {
+								tags[config.ParseMetadataKeynameUid] = strconv.FormatInt(uid, 10)
+							}
+							if config.ParseMetadataVarTimestamp {
+								tags[config.ParseMetadataKeynameTimestamp] = timestamp
+							}
 						}
-						if config.ParseMetadataVarVersion {
-							tags[config.ParseMetadataKeynameVersion] = strconv.FormatInt(version, 10)
-						}
-						if config.ParseMetadataVarUser {
-							tags[config.ParseMetadataKeynameUser] = user
-						}
-						if config.ParseMetadataVarUid {
-							tags[config.ParseMetadataKeynameUid] = strconv.FormatInt(uid, 10)
-						}
-						if config.ParseMetadataVarTimestamp {
-							tags[config.ParseMetadataKeynameTimestamp] = timestamp
-						}
+
+						node.Tags = tags
 					}
-
-					node.Tags = tags
 				}
+
 				e.Node = node
 				node = &element.Node{}
 				newElem = true
