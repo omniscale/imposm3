@@ -86,7 +86,7 @@ func readDenseNodes(
 								tags[config.ParseMetadataPrefix+"version"] = strconv.FormatInt(int64(denseInfoVersion), 10)
 							}
 							if config.ParseMetadataVarTimestamp {
-								tags[config.ParseMetadataPrefix+"timestamp"] = denseInfoTimestamp.Format(time.RFC3339)
+								tags[config.ParseMetadataPrefix+"timestamp"] = denseInfoTimestamp.UTC().Format(time.RFC3339)
 							}
 							if config.ParseMetadataVarChangeset {
 								tags[config.ParseMetadataPrefix+"changeset"] = strconv.FormatInt(denseInfoChangeset, 10)
@@ -181,7 +181,7 @@ func readNodes(
 							tags[config.ParseMetadataPrefix+"version"] = strconv.FormatInt(int64(*nodes[i].Info.Version), 10)
 						}
 						if config.ParseMetadataVarTimestamp {
-							tags[config.ParseMetadataPrefix+"timestamp"] = time.Unix(*nodes[i].Info.Timestamp, 0).Format(time.RFC3339)
+							tags[config.ParseMetadataPrefix+"timestamp"] = time.Unix(*nodes[i].Info.Timestamp, 0).UTC().Format(time.RFC3339)
 						}
 						if config.ParseMetadataVarChangeset {
 							tags[config.ParseMetadataPrefix+"changeset"] = strconv.FormatInt(int64(*nodes[i].Info.Changeset), 10)
@@ -234,7 +234,7 @@ func readWays(
 				result[i].Tags[config.ParseMetadataPrefix+"version"] = strconv.FormatInt(int64(*ways[i].Info.Version), 10)
 			}
 			if config.ParseMetadataVarTimestamp {
-				result[i].Tags[config.ParseMetadataPrefix+"timestamp"] = time.Unix(*ways[i].Info.Timestamp, 0).Format(time.RFC3339)
+				result[i].Tags[config.ParseMetadataPrefix+"timestamp"] = time.Unix(*ways[i].Info.Timestamp, 0).UTC().Format(time.RFC3339)
 			}
 			if config.ParseMetadataVarChangeset {
 				result[i].Tags[config.ParseMetadataPrefix+"changeset"] = strconv.FormatInt(int64(*ways[i].Info.Changeset), 10)
@@ -283,7 +283,7 @@ func readRelations(
 				result[i].Tags[config.ParseMetadataPrefix+"version"] = strconv.FormatInt(int64(*relations[i].Info.Version), 10)
 			}
 			if config.ParseMetadataVarTimestamp {
-				result[i].Tags[config.ParseMetadataPrefix+"timestamp"] = time.Unix(*relations[i].Info.Timestamp, 0).Format(time.RFC3339)
+				result[i].Tags[config.ParseMetadataPrefix+"timestamp"] = time.Unix(*relations[i].Info.Timestamp, 0).UTC().Format(time.RFC3339)
 			}
 			if config.ParseMetadataVarChangeset {
 				result[i].Tags[config.ParseMetadataPrefix+"changeset"] = strconv.FormatInt(int64(*relations[i].Info.Changeset), 10)
