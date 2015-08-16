@@ -4,15 +4,25 @@ package config
 
 
 
-// NO add special parsed meta tags to key list ( version , user, ... )
+//
+// Configuration file for parsing OSM metadata 
+//
 
-const ParseMetadataPrefix = "osm_"
+
+// for compatibility - not change this parameters!!!
+// and for documentation see : parsemetadata_yes.go
 
 const ParseMetadataVarVersion = false
 const ParseMetadataVarTimestamp = false
 const ParseMetadataVarChangeset = false
 const ParseMetadataVarUid = false
 const ParseMetadataVarUser = false
+
+const ParseMetadataKeynameVersion = "osm_version"
+const ParseMetadataKeynameTimestamp = "osm_timestamp"
+const ParseMetadataKeynameChangeset = "osm_changeset"
+const ParseMetadataKeynameUid = "osm_uid"
+const ParseMetadataKeynameUser = "osm_user"
 
 const ParseMetadata = false
 
