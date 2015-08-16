@@ -1,0 +1,122 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osm version="0.6" generator="manual test">
+
+  <!-- source nodes for meta tests below -->
+  <node id="31001" version="1" timestamp="2000-11-11T00:11:11Z" lat="47" lon="80"  changeset="3000000" uid="1" user="u1"/>
+  <node id="31002" version="1" timestamp="2000-11-11T00:11:11Z" lat="47" lon="82"  changeset="3000000" uid="1" user="u1"/>
+  <node id="31003" version="1" timestamp="2000-11-11T00:11:11Z" lat="49" lon="82"  changeset="3000000" uid="1" user="u1"/>
+  <node id="31004" version="1" timestamp="2000-11-11T00:11:11Z" lat="49" lon="80"  changeset="3000000" uid="1" user="u1"/>
+  
+  <node id="31101"  lat="47" lon="80"  version="11" timestamp="2011-11-11T01:11:11Z" changeset="3000001" uid="301" user="node301">
+    <tag k="amenity"   v="cafe"/>
+    
+    <tag k="testnote_version"   v="11"/> 
+    <tag k="testnote_timestamp" v="2011-11-11T01:11:11Z"/> 
+    <tag k="testnote_changeset" v="3000001" />
+    <tag k="testnote_uid"       v="301"/>
+    <tag k="testnote_user"      v="node301"/>
+
+  </node>
+
+   
+  <!-- source wayss for meta tests below -->      
+  <way  id="31002" version="21" timestamp="2011-11-11T02:22:22Z"                    changeset="3000002" uid="302" user="way302">
+    <nd ref="31001"/>
+    <nd ref="31002"/>
+    
+    <tag k="barrier" v="fence"/>
+    
+    <tag k="testnote_version"   v="21"/> 
+    <tag k="testnote_timestamp" v="2011-11-11T02:22:22Z"/> 
+    <tag k="testnote_changeset" v="3000002" />
+    <tag k="testnote_uid"       v="302"/>
+    <tag k="testnote_user"      v="way302"/>
+
+  </way>
+
+  <way id="31003" version="21" timestamp="2011-11-11T02:22:22Z"                     changeset="3000002" uid="302" user="way302">
+    <nd ref="31002"/>
+    <nd ref="31003"/>
+    <nd ref="31004"/>
+    <nd ref="31001"/>
+  </way>
+
+  <way id="31101" version="21" timestamp="2011-11-11T02:22:22Z"                     changeset="3000002" uid="302" user="way302">
+    <nd ref="31001"/>
+    <nd ref="31002"/>
+    <nd ref="31003"/>
+    <tag k="highway" v="secondary"/>
+    
+    
+    <tag k="testnote_version"   v="21"/> 
+    <tag k="testnote_timestamp" v="2011-11-11T02:22:22Z"/> 
+    <tag k="testnote_changeset" v="3000002" />
+    <tag k="testnote_uid"       v="302"/>
+    <tag k="testnote_user"      v="way302"/>
+    
+  </way>
+
+
+  <!-- source relations for meta tests below -->
+  <relation id="31101" version="31" timestamp="2011-11-11T03:33:33Z"                changeset="3000003" uid="303" user="rel303">
+    <member type="way" ref="31002" role="outer"/>
+    <member type="way" ref="31003" role="outer"/>
+    <tag k="type" v="multipolygon"/>
+    <tag k="building" v="yes"/>
+     
+    <tag k="testnote_version"   v="31"/> 
+    <tag k="testnote_timestamp" v="2011-11-11T03:33:33Z"/> 
+    <tag k="testnote_changeset" v="3000003" />
+    <tag k="testnote_uid"       v="303"/>
+    <tag k="testnote_user"      v="rel303"/>
+  </relation>
+    
+    
+   
+   
+   
+    
+  <!-- key osm_*  test   -->  
+  <node id="1" lat="47.1" lon="77"  version="1" timestamp="2001-01-01T00:22:11Z" changeset="1" uid="111" user="z111">
+    <tag k="osm_version"   v="OpenStreetMap_node_osm_version"/> 
+    <tag k="osm_timestamp" v="OpenStreetMap_node_osm_timestamp"/> 
+    <tag k="osm_changeset" v="OpenStreetMap_node_osm_changeset" />
+    <tag k="osm_uid"       v="OpenStreetMap_node_osm_uid"/>
+    <tag k="osm_user"      v="OpenStreetMap_node_osm_user"/>
+ 
+    <tag k="amenity"   v="cafe"/>
+
+   
+  </node>
+  
+  <way  id="1"                      version="1" timestamp="2001-01-01T00:22:22Z" changeset="1" uid="111" user="z111">
+    <nd ref="1"/>
+    <nd ref="31001"/>
+    <tag k="osm_version"   v="OpenStreetMap_way_osm_version"/> 
+    <tag k="osm_timestamp" v="OpenStreetMap_way_osm_timestamp"/> 
+    <tag k="osm_changeset" v="OpenStreetMap_way_osm_changeset" />
+    <tag k="osm_uid"       v="OpenStreetMap_way_osm_uid"/>
+    <tag k="osm_user"      v="OpenStreetMap_way_osm_user"/>   
+    
+    <tag k="highway" v="secondary"/>
+        
+  </way>
+  
+  <relation id="1"                  version="1" timestamp="2001-01-01T00:22:33Z"  changeset="1" uid="111" user="z111">
+    <member type="way" ref="31002" role="outer"/>
+    <member type="way" ref="31003" role="outer"/>
+    <tag k="osm_version"   v="OpenStreetMap_rel_osm_version"/> 
+    <tag k="osm_timestamp" v="OpenStreetMap_rel_osm_timestamp"/> 
+    <tag k="osm_changeset" v="OpenStreetMap_rel_osm_changeset" />
+    <tag k="osm_uid"       v="OpenStreetMap_rel_osm_uid"/>
+    <tag k="osm_user"      v="OpenStreetMap_rel_osm_user"/>    
+    
+    <tag k="amenity"   v="cafe"/>
+        
+        
+  </relation>
+  
+   
+</osm>
+
+

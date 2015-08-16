@@ -8,7 +8,7 @@
     },
     "use_single_id_space": true,
     "tables": {
-        "meta_all": {
+        "parsemetadata": {
             "fields": [
                 {
                     "type": "id",
@@ -55,8 +55,8 @@
             "type_mappings": {
                 "points": {
                      "amenity": ["__any__"],
-                     "poi": ["__any__"],
-                     "shop": ["__any__"]
+                     "poi":     ["__any__"],
+                     "shop":    ["__any__"]
                 },
                 "linestrings": {
                      "highway": ["__any__"],
@@ -65,8 +65,8 @@
                 "polygons": {
                      "amenity": ["__any__"],
                      "landuse": ["__any__"],
-                     "building": ["__any__"],
-                     "shop": ["__any__"]
+                     "building":["__any__"],
+                     "shop":    ["__any__"]
                 }
             }
         }
