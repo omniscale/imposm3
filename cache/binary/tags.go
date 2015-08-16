@@ -126,12 +126,12 @@ func init() {
 	addCommonKey("addr:postcode")
 	addCommonKey("addr:housenumber")
 
-	if config.ParseMetadata {	
-	  addCommonKey( config.ParseMetadataKeynameVersion )
-      addCommonKey( config.ParseMetadataKeynameTimestamp )
-      addCommonKey( config.ParseMetadataKeynameChangeset )
-      addCommonKey( config.ParseMetadataKeynameUid )
-      addCommonKey( config.ParseMetadataKeynameUser )
+	if config.ParseMetadata {
+		addCommonKey(config.ParseMetadataKeynameVersion)
+		addCommonKey(config.ParseMetadataKeynameTimestamp)
+		addCommonKey(config.ParseMetadataKeynameChangeset)
+		addCommonKey(config.ParseMetadataKeynameUid)
+		addCommonKey(config.ParseMetadataKeynameUser)
 	}
 
 	// most used tags for ways
