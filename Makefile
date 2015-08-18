@@ -39,8 +39,10 @@ clean:
 test: test-unit test-system
 
 test-unit: imposm3
-	$(GO) test ./... -i
-	$(GO) test ./...
+	$(GO) test ./... -a  -i
+	$(GO) test ./... -a  -i -tags 'parsemetadata'
+	$(GO) test ./... -a
+	$(GO) test ./... -a  -tags 'parsemetadata'
 
 test-system: imposm3 imposm3_parsemetadata
 	(cd test && make test)
