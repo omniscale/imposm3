@@ -148,14 +148,18 @@ An OSM element is only inserted once even if a mapping matches multiple tags. So
       "tables": {
         "transport": {
           "type": "linestring",
-          "mappings": [
+          "mappings": {
               "rail": {
-                "rail": ["__any__"]
+                "mapping": {
+                  "rail": ["__any__"]
+                }
               },
               "roads": {
-                "highway": ["__any__"]
+                "mapping": {
+                  "highway": ["__any__"]
+                }
               }
-            ]
+            }
           },
           ...
         }
