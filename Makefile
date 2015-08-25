@@ -23,7 +23,7 @@ update_version:
 revert_version:
 	@perl -p -i -e 's/buildVersion = ".*"/buildVersion = ""/' cmd/version.go
 
-imposm3: $(PBGOFILES)
+imposm3: $(PBGOFILES) $(GOFILES)
 	$(MAKE) update_version
 	$(GO) build $(GOLDFLAGS)
 	$(MAKE) revert_version
