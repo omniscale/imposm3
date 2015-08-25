@@ -298,6 +298,13 @@ def test_update_node_to_coord_1():
     assert t.query_row(t.db_conf, 'osm_amenities', 70001)
     assert not t.query_row(t.db_conf, 'osm_amenities', 70002)
 
+def test_enumerate_key():
+    """Enumerate from key."""
+    assert t.query_row(t.db_conf, 'osm_landusages', 100001)['enum'] == 1
+    assert t.query_row(t.db_conf, 'osm_landusages', 100002)['enum'] == 0
+    assert t.query_row(t.db_conf, 'osm_landusages', 100003)['enum'] == 15
+
+
 #######################################################################
 def test_update():
     """Diff import applies"""

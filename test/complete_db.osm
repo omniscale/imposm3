@@ -1021,4 +1021,36 @@
   </node>
   <node id="70002" version="1" timestamp="2011-11-11T00:11:11Z" lat="0.02" lon="20.00"/>
 
+  <node id="100001" version="1" timestamp="2011-11-11T00:11:11Z" lat="80.01" lon="-40.00"/>
+  <node id="100002" version="1" timestamp="2011-11-11T00:11:11Z" lat="80.00" lon="-40.01"/>
+  <node id="100003" version="1" timestamp="2011-11-11T00:11:11Z" lat="80.01" lon="-40.02"/>
+  <way id="100001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="100001"/>
+    <nd ref="100002"/>
+    <nd ref="100003"/>
+    <nd ref="100001"/>
+    <tag k="name" v="way 100001"/>
+    <tag k="enum_test" v="park"/>
+    <tag k="landuse" v="park"/>
+  </way>
+  <way id="100002" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="100001"/>
+    <nd ref="100002"/>
+    <nd ref="100003"/>
+    <nd ref="100001"/>
+    <tag k="name" v="way 100002"/>
+    <tag k="enum_test" v="unknown"/>
+    <tag k="landuse" v="park"/>
+  </way>
+  <way id="100003" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="100001"/>
+    <nd ref="100002"/>
+    <nd ref="100003"/>
+    <nd ref="100001"/>
+    <tag k="name" v="way 100003"/>
+    <tag k="enum_test" v="wood"/>
+    <tag k="landuse" v="wood"/>
+  </way>
+
+
 </osm>

@@ -31,6 +31,7 @@ func init() {
 		"wayzorder":            {"wayzorder", "int32", WayZOrder, nil},
 		"pseudoarea":           {"pseudoarea", "float32", PseudoArea, nil},
 		"zorder":               {"zorder", "int32", nil, MakeZOrder},
+		"enumerate":            {"enumerate", "int32", nil, MakeEnumerate},
 		"string_suffixreplace": {"string_suffixreplace", "string", nil, MakeSuffixReplace},
 	}
 }
@@ -224,6 +225,7 @@ func WayZOrder(val string, elem *element.OSMElem, geom *geom.Geometry, match Mat
 }
 
 func MakeZOrder(fieldName string, fieldType FieldType, field Field) (MakeValue, error) {
+	log.Print("warn: zorder type is deprecated and will be removed. See enumerate type.")
 	_rankList, ok := field.Args["ranks"]
 	if !ok {
 		return nil, errors.New("missing ranks in args for zorder")
@@ -267,6 +269,42 @@ func MakeZOrder(fieldName string, fieldType FieldType, field Field) (MakeValue, 
 	}
 
 	return zOrder, nil
+}
+
+func MakeEnumerate(fieldName string, fieldType FieldType, field Field) (MakeValue, error) {
+	_valuesList, ok := field.Args["values"]
+	if !ok {
+		return nil, errors.New("missing values in args for enumerate")
+	}
+
+	valuesList, ok := _valuesList.([]interface{})
+	if !ok {
+		return nil, errors.New("values in args for enumerate not a list")
+	}
+
+	values := make(map[string]int)
+	for i, value := range valuesList {
+		valueName, ok := value.(string)
+		if !ok {
+			return nil, errors.New("value in values not a string")
+		}
+
+		values[valueName] = i + 1
+	}
+	enumerate := func(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
+		if field.Key != "" {
+			if r, ok := values[val]; ok {
+				return r
+			}
+			return 0
+		}
+		if r, ok := values[match.Value]; ok {
+			return r
+		}
+		return 0
+	}
+
+	return enumerate, nil
 }
 
 func MakeSuffixReplace(fieldName string, fieldType FieldType, field Field) (MakeValue, error) {
