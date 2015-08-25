@@ -71,58 +71,32 @@
                 },
                 {
                     "args": {
-                        "ranks": [
-                            "pedestrian",
-                            "footway",
-                            "playground",
+                        "values": [
                             "park",
                             "forest",
-                            "cemetery",
-                            "farmyard",
-                            "farm",
-                            "farmland",
-                            "wood",
-                            "meadow",
-                            "grass",
-                            "wetland",
-                            "village_green",
-                            "recreation_ground",
-                            "garden",
-                            "sports_centre",
-                            "pitch",
-                            "common",
-                            "allotments",
-                            "golf_course",
-                            "university",
-                            "school",
-                            "college",
-                            "library",
-                            "baracks",
-                            "fuel",
-                            "parking",
-                            "nature_reserve",
-                            "cinema",
-                            "theatre",
-                            "place_of_worship",
-                            "hospital",
-                            "scrub",
-                            "orchard",
-                            "vineyard",
-                            "zoo",
-                            "quarry",
                             "residential",
                             "retail",
                             "commercial",
                             "industrial",
                             "railway",
-                            "heath",
-                            "island",
-                            "land"
+                            "cemetery",
+                            "grass",
+                            "farmyard",
+                            "farm",
+                            "farmland",
+                            "orchard",
+                            "vineyard",
+                            "wood",
+                            "meadow",
+                            "village_green",
+                            "recreation_ground",
+                            "allotments",
+                            "quarry"
                         ]
                     },
-                    "type": "zorder",
-                    "name": "z_order",
-                    "key": "z_order"
+                    "type": "enumerate",
+                    "name": "enum",
+                    "key": "enum_test"
                 }
             ],
             "type": "polygon",
@@ -258,22 +232,21 @@
                 },
                 {
                     "args": {
-                        "ranks": [
-                            "country",
-                            "state",
-                            "region",
-                            "county",
-                            "city",
-                            "town",
-                            "village",
-                            "hamlet",
+                        "values": [
+                            "locality",
                             "suburb",
-                            "locality"
+                            "hamlet",
+                            "village",
+                            "town",
+                            "city",
+                            "county",
+                            "region",
+                            "state",
+                            "country"
                         ]
                     },
-                    "type": "zorder",
-                    "name": "z_order",
-                    "key": "z_order"
+                    "type": "enumerate",
+                    "name": "z_order"
                 },
                 {
                     "type": "integer",
