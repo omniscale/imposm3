@@ -53,12 +53,12 @@ Reading
 The first step is the reading of the OpenStreetMap data. Building the way and relation geometries requires random access to all nodes and ways, but this is not supported by the OSM PBF data format. Imposm needs to store all nodes, ways and relations in an intermediary data store that allows random access to these elements. It does this on-disk to keep the memory usage of Imposm low. Having lots of memory will still speed the import up, because your OS will use all free memory for caching of these files.
 Imposm uses LevelDB key-value databases for this, which are fast and compact.
 
-Imposm needs to know which OSM elements you want to have in your database. You can use the provided ``mapping.json`` file for this tutorial, but you should read :doc:`mapping` for more information on how to define your own mapping.
+Imposm needs to know which OSM elements you want to have in your database. You can use the provided ``mapping.yml`` file for this tutorial, but you should read :doc:`mapping` for more information on how to define your own mapping.
 
 
 To read an extract::
 
-  imposm3 import -mapping mapping.json -read germany.osm.pbf
+  imposm3 import -mapping mapping.yml -read germany.osm.pbf
 
 
 Cache files
@@ -79,11 +79,11 @@ You need to tell Imposm the connection parameters of your database. The ``-conne
 In our example:
 ::
 
-  imposm3 import -mapping mapping.json -write -connection postgis://osm:osm@localhost/osm
+  imposm3 import -mapping mapping.yml -write -connection postgis://osm:osm@localhost/osm
 
 You can combine reading and writing::
 
-  imposm3 import -mapping mapping.json -read hamburg.osm.pbf -write -connection postgis://osm:osm@localhost/osm
+  imposm3 import -mapping mapping.yml -read hamburg.osm.pbf -write -connection postgis://osm:osm@localhost/osm
 
 
 Limit to
@@ -93,7 +93,7 @@ You can limit the imported geometries to polygon boundaries. You can load the li
 
 ::
 
-    imposm3 import -mapping mapping.json -connection postgis://osm:osm@localhost/osm -read europe.osm.pbf -write -limitto germany.geojson
+    imposm3 import -mapping mapping.yml -connection postgis://osm:osm@localhost/osm -read europe.osm.pbf -write -limitto germany.geojson
 
 
 ``-limitto`` also controls which elements are stored in the internal cache. You can configure a buffer around the ``-limitto`` geometry with the ``-limittocachebuffer`` to add more elements to your cache. This is necessary for getting complete polygons and line strings at the boundaries of your ``-limitto`` geometry.
@@ -118,7 +118,7 @@ Here is an example configuration::
     {
         "cachedir": "/tmp/imposm3_cache",
         "connection": "postgis://osm:osm@localhost/osm",
-        "mapping": "mapping.json"
+        "mapping": "mapping.yml"
     }
 
 And here is it in use::
@@ -154,17 +154,17 @@ Imposm imports all tables into the ``import`` schema by default. For example, af
 Imposm can `deploy` all imported tables by updating the schema of the tables.
 To move all tables form ``import`` to the default schema ``public``::
 
-  imposm3 import -mapping mapping.json -connection postgis://osm:osm@localhost/osm -deployproduction
+  imposm3 import -mapping mapping.yml -connection postgis://osm:osm@localhost/osm -deployproduction
 
 This will also remove all existing Imposm tables from ``backup`` and it will moves tables from the ``public`` to the ``backup`` schema.
 
 You can revert a deploy (moving ``public`` tables to ``import`` and ``backup`` tables to ``public``)::
 
-  imposm3 import -mapping mapping.json -connection postgis://osm:osm@localhost/osm -revertdeploy
+  imposm3 import -mapping mapping.yml -connection postgis://osm:osm@localhost/osm -revertdeploy
 
 And you can remove the backup schema::
 
-  imposm3 import -mapping mapping.json -connection postgis://osm:osm@localhost/osm -removebackup
+  imposm3 import -mapping mapping.yml -connection postgis://osm:osm@localhost/osm -removebackup
 
 You can change the schema names with ``dbschema-import``, ``-dbschema-production`` and ``-dbschema-backup``
 
