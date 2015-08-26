@@ -478,8 +478,7 @@ tables:
       type: mapping_key
     filters:
       exclude_tags:
-      - - area
-        - 'yes'
+      - ["area", "yes"]
     mappings:
       railway:
         mapping:
