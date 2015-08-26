@@ -105,16 +105,18 @@ An OSM element is only inserted once even if a mapping matches multiple tags. So
 
 
 .. code-block:: yaml
-   :emphasize-lines: 4-9
+   :emphasize-lines: 4-11
 
     tables:
       transport:
         type: linestring
         mappings:
           rail:
-            rail: [__any__]
+            mapping:
+              rail: [__any__]
           roads:
-            highway: [__any__]
+            mapping:
+              highway: [__any__]
           …
 
 
@@ -154,6 +156,32 @@ Convert ``true``, ``yes`` and ``1`` to the numeric ``1``, ``-1`` values to ``-1`
 ^^^^^^^^^^^
 
 Convert values to an integer number. Other values will not be inserted. Useful for ``admin_levels`` for example.
+
+
+``enumerate``
+^^^^^^^^^^^^^
+
+Enumerates a list of values and stores tag values as an integer.
+
+The following `enum` column will contain ``1`` for ``landuse=forest``, ``4`` for ``landuse=grass`` and ``0`` for undefined values.
+
+.. code-block:: javascript
+
+  {
+      "args": {
+          "values": [
+              "forest",
+              "park",
+              "cemetery",
+              "grass"
+          ]
+      },
+      "type": "enumerate",
+      "name": "enum",
+      "key": "landuse"
+  }
+
+``mapping_value`` will be used when ``key`` is not set or ``null``.
 
 
 Element types
@@ -204,7 +232,6 @@ Area of polygon geometries in square meters. This area is calculated in the webm
 ^^^^^^^^^^^^^
 
 Calculate the z-order of an OSM highway or railway. Returns a numeric value that represents the importance of a way where ``motorway`` is the most important (9), and ``path`` or ``track`` are least important (0). ``bridge`` and ``tunnel``  will modify the value by -10/+10. ``layer`` will be multiplied by ten and added to the value. E.g. ``highway=motorway``, ``bridge=yes`` and ``layer=2`` will return 39 (9+10+2*10).
-
 
 
 ``hstore_tags``

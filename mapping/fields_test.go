@@ -107,6 +107,80 @@ func TestZOrder(t *testing.T) {
 	}
 }
 
+func TestEnumerate_Match(t *testing.T) {
+	// test enumerate by matched mapping key
+	match := Match{}
+
+	zOrder, err := MakeEnumerate("enumerate",
+		AvailableFieldTypes["enumerate"],
+		Field{
+			Name: "enumerate",
+			Key:  "",
+			Type: "enumerate",
+			Args: map[string]interface{}{"values": []interface{}{"AA", "CC", "FF", "ZZ"}},
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	elem := &element.OSMElem{}
+
+	elem.Tags = element.Tags{} // missing
+	if v := zOrder("", elem, nil, match); v != 0 {
+		t.Errorf(" -> %v", v)
+	}
+	match.Value = "ABCD" // unknown
+	if v := zOrder("", elem, nil, match); v != 0 {
+		t.Errorf(" -> %v", v)
+	}
+	match.Value = "AA"
+	if v := zOrder("", elem, nil, match); v != 1 {
+		t.Errorf(" -> %v", v)
+	}
+	match.Value = "CC"
+	if v := zOrder("", elem, nil, match); v != 2 {
+		t.Errorf(" -> %v", v)
+	}
+	match.Value = "ZZ"
+	if v := zOrder("", elem, nil, match); v != 4 {
+		t.Errorf(" -> %v", v)
+	}
+}
+
+func TestEnumerate_Key(t *testing.T) {
+	// test enumerate by key
+	match := Match{}
+
+	zOrder, err := MakeEnumerate("enumerate",
+		AvailableFieldTypes["enumerate"],
+		Field{
+			Name: "enumerate",
+			Key:  "fips",
+			Type: "enumerate",
+			Args: map[string]interface{}{"values": []interface{}{"AA", "CC", "FF", "ZZ"}},
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	elem := &element.OSMElem{}
+	if v := zOrder("", elem, nil, match); v != 0 {
+		t.Errorf(" -> %v", v)
+	}
+	if v := zOrder("ABCD", elem, nil, match); v != 0 {
+		t.Errorf(" -> %v", v)
+	}
+	if v := zOrder("AA", elem, nil, match); v != 1 {
+		t.Errorf(" -> %v", v)
+	}
+	if v := zOrder("CC", elem, nil, match); v != 2 {
+		t.Errorf(" -> %v", v)
+	}
+	if v := zOrder("ZZ", elem, nil, match); v != 4 {
+		t.Errorf(" -> %v", v)
+	}
+}
+
 func TestMakeSuffixReplace(t *testing.T) {
 	field := Field{
 		Name: "name", Key: "name", Type: "string_suffixreplace",
