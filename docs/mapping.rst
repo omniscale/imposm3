@@ -1,15 +1,15 @@
 Data Mapping
 ============
 
-The data mapping defines which `OSM feature types <http://wiki.openstreetmap.org/wiki/Map_Features>`_ should be imported in which table. The mapping is a JSON file.
+The data mapping defines which `OSM feature types <http://wiki.openstreetmap.org/wiki/Map_Features>`_ should be imported in which table. The mapping is a YAML (or JSON) file.
 
-See `example-mapping.json <https://raw.githubusercontent.com/omniscale/imposm3/master/example-mapping.json>`_ for an example.
+See `example-mapping.yml <https://raw.githubusercontent.com/omniscale/imposm3/master/example-mapping.yml>`_ for an example.
 
 
 Tables
 ------
 
-The most important part is the ``tables`` definition. Each table is a JSON object with the table name as the key. Each table has a ``type``, a mapping definition and ``columns``.
+The most important part is the ``tables`` definition. Each table is a YAML object with the table name as the key. Each table has a ``type``, a mapping definition and ``columns``.
 
 
 ``type``
@@ -21,37 +21,27 @@ The most important part is the ``tables`` definition. Each table is a JSON objec
 ``mapping``
 ~~~~~~~~~~~
 
-``mapping`` defines which OSM key/values an element needs to have to be imported into this table. ``mapping`` is a JSON object with the OSM `key` as the object key and a list of all OSM `values` to be matched as the object value.
+``mapping`` defines which OSM key/values an element needs to have to be imported into this table. ``mapping`` is a YAML object with the OSM `key` as the object key and a list of all OSM `values` to be matched as the object value.
 You can use the value ``__any__`` to match all values.
 
 To import all polygons with `tourism=zoo`, `natural=wood` or `natural=land` into the ``landusages`` table:
 
-.. code-block:: javascript
-   :emphasize-lines: 4-11
+.. code-block:: yaml
+   :emphasize-lines: 4-7
 
-    {
-      "tables": {
-        "landusages": {
-          "type": "polygon",
-          "mapping": {
-            "tourism": [
-               "zoo"
-             ],
-             "natural": [
-               "wood",
-               "land"
-             ]
-          },
-          ...
-        }
-      }
-    }
+    tables:
+      landusages:
+        type: polygon
+        mapping:
+          natural: [wood, land]
+          tourism: [zoo]
+        …
 
 
 ``columns``
 ~~~~~~~~~~~
 
-``columns`` is a list of columns that Imposm should create for this table. Each column is a JSON object with a ``type`` and a ``name`` and optionaly ``key`` and ``args``.
+``columns`` is a list of columns that Imposm should create for this table. Each column is a YAML object with a ``type`` and a ``name`` and optionaly ``key`` and ``args``.
 
 ``name``
 ^^^^^^^^^
@@ -91,46 +81,19 @@ The mapping below will create a ``tracks`` table with the following columns:
 
 
 
-.. code-block:: javascript
+.. code-block:: yaml
 
-    {
-      "tables": {
-        "tracks": {
-          "columns": [
-            {
-                "name": "osm_id",
-                "type": "id"
-            },
-            {
-                "name": "the_geom",
-                "type": "geometry"
-            },
-            {
-                "name": "street_name",
-                "type": "string",
-                "key": "name"
-            },
-            {
-                "name": "is_bridge",
-                "type": "bool",
-                "key": "bridge"
-            },
-            {
-                "name": "highway_type",
-                "type": "mapping_value"
-            }
-          ],
-          "type": "linestring",
-          "mapping": {
-            "highway": [
-                "path",
-                "track",
-                "unclassified"
-            ]
-          }
-        }
-      }
-    }
+    tables:
+      tracks:
+        type: linestring
+        mapping:
+          highway: [path, track, unclassified]
+        columns:
+        - {name: osm_id, type: id}
+        - {name: the_geom, type: geometry}
+        - {key: name, name: street_name, type: string}
+        - {key: bridge, name: is_bridge, type: bool}
+        - {name: highway_type, type: mapping_value}
 
 
 
@@ -141,30 +104,20 @@ An OSM element is only inserted once even if a mapping matches multiple tags. So
 ``mappings`` allows to define multiple sub-mappings. Each sub-mapping requires a name and a separate mapping dictionary. The elements will be inserted into the table for each match of a sub-mapping.
 
 
-.. code-block:: javascript
-   :emphasize-lines: 5-12
+.. code-block:: yaml
+   :emphasize-lines: 4-11
 
-    {
-      "tables": {
-        "transport": {
-          "type": "linestring",
-          "mappings": {
-              "rail": {
-                "mapping": {
-                  "rail": ["__any__"]
-                }
-              },
-              "roads": {
-                "mapping": {
-                  "highway": ["__any__"]
-                }
-              }
-            }
-          },
-          ...
-        }
-      }
-    }
+    tables:
+      transport:
+        type: linestring
+        mappings:
+          rail:
+            mapping:
+              rail: [__any__]
+          roads:
+            mapping:
+              highway: [__any__]
+          …
 
 
 .. _column_types:
@@ -299,7 +252,7 @@ Generalized Tables
 
 Generalized tables allow you to create a copy of an imported table with simplified/generalized geometries. You can use these generalized tables for rendering low map scales, where a high spatial resolution is not required.
 
-Each generalize table is a JSON object with the new table name as the key. Each generalize table has a ``source`` and a ``tolerance`` and optionally an ``sql_filter``.
+Each generalize table is a YAML object with the new table name as the key. Each generalize table has a ``source`` and a ``tolerance`` and optionally an ``sql_filter``.
 
 ``source`` is the table name of another Imposm table from the same mapping file. You can also reference another generalized table, to create multiple generalizations of the same data.
 
@@ -307,14 +260,13 @@ Each generalize table is a JSON object with the new table name as the key. Each 
 
 The optional ``sql_filter`` can be used to limit the rows that will be generalized. You can use it to drop geometries that are to small for the target map scale.
 
-::
+.. code-block:: yaml
 
-    "generalized_tables": {
-        "waterareas_gen_50": {
-            "source": "waterareas",
-            "sql_filter": "ST_Area(geometry)>50000.000000",
-            "tolerance": 50.0
-        },
+    generalized_tables:
+      waterareas_gen_50:
+        source: waterareas
+        sql_filter: ST_Area(geometry)>50000.000000
+        tolerance: 50.0
 
 
 
@@ -325,16 +277,13 @@ Tags
 
 Imposm caches only tags that are required for a ``mapping`` or for any ``columns``. This keeps the cache small as it does not store any tags that are not required for the import. You can change this if you want to import all tags, e.g with the ``hstore_tags`` column type.
 
-Add ``load_all`` to the ``tags`` object inside your mapping JSON file. You can still exclude tags with the ``exclude`` option. ``exclude`` supports a simple shell file name pattern matching.
+Add ``load_all`` to the ``tags`` object inside your mapping YAML file. You can still exclude tags with the ``exclude`` option. ``exclude`` supports a simple shell file name pattern matching.
 
-To load all tags except ``created_by``, ``source``, and ``tiger:county``, ``tiger:tlid``, ``tiger:upload_uuid``, etc::
+To load all tags except ``created_by``, ``source``, and ``tiger:county``, ``tiger:tlid``, ``tiger:upload_uuid``, etc:
 
-    "tags": {
-        "load_all": true,
-        "exclude": [
-            "created_by",
-            "source",
-            "tiger:*"
-        ]
-    },
+.. code-block:: yaml
+
+    tags:
+      load_all: true,
+      exclude: [created_by, source, tiger:*]
 

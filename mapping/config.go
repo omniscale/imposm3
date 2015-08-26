@@ -1,41 +1,42 @@
 package mapping
 
 import (
-	"encoding/json"
 	"errors"
-	"os"
+	"io/ioutil"
 
 	"github.com/omniscale/imposm3/element"
+
+	"gopkg.in/yaml.v2"
 )
 
 type Field struct {
-	Name string                 `json:"name"`
-	Key  Key                    `json:"key"`
-	Keys []Key                  `json:"keys"`
-	Type string                 `json:"type"`
-	Args map[string]interface{} `json:"args"`
+	Name string                 `yaml:"name"`
+	Key  Key                    `yaml:"key"`
+	Keys []Key                  `yaml:"keys"`
+	Type string                 `yaml:"type"`
+	Args map[string]interface{} `yaml:"args"`
 }
 
 type Table struct {
 	Name         string
-	Type         TableType             `json:"type"`
-	Mapping      map[Key][]Value       `json:"mapping"`
-	Mappings     map[string]SubMapping `json:"mappings"`
-	TypeMappings TypeMappings          `json:"type_mappings"`
-	Fields       []*Field              `json:"columns"` // TODO rename Fields internaly to Columns
-	OldFields    []*Field              `json:"fields"`
-	Filters      *Filters              `json:"filters"`
+	Type         TableType             `yaml:"type"`
+	Mapping      map[Key][]Value       `yaml:"mapping"`
+	Mappings     map[string]SubMapping `yaml:"mappings"`
+	TypeMappings TypeMappings          `yaml:"type_mappings"`
+	Fields       []*Field              `yaml:"columns"` // TODO rename Fields internaly to Columns
+	OldFields    []*Field              `yaml:"fields"`
+	Filters      *Filters              `yaml:"filters"`
 }
 
 type GeneralizedTable struct {
 	Name            string
-	SourceTableName string  `json:"source"`
-	Tolerance       float64 `json:"tolerance"`
-	SqlFilter       string  `json:"sql_filter"`
+	SourceTableName string  `yaml:"source"`
+	Tolerance       float64 `yaml:"tolerance"`
+	SqlFilter       string  `yaml:"sql_filter"`
 }
 
 type Filters struct {
-	ExcludeTags *[][2]string `json:"exclude_tags"`
+	ExcludeTags *[][]string `yaml:"exclude_tags"`
 }
 
 type Tables map[string]*Table
@@ -43,17 +44,17 @@ type Tables map[string]*Table
 type GeneralizedTables map[string]*GeneralizedTable
 
 type Mapping struct {
-	Tables            Tables            `json:"tables"`
-	GeneralizedTables GeneralizedTables `json:"generalized_tables"`
-	Tags              Tags              `json:"tags"`
+	Tables            Tables            `yaml:"tables"`
+	GeneralizedTables GeneralizedTables `yaml:"generalized_tables"`
+	Tags              Tags              `yaml:"tags"`
 	// SingleIdSpace mangles the overlapping node/way/relation IDs
 	// to be unique (nodes positive, ways negative, relations negative -1e17)
-	SingleIdSpace bool `json:"use_single_id_space"`
+	SingleIdSpace 	  bool 				`yaml:"use_single_id_space"`
 }
 
 type Tags struct {
-	LoadAll bool  `json:"load_all"`
-	Exclude []Key `json:"exclude"`
+	LoadAll bool  `yaml:"load_all"`
+	Exclude []Key `yaml:"exclude"`
 }
 
 type SubMapping struct {
@@ -61,9 +62,9 @@ type SubMapping struct {
 }
 
 type TypeMappings struct {
-	Points      map[Key][]Value `json:"points"`
-	LineStrings map[Key][]Value `json:"linestrings"`
-	Polygons    map[Key][]Value `json:"polygons"`
+	Points      map[Key][]Value `yaml:"points"`
+	LineStrings map[Key][]Value `yaml:"linestrings"`
+	Polygons    map[Key][]Value `yaml:"polygons"`
 }
 
 type ElementFilter func(tags *element.Tags) bool
@@ -103,15 +104,13 @@ const (
 )
 
 func NewMapping(filename string) (*Mapping, error) {
-	f, err := os.Open(filename)
+	f, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
-	decoder := json.NewDecoder(f)
 
 	mapping := Mapping{}
-	err = decoder.Decode(&mapping)
+	err = yaml.Unmarshal(f, &mapping)
 	if err != nil {
 		return nil, err
 	}
