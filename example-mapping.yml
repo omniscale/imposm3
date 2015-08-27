@@ -9,12 +9,13 @@ generalized_tables:
     tolerance: 50.0
   roads_gen0:
     source: roads_gen1
-    sql_filter: null
     tolerance: 200.0
   roads_gen1:
     source: roads
-    sql_filter: type IN ('motorway', 'motorway_link', 'trunk', 'trunk_link', 'primary',
-      'primary_link', 'secondary', 'secondary_link', 'tertiary', 'tertiary_link')
+    sql_filter:
+      type IN (
+        'motorway', 'motorway_link', 'trunk', 'trunk_link', 'primary',
+        'primary_link', 'secondary', 'secondary_link', 'tertiary', 'tertiary_link')
       OR class IN('railway')
     tolerance: 50.0
   waterareas_gen0:
@@ -27,26 +28,21 @@ generalized_tables:
     tolerance: 50.0
   waterways_gen0:
     source: waterways_gen1
-    sql_filter: null
     tolerance: 200
   waterways_gen1:
     source: waterways
-    sql_filter: null
     tolerance: 50.0
 tables:
   admin:
     fields:
-    - key: null
-      name: osm_id
+    - name: osm_id
       type: id
-    - key: null
-      name: geometry
+    - name: geometry
       type: geometry
     - key: name
       name: name
       type: string
-    - key: null
-      name: type
+    - name: type
       type: mapping_value
     - key: admin_level
       name: admin_level
@@ -57,17 +53,14 @@ tables:
     type: polygon
   aeroways:
     fields:
-    - key: null
-      name: osm_id
+    - name: osm_id
       type: id
-    - key: null
-      name: geometry
+    - name: geometry
       type: geometry
     - key: name
       name: name
       type: string
-    - key: null
-      name: type
+    - name: type
       type: mapping_value
     mapping:
       aeroway:
@@ -76,17 +69,14 @@ tables:
     type: linestring
   amenities:
     fields:
-    - key: null
-      name: osm_id
+    - name: osm_id
       type: id
-    - key: null
-      name: geometry
+    - name: geometry
       type: geometry
     - key: name
       name: name
       type: string
-    - key: null
-      name: type
+    - name: type
       type: mapping_value
     mapping:
       amenity:
@@ -101,17 +91,14 @@ tables:
     type: point
   barrierpoints:
     fields:
-    - key: null
-      name: osm_id
+    - name: osm_id
       type: id
-    - key: null
-      name: geometry
+    - name: geometry
       type: geometry
     - key: name
       name: name
       type: string
-    - key: null
-      name: type
+    - name: type
       type: mapping_value
     mapping:
       barrier:
@@ -134,17 +121,14 @@ tables:
     type: point
   barrierways:
     fields:
-    - key: null
-      name: osm_id
+    - name: osm_id
       type: id
-    - key: null
-      name: geometry
+    - name: geometry
       type: geometry
     - key: name
       name: name
       type: string
-    - key: null
-      name: type
+    - name: type
       type: mapping_value
     mapping:
       barrier:
@@ -164,17 +148,14 @@ tables:
     type: linestring
   buildings:
     fields:
-    - key: null
-      name: osm_id
+    - name: osm_id
       type: id
-    - key: null
-      name: geometry
+    - name: geometry
       type: geometry
     - key: name
       name: name
       type: string
-    - key: null
-      name: type
+    - name: type
       type: mapping_value
     mapping:
       building:
@@ -182,17 +163,14 @@ tables:
     type: polygon
   housenumbers:
     fields:
-    - key: null
-      name: osm_id
+    - name: osm_id
       type: id
-    - key: null
-      name: geometry
+    - name: geometry
       type: geometry
     - key: name
       name: name
       type: string
-    - key: null
-      name: type
+    - name: type
       type: mapping_value
     - key: addr:street
       name: addr:street
@@ -209,17 +187,14 @@ tables:
     type: point
   housenumbers_interpolated:
     fields:
-    - key: null
-      name: osm_id
+    - name: osm_id
       type: id
-    - key: null
-      name: geometry
+    - name: geometry
       type: geometry
     - key: name
       name: name
       type: string
-    - key: null
-      name: type
+    - name: type
       type: mapping_value
     - key: addr:street
       name: addr:street
@@ -239,72 +214,67 @@ tables:
     type: linestring
   landusages:
     fields:
-    - key: null
-      name: osm_id
+    - name: osm_id
       type: id
-    - key: null
-      name: geometry
+    - name: geometry
       type: geometry
     - key: name
       name: name
       type: string
-    - key: null
-      name: type
+    - name: type
       type: mapping_value
-    - key: null
-      name: area
+    - name: area
       type: pseudoarea
     - args:
-        ranks:
-        - pedestrian
-        - footway
-        - playground
-        - park
-        - forest
-        - cemetery
-        - farmyard
-        - farm
-        - farmland
-        - wood
-        - meadow
-        - grass
-        - wetland
-        - village_green
-        - recreation_ground
-        - garden
-        - sports_centre
-        - pitch
-        - common
-        - allotments
-        - golf_course
-        - university
-        - school
-        - college
-        - library
-        - baracks
-        - fuel
-        - parking
-        - nature_reserve
-        - cinema
-        - theatre
-        - place_of_worship
-        - hospital
-        - scrub
-        - orchard
-        - vineyard
-        - zoo
-        - quarry
-        - residential
-        - retail
-        - commercial
-        - industrial
-        - railway
-        - heath
-        - island
+        values:
         - land
-      key: z_order
+        - island
+        - heath
+        - railway
+        - industrial
+        - commercial
+        - retail
+        - residential
+        - quarry
+        - zoo
+        - vineyard
+        - orchard
+        - scrub
+        - hospital
+        - place_of_worship
+        - theatre
+        - cinema
+        - nature_reserve
+        - parking
+        - fuel
+        - baracks
+        - library
+        - college
+        - school
+        - university
+        - golf_course
+        - allotments
+        - common
+        - pitch
+        - sports_centre
+        - garden
+        - recreation_ground
+        - village_green
+        - wetland
+        - grass
+        - meadow
+        - wood
+        - farmland
+        - farm
+        - farmyard
+        - cemetery
+        - forest
+        - park
+        - playground
+        - footway
+        - pedestrian
       name: z_order
-      type: zorder
+      type: enumerate
     mapping:
       aeroway:
       - runway
@@ -373,33 +343,29 @@ tables:
     type: polygon
   places:
     fields:
-    - key: null
-      name: osm_id
+    - name: osm_id
       type: id
-    - key: null
-      name: geometry
+    - name: geometry
       type: geometry
     - key: name
       name: name
       type: string
-    - key: null
-      name: type
+    - name: type
       type: mapping_value
     - args:
-        ranks:
-        - country
-        - state
-        - region
-        - county
-        - city
-        - town
-        - village
-        - hamlet
-        - suburb
+        values:
         - locality
-      key: z_order
+        - suburb
+        - hamlet
+        - village
+        - town
+        - city
+        - county
+        - region
+        - state
+        - country
       name: z_order
-      type: zorder
+      type: enumerate
     - key: population
       name: population
       type: integer
@@ -418,14 +384,11 @@ tables:
     type: point
   roads:
     fields:
-    - key: null
-      name: osm_id
+    - name: osm_id
       type: id
-    - key: null
-      name: geometry
+    - name: geometry
       type: geometry
-    - key: null
-      name: type
+    - name: type
       type: mapping_value
     - key: name
       name: name
@@ -451,8 +414,7 @@ tables:
     - key: service
       name: service
       type: string
-    - key: null
-      name: class
+    - name: class
       type: mapping_key
     filters:
       exclude_tags:
@@ -503,17 +465,14 @@ tables:
     type: linestring
   transport_areas:
     fields:
-    - key: null
-      name: osm_id
+    - name: osm_id
       type: id
-    - key: null
-      name: geometry
+    - name: geometry
       type: geometry
     - key: name
       name: name
       type: string
-    - key: null
-      name: type
+    - name: type
       type: mapping_value
     mapping:
       aeroway:
@@ -527,17 +486,14 @@ tables:
     type: polygon
   transport_points:
     fields:
-    - key: null
-      name: osm_id
+    - name: osm_id
       type: id
-    - key: null
-      name: geometry
+    - name: geometry
       type: geometry
     - key: name
       name: name
       type: string
-    - key: null
-      name: type
+    - name: type
       type: mapping_value
     - key: ref
       name: ref
@@ -562,20 +518,16 @@ tables:
     type: point
   waterareas:
     fields:
-    - key: null
-      name: osm_id
+    - name: osm_id
       type: id
-    - key: null
-      name: geometry
+    - name: geometry
       type: geometry
     - key: name
       name: name
       type: string
-    - key: null
-      name: type
+    - name: type
       type: mapping_value
-    - key: null
-      name: area
+    - name: area
       type: pseudoarea
     mapping:
       amenity:
@@ -592,17 +544,14 @@ tables:
     type: polygon
   waterways:
     fields:
-    - key: null
-      name: osm_id
+    - name: osm_id
       type: id
-    - key: null
-      name: geometry
+    - name: geometry
       type: geometry
     - key: name
       name: name
       type: string
-    - key: null
-      name: type
+    - name: type
       type: mapping_value
     mapping:
       barrier:
