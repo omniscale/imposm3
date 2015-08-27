@@ -10,12 +10,6 @@ It is designed to create databases that are optimized for rendering (i.e. genera
 Imposm 3 is written in Go and it is a complete rewrite of the previous Python implementation.
 Configurations/mappings and cache files are not compatible with Imposm 2, but they share a similar architecture.
 
-
-It is released as open source under the [Apache License 2.0][].
-
-[Apache License 2.0]: http://www.apache.org/licenses/LICENSE-2.0.html
-
-
 The development of Imposm 3 was sponsored by [Omniscale](http://omniscale.com/) and development will continue as resources permit.
 Please get in touch if you need commercial support or if you need specific features.
 
@@ -234,6 +228,18 @@ Development
 The source code is available at: <https://github.com/omniscale/imposm3/>
 
 You can report any issues at: <https://github.com/omniscale/imposm3/issues>
+
+License
+-------
+
+Imposm 3 is released as open source under the Apache License 2.0. See LICENSE.
+
+All dependencies included as source code are released under a BSD-ish license except the YAML package.
+The YAML package is released as LGPL3 with an exception that permits static linking. See LICENSE.deps.
+
+All dependencies included in binary releases are released under a BSD-ish license except the GEOS package.
+The GEOS package is released as LGPL3 and is linked dynamically. See LICENSE.bin.
+
 
 ### Test ###
 

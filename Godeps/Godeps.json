@@ -17,6 +17,10 @@
 			"ImportPath": "github.com/lib/pq",
 			"Comment": "go1.0-cutoff-47-g93e9980",
 			"Rev": "93e9980741c9e593411b94e07d5bad8cfb4809db"
+		},
+		{
+			"ImportPath": "gopkg.in/yaml.v2",
+			"Rev": "7ad95dd0798a40da1ccdff6dff35fd177b5edf40"
 		}
 	]
 }
