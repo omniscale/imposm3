@@ -54,3 +54,13 @@ DOC_VERSION = 3.0.0
 
 upload-docs: docs
 	rsync -a -v -P -z docs/_build/html/ $(REMOTE_DOC_LOCATION)/$(DOC_VERSION)
+
+
+build-license-deps:
+	rm LICENSE.deps
+	find ./Godeps/_workspace/src -iname license\* -exec bash -c '\
+		dep=$${1#./Godeps/_workspace/src/}; \
+		(echo -e "========== $$dep ==========\n"; cat $$1; echo -e "\n\n") \
+		| fold -s -w 80 \
+		>> LICENSE.deps \
+	' _ {} \;
