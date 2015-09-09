@@ -93,7 +93,7 @@ func (t *Table) TableFields() *TableFields {
 		if fieldType != nil {
 			field.Type = *fieldType
 		} else {
-			log.Warn("unhandled type:", mappingField.Type)
+			log.Warn("unhandled type: ", mappingField.Type)
 		}
 		result.fields = append(result.fields, field)
 	}
@@ -313,20 +313,28 @@ func MakeSuffixReplace(fieldName string, fieldType FieldType, field Field) (Make
 		return nil, errors.New("missing suffixes in args for string_suffixreplace")
 	}
 
-	changes, ok := _changes.(map[string]interface{})
+	changes, ok := _changes.(map[interface{}]interface{})
 	if !ok {
 		return nil, errors.New("suffixes in args for string_suffixreplace not a dict")
 	}
-
+	strChanges := make(map[string]string, len(changes))
+	for k, v := range changes {
+		_, kok := k.(string)
+		_, vok := v.(string)
+		if !kok || !vok {
+			return nil, errors.New("suffixes in args for string_suffixreplace not strings")
+		}
+		strChanges[k.(string)] = v.(string)
+	}
 	var suffixes []string
-	for k, _ := range changes {
+	for k, _ := range strChanges {
 		suffixes = append(suffixes, k)
 	}
 	reStr := `(` + strings.Join(suffixes, "|") + `)\b`
 	re := regexp.MustCompile(reStr)
 
 	replFunc := func(match string) string {
-		return changes[match].(string)
+		return strChanges[match]
 	}
 
 	suffixReplace := func(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
