@@ -27,7 +27,7 @@ You can use the value ``__any__`` to match all values.
 To import all polygons with `tourism=zoo`, `natural=wood` or `natural=land` into the ``landusages`` table:
 
 .. code-block:: yaml
-   :emphasize-lines: 4-7
+   :emphasize-lines: 4-6
 
     tables:
       landusages:
@@ -165,21 +165,19 @@ Enumerates a list of values and stores tag values as an integer.
 
 The following `enum` column will contain ``1`` for ``landuse=forest``, ``4`` for ``landuse=grass`` and ``0`` for undefined values.
 
-.. code-block:: javascript
+.. code-block:: yaml
 
-  {
-      "args": {
-          "values": [
-              "forest",
-              "park",
-              "cemetery",
-              "grass"
-          ]
-      },
-      "type": "enumerate",
-      "name": "enum",
-      "key": "landuse"
-  }
+  columns:
+    - name: enum
+      type: enumerate
+      key: landuse
+      args:
+          values:
+             - forest
+             - park
+             - cemetery
+             - grass
+
 
 ``mapping_value`` will be used when ``key`` is not set or ``null``.
 
@@ -240,7 +238,6 @@ Stores all tags in a HStore column. Requires the PostGIS HStore extension. This 
 
 
 .. TODO
-.. "zorder":               {"zorder", "int32", nil, MakeZOrder},
 .. "string_suffixreplace": {"string_suffixreplace", "string", nil, MakeSuffixReplace},
 
 
@@ -284,5 +281,5 @@ To load all tags except ``created_by``, ``source``, and ``tiger:county``, ``tige
 
     tags:
       load_all: true,
-      exclude: [created_by, source, tiger:*]
+      exclude: [created_by, source, "tiger:*"]
 
