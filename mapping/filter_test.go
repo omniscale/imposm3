@@ -346,6 +346,34 @@ func TestPolygonMatcher(t *testing.T) {
 	matchesEqual(t, []Match{{"boundary", "administrative", DestTable{Name: "admin"}, nil}}, polys.MatchRelation(&elem))
 }
 
+func TestMatcherMappingOrder(t *testing.T) {
+	elem := element.Relation{}
+	polys := mapping.PolygonMatcher()
+
+	/*
+		landusages mapping has the following order,
+		check that XxxMatcher always uses the first
+
+		amenity:
+		- university
+		landuse:
+		- forest
+		leisure:
+		- park
+		landuse:
+		- park
+	*/
+
+	elem.Tags = element.Tags{"landuse": "forest", "leisure": "park"}
+	matchesEqual(t, []Match{{"landuse", "forest", DestTable{Name: "landusages"}, nil}}, polys.MatchRelation(&elem))
+
+	elem.Tags = element.Tags{"landuse": "park", "leisure": "park"}
+	matchesEqual(t, []Match{{"leisure", "park", DestTable{Name: "landusages"}, nil}}, polys.MatchRelation(&elem))
+
+	elem.Tags = element.Tags{"landuse": "park", "leisure": "park", "amenity": "university"}
+	matchesEqual(t, []Match{{"amenity", "university", DestTable{Name: "landusages"}, nil}}, polys.MatchRelation(&elem))
+}
+
 func TestFilterNodes(t *testing.T) {
 	var tags element.Tags
 

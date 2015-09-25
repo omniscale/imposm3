@@ -199,9 +199,8 @@ The ID of the OSM node, way or relation. Relation IDs are negated (-1234 for ID 
 
 The OSM `key` that was matched by this table mapping (`highway`, `building`, `nature`, `landuse`, etc.).
 
-..note::
-Imposm will choose a random key if an OSM element has multiple tags that match the table mapping.
-For example: `mapping_key` will use either `landuse` or `natural` for an OSM element with `landuse=forest` and `natural=wood` tags, if both are included in the mapping. You need to define an explicit column if you need to know if a specific tag was matched (e.g. `{"type": "string", "name": "landuse", "key": "landuse"}`).
+.. note:: Imposm will choose the first key of the table mapping if an OSM element has multiple tags that match.
+  For example: `mapping_key` will use `natural` for an OSM element with `landuse=forest` and `natural=wood` tags, if `natural` comes before `landuse` in the table mapping. You need to define an explicit column if you need the value of a specific tag (e.g. `{"type": "string", "name": "landuse", "key": "landuse"}`).
 
 ``mapping_value``
 ^^^^^^^^^^^^^^^^^
