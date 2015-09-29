@@ -4,7 +4,8 @@ before_script:
   - psql -U postgres -c "create extension postgis"
 
 install:
-  - sudo apt-get install libleveldb-dev libgeos-dev python-psycopg2 python-shapely python-nose libprotobuf-dev osmosis
+  - sudo apt-get update -y
+  - sudo apt-get install -y libleveldb-dev libgeos-dev python-psycopg2 python-shapely python-nose libprotobuf-dev osmosis
   - go get github.com/tools/godep
 
 script: make
