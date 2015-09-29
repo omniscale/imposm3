@@ -3,15 +3,14 @@ language: go
 addons:
   apt:
     packages:
-      - python-psycopg2
       - python-nose
-      - python-shapely
-      - osmosis
+      - libgeos-dev
 
 before_script:
   - psql -U postgres -c "create extension postgis"
 
 install:
+  - sudo apt-get install libleveldb-dev python-psycopg2 python-shapely libprotobuf-dev osmosis
   - go get github.com/tools/godep
 
 script: make
