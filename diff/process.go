@@ -156,10 +156,13 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 				}
 				progress.AddCoords(1)
 			}
+
+			// always delete, to prevent duplicate elements from overlap of initial
+			// import and diff import
+			if err := deleter.Delete(elem); err != nil {
+				return diffError(err, "delete element", elem)
+			}
 			if elem.Del {
-				if err := deleter.Delete(elem); err != nil {
-					return diffError(err, "delete element", elem)
-				}
 				if !elem.Add {
 					// no new or modified elem -> remove from cache
 					if elem.Rel != nil {

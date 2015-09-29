@@ -90,6 +90,16 @@ def query_row(db_conf, table, osmid):
         return results[0]
     return results
 
+def query_duplicates(db_conf, table):
+    conn = _test_connection(db_conf)
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cur.execute('select osm_id, count(osm_id) from %s.%s group by osm_id having count(osm_id) > 1' % (TEST_SCHEMA_PRODUCTION, table))
+    results = []
+    for row in cur.fetchall():
+        results.append(row)
+    cur.close()
+    return results
+
 def imposm3_import(db_conf, pbf, mapping_file):
     _close_test_connection(db_conf)
     conn = pg_db_url(db_conf)
