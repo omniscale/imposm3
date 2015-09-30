@@ -319,9 +319,9 @@ def test_no_duplicates():
     """
     highways = t.query_duplicates(t.db_conf, 'osm_roads')
     # one duplicate for test_node_way_inserted_twice is expected
-    assert highways == [[18001, 2]]
+    assert highways == [[18001, 2]], highways
     landusages = t.query_duplicates(t.db_conf, 'osm_landusages')
-    assert not landusages
+    assert not landusages, landusages
 
 def test_updated_landusage():
     """Multipolygon relation was modified"""
@@ -480,9 +480,9 @@ def test_no_duplicate_insert():
     Relation is not inserted again if a nother relation with the same way was modified
     Checks #65
     """
-    assert t.query_row(t.db_conf, 'osm_landusages', -201101)['type'] == 'park'
-    assert t.query_row(t.db_conf, 'osm_landusages', -201102)['type'] == 'forest'
-    assert t.query_row(t.db_conf, 'osm_roads', 201101)['type'] == 'residential'
+    assert t.query_row(t.db_conf, 'osm_landusages', -201191)['type'] == 'park'
+    assert t.query_row(t.db_conf, 'osm_landusages', -201192)['type'] == 'forest'
+    assert t.query_row(t.db_conf, 'osm_roads', 201151)['type'] == 'residential'
 
 #######################################################################
 def test_deploy_and_revert_deploy():

@@ -190,9 +190,9 @@
   <create>
     <node id="201001" version="1" timestamp="2011-11-11T00:11:11Z" lat="32" lon="10"/>
     <node id="201002" version="1" timestamp="2011-11-11T00:11:11Z" lat="32" lon="11"/>
-    <node id="201003" version="1" timestamp="2011-11-11T00:11:11Z" lat="34" lon="10"/>
-    <node id="201004" version="1" timestamp="2011-11-11T00:11:11Z" lat="34" lon="11"/>
-    <way id="201001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <node id="201003" version="1" timestamp="2011-11-11T00:11:11Z" lat="34" lon="11"/>
+    <node id="201004" version="1" timestamp="2011-11-11T00:11:11Z" lat="34" lon="10"/>
+    <way id="201051" version="1" timestamp="2011-11-11T00:11:11Z">
       <nd ref="201001"/>
       <nd ref="201002"/>
       <nd ref="201003"/>
@@ -200,8 +200,8 @@
       <nd ref="201001"/>
       <tag k="highway" v="residential"/>
     </way>
-    <relation id="201001" version="1" timestamp="2011-11-11T00:11:11Z">
-      <member type="way" ref="201001" role="outer"/>
+    <relation id="201091" version="1" timestamp="2011-11-11T00:11:11Z">
+      <member type="way" ref="201051" role="outer"/>
       <tag k="type" v="multipolygon"/>
       <tag k="landuse" v="park"/>
     </relation>
@@ -210,8 +210,8 @@
   <!-- test modification of one relation (201102) does not duplicate
        relation (201101) with shared way (checks #65) -->
   <modify>
-    <relation id="201102" version="1" timestamp="2011-11-11T00:11:11Z">
-      <member type="way" ref="201101" role="outer"/>
+    <relation id="201192" version="1" timestamp="2011-11-11T00:11:11Z">
+      <member type="way" ref="201151" role="outer"/>
       <tag k="type" v="multipolygon"/>
       <tag k="landuse" v="forest"/>
     </relation>

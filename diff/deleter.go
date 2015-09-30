@@ -116,8 +116,10 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 				if _, ok := d.deletedWays[member.Id]; ok {
 					continue
 				}
-				if err := d.deleteRelation(member.Id, false, false); err != nil {
-					return err
+				for _, r := range d.diffCache.Ways.Get(member.Id) {
+					if err := d.deleteRelation(r, false, false); err != nil {
+						return err
+					}
 				}
 				if err := d.deleteWay(member.Id, false); err != nil {
 					return err
