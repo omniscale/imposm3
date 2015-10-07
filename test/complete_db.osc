@@ -217,4 +217,12 @@
     </relation>
   </modify>
 
+  <!-- test that relations with unsupported types are not inserted with updates -->
+  <create>
+    <relation id="201291" version="1" timestamp="2011-11-11T00:11:11Z">
+      <member type="way" ref="201251" role="platform"/>
+      <tag k="type" v="unmapped_relation_type"/>
+    </relation>
+  </create>
+
 </osmChange>

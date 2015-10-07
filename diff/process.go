@@ -290,7 +290,11 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 		}
 		// insert new relation
 		progress.AddRelations(1)
-		relations <- rel
+		// filter out unsupported relation types, otherwise they might
+		// get inserted with the tags from an outer way
+		if relTagFilter.Filter(&rel.Tags) {
+			relations <- rel
+		}
 	}
 
 	for wayId, _ := range wayIds {

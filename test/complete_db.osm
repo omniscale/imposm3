@@ -1096,4 +1096,18 @@
     <tag k="landuse" v="forest"/>
   </relation>
 
+  <!-- test that relations with unsupported types are not inserted with updates -->
+  <node id="201201" version="1" timestamp="2011-11-11T00:11:11Z" lat="32" lon="20"/>
+  <node id="201202" version="1" timestamp="2011-11-11T00:11:11Z" lat="32" lon="21"/>
+  <node id="201203" version="1" timestamp="2011-11-11T00:11:11Z" lat="34" lon="21"/>
+  <node id="201204" version="1" timestamp="2011-11-11T00:11:11Z" lat="34" lon="20"/>
+  <way id="201251" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="201201"/>
+    <nd ref="201202"/>
+    <nd ref="201203"/>
+    <nd ref="201204"/>
+    <nd ref="201201"/>
+    <tag k="landuse" v="park"/>
+  </way>
+
 </osm>

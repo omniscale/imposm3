@@ -484,6 +484,13 @@ def test_no_duplicate_insert():
     assert t.query_row(t.db_conf, 'osm_landusages', -201192)['type'] == 'forest'
     assert t.query_row(t.db_conf, 'osm_roads', 201151)['type'] == 'residential'
 
+def test_unsupported_relation():
+    """
+    Unsupported relation type is not inserted with update
+    """
+    assert not t.query_row(t.db_conf, 'osm_landusages', -201291)
+    assert t.query_row(t.db_conf, 'osm_landusages', 201251)['type'] == 'park'
+
 #######################################################################
 def test_deploy_and_revert_deploy():
     """Revert deploy succeeds"""
