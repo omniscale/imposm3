@@ -20,7 +20,7 @@ clean:
 
 build/%.pbf: %.osm
 	@mkdir -p build
-	osmosis --read-xml $< --write-pbf $@ omitmetadata=true
+	osmosis --read-xml $< --sort TypeThenId --write-pbf $@ omitmetadata=true
 
 build/%.osc.gz: %.osc
 	@mkdir -p build
