@@ -24,7 +24,7 @@ This is step zero, since you have to do it only once. The following commands cre
     createdb -E UTF8 -O osm osm
     psql -d osm -c "CREATE EXTENSION postgis;"
     psql -d osm -c "CREATE EXTENSION hstore;" # only required for hstore support
-    echo "ALTER USER osm WITH PASSWORD \'osm\';" |psql -d osm
+    echo "ALTER USER osm WITH PASSWORD 'osm';" |psql -d osm
 
 You can change the names if you like, but we will use `osm` for user name, password and database name in all following examples.
 
