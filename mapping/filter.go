@@ -11,7 +11,7 @@ func (m *Mapping) NodeTagFilter() TagFilterer {
 	if m.Tags.LoadAll {
 		return newExcludeFilter(m.Tags.Exclude)
 	}
-	mappings := make(map[Key]map[Value][]DestTable)
+	mappings := make(map[Key]map[Value][]OrderedDestTable)
 	m.mappings("point", mappings)
 	tags := make(map[Key]bool)
 	m.extraTags("point", tags)
@@ -22,7 +22,7 @@ func (m *Mapping) WayTagFilter() TagFilterer {
 	if m.Tags.LoadAll {
 		return newExcludeFilter(m.Tags.Exclude)
 	}
-	mappings := make(map[Key]map[Value][]DestTable)
+	mappings := make(map[Key]map[Value][]OrderedDestTable)
 	m.mappings("linestring", mappings)
 	m.mappings("polygon", mappings)
 	tags := make(map[Key]bool)
@@ -35,23 +35,23 @@ func (m *Mapping) RelationTagFilter() TagFilterer {
 	if m.Tags.LoadAll {
 		return newExcludeFilter(m.Tags.Exclude)
 	}
-	mappings := make(map[Key]map[Value][]DestTable)
+	mappings := make(map[Key]map[Value][]OrderedDestTable)
 	m.mappings("linestring", mappings)
 	m.mappings("polygon", mappings)
 	tags := make(map[Key]bool)
 	m.extraTags("linestring", tags)
 	m.extraTags("polygon", tags)
 	// do not filter out type tag
-	mappings["type"] = map[Value][]DestTable{
-		"multipolygon": []DestTable{},
-		"boundary":     []DestTable{},
-		"land_area":    []DestTable{},
+	mappings["type"] = map[Value][]OrderedDestTable{
+		"multipolygon": []OrderedDestTable{},
+		"boundary":     []OrderedDestTable{},
+		"land_area":    []OrderedDestTable{},
 	}
 	return &RelationTagFilter{TagFilter{mappings, tags}}
 }
 
 type TagFilter struct {
-	mappings  map[Key]map[Value][]DestTable
+	mappings  map[Key]map[Value][]OrderedDestTable
 	extraTags map[Key]bool
 }
 

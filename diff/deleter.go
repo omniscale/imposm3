@@ -116,6 +116,11 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 				if _, ok := d.deletedWays[member.Id]; ok {
 					continue
 				}
+				for _, r := range d.diffCache.Ways.Get(member.Id) {
+					if err := d.deleteRelation(r, false, false); err != nil {
+						return err
+					}
+				}
 				if err := d.deleteWay(member.Id, false); err != nil {
 					return err
 				}
@@ -212,10 +217,6 @@ func (d *Deleter) deleteNode(id int64) error {
 }
 
 func (d *Deleter) Delete(delElem parser.DiffElem) error {
-	if !delElem.Del {
-		panic("del=false")
-	}
-
 	if delElem.Rel != nil {
 		if err := d.deleteRelation(delElem.Rel.Id, true, true); err != nil {
 			return err

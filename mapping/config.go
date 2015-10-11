@@ -2,6 +2,7 @@ package mapping
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 
 	"github.com/omniscale/imposm3/element"
@@ -20,7 +21,7 @@ type Field struct {
 type Table struct {
 	Name         string
 	Type         TableType             `yaml:"type"`
-	Mapping      map[Key][]Value       `yaml:"mapping"`
+	Mapping      KeyValues             `yaml:"mapping"`
 	Mappings     map[string]SubMapping `yaml:"mappings"`
 	TypeMappings TypeMappings          `yaml:"type_mappings"`
 	Fields       []*Field              `yaml:"columns"` // TODO rename Fields internaly to Columns
@@ -49,7 +50,7 @@ type Mapping struct {
 	Tags              Tags              `yaml:"tags"`
 	// SingleIdSpace mangles the overlapping node/way/relation IDs
 	// to be unique (nodes positive, ways negative, relations negative -1e17)
-	SingleIdSpace 	  bool 				`yaml:"use_single_id_space"`
+	SingleIdSpace bool `yaml:"use_single_id_space"`
 }
 
 type Tags struct {
@@ -57,23 +58,65 @@ type Tags struct {
 	Exclude []Key `yaml:"exclude"`
 }
 
+type orderedValue struct {
+	value Value
+	order int
+}
+type KeyValues map[Key][]orderedValue
+
+func (kv *KeyValues) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	if *kv == nil {
+		*kv = make(map[Key][]orderedValue)
+	}
+	slice := yaml.MapSlice{}
+	err := unmarshal(&slice)
+	if err != nil {
+		return err
+	}
+	order := 0
+	for _, item := range slice {
+		k, ok := item.Key.(string)
+		if !ok {
+			return fmt.Errorf("mapping key '%s' not a string", k)
+		}
+		values, ok := item.Value.([]interface{})
+		if !ok {
+			return fmt.Errorf("mapping key '%s' not a string", k)
+		}
+		for _, v := range values {
+			if v, ok := v.(string); ok {
+				(*kv)[Key(k)] = append((*kv)[Key(k)], orderedValue{value: Value(v), order: order})
+			} else {
+				return fmt.Errorf("mapping value '%s' not a string", v)
+			}
+			order += 1
+		}
+	}
+	return nil
+}
+
 type SubMapping struct {
-	Mapping map[Key][]Value
+	Mapping KeyValues
 }
 
 type TypeMappings struct {
-	Points      map[Key][]Value `yaml:"points"`
-	LineStrings map[Key][]Value `yaml:"linestrings"`
-	Polygons    map[Key][]Value `yaml:"polygons"`
+	Points      KeyValues `yaml:"points"`
+	LineStrings KeyValues `yaml:"linestrings"`
+	Polygons    KeyValues `yaml:"polygons"`
 }
 
 type ElementFilter func(tags *element.Tags) bool
 
-type TagTables map[Key]map[Value][]DestTable
+type TagTables map[Key]map[Value][]OrderedDestTable
 
 type DestTable struct {
 	Name       string
 	SubMapping string
+}
+
+type OrderedDestTable struct {
+	DestTable
+	order int
 }
 
 type TableType string
@@ -150,15 +193,16 @@ func (m *Mapping) prepare() error {
 	return nil
 }
 
-func (tt TagTables) addFromMapping(mapping map[Key][]Value, table DestTable) {
+func (tt TagTables) addFromMapping(mapping KeyValues, table DestTable) {
 	for key, vals := range mapping {
 		for _, v := range vals {
 			vals, ok := tt[key]
+			tbl := OrderedDestTable{DestTable: table, order: v.order}
 			if ok {
-				vals[v] = append(vals[v], table)
+				vals[v.value] = append(vals[v.value], tbl)
 			} else {
-				tt[key] = make(map[Value][]DestTable)
-				tt[key][v] = append(tt[key][v], table)
+				tt[key] = make(map[Value][]OrderedDestTable)
+				tt[key][v.value] = append(tt[key][v.value], tbl)
 			}
 		}
 	}
@@ -169,19 +213,19 @@ func (m *Mapping) mappings(tableType TableType, mappings TagTables) {
 		if t.Type != GeometryTable && t.Type != tableType {
 			continue
 		}
-		mappings.addFromMapping(t.Mapping, DestTable{name, ""})
+		mappings.addFromMapping(t.Mapping, DestTable{Name: name})
 
 		for subMappingName, subMapping := range t.Mappings {
-			mappings.addFromMapping(subMapping.Mapping, DestTable{name, subMappingName})
+			mappings.addFromMapping(subMapping.Mapping, DestTable{Name: name, SubMapping: subMappingName})
 		}
 
 		switch tableType {
 		case PointTable:
-			mappings.addFromMapping(t.TypeMappings.Points, DestTable{name, ""})
+			mappings.addFromMapping(t.TypeMappings.Points, DestTable{Name: name})
 		case LineStringTable:
-			mappings.addFromMapping(t.TypeMappings.LineStrings, DestTable{name, ""})
+			mappings.addFromMapping(t.TypeMappings.LineStrings, DestTable{Name: name})
 		case PolygonTable:
-			mappings.addFromMapping(t.TypeMappings.Polygons, DestTable{name, ""})
+			mappings.addFromMapping(t.TypeMappings.Polygons, DestTable{Name: name})
 		}
 	}
 }

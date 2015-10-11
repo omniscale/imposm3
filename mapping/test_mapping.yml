@@ -288,7 +288,7 @@ tables:
         - footway
         - pedestrian
       name: z_order
-      type: eumerate
+      type: enumerate
     mapping:
       aeroway:
       - runway
@@ -310,7 +310,6 @@ tables:
       - pedestrian
       - footway
       landuse:
-      - park
       - forest
       - residential
       - retail
@@ -320,16 +319,6 @@ tables:
       - cemetery
       - grass
       - farmyard
-      - farm
-      - farmland
-      - orchard
-      - vineyard
-      - wood
-      - meadow
-      - village_green
-      - recreation_ground
-      - allotments
-      - quarry
       leisure:
       - park
       - garden
@@ -340,6 +329,18 @@ tables:
       - stadium
       - common
       - nature_reserve
+      landuse:
+      - park
+      - farm
+      - farmland
+      - orchard
+      - vineyard
+      - wood
+      - meadow
+      - village_green
+      - recreation_ground
+      - allotments
+      - quarry
       man_made:
       - pier
       military:
@@ -409,7 +410,12 @@ tables:
       type: mapping_value
     - key: name
       name: name
-      type: string
+      type: string_suffixreplace
+      args:
+        suffixes:
+          street: str.
+          straße: str.
+          Straße: Str.
     - key: tunnel
       name: tunnel
       type: boolint

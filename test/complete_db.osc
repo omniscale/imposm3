@@ -178,9 +178,51 @@
   </modify>
 
   <!-- add remove tags from nodes/coords -->
-  <node id="70001" version="2" timestamp="2011-11-11T00:11:11Z" lat="0.01" lon="20.00"/>
-  <node id="70002" version="2" timestamp="2011-11-11T00:11:11Z" lat="0.02" lon="20.00">
-      <tag k="amenity" v="police"/>
-  </node>
+  <modify>
+    <node id="70001" version="2" timestamp="2011-11-11T00:11:11Z" lat="0.01" lon="20.00"/>
+    <node id="70002" version="2" timestamp="2011-11-11T00:11:11Z" lat="0.02" lon="20.00">
+        <tag k="amenity" v="police"/>
+    </node>
+  </modify>
+
+
+  <!-- test if additional create inserts duplicate elements (checks #66) -->
+  <create>
+    <node id="201001" version="1" timestamp="2011-11-11T00:11:11Z" lat="32" lon="10"/>
+    <node id="201002" version="1" timestamp="2011-11-11T00:11:11Z" lat="32" lon="11"/>
+    <node id="201003" version="1" timestamp="2011-11-11T00:11:11Z" lat="34" lon="11"/>
+    <node id="201004" version="1" timestamp="2011-11-11T00:11:11Z" lat="34" lon="10"/>
+    <way id="201051" version="1" timestamp="2011-11-11T00:11:11Z">
+      <nd ref="201001"/>
+      <nd ref="201002"/>
+      <nd ref="201003"/>
+      <nd ref="201004"/>
+      <nd ref="201001"/>
+      <tag k="highway" v="residential"/>
+    </way>
+    <relation id="201091" version="1" timestamp="2011-11-11T00:11:11Z">
+      <member type="way" ref="201051" role="outer"/>
+      <tag k="type" v="multipolygon"/>
+      <tag k="landuse" v="park"/>
+    </relation>
+  </create>
+
+  <!-- test modification of one relation (201102) does not duplicate
+       relation (201101) with shared way (checks #65) -->
+  <modify>
+    <relation id="201192" version="1" timestamp="2011-11-11T00:11:11Z">
+      <member type="way" ref="201151" role="outer"/>
+      <tag k="type" v="multipolygon"/>
+      <tag k="landuse" v="forest"/>
+    </relation>
+  </modify>
+
+  <!-- test that relations with unsupported types are not inserted with updates -->
+  <create>
+    <relation id="201291" version="1" timestamp="2011-11-11T00:11:11Z">
+      <member type="way" ref="201251" role="platform"/>
+      <tag k="type" v="unmapped_relation_type"/>
+    </relation>
+  </create>
 
 </osmChange>

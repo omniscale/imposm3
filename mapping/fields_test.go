@@ -184,7 +184,7 @@ func TestEnumerate_Key(t *testing.T) {
 func TestMakeSuffixReplace(t *testing.T) {
 	field := Field{
 		Name: "name", Key: "name", Type: "string_suffixreplace",
-		Args: map[string]interface{}{"suffixes": map[string]interface{}{"Straße": "Str.", "straße": "str."}}}
+		Args: map[string]interface{}{"suffixes": map[interface{}]interface{}{"Straße": "Str.", "straße": "str."}}}
 	suffixReplace, err := MakeSuffixReplace("name", FieldType{}, field)
 
 	if err != nil {

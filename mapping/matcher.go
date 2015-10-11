@@ -32,6 +32,7 @@ type Match struct {
 	Table       DestTable
 	tableFields *TableFields
 }
+
 type NodeMatcher interface {
 	MatchNode(node *element.Node) []Match
 }
@@ -87,21 +88,38 @@ func (tm *tagMatcher) MatchRelation(rel *element.Relation) []Match {
 	return tm.match(&rel.Tags)
 }
 
+type orderedMatch struct {
+	Match
+	order int
+}
+
 func (tm *tagMatcher) match(tags *element.Tags) []Match {
-	tables := make(map[DestTable]Match)
+	tables := make(map[DestTable]orderedMatch)
+
+	addTables := func(k, v string, tbls []OrderedDestTable) {
+		for _, t := range tbls {
+			this := orderedMatch{
+				Match: Match{k, v, t.DestTable, tm.tables[t.Name]},
+				order: t.order,
+			}
+			if other, ok := tables[t.DestTable]; ok {
+				if other.order < this.order {
+					this = other
+				}
+			}
+			tables[t.DestTable] = this
+		}
+
+	}
 
 	for k, v := range *tags {
 		values, ok := tm.mappings[Key(k)]
 		if ok {
 			if tbls, ok := values["__any__"]; ok {
-				for _, t := range tbls {
-					tables[t] = Match{k, v, t, tm.tables[t.Name]}
-				}
+				addTables(k, v, tbls)
 			}
 			if tbls, ok := values[Value(v)]; ok {
-				for _, t := range tbls {
-					tables[t] = Match{k, v, t, tm.tables[t.Name]}
-				}
+				addTables(k, v, tbls)
 			}
 		}
 	}
@@ -118,7 +136,7 @@ func (tm *tagMatcher) match(tags *element.Tags) []Match {
 			}
 		}
 		if !filteredOut {
-			matches = append(matches, match)
+			matches = append(matches, match.Match)
 		}
 	}
 	return matches
