@@ -1,7 +1,15 @@
 {
     "tags": {
-        "load_all": true
-    },
+        "load_all": true,
+        "keep_single_createdby_tag": true,
+        "parsemetadata": {
+	          "parse_version_to_key": "osm_version",
+	          "parse_timestamp_to_key": "osm_timestamp",
+	          "parse_changeset_to_key": "osm_changeset",
+	          "parse_uid_to_key": "osm_uid",
+	          "parse_user_to_key": "osm_user"
+        }
+    },  
     "use_single_id_space": true,
     "tables": {
         "all_original": {
@@ -12,7 +20,7 @@
                     "key": null
                 },
                 {
-                    "type": "validated_geometry",
+                    "type": "geometry",
                     "name": "geometry",
                     "key": null
                 },

@@ -25,26 +25,22 @@ revert_version:
 
 imposm3: $(PBGOFILES) $(GOFILES)
 	$(MAKE) update_version
-	$(GO) build -a $(GOLDFLAGS)
-	$(GO) build -a -o 'imposm3_parsemetadata' -tags 'parsemetadata' $(GOLDFLAGS) .
+	$(GO) build $(GOLDFLAGS)
 	$(MAKE) revert_version
 
-build: imposm3 imposm3_parsemetadata
+build: imposm3
 
 clean:
 	rm -f imposm3
-	rm -f imposm3_parsemetadata
 	(cd test && make clean)
 
 test: test-unit test-system
 
 test-unit: imposm3
-	$(GO) test ./... -a  -i
-	$(GO) test ./... -a  -i -tags 'parsemetadata'
-	$(GO) test ./... -a
-	$(GO) test ./... -a  -tags 'parsemetadata'
+	$(GO) test ./... -i
+	$(GO) test ./...
 
-test-system: imposm3 imposm3_parsemetadata
+test-system: imposm3
 	(cd test && make test)
 
 %.pb.go: %.proto

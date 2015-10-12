@@ -23,7 +23,7 @@ monaco_osm_zero_osc=../../test/build/monaco_diff_20150428.osc
 
 # --------------  TEST  OSM  branch  -----------------------------
 #  read  "monaco-20150428.osm.pbf"   -->  public.osm_all_original
-../../imposm3_parsemetadata import  -mapping monaco_mapping_original.json  \
+../../imposm3 import  -mapping monaco_mapping_original.json  \
                                     -read $monaco_osm_pbf \
                                     -diff     \
                                     -write    \
@@ -73,7 +73,7 @@ cat  $monaco_osm_zero_osc  | gzip > ${monaco_osm_zero_osc}.gz
 
 # --- load data    public.osm_all_osm2osc
 echo ' ----  import ----'
-../../imposm3_parsemetadata import  -mapping monaco_mapping_osm2osc.json \
+../../imposm3 import  -mapping monaco_mapping_osm2osc.json \
                                     -read $monaco_osm_zero_pbf  \
                                     -diff \
                                     -write \
@@ -83,7 +83,7 @@ echo ' ----  import ----'
                                     -connection $impconnection 
                                     
 echo ' ----  diff ----'                                    
-../../imposm3_parsemetadata diff    -mapping monaco_mapping_osm2osc.json \
+../../imposm3 diff    -mapping monaco_mapping_osm2osc.json \
                                     -connection $impconnection  \
                                     ${monaco_osm_zero_osc}.gz
 
