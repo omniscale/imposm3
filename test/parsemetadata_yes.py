@@ -5,18 +5,15 @@ import helper as t
 
 psycopg2.extras.register_hstore(psycopg2.connect(**t.db_conf), globally=True)
 
-
-t.TEST_IMPOSM3="../imposm3_parsemetadata"
-mapping_file  = 'parsemetadata_mapping.json'
+mapping_file = 'parsemetadata_yes_mapping.json'
 
 def setup():
     t.setup()
 
 def teardown():
-    print t.TEST_IMPOSM3+" test end ...."    
+    t.teardown()
 
 RELOFFSET = int(-1e17)
-
 
 #######################################################################
 def test_parsemetadata_import():

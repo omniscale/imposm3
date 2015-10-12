@@ -12,13 +12,38 @@
     },  
     "use_single_id_space": true,
     "tables": {
-        "all_osm2osc": {
+        "parsemetadata": {
             "fields": [
                 {
                     "type": "id",
                     "name": "osm_id",
                     "key": null
                 },
+                {
+                    "type": "string",
+                    "name": "osm_changeset",
+                    "key":  "osm_changeset"
+                },                
+                {
+                    "type": "string",
+                    "name": "osm_version",
+                    "key":  "osm_version"
+                }, 
+                {
+                    "type": "string",
+                    "name": "osm_user",
+                    "key":  "osm_user"
+                }, 
+                {
+                    "type": "string",
+                    "name": "osm_uid",
+                    "key":  "osm_uid"
+                },                                                 
+                {
+                    "type": "string",
+                    "name": "osm_timestamp",
+                    "key":  "osm_timestamp"
+                },                 
                 {
                     "type": "geometry",
                     "name": "geometry",
@@ -33,30 +58,20 @@
             "type": "geometry",
             "type_mappings": {
                 "points": {
-                     "name": ["__any__"],
                      "created_by": ["__any__"],
-                     "source": ["__any__"],
                      "amenity": ["__any__"],
-                     "poi": ["__any__"],
-                     "shop": ["__any__"]
+                     "poi":     ["__any__"],
+                     "shop":    ["__any__"]
                 },
                 "linestrings": {
-                     "name": ["__any__"],
-                     "building": ["__any__"],
-                     "created_by": ["__any__"],
-                     "source": ["__any__"],
-                     "highway": ["__any__"]
+                     "highway": ["__any__"],
+                     "barrier": ["__any__"]
                 },
                 "polygons": {
-                     "type": ["__any__"],
-                     "name": ["__any__"],
-                     "created_by": ["__any__"],
-                     "source": ["__any__"],
-                     "admin_level": ["__any__"],
-                     "landuse": ["__any__"],
-                     "building": ["__any__"],
                      "amenity": ["__any__"],
-                     "shop": ["__any__"]
+                     "landuse": ["__any__"],
+                     "building":["__any__"],
+                     "shop":    ["__any__"]
                 }
             }
         }

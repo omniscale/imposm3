@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	"github.com/omniscale/imposm3/config"
 	"github.com/omniscale/imposm3/element"
 
 	"gopkg.in/yaml.v2"
@@ -54,8 +55,19 @@ type Mapping struct {
 }
 
 type Tags struct {
-	LoadAll bool  `yaml:"load_all"`
-	Exclude []Key `yaml:"exclude"`
+	LoadAll       bool          `yaml:"load_all"`
+	Exclude       []Key         `yaml:"exclude"`
+	ParseMetadata ParseMetadata `yaml:"parsemetadata"`
+	// keep if only "created_by" tag and no more?    default: false
+	KeepSingleCreatedByTag bool `yaml:"keep_single_createdby_tag"`
+}
+
+type ParseMetadata struct {
+	KeynameVersion   string `yaml:"parse_version_to_key"`
+	KeynameTimestamp string `yaml:"parse_timestamp_to_key"`
+	KeynameChangeset string `yaml:"parse_changeset_to_key"`
+	KeynameUid       string `yaml:"parse_uid_to_key"`
+	KeynameUser      string `yaml:"parse_user_to_key"`
 }
 
 type orderedValue struct {
@@ -162,6 +174,9 @@ func NewMapping(filename string) (*Mapping, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	mapping.SetParseMetadata()
+
 	return &mapping, nil
 }
 
@@ -277,4 +292,40 @@ func (m *Mapping) ElementFilters() map[string][]ElementFilter {
 		}
 	}
 	return result
+}
+
+func (m *Mapping) SetParseMetadata() {
+
+	fmt.Println(" m.Tags.KeepSingleCreatedByTag:", m.Tags.KeepSingleCreatedByTag)
+	config.ParseDontAddOnlyCreatedByTag = !m.Tags.KeepSingleCreatedByTag
+
+	mappingTagsParseMetadata := m.Tags.ParseMetadata
+	fmt.Println("mappingTagsParseMetadata:", mappingTagsParseMetadata)
+	if mappingTagsParseMetadata.KeynameVersion != "" {
+		config.ParseMetadataVarVersion = true
+		config.ParseMetadataKeynameVersion = mappingTagsParseMetadata.KeynameVersion
+	}
+
+	if mappingTagsParseMetadata.KeynameTimestamp != "" {
+		config.ParseMetadataVarTimestamp = true
+		config.ParseMetadataKeynameTimestamp = mappingTagsParseMetadata.KeynameTimestamp
+	}
+
+	if mappingTagsParseMetadata.KeynameChangeset != "" {
+		config.ParseMetadataVarChangeset = true
+		config.ParseMetadataKeynameChangeset = mappingTagsParseMetadata.KeynameChangeset
+	}
+
+	if mappingTagsParseMetadata.KeynameUid != "" {
+		config.ParseMetadataVarUid = true
+		config.ParseMetadataKeynameUid = mappingTagsParseMetadata.KeynameUid
+	}
+
+	if mappingTagsParseMetadata.KeynameUser != "" {
+		config.ParseMetadataVarUser = true
+		config.ParseMetadataKeynameUser = mappingTagsParseMetadata.KeynameUser
+	}
+
+	config.ParseMetadata = config.ParseMetadataVarVersion || config.ParseMetadataVarTimestamp || config.ParseMetadataVarChangeset || config.ParseMetadataVarUid || config.ParseMetadataVarUser
+
 }

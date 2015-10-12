@@ -88,12 +88,12 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 
 	defer log.StopStep(log.StartStep(fmt.Sprintf("Processing %s", oscFile)))
 
-	elems, errc := parser.Parse(oscFile)
-
 	tagmapping, err := mapping.NewMapping(config.BaseOptions.MappingFile)
 	if err != nil {
 		return err
 	}
+
+	elems, errc := parser.Parse(oscFile)
 
 	dbConf := database.Config{
 		ConnectionParams: config.BaseOptions.Connection,
