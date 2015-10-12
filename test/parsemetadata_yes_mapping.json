@@ -3,11 +3,11 @@
         "load_all": true,
         "keep_single_createdby_tag": true,
         "parsemetadata": {
-	          "parse_version_to_key": "osm_version",
-	          "parse_timestamp_to_key": "osm_timestamp",
-	          "parse_changeset_to_key": "osm_changeset",
-	          "parse_uid_to_key": "osm_uid",
-	          "parse_user_to_key": "osm_user"
+	          "create_tag_from_version": "osm_version",
+	          "create_tag_from_timestamp": "osm_timestamp",
+	          "create_tag_from_changeset": "osm_changeset",
+	          "create_tag_from_uid": "osm_uid",
+	          "create_tag_from_user": "osm_user"
         }
     },  
     "use_single_id_space": true,
