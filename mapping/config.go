@@ -63,11 +63,11 @@ type Tags struct {
 }
 
 type ParseMetadata struct {
-	KeynameVersion   string `yaml:"parse_version_to_key"`
-	KeynameTimestamp string `yaml:"parse_timestamp_to_key"`
-	KeynameChangeset string `yaml:"parse_changeset_to_key"`
-	KeynameUid       string `yaml:"parse_uid_to_key"`
-	KeynameUser      string `yaml:"parse_user_to_key"`
+	KeynameVersion   string `yaml:"create_tag_from_version"`
+	KeynameTimestamp string `yaml:"create_tag_from_timestamp"`
+	KeynameChangeset string `yaml:"create_tag_from_changeset"`
+	KeynameUid       string `yaml:"create_tag_from_uid"`
+	KeynameUser      string `yaml:"create_tag_from_user"`
 }
 
 type orderedValue struct {
