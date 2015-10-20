@@ -386,6 +386,31 @@
     <tag k="landuse" v="park"/>
   </way>
 
+  <!-- relation/way with "gap" (ways overlap, but are only sharing one endpoint) -->
+  <node id="7401" version="1" timestamp="2011-11-11T00:11:11Z" lat="60" lon="60"/>
+  <node id="7402" version="1" timestamp="2011-11-11T00:11:11Z" lat="60" lon="62"/>
+  <node id="7403" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="62"/>
+  <node id="7404" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="60"/>
+  <way id="7401" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="7401"/>
+    <nd ref="7402"/>
+    <nd ref="7403"/>
+    <nd ref="7404"/>
+    <nd ref="7401"/>
+  </way>
+  <way id="7402" version="1" timestamp="2011-11-11T00:11:11Z">
+    <!-- connected to other way, but not at start/end node and neither a ring on its own -->
+    <nd ref="7402"/>
+    <nd ref="7404"/>
+  </way>
+  <relation id="7401" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="7401" role="outer"/>
+    <member type="way" ref="7402" role="outer"/>
+    <tag k="name" v="rel 7401"/>
+    <tag k="landuse" v="park"/>
+    <tag k="type" v="multipolygon"/>
+  </relation>
+
   <!-- test that single node ways or incomplete polygons are _not_ inserted -->
   <node id="30001" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="80"/>
   <node id="30002" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="80"/>

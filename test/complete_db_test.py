@@ -284,6 +284,11 @@ def test_ring_with_gap():
     park = t.query_row(t.db_conf, 'osm_landusages', 7311)
     assert park['geometry'].is_valid, park
 
+def test_multipolygon_with_open_ring():
+    """Multipolygon is inserted even if there is an open ring/member"""
+    park = t.query_row(t.db_conf, 'osm_landusages', -7401)
+    assert park['geometry'].is_valid, park
+
 def test_updated_nodes1():
     """Zig-Zag line is inserted."""
     road =  t.query_row(t.db_conf, 'osm_roads', 60000)

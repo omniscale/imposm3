@@ -93,23 +93,23 @@ func buildRings(rel *element.Relation, maxRingGap float64) ([]*ring, error) {
 	}
 	// merge incomplete rings
 	mergedRings = mergeRings(incompleteRings)
-	if len(completeRings)+len(mergedRings) == 0 {
-		err = ErrorNoRing // for defer
-		return nil, err
-	}
+
 	// create geometries for merged rings
 	for _, ring := range mergedRings {
 		if !ring.isClosed() && !ring.tryClose(maxRingGap) {
-			err = ErrorNoRing // for defer
-			return nil, err
+			continue
 		}
 		ring.geom, err = Polygon(g, ring.nodes)
 		if err != nil {
 			return nil, err
 		}
+		completeRings = append(completeRings, ring)
 	}
 
-	completeRings = append(completeRings, mergedRings...)
+	if len(completeRings) == 0 {
+		err = ErrorNoRing // for defer
+		return nil, err
+	}
 
 	// sort by area (large to small)
 	for _, r := range completeRings {
