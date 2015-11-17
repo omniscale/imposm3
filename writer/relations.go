@@ -19,6 +19,7 @@ type RelationWriter struct {
 	singleIdSpace  bool
 	rel            chan *element.Relation
 	polygonMatcher mapping.RelWayMatcher
+	lineMatcher mapping.RelWayMatcher
 	maxGap         float64
 }
 
@@ -29,7 +30,8 @@ func NewRelationWriter(
 	rel chan *element.Relation,
 	inserter database.Inserter,
 	progress *stats.Statistics,
-	matcher mapping.RelWayMatcher,
+	polygonMatcher mapping.RelWayMatcher,
+	lineMatcher mapping.RelWayMatcher,
 	srid int,
 ) *OsmElemWriter {
 	maxGap := 1e-1 // 0.1m
@@ -46,7 +48,8 @@ func NewRelationWriter(
 			srid:      srid,
 		},
 		singleIdSpace:  singleIdSpace,
-		polygonMatcher: matcher,
+		polygonMatcher: polygonMatcher,
+		lineMatcher:	lineMatcher,
 		rel:            rel,
 		maxGap:         maxGap,
 	}
@@ -94,6 +97,29 @@ NextRel:
 		// for the diffCache
 		allMembers := r.Members
 
+		//if relation type is route then proccess relation ways
+		if r.Tags["type"] == "route" {
+			if matches := rw.lineMatcher.MatchRelation(r); len(matches) > 0 {
+				for _, member := range allMembers {
+					if member.Way == nil {
+						continue
+					}
+					//switch way tags to relation tags and insert way
+					originalTags := member.Way.Tags
+					member.Way.Tags = r.Tags
+					err := rw.buildAndInsertWay(geos, member.Way, matches, false)
+					if err != nil {
+						if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
+							log.Warn(err)
+						}
+						continue NextRel
+					}
+					//return back original way Tags
+					member.Way.Tags = originalTags
+				}
+			}
+		}
+
 		// prepare relation first (build rings and compute actual
 		// relation tags)
 		prepedRel, err := geomp.PrepareRelation(r, rw.srid, rw.maxGap)
@@ -104,7 +130,7 @@ NextRel:
 			continue NextRel
 		}
 
-		// check for matches befor building the geometry
+		// check for matches before building the geometry
 		matches := rw.polygonMatcher.MatchRelation(r)
 		if len(matches) == 0 {
 			continue NextRel

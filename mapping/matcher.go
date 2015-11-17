@@ -12,7 +12,7 @@ func (m *Mapping) PointMatcher() NodeMatcher {
 	return &tagMatcher{mappings, m.tables("point"), filters, false}
 }
 
-func (m *Mapping) LineStringMatcher() WayMatcher {
+func (m *Mapping) LineStringMatcher() RelWayMatcher {
 	mappings := make(TagTables)
 	m.mappings("linestring", mappings)
 	filters := m.ElementFilters()

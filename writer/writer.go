@@ -12,6 +12,9 @@ import (
 	"github.com/omniscale/imposm3/logging"
 	"github.com/omniscale/imposm3/proj"
 	"github.com/omniscale/imposm3/stats"
+	"github.com/omniscale/imposm3/geom/geos"
+	geomp "github.com/omniscale/imposm3/geom"
+	"github.com/omniscale/imposm3/mapping"
 )
 
 var log = logging.NewLogger("writer")
@@ -85,4 +88,56 @@ func (writer *OsmElemWriter) NodeToSrid(node *element.Node) {
 		panic("invalid srid. only 4326 and 3857 are supported")
 	}
 	node.Long, node.Lat = proj.WgsToMerc(node.Long, node.Lat)
+}
+
+func (writer *OsmElemWriter) buildAndInsertWay(g *geos.Geos, w *element.Way, matches []mapping.Match, isPolygon bool) error {
+	var err error
+	var geosgeom *geos.Geom
+	// make copy to avoid interference with polygon/linestring matches
+	way := element.Way(*w)
+
+	if isPolygon {
+		geosgeom, err = geomp.Polygon(g, way.Nodes)
+	} else {
+		geosgeom, err = geomp.LineString(g, way.Nodes)
+	}
+	if err != nil {
+		return err
+	}
+
+	geom, err := geomp.AsGeomElement(g, geosgeom)
+	if err != nil {
+		return err
+	}
+
+	if writer.limiter != nil {
+		parts, err := writer.limiter.Clip(geom.Geom)
+		if err != nil {
+			return err
+		}
+		for _, p := range parts {
+			way := element.Way(*w)
+			geom = geomp.Geometry{Geom: p, Wkb: g.AsEwkbHex(p)}
+			if isPolygon {
+				if err := writer.inserter.InsertPolygon(way.OSMElem, geom, matches); err != nil {
+					return err
+				}
+			} else {
+				if err := writer.inserter.InsertLineString(way.OSMElem, geom, matches); err != nil {
+					return err
+				}
+			}
+		}
+	} else {
+		if isPolygon {
+			if err := writer.inserter.InsertPolygon(way.OSMElem, geom, matches); err != nil {
+				return err
+			}
+		} else {
+			if err := writer.inserter.InsertLineString(way.OSMElem, geom, matches); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
