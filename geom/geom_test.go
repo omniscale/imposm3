@@ -1,9 +1,10 @@
 package geom
 
 import (
+	"testing"
+
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/geom/geos"
-	"testing"
 )
 
 func TestLineString(t *testing.T) {
