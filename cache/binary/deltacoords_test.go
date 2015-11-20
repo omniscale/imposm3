@@ -6,7 +6,6 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/omniscale/imposm3/element"
 )
 
@@ -72,104 +71,4 @@ func BenchmarkUnmarshalDeltaCoords(b *testing.B) {
 	compareNodes(b, nodes, nodes2)
 	runtime.GC()
 
-}
-
-func BenchmarkMarshalDeltaCoordsProto(b *testing.B) {
-	var buf []byte
-	var err error
-
-	for n := 0; n < b.N; n++ {
-		deltaCoords := packNodes(nodes)
-		buf, err = proto.Marshal(deltaCoords)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	deltaCoords := &DeltaCoords{}
-	err = proto.Unmarshal(buf, deltaCoords)
-	if err != nil {
-		panic(err)
-	}
-
-	nodes2 := unpackNodes(deltaCoords, nodes)
-
-	compareNodes(b, nodes, nodes2)
-	runtime.GC()
-
-}
-
-func BenchmarkUnmarshalDeltaCoordsProto(b *testing.B) {
-	var buf []byte
-	var err error
-
-	deltaCoords := packNodes(nodes)
-	buf, err = proto.Marshal(deltaCoords)
-	if err != nil {
-		panic(err)
-	}
-	var nodes2 []element.Node
-	for n := 0; n < b.N; n++ {
-		deltaCoords := &DeltaCoords{}
-		err = proto.Unmarshal(buf, deltaCoords)
-		if err != nil {
-			panic(err)
-		}
-		nodes2 = unpackNodes(deltaCoords, nodes)
-	}
-	compareNodes(b, nodes, nodes2)
-	runtime.GC()
-
-}
-
-func packNodes(nodes []element.Node) *DeltaCoords {
-	var lastLon, lastLat int64
-	var lon, lat int64
-	var lastId int64
-	ids := make([]int64, len(nodes))
-	lons := make([]int64, len(nodes))
-	lats := make([]int64, len(nodes))
-
-	i := 0
-	for _, nd := range nodes {
-		lon = int64(CoordToInt(nd.Long))
-		lat = int64(CoordToInt(nd.Lat))
-		ids[i] = nd.Id - lastId
-		lons[i] = lon - lastLon
-		lats[i] = lat - lastLat
-
-		lastId = nd.Id
-		lastLon = lon
-		lastLat = lat
-		i++
-	}
-	return &DeltaCoords{Ids: ids, Lats: lats, Lons: lons}
-}
-
-func unpackNodes(deltaCoords *DeltaCoords, nodes []element.Node) []element.Node {
-	if len(deltaCoords.Ids) > cap(nodes) {
-		nodes = make([]element.Node, len(deltaCoords.Ids))
-	} else {
-		nodes = nodes[:len(deltaCoords.Ids)]
-	}
-
-	var lastLon, lastLat int64
-	var lon, lat int64
-	var lastId, id int64
-
-	for i := 0; i < len(deltaCoords.Ids); i++ {
-		id = lastId + deltaCoords.Ids[i]
-		lon = lastLon + deltaCoords.Lons[i]
-		lat = lastLat + deltaCoords.Lats[i]
-		nodes[i] = element.Node{
-			OSMElem: element.OSMElem{Id: int64(id)},
-			Long:    IntToCoord(uint32(lon)),
-			Lat:     IntToCoord(uint32(lat)),
-		}
-
-		lastId = id
-		lastLon = lon
-		lastLat = lat
-	}
-	return nodes
 }
