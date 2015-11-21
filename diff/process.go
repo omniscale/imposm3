@@ -104,6 +104,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 		relations,
 		db, progress,
 		tagmapping.PolygonMatcher(),
+		tagmapping.LineStringMatcher(),
 		config.BaseOptions.Srid)
 	relWriter.SetLimiter(geometryLimiter)
 	relWriter.SetExpireor(expireor)

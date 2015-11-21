@@ -46,6 +46,7 @@ func (m *Mapping) RelationTagFilter() TagFilterer {
 		"multipolygon": []OrderedDestTable{},
 		"boundary":     []OrderedDestTable{},
 		"land_area":    []OrderedDestTable{},
+		"route":        []OrderedDestTable{},
 	}
 	return &RelationTagFilter{TagFilter{mappings, tags}}
 }
@@ -133,7 +134,7 @@ func (f *RelationTagFilter) Filter(tags *element.Tags) bool {
 		return false
 	}
 	if t, ok := (*tags)["type"]; ok {
-		if t != "multipolygon" && t != "boundary" && t != "land_area" {
+		if t != "multipolygon" && t != "boundary" && t != "land_area"  && t != "route" {
 			*tags = nil
 			return false
 		}
