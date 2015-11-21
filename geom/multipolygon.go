@@ -196,13 +196,10 @@ func buildRelGeometry(g *geos.Geos, rel *element.Relation, rings []*ring) (*geos
 			return nil, errors.New("Error while building multi-polygon.")
 		}
 	}
-	if !g.IsValid(result) {
-		buffered := g.Buffer(result, 0)
-		if buffered == nil {
-			return nil, errors.New("Error while fixing geom with buffer(0)")
-		}
-		g.Destroy(result)
-		result = buffered
+	var err error
+	result, err = g.MakeValid(result)
+	if err != nil {
+		return nil, err
 	}
 
 	g.DestroyLater(result)

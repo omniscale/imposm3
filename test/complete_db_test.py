@@ -252,10 +252,10 @@ def test_duplicate_ids():
 def test_generalized_banana_polygon_is_valid():
     """Generalized polygons are valid."""
     park = t.query_row(t.db_conf, 'osm_landusages', 7101)
-    # geometry is not valid
-    assert not park['geometry'].is_valid, park
+    # geometry is valid
+    assert park['geometry'].is_valid, park
     park = t.query_row(t.db_conf, 'osm_landusages_gen0', 7101)
-    # but simplified geometies are valid
+    # simplified geometies are valid too
     assert park['geometry'].is_valid, park
     park = t.query_row(t.db_conf, 'osm_landusages_gen1', 7101)
     assert park['geometry'].is_valid, park
