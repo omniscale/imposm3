@@ -242,7 +242,7 @@ func (m *Mapping) tables(tableType TableType) map[string]*TableFields {
 
 func (m *Mapping) extraTags(tableType TableType, tags map[Key]bool) {
 	for _, t := range m.Tables {
-		if t.Type != tableType {
+		if t.Type != tableType && t.Type != "geometry" {
 			continue
 		}
 		for key, _ := range t.ExtraTags() {
