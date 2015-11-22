@@ -3,6 +3,10 @@ package test
 import (
 	"database/sql"
 
+	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/geom"
+	"github.com/omniscale/imposm3/proj"
+
 	"math"
 	"testing"
 
@@ -78,7 +82,7 @@ func assertRecords(t *testing.T, elems []checkElem) {
 			t.Errorf("got unexpected record %d", r.id)
 		}
 		if r.osmType != e.osmType {
-			t.Errorf("got unexpected type %s != %s", r.osmType, e.osmType)
+			t.Errorf("got unexpected type %s != %s for %d", r.osmType, e.osmType, e.id)
 		}
 		for k, v := range e.tags {
 			if r.tags[k] != v {
@@ -408,5 +412,244 @@ func TestEnumerateKey(t *testing.T) {
 		{"osm_landusages", 100001, "park", map[string]string{"enum": "1"}},
 		{"osm_landusages", 100002, "park", map[string]string{"enum": "0"}},
 		{"osm_landusages", 100003, "wood", map[string]string{"enum": "15"}},
+	})
+}
+
+func TestUpdate(t *testing.T) {
+	ts.updateOsm(t, "./build/complete_db.osc.gz")
+}
+
+func TestNoDuplicates(t *testing.T) {
+	// Relations/ways are only inserted once Checks #66
+
+	// highways = t.query_duplicates(t.db_conf, 'osm_roads')
+	// # one duplicate for test_node_way_inserted_twice is expected
+	// assert highways == [[18001, 2]], highways
+	// landusages = t.query_duplicates(t.db_conf, 'osm_landusages')
+	// assert not landusages, landusages
+}
+
+func TestUpdatedLandusage(t *testing.T) {
+	// Multipolygon relation was modified
+
+	// t.assert_cached_node(1001, (13.5, 47.5))
+	nd := element.Node{Long: 13.4, Lat: 47.5}
+	proj.NodeToMerc(&nd)
+	point, err := geom.Point(ts.g, nd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	poly := ts.queryGeom(t, "osm_landusages", -1001)
+	// point not in polygon after update
+	if ts.g.Intersects(point, poly) {
+		t.Error("point intersects polygon")
+	}
+}
+
+func TestPartialDelete(t *testing.T) {
+	// Deleted relation but nodes are still cached
+
+	// t.assert_cached_node(2001)
+	// t.assert_cached_way(2001)
+	// t.assert_cached_way(2002)
+
+	assertRecords(t, []checkElem{
+		{"osm_landusages", -2001, "", nil},
+		{"osm_landusages", 2001, "", nil},
+	})
+}
+
+func TestUpdatedNodes(t *testing.T) {
+	// Nodes were added, modified or deleted
+
+	// t.assert_missing_node(10000)
+	// t.assert_cached_node(10001, (10.0, 40.0))
+	// t.assert_cached_node(10002, (10.1, 40.0))
+
+	assertRecords(t, []checkElem{
+		{"osm_places", 10001, "village", map[string]string{"name": "Bar"}},
+		{"osm_places", 10002, "city", map[string]string{"name": "Baz"}},
+	})
+}
+
+func TestLandusageToWaterarea2(t *testing.T) {
+	// Parks converted to water moved from landusages to waterareas
+
+	assertRecords(t, []checkElem{
+
+		{"osm_waterareas", 11001, "water", nil},
+		{"osm_waterareas", -12001, "water", nil},
+		{"osm_waterareas", -13001, "water", nil},
+
+		{"osm_waterareas_gen0", 11001, "water", nil},
+		{"osm_waterareas_gen0", -12001, "water", nil},
+		{"osm_waterareas_gen0", -13001, "water", nil},
+
+		{"osm_waterareas_gen1", 11001, "water", nil},
+		{"osm_waterareas_gen1", -12001, "water", nil},
+		{"osm_waterareas_gen1", -13001, "water", nil},
+
+		{"osm_landusages", 11001, "", nil},
+		{"osm_landusages", -12001, "", nil},
+		{"osm_landusages", -13001, "", nil},
+
+		{"osm_landusages_gen0", 11001, "", nil},
+		{"osm_landusages_gen0", -12001, "", nil},
+		{"osm_landusages_gen0", -13001, "", nil},
+
+		{"osm_landusages_gen1", 11001, "", nil},
+		{"osm_landusages_gen1", -12001, "", nil},
+		{"osm_landusages_gen1", -13001, "", nil},
+	})
+}
+
+func TestChangedHoleTags2(t *testing.T) {
+	// Newly tagged hole is inserted
+
+	// t.assert_cached_way(14001)
+	// t.assert_cached_way(14011)
+
+	assertArea(t, checkElem{"osm_waterareas", 14011, "water", nil}, 26672019779)
+	assertArea(t, checkElem{"osm_landusages", -14001, "park", nil}, 10373697182)
+}
+
+func TestSplitOuterMultipolygonWay2(t *testing.T) {
+	// Splitted outer way of multipolygon was inserted
+
+	// data = t.cache_query(ways=[15001, 15002], deps=True)
+	// assert data['ways']['15001']['relations'].keys() == ['15001']
+	// assert data['ways']['15002']['relations'].keys() == ['15001']
+
+	assertRecords(t, []checkElem{
+		{"osm_landusages", 15001, "", nil},
+		{"osm_roads", 15002, "residential", nil},
+	})
+	assertArea(t, checkElem{"osm_landusages", -15001, "park", nil}, 9816216452)
+}
+
+func TestMergeOuterMultipolygonWay2(t *testing.T) {
+	// Merged outer way of multipolygon was inserted
+
+	//     data = t.cache_query(ways=[16001, 16002], deps=True)
+	//     assert data['ways']['16001']['relations'].keys() == ['16001']
+	//     assert data['ways']['16002'] == None
+
+	//     data = t.cache_query(relations=[16001], full=True)
+	//     assert sorted(data['relations']['16001']['ways'].keys()) == ['16001', '16011']
+
+	assertRecords(t, []checkElem{
+		{"osm_landusages", 16001, "", nil},
+		{"osm_roads", 16002, "", nil},
+	})
+	assertArea(t, checkElem{"osm_landusages", -16001, "park", nil}, 12779350582)
+}
+
+func TestNodeWayRefAfterDelete2(t *testing.T) {
+	// Node does not referece deleted way
+
+	// data = t.cache_query(nodes=[20001, 20002], deps=True)
+	// assert 'ways' not in data['nodes']['20001']
+	// assert data['nodes']['20002'] == None
+	assertRecords(t, []checkElem{
+		{"osm_roads", 20001, "", nil},
+		{"osm_barrierpoints", 20001, "block", nil},
+	})
+}
+
+func TestWayRelRefAfterDelete2(t *testing.T) {
+	// Way does not referece deleted relation
+
+	// data = t.cache_query(ways=[21001], deps=True)
+	// assert 'relations' not in data['ways']['21001']
+	assertRecords(t, []checkElem{
+		{"osm_roads", 21001, "residential", nil},
+		{"osm_landusages", 21001, "", nil},
+		{"osm_landusages", -21001, "", nil},
+	})
+}
+
+func TestResidentialToSecondary2(t *testing.T) {
+	// New secondary (from residential) is now in roads_gen0/1.
+
+	assertRecords(t, []checkElem{
+		{"osm_roads", 40001, "secondary", nil},
+		{"osm_roads_gen0", 40001, "secondary", nil},
+		{"osm_roads_gen1", 40001, "secondary", nil},
+	})
+}
+
+func TestRelationAfterRemove(t *testing.T) {
+	// Relation is deleted and way is still present.
+	assertRecords(t, []checkElem{
+		{"osm_buildings", 50011, "yes", nil},
+		{"osm_landusages", 50021, "", nil},
+		{"osm_landusages", -50021, "", nil},
+	})
+}
+
+func TestRelationWithoutTags2(t *testing.T) {
+	// Relation without tags is removed.
+
+	// t.cache_query(ways=[50111], deps=True)
+	// assert t.cache_query(relations=[50121], deps=True)['relations']["50121"] == None
+
+	assertRecords(t, []checkElem{
+		{"osm_buildings", 50111, "yes", nil},
+		{"osm_buildings", 50121, "", nil},
+		{"osm_buildings", -50121, "", nil},
+	})
+}
+
+func TestDuplicateIds2(t *testing.T) {
+	// Only relation/way with same ID was deleted.
+
+	assertRecords(t, []checkElem{
+		{"osm_buildings", 51001, "way", nil},
+		{"osm_buildings", -51001, "", nil},
+		{"osm_buildings", 51011, "", nil},
+		{"osm_buildings", -51011, "mp", nil},
+	})
+}
+
+func TestUpdatedWay2(t *testing.T) {
+	// All nodes of straightened way are updated.
+
+	// new length 0.1 degree
+	assertLength(t, checkElem{"osm_roads", 60000, "park", nil}, 20037508.342789244/180.0/10.0)
+}
+
+func TestUpdateNodeToCoord2(t *testing.T) {
+	// Node is becomes coord after tags are removed.
+
+	// coords = t.cache_query(nodes=(70001, 70002))
+
+	// assert "tags" not in coords['nodes']["70001"]
+	// assert coords['nodes']["70002"]["tags"] == {"amenity": "police"}
+
+	// assert not t.query_row(t.db_conf, 'osm_amenities', 70001)
+	// assert t.query_row(t.db_conf, 'osm_amenities', 70002)
+	assertRecords(t, []checkElem{
+		{"osm_amenities", 70001, "", nil},
+		{"osm_amenities", 70002, "police", nil},
+	})
+}
+
+func TestNoDuplicateInsert(t *testing.T) {
+	// Relation is not inserted again if a nother relation with the same way was modified
+	// Checks #65
+
+	assertRecords(t, []checkElem{
+		{"osm_landusages", -201191, "park", nil},
+		{"osm_landusages", -201192, "forest", nil},
+		{"osm_roads", 201151, "residential", nil},
+	})
+}
+
+func TestUnsupportedRelation(t *testing.T) {
+	// Unsupported relation type is not inserted with update
+
+	assertRecords(t, []checkElem{
+		{"osm_landusages", -201291, "", nil},
+		{"osm_landusages", 201251, "park", nil},
 	})
 }

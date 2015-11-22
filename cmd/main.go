@@ -6,12 +6,9 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/omniscale/imposm3/cache"
-
 	"github.com/omniscale/imposm3/cache/query"
 	"github.com/omniscale/imposm3/config"
 	"github.com/omniscale/imposm3/diff"
-	"github.com/omniscale/imposm3/geom/limit"
 	"github.com/omniscale/imposm3/import_"
 	"github.com/omniscale/imposm3/logging"
 	"github.com/omniscale/imposm3/stats"
@@ -53,49 +50,7 @@ func Main(usage func()) {
 		if config.BaseOptions.Httpprofile != "" {
 			stats.StartHttpPProf(config.BaseOptions.Httpprofile)
 		}
-
-		if config.BaseOptions.Quiet {
-			logging.SetQuiet(true)
-		}
-
-		var geometryLimiter *limit.Limiter
-		if config.BaseOptions.LimitTo != "" {
-			var err error
-			step := log.StartStep("Reading limitto geometries")
-			geometryLimiter, err = limit.NewFromGeoJSON(
-				config.BaseOptions.LimitTo,
-				config.BaseOptions.LimitToCacheBuffer,
-				config.BaseOptions.Srid,
-			)
-			if err != nil {
-				log.Fatal(err)
-			}
-			log.StopStep(step)
-		}
-		osmCache := cache.NewOSMCache(config.BaseOptions.CacheDir)
-		err := osmCache.Open()
-		if err != nil {
-			log.Fatal("osm cache: ", err)
-		}
-		defer osmCache.Close()
-
-		diffCache := cache.NewDiffCache(config.BaseOptions.CacheDir)
-		err = diffCache.Open()
-		if err != nil {
-			log.Fatal("diff cache: ", err)
-		}
-
-		for _, oscFile := range config.DiffFlags.Args() {
-			err := diff.Update(oscFile, geometryLimiter, nil, osmCache, diffCache, false)
-			if err != nil {
-				osmCache.Close()
-				diffCache.Close()
-				log.Fatalf("unable to process %s: %v", oscFile, err)
-			}
-		}
-		// explicitly Close since os.Exit prevents defers
-		osmCache.Close()
-		diffCache.Close()
+		diff.Diff()
 
 	case "query-cache":
 		query.Query(os.Args[2:])

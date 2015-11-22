@@ -24,6 +24,51 @@ import (
 
 var log = logging.NewLogger("diff")
 
+func Diff() {
+	if config.BaseOptions.Quiet {
+		logging.SetQuiet(true)
+	}
+
+	var geometryLimiter *limit.Limiter
+	if config.BaseOptions.LimitTo != "" {
+		var err error
+		step := log.StartStep("Reading limitto geometries")
+		geometryLimiter, err = limit.NewFromGeoJSON(
+			config.BaseOptions.LimitTo,
+			config.BaseOptions.LimitToCacheBuffer,
+			config.BaseOptions.Srid,
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.StopStep(step)
+	}
+	osmCache := cache.NewOSMCache(config.BaseOptions.CacheDir)
+	err := osmCache.Open()
+	if err != nil {
+		log.Fatal("osm cache: ", err)
+	}
+	defer osmCache.Close()
+
+	diffCache := cache.NewDiffCache(config.BaseOptions.CacheDir)
+	err = diffCache.Open()
+	if err != nil {
+		log.Fatal("diff cache: ", err)
+	}
+
+	for _, oscFile := range config.DiffFlags.Args() {
+		err := Update(oscFile, geometryLimiter, nil, osmCache, diffCache, false)
+		if err != nil {
+			osmCache.Close()
+			diffCache.Close()
+			log.Fatalf("unable to process %s: %v", oscFile, err)
+		}
+	}
+	// explicitly Close since os.Exit prevents defers
+	osmCache.Close()
+	diffCache.Close()
+}
+
 func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expireor, osmCache *cache.OSMCache, diffCache *cache.DiffCache, force bool) error {
 	state, err := diffstate.ParseFromOsc(oscFile)
 	if err != nil {

@@ -9,6 +9,7 @@ import (
 
 	"github.com/lib/pq/hstore"
 
+	"github.com/omniscale/imposm3/diff"
 	"github.com/omniscale/imposm3/geom/geos"
 
 	"github.com/omniscale/imposm3/config"
@@ -71,6 +72,19 @@ func (s *importTestSuite) deployOsm(t *testing.T) {
 
 	config.ParseImport(importArgs)
 	import_.Import()
+}
+
+func (s *importTestSuite) updateOsm(t *testing.T, diffFile string) {
+	args := []string{
+		"-connection", s.config.connection,
+		"-cachedir", s.config.cacheDir,
+		"-limitto", "clipping.geojson",
+		"-dbschema-production", dbschemaProduction,
+		"-mapping", s.config.mappingFileName,
+		diffFile,
+	}
+	config.ParseDiffImport(args)
+	diff.Diff()
 }
 
 func (s *importTestSuite) dropSchemas() {
