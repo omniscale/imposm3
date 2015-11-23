@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"math"
 	"strings"
 	"testing"
 
@@ -49,7 +50,9 @@ func (s *importTestSuite) importOsm(t *testing.T) {
 		// "-optimize",
 		"-mapping", s.config.mappingFileName,
 		"-quiet",
+		"-revertdeploy=false",
 		"-deployproduction=false",
+		"-removebackup=false",
 	}
 
 	config.ParseImport(importArgs)
@@ -61,11 +64,57 @@ func (s *importTestSuite) deployOsm(t *testing.T) {
 		"-read=", // overwrite previous options
 		"-write=false",
 		"-optimize=false",
+		"-revertdeploy=false",
+		"-deployproduction",
+		"-removebackup=false",
 		"-connection", s.config.connection,
 		"-dbschema-import", dbschemaImport,
 		"-dbschema-production", dbschemaProduction,
 		"-dbschema-backup", dbschemaBackup,
 		"-deployproduction",
+		"-mapping", s.config.mappingFileName,
+		"-quiet",
+	}
+
+	config.ParseImport(importArgs)
+	import_.Import()
+}
+
+func (s *importTestSuite) revertDeployOsm(t *testing.T) {
+	importArgs := []string{
+		"-read=", // overwrite previous options
+		"-write=false",
+		"-optimize=false",
+		"-revertdeploy",
+		"-deployproduction=false",
+		"-removebackup=false",
+		"-connection", s.config.connection,
+		"-dbschema-import", dbschemaImport,
+		"-dbschema-production", dbschemaProduction,
+		"-dbschema-backup", dbschemaBackup,
+		"-revertdeploy",
+		"-deployproduction=false",
+		"-removebackup=false",
+		"-mapping", s.config.mappingFileName,
+		"-quiet",
+	}
+
+	config.ParseImport(importArgs)
+	import_.Import()
+}
+
+func (s *importTestSuite) removeBackupOsm(t *testing.T) {
+	importArgs := []string{
+		"-read=", // overwrite previous options
+		"-write=false",
+		"-optimize=false",
+		"-revertdeploy=false",
+		"-deployproduction=false",
+		"-removebackup",
+		"-connection", s.config.connection,
+		"-dbschema-import", dbschemaImport,
+		"-dbschema-production", dbschemaProduction,
+		"-dbschema-backup", dbschemaBackup,
 		"-mapping", s.config.mappingFileName,
 		"-quiet",
 	}
@@ -165,8 +214,31 @@ func (s *importTestSuite) query(t *testing.T, table string, id int64, keys []str
 	return r
 }
 
+func (s *importTestSuite) queryTags(t *testing.T, table string, id int64) record {
+	stmt := fmt.Sprintf(`SELECT osm_id, ST_AsText(geometry), tags FROM "%s"."%s" WHERE osm_id=$1`, dbschemaProduction, table)
+	row := s.db.QueryRow(stmt, id)
+	r := record{}
+	h := hstore.Hstore{}
+	if err := row.Scan(&r.id, &r.wkt, &h); err != nil {
+		if err == sql.ErrNoRows {
+			r.missing = true
+		} else {
+			t.Fatal(err)
+		}
+	}
+	if len(h.Map) > 0 {
+		r.tags = make(map[string]string)
+	}
+	for k, v := range h.Map {
+		if v.Valid {
+			r.tags[k] = v.String
+		}
+	}
+	return r
+}
+
 func (s *importTestSuite) queryRows(t *testing.T, table string, id int64) []record {
-	rows, err := s.db.Query(fmt.Sprintf(`SELECT osm_id, name, type, ST_AsText(geometry) FROM "%s"."%s" WHERE osm_id=$1 ORDER BY type, name`, dbschemaProduction, table), id)
+	rows, err := s.db.Query(fmt.Sprintf(`SELECT osm_id, name, type, ST_AsText(geometry) FROM "%s"."%s" WHERE osm_id=$1 ORDER BY type, name, ST_GeometryType(geometry)`, dbschemaProduction, table), id)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -182,7 +254,16 @@ func (s *importTestSuite) queryRows(t *testing.T, table string, id int64) []reco
 }
 
 func (s *importTestSuite) queryGeom(t *testing.T, table string, id int64) *geos.Geom {
-	r := s.query(t, table, id, nil)
+	stmt := fmt.Sprintf(`SELECT osm_id, ST_AsText(geometry) FROM "%s"."%s" WHERE osm_id=$1`, dbschemaProduction, table)
+	row := s.db.QueryRow(stmt, id)
+	r := record{}
+	if err := row.Scan(&r.id, &r.wkt); err != nil {
+		if err == sql.ErrNoRows {
+			r.missing = true
+		} else {
+			t.Fatal(err)
+		}
+	}
 	g := geos.NewGeos()
 	defer g.Finish()
 	geom := g.FromWkt(r.wkt)
@@ -190,4 +271,99 @@ func (s *importTestSuite) queryGeom(t *testing.T, table string, id int64) *geos.
 		t.Fatalf("unable to read WKT for %s", id)
 	}
 	return geom
+}
+
+type checkElem struct {
+	table   string
+	id      int64
+	osmType string
+	tags    map[string]string
+}
+
+func assertRecordsMissing(t *testing.T, elems []checkElem) {
+	for _, e := range elems {
+		if ts.queryExists(t, e.table, e.id) {
+			t.Errorf("found %d in %d", e.id, e.table)
+		}
+	}
+}
+
+func assertRecords(t *testing.T, elems []checkElem) {
+	for _, e := range elems {
+		keys := make([]string, 0, len(e.tags))
+		for k, _ := range e.tags {
+			keys = append(keys, k)
+		}
+		r := ts.query(t, e.table, e.id, keys)
+		if e.osmType == "" {
+			if r.missing {
+				continue
+			}
+			t.Errorf("got unexpected record %d", r.id)
+		}
+		if r.osmType != e.osmType {
+			t.Errorf("got unexpected type %s != %s for %d", r.osmType, e.osmType, e.id)
+		}
+		for k, v := range e.tags {
+			if r.tags[k] != v {
+				t.Errorf("%s does not match for %d %s != %s", k, e.id, r.tags[k], v)
+			}
+		}
+	}
+}
+
+func assertHstore(t *testing.T, elems []checkElem) {
+	for _, e := range elems {
+		r := ts.queryTags(t, e.table, e.id)
+		if e.osmType == "" {
+			if r.missing {
+				continue
+			}
+			t.Errorf("got unexpected record %d", r.id)
+		}
+		if len(e.tags) != len(r.tags) {
+			t.Errorf("tags for %d differ %v != %v", e.id, r.tags, e.tags)
+		}
+		for k, v := range e.tags {
+			if r.tags[k] != v {
+				t.Errorf("%s does not match for %d %s != %s", k, e.id, r.tags[k], v)
+			}
+		}
+	}
+}
+
+func assertValid(t *testing.T, e checkElem) {
+	geom := ts.queryGeom(t, e.table, e.id)
+	if !ts.g.IsValid(geom) {
+		t.Fatalf("geometry of %d is invalid", e.id)
+	}
+}
+
+func assertArea(t *testing.T, e checkElem, expect float64) {
+	geom := ts.queryGeom(t, e.table, e.id)
+	if !ts.g.IsValid(geom) {
+		t.Fatalf("geometry of %d is invalid", e.id)
+	}
+	actual := geom.Area()
+	if math.Abs(expect-actual) > 1 {
+		t.Errorf("unexpected size of %d %f!=%f", e.id, actual, expect)
+	}
+}
+
+func assertLength(t *testing.T, e checkElem, expect float64) {
+	geom := ts.queryGeom(t, e.table, e.id)
+	if !ts.g.IsValid(geom) {
+		t.Fatalf("geometry of %d is invalid", e.id)
+	}
+	actual := geom.Length()
+	if math.Abs(expect-actual) > 1 {
+		t.Errorf("unexpected size of %d %f!=%f", e.id, actual, expect)
+	}
+}
+
+func assertGeomType(t *testing.T, e checkElem, expect string) {
+	actual := ts.g.Type(ts.queryGeom(t, e.table, e.id))
+	if actual != expect {
+		t.Errorf("expected %s geometry for %d, got %s", expect, e.id, actual)
+	}
 }

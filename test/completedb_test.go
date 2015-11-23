@@ -7,7 +7,6 @@ import (
 	"github.com/omniscale/imposm3/geom"
 	"github.com/omniscale/imposm3/proj"
 
-	"math"
 	"testing"
 
 	"github.com/omniscale/imposm3/geom/geos"
@@ -50,74 +49,6 @@ func TestDeploy(t *testing.T) {
 	}
 	if ts.tableExists(t, dbschemaProduction, "osm_roads") != true {
 		t.Fatalf("table osm_roads does not exists in schema %s", dbschemaProduction)
-	}
-}
-
-type checkElem struct {
-	table   string
-	id      int64
-	osmType string
-	tags    map[string]string
-}
-
-func assertRecordsMissing(t *testing.T, elems []checkElem) {
-	for _, e := range elems {
-		if ts.queryExists(t, e.table, e.id) {
-			t.Errorf("found %d in %d", e.id, e.table)
-		}
-	}
-}
-
-func assertRecords(t *testing.T, elems []checkElem) {
-	for _, e := range elems {
-		keys := make([]string, 0, len(e.tags))
-		for k, _ := range e.tags {
-			keys = append(keys, k)
-		}
-		r := ts.query(t, e.table, e.id, keys)
-		if e.osmType == "" {
-			if r.missing {
-				continue
-			}
-			t.Errorf("got unexpected record %d", r.id)
-		}
-		if r.osmType != e.osmType {
-			t.Errorf("got unexpected type %s != %s for %d", r.osmType, e.osmType, e.id)
-		}
-		for k, v := range e.tags {
-			if r.tags[k] != v {
-				t.Errorf("%s does not match for %d %s != %s", k, e.id, r.tags[k], v)
-			}
-		}
-	}
-}
-
-func assertValid(t *testing.T, e checkElem) {
-	geom := ts.queryGeom(t, e.table, e.id)
-	if !ts.g.IsValid(geom) {
-		t.Fatalf("geometry of %d is invalid", e.id)
-	}
-}
-
-func assertArea(t *testing.T, e checkElem, expect float64) {
-	geom := ts.queryGeom(t, e.table, e.id)
-	if !ts.g.IsValid(geom) {
-		t.Fatalf("geometry of %d is invalid", e.id)
-	}
-	actual := geom.Area()
-	if math.Abs(expect-actual) > 1 {
-		t.Errorf("unexpected size of %d %f!=%f", e.id, actual, expect)
-	}
-}
-
-func assertLength(t *testing.T, e checkElem, expect float64) {
-	geom := ts.queryGeom(t, e.table, e.id)
-	if !ts.g.IsValid(geom) {
-		t.Fatalf("geometry of %d is invalid", e.id)
-	}
-	actual := geom.Length()
-	if math.Abs(expect-actual) > 1 {
-		t.Errorf("unexpected size of %d %f!=%f", e.id, actual, expect)
 	}
 }
 
@@ -652,4 +583,90 @@ func TestUnsupportedRelation(t *testing.T) {
 		{"osm_landusages", -201291, "", nil},
 		{"osm_landusages", 201251, "park", nil},
 	})
+}
+
+// #######################################################################
+
+func TestDeployRevert(t *testing.T) {
+	if ts.tableExists(t, dbschemaImport, "osm_roads") {
+		t.Fatalf("table osm_roads exists in schema %s", dbschemaImport)
+	}
+	if !ts.tableExists(t, dbschemaProduction, "osm_roads") {
+		t.Fatalf("table osm_roads does not exists in schema %s", dbschemaProduction)
+	}
+	if ts.tableExists(t, dbschemaBackup, "osm_roads") {
+		t.Fatalf("table osm_roads exists in schema %s", dbschemaBackup)
+	}
+
+	ts.importOsm(t)
+
+	if !ts.tableExists(t, dbschemaImport, "osm_roads") {
+		t.Fatalf("table osm_roads does not exists in schema %s", dbschemaImport)
+	}
+	if !ts.tableExists(t, dbschemaProduction, "osm_roads") {
+		t.Fatalf("table osm_roads does not exists in schema %s", dbschemaProduction)
+	}
+	if ts.tableExists(t, dbschemaBackup, "osm_roads") {
+		t.Fatalf("table osm_roads exists in schema %s", dbschemaBackup)
+	}
+
+	ts.deployOsm(t)
+
+	if ts.tableExists(t, dbschemaImport, "osm_roads") {
+		t.Fatalf("table osm_roads exists in schema %s", dbschemaImport)
+	}
+	if !ts.tableExists(t, dbschemaProduction, "osm_roads") {
+		t.Fatalf("table osm_roads does not exists in schema %s", dbschemaProduction)
+	}
+	if !ts.tableExists(t, dbschemaBackup, "osm_roads") {
+		t.Fatalf("table osm_roads does exists in schema %s", dbschemaBackup)
+	}
+
+	ts.revertDeployOsm(t)
+
+	if !ts.tableExists(t, dbschemaImport, "osm_roads") {
+		t.Fatalf("table osm_roads does not exists in schema %s", dbschemaImport)
+	}
+	if !ts.tableExists(t, dbschemaProduction, "osm_roads") {
+		t.Fatalf("table osm_roads does not exists in schema %s", dbschemaProduction)
+	}
+	if ts.tableExists(t, dbschemaBackup, "osm_roads") {
+		t.Fatalf("table osm_roads exists in schema %s", dbschemaBackup)
+	}
+}
+
+func TestRemoveBackup(t *testing.T) {
+	if !ts.tableExists(t, dbschemaImport, "osm_roads") {
+		t.Fatalf("table osm_roads does not exists in schema %s", dbschemaImport)
+	}
+	if !ts.tableExists(t, dbschemaProduction, "osm_roads") {
+		t.Fatalf("table osm_roads does not exists in schema %s", dbschemaProduction)
+	}
+	if ts.tableExists(t, dbschemaBackup, "osm_roads") {
+		t.Fatalf("table osm_roads exists in schema %s", dbschemaBackup)
+	}
+
+	ts.deployOsm(t)
+
+	if ts.tableExists(t, dbschemaImport, "osm_roads") {
+		t.Fatalf("table osm_roads exists in schema %s", dbschemaImport)
+	}
+	if !ts.tableExists(t, dbschemaProduction, "osm_roads") {
+		t.Fatalf("table osm_roads does not exists in schema %s", dbschemaProduction)
+	}
+	if !ts.tableExists(t, dbschemaBackup, "osm_roads") {
+		t.Fatalf("table osm_roads does exists in schema %s", dbschemaBackup)
+	}
+
+	ts.removeBackupOsm(t)
+
+	if ts.tableExists(t, dbschemaImport, "osm_roads") {
+		t.Fatalf("table osm_roads exists in schema %s", dbschemaImport)
+	}
+	if !ts.tableExists(t, dbschemaProduction, "osm_roads") {
+		t.Fatalf("table osm_roads does not exists in schema %s", dbschemaProduction)
+	}
+	if ts.tableExists(t, dbschemaBackup, "osm_roads") {
+		t.Fatalf("table osm_roads exists in schema %s", dbschemaBackup)
+	}
 }
