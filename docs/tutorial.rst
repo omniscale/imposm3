@@ -86,6 +86,11 @@ You can combine reading and writing::
   imposm3 import -mapping mapping.yml -read hamburg.osm.pbf -write -connection postgis://osm:osm@localhost/osm
 
 
+All tables are prefixed with ``osm_``, e.g. ``roads`` will create the table ``osm_roads``. You can change the prefix by appending ``?prefix=myprefix`` to the connection URL. Use ``NONE`` to disable prefixing::
+
+  imposm3 import -mapping mapping.yml -write -connection postgis://osm:osm@localhost/osm?prefix=NONE
+
+
 Limit to
 ~~~~~~~~
 
