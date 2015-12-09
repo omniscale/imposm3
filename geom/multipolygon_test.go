@@ -31,7 +31,6 @@ func buildRelation(rel *element.Relation, srid int) (Geometry, error) {
 	if err != nil {
 		return Geometry{}, err
 	}
-
 	return prep.Build()
 }
 
@@ -597,5 +596,65 @@ func TestBrokenPolygonSelfIntersectTriangle(t *testing.T) {
 	if math.Abs((area - (100*98/2 - 100))) > 10 {
 		t.Fatal("area invalid", area)
 
+	}
+}
+
+func TestOpenRing(t *testing.T) {
+	w1 := makeWay(1, element.Tags{}, []coord{
+		{1, 0, 0},
+		{2, 10, 0},
+		{3, 10, 10},
+		{4, 0, 10},
+	})
+
+	rel := element.Relation{
+		OSMElem: element.OSMElem{Id: 1, Tags: element.Tags{}}}
+	rel.Members = []element.Member{
+		{1, element.WAY, "outer", &w1},
+	}
+
+	_, err := buildRelation(&rel, 3857)
+	if err == nil {
+		t.Fatal("no error from open ring")
+	}
+}
+
+func TestClosedAndOpenRing(t *testing.T) {
+	w1 := makeWay(1, element.Tags{}, []coord{
+		{1, 0, 0},
+		{2, 10, 0},
+		{3, 10, 10},
+		{4, 0, 10},
+		{1, 0, 0},
+	})
+	w2 := makeWay(2, element.Tags{}, []coord{
+		{5, 0, 0},
+		{6, -5, -2},
+	})
+	rel := element.Relation{
+		OSMElem: element.OSMElem{Id: 1, Tags: element.Tags{}}}
+	rel.Members = []element.Member{
+		{1, element.WAY, "outer", &w1},
+		{2, element.WAY, "outer", &w2},
+	}
+
+	prep, err := PrepareRelation(&rel, 3857, 0.1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// open ring is excluded
+	if len(prep.rings) != 1 {
+		t.Fatal("expected single ring")
+	}
+	geom, err := prep.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	g := geos.NewGeos()
+	defer g.Finish()
+
+	if !g.IsValid(geom.Geom) {
+		t.Fatal("geometry not valid", g.AsWkt(geom.Geom))
 	}
 }

@@ -1,12 +1,13 @@
 package cache
 
 import (
-	"github.com/omniscale/imposm3/element"
 	"io/ioutil"
 	"math/rand"
 	"os"
 	"sort"
 	"testing"
+
+	"github.com/omniscale/imposm3/element"
 )
 
 func mknode(id int64) element.Node {
@@ -184,4 +185,65 @@ func TestSingleUpdate(t *testing.T) {
 	insertAndCheck(t, cache, 3, 3, 3)
 	insertAndCheck(t, cache, 4, 4, 4)
 
+}
+
+func BenchmarkWriteDeltaCoords(b *testing.B) {
+	b.StopTimer()
+	cache_dir, _ := ioutil.TempDir("", "imposm3_test")
+	defer os.RemoveAll(cache_dir)
+
+	cache, err := newDeltaCoordsCache(cache_dir)
+	if err != nil {
+		b.Fatal()
+	}
+	defer cache.Close()
+
+	nodes := make([]element.Node, 10000)
+	for i := range nodes {
+		nodes[i].Id = rand.Int63n(50000)
+		nodes[i].Long = rand.Float64() - 0.5*360
+		nodes[i].Lat = rand.Float64() - 0.5*180
+	}
+
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		for _, n := range nodes {
+			if err := cache.PutCoords([]element.Node{n}); err != nil {
+				b.Fatal(err)
+			}
+		}
+	}
+}
+
+func BenchmarkReadDeltaCoords(b *testing.B) {
+	b.StopTimer()
+	cache_dir, _ := ioutil.TempDir("", "imposm3_test")
+	defer os.RemoveAll(cache_dir)
+
+	cache, err := newDeltaCoordsCache(cache_dir)
+	if err != nil {
+		b.Fatal()
+	}
+	defer cache.Close()
+
+	nodes := make([]element.Node, 10000)
+	for i := range nodes {
+		nodes[i].Id = rand.Int63n(50000)
+		nodes[i].Long = rand.Float64() - 0.5*360
+		nodes[i].Lat = rand.Float64() - 0.5*180
+	}
+	for _, n := range nodes {
+		if err := cache.PutCoords([]element.Node{n}); err != nil {
+			b.Fatal(err)
+		}
+	}
+
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		for n := 0; n < 10000; n++ {
+			if _, err := cache.GetCoord(int64(n)); err != nil && err != NotFound {
+				b.Fatal(err)
+			}
+		}
+	}
 }

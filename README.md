@@ -10,8 +10,8 @@ It is designed to create databases that are optimized for rendering (i.e. genera
 Imposm 3 is written in Go and it is a complete rewrite of the previous Python implementation.
 Configurations/mappings and cache files are not compatible with Imposm 2, but they share a similar architecture.
 
-The development of Imposm 3 was sponsored by [Omniscale](http://omniscale.com/) and development will continue as resources permit.
-Please get in touch if you need commercial support or if you need specific features.
+The development of Imposm 3 was sponsored by [Omniscale](http://omniscale.com/). There are [commercial licenses available for Imposm](http://omniscale.com/opensource/soss) to support the long-term development of Imposm.
+There is also commercial support available from Omniscale.
 
 
 Features
@@ -80,15 +80,20 @@ Import of Europe 11GB PBF with generalized tables:
 Current status
 --------------
 
-Imposm 3 is used in production but there is no official release yet.
+Imposm 3 is used in production but there is no official 3.0 release yet.
 
-### Missing ###
+### Planned features ###
 
-Compared to Imposm 2:
+There are a few features we like to see in Imposm 3:
 
+* Automatic download and import of differential files
 * Support for other projections than EPSG:3857 or EPSG:4326
-* Import of XML files (unlikely to be implemented in the future, use [osmosis](http://wiki.openstreetmap.org/wiki/Osmosis) to convert XML to PBF first)
+* Support for route relations
+* Improved integration with tile servers (expiration of updated tiles)
 * Custom field/filter functions
+* Official releases with binaries for more platforms
+
+There is no roadmap however, as the implementation of these features largely depends on external funding. There are [commercial licenses available for Imposm](http://omniscale.com/opensource/soss) if you like to help with this development.
 
 Installation
 ------------

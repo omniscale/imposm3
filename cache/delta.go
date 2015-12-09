@@ -15,58 +15,6 @@ func (s byId) Len() int           { return len(s) }
 func (s byId) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 func (s byId) Less(i, j int) bool { return s[i].Id < s[j].Id }
 
-func packNodes(nodes []element.Node) *binary.DeltaCoords {
-	var lastLon, lastLat int64
-	var lon, lat int64
-	var lastId int64
-	ids := make([]int64, len(nodes))
-	lons := make([]int64, len(nodes))
-	lats := make([]int64, len(nodes))
-
-	i := 0
-	for _, nd := range nodes {
-		lon = int64(binary.CoordToInt(nd.Long))
-		lat = int64(binary.CoordToInt(nd.Lat))
-		ids[i] = nd.Id - lastId
-		lons[i] = lon - lastLon
-		lats[i] = lat - lastLat
-
-		lastId = nd.Id
-		lastLon = lon
-		lastLat = lat
-		i++
-	}
-	return &binary.DeltaCoords{Ids: ids, Lats: lats, Lons: lons}
-}
-
-func unpackNodes(deltaCoords *binary.DeltaCoords, nodes []element.Node) []element.Node {
-	if len(deltaCoords.Ids) > cap(nodes) {
-		nodes = make([]element.Node, len(deltaCoords.Ids))
-	} else {
-		nodes = nodes[:len(deltaCoords.Ids)]
-	}
-
-	var lastLon, lastLat int64
-	var lon, lat int64
-	var lastId, id int64
-
-	for i := 0; i < len(deltaCoords.Ids); i++ {
-		id = lastId + deltaCoords.Ids[i]
-		lon = lastLon + deltaCoords.Lons[i]
-		lat = lastLat + deltaCoords.Lats[i]
-		nodes[i] = element.Node{
-			OSMElem: element.OSMElem{Id: int64(id)},
-			Long:    binary.IntToCoord(uint32(lon)),
-			Lat:     binary.IntToCoord(uint32(lat)),
-		}
-
-		lastId = id
-		lastLon = lon
-		lastLat = lat
-	}
-	return nodes
-}
-
 type coordsBunch struct {
 	sync.Mutex
 	id         int64
@@ -322,10 +270,6 @@ func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) error {
 	return nil
 }
 
-var (
-	freeBuffer = make(chan []byte, 4)
-)
-
 func (p *DeltaCoordsCache) putCoordsPacked(bunchId int64, nodes []element.Node) error {
 	keyBuf := idToKeyBuf(bunchId)
 
@@ -333,22 +277,12 @@ func (p *DeltaCoordsCache) putCoordsPacked(bunchId int64, nodes []element.Node) 
 		return p.db.Delete(p.wo, keyBuf)
 	}
 
-	var data []byte
-	select {
-	case data = <-freeBuffer:
-	default:
-	}
-
+	data := make([]byte, 512)
 	data = binary.MarshalDeltaNodes(nodes, data)
 
 	err := p.db.Put(p.wo, keyBuf, data)
 	if err != nil {
 		return err
-	}
-
-	select {
-	case freeBuffer <- data:
-	default:
 	}
 
 	return nil
@@ -377,10 +311,6 @@ func (self *DeltaCoordsCache) getBunchId(nodeId int64) int64 {
 	return nodeId / self.bunchSize
 }
 
-var (
-	freeNodes = make(chan []element.Node, 4)
-)
-
 func (self *DeltaCoordsCache) getBunch(bunchId int64) (*coordsBunch, error) {
 	self.mu.Lock()
 	bunch, ok := self.table[bunchId]
@@ -388,12 +318,7 @@ func (self *DeltaCoordsCache) getBunch(bunchId int64) (*coordsBunch, error) {
 	needsGet := false
 	if !ok {
 		elem := self.lruList.PushFront(bunchId)
-		select {
-		case nodes = <-freeNodes:
-			nodes = nodes[:0]
-		default:
-			nodes = make([]element.Node, 0, self.bunchSize)
-		}
+		nodes = make([]element.Node, 0, self.bunchSize)
 		bunch = &coordsBunch{id: bunchId, coords: nodes, elem: elem}
 		needsGet = true
 		self.table[bunchId] = bunch
@@ -428,10 +353,6 @@ func (self *DeltaCoordsCache) CheckCapacity() error {
 			if err := self.putCoordsPacked(bunchId, bunch.coords); err != nil {
 				return err
 			}
-		}
-		select {
-		case freeNodes <- bunch.coords:
-		default:
 		}
 		delete(self.table, bunchId)
 	}

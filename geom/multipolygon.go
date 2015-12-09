@@ -93,23 +93,23 @@ func buildRings(rel *element.Relation, maxRingGap float64) ([]*ring, error) {
 	}
 	// merge incomplete rings
 	mergedRings = mergeRings(incompleteRings)
-	if len(completeRings)+len(mergedRings) == 0 {
-		err = ErrorNoRing // for defer
-		return nil, err
-	}
+
 	// create geometries for merged rings
 	for _, ring := range mergedRings {
 		if !ring.isClosed() && !ring.tryClose(maxRingGap) {
-			err = ErrorNoRing // for defer
-			return nil, err
+			continue
 		}
 		ring.geom, err = Polygon(g, ring.nodes)
 		if err != nil {
 			return nil, err
 		}
+		completeRings = append(completeRings, ring)
 	}
 
-	completeRings = append(completeRings, mergedRings...)
+	if len(completeRings) == 0 {
+		err = ErrorNoRing // for defer
+		return nil, err
+	}
 
 	// sort by area (large to small)
 	for _, r := range completeRings {
@@ -196,13 +196,10 @@ func buildRelGeometry(g *geos.Geos, rel *element.Relation, rings []*ring) (*geos
 			return nil, errors.New("Error while building multi-polygon.")
 		}
 	}
-	if !g.IsValid(result) {
-		buffered := g.Buffer(result, 0)
-		if buffered == nil {
-			return nil, errors.New("Error while fixing geom with buffer(0)")
-		}
-		g.Destroy(result)
-		result = buffered
+	var err error
+	result, err = g.MakeValid(result)
+	if err != nil {
+		return nil, err
 	}
 
 	g.DestroyLater(result)

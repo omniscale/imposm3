@@ -252,10 +252,10 @@ def test_duplicate_ids():
 def test_generalized_banana_polygon_is_valid():
     """Generalized polygons are valid."""
     park = t.query_row(t.db_conf, 'osm_landusages', 7101)
-    # geometry is not valid
-    assert not park['geometry'].is_valid, park
+    # geometry is valid
+    assert park['geometry'].is_valid, park
     park = t.query_row(t.db_conf, 'osm_landusages_gen0', 7101)
-    # but simplified geometies are valid
+    # simplified geometies are valid too
     assert park['geometry'].is_valid, park
     park = t.query_row(t.db_conf, 'osm_landusages_gen1', 7101)
     assert park['geometry'].is_valid, park
@@ -282,6 +282,11 @@ def test_ring_with_gap():
     assert park['geometry'].is_valid, park
 
     park = t.query_row(t.db_conf, 'osm_landusages', 7311)
+    assert park['geometry'].is_valid, park
+
+def test_multipolygon_with_open_ring():
+    """Multipolygon is inserted even if there is an open ring/member"""
+    park = t.query_row(t.db_conf, 'osm_landusages', -7401)
     assert park['geometry'].is_valid, park
 
 def test_updated_nodes1():
