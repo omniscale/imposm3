@@ -39,6 +39,13 @@ func parse(diff string, elems chan DiffElem, errc chan error) {
 	var version int64
 	var timestamp string
 
+	// reset osm metadata
+	user = ""
+	uid = 0
+	changeset = 0
+	version = 0
+	timestamp = ""
+
 	file, err := os.Open(diff)
 	if err != nil {
 		errc <- err
@@ -101,13 +108,6 @@ NextToken:
 
 					if config.ParseMetadata {
 						switch attr.Name.Local {
-						case "id":
-							// reset values
-							user = ""
-							uid = 0
-							changeset = 0
-							version = 0
-							timestamp = ""
 						case "version":
 							version, _ = strconv.ParseInt(attr.Value, 10, 64)
 						case "user":
@@ -131,13 +131,6 @@ NextToken:
 
 					if config.ParseMetadata {
 						switch attr.Name.Local {
-						case "id":
-							// reset values
-							user = ""
-							uid = 0
-							changeset = 0
-							version = 0
-							timestamp = ""
 						case "version":
 							version, _ = strconv.ParseInt(attr.Value, 10, 64)
 						case "user":
@@ -161,13 +154,6 @@ NextToken:
 
 					if config.ParseMetadata {
 						switch attr.Name.Local {
-						case "id":
-							// reset values
-							user = ""
-							uid = 0
-							changeset = 0
-							version = 0
-							timestamp = ""
 						case "version":
 							version, _ = strconv.ParseInt(attr.Value, 10, 64)
 						case "user":
@@ -265,6 +251,13 @@ NextToken:
 				node = &element.Node{}
 				newElem = true
 
+				// reset osm metadata
+				user = ""
+				uid = 0
+				changeset = 0
+				version = 0
+				timestamp = ""
+
 			case "way":
 				if len(tags) > 0 {
 
@@ -293,6 +286,13 @@ NextToken:
 				way = &element.Way{}
 				newElem = true
 
+				// reset osm metadata
+				user = ""
+				uid = 0
+				changeset = 0
+				version = 0
+				timestamp = ""
+
 			case "relation":
 				if len(tags) > 0 {
 
@@ -320,6 +320,13 @@ NextToken:
 				e.Rel = rel
 				rel = &element.Relation{}
 				newElem = true
+
+				// reset osm metadata
+				user = ""
+				uid = 0
+				changeset = 0
+				version = 0
+				timestamp = ""
 
 			case "osmChange":
 				return
