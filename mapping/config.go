@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/omniscale/imposm3/config"
 	"github.com/omniscale/imposm3/element"
 
 	"gopkg.in/yaml.v2"
@@ -297,35 +296,35 @@ func (m *Mapping) ElementFilters() map[string][]ElementFilter {
 func (m *Mapping) SetParseMetadata() {
 
 	fmt.Println(" m.Tags.KeepSingleCreatedByTag:", m.Tags.KeepSingleCreatedByTag)
-	config.ParseDontAddOnlyCreatedByTag = !m.Tags.KeepSingleCreatedByTag
+	element.ParseDontAddOnlyCreatedByTag = !m.Tags.KeepSingleCreatedByTag
 
 	mappingTagsParseMetadata := m.Tags.ParseMetadata
 	fmt.Println("mappingTagsParseMetadata:", mappingTagsParseMetadata)
 	if mappingTagsParseMetadata.KeynameVersion != "" {
-		config.ParseMetadataVarVersion = true
-		config.ParseMetadataKeynameVersion = mappingTagsParseMetadata.KeynameVersion
+		element.ParseMetadataVarVersion = true
+		element.ParseMetadataKeynameVersion = mappingTagsParseMetadata.KeynameVersion
 	}
 
 	if mappingTagsParseMetadata.KeynameTimestamp != "" {
-		config.ParseMetadataVarTimestamp = true
-		config.ParseMetadataKeynameTimestamp = mappingTagsParseMetadata.KeynameTimestamp
+		element.ParseMetadataVarTimestamp = true
+		element.ParseMetadataKeynameTimestamp = mappingTagsParseMetadata.KeynameTimestamp
 	}
 
 	if mappingTagsParseMetadata.KeynameChangeset != "" {
-		config.ParseMetadataVarChangeset = true
-		config.ParseMetadataKeynameChangeset = mappingTagsParseMetadata.KeynameChangeset
+		element.ParseMetadataVarChangeset = true
+		element.ParseMetadataKeynameChangeset = mappingTagsParseMetadata.KeynameChangeset
 	}
 
 	if mappingTagsParseMetadata.KeynameUid != "" {
-		config.ParseMetadataVarUid = true
-		config.ParseMetadataKeynameUid = mappingTagsParseMetadata.KeynameUid
+		element.ParseMetadataVarUid = true
+		element.ParseMetadataKeynameUid = mappingTagsParseMetadata.KeynameUid
 	}
 
 	if mappingTagsParseMetadata.KeynameUser != "" {
-		config.ParseMetadataVarUser = true
-		config.ParseMetadataKeynameUser = mappingTagsParseMetadata.KeynameUser
+		element.ParseMetadataVarUser = true
+		element.ParseMetadataKeynameUser = mappingTagsParseMetadata.KeynameUser
 	}
 
-	config.ParseMetadata = config.ParseMetadataVarVersion || config.ParseMetadataVarTimestamp || config.ParseMetadataVarChangeset || config.ParseMetadataVarUid || config.ParseMetadataVarUser
+	element.ParseMetadata = element.ParseMetadataVarVersion || element.ParseMetadataVarTimestamp || element.ParseMetadataVarChangeset || element.ParseMetadataVarUid || element.ParseMetadataVarUser
 
 }

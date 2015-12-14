@@ -1,11 +1,8 @@
 package pbf
 
 import (
-	_ "fmt"
-	"strconv"
 	"time"
 
-	"github.com/omniscale/imposm3/config"
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/parser/pbf/osmpbf"
 )
@@ -35,7 +32,9 @@ func readDenseNodes(
 	coordScale := 0.000000001
 	lastKeyValPos := 0
 
-	//if config.ParseMetadata {
+	//if element.ParseMetadata {
+	var metaInfo element.MetaInfo
+
 	var lastDenseInfoTimestamp int64
 	var lastDenseInfoChangeset int64
 	var lastDenseInfoUid int32
@@ -46,7 +45,7 @@ func readDenseNodes(
 	var denseInfoChangeset int64
 	var denseInfoUid int32
 	var denseInfoUserSid int32
-	//}    //endif config.ParseMetadata
+	//}    //endif element.ParseMetadata
 
 	for i := range coords {
 		lastId += dense.Id[i]
@@ -57,7 +56,7 @@ func readDenseNodes(
 		coords[i].Long = (coordScale * float64(lonOffset+(granularity*lastLon)))
 		coords[i].Lat = (coordScale * float64(latOffset+(granularity*lastLat)))
 
-		if config.ParseMetadata {
+		if element.ParseMetadata {
 			lastDenseInfoTimestamp += dense.Denseinfo.Timestamp[i]
 			lastDenseInfoChangeset += dense.Denseinfo.Changeset[i]
 			lastDenseInfoUid += dense.Denseinfo.Uid[i]
@@ -76,31 +75,21 @@ func readDenseNodes(
 
 				if tags != nil {
 
-					if _, ok := tags["created_by"]; ok && config.ParseDontAddOnlyCreatedByTag && (len(tags) == 1) {
+					if _, ok := tags["created_by"]; ok && element.ParseDontAddOnlyCreatedByTag && (len(tags) == 1) {
 						// don't add nodes with only created_by tag to nodes cache
 
 					} else {
 
-						if config.ParseMetadata {
+						if element.ParseMetadata {
 
-							if config.ParseMetadataVarVersion {
-								tags[config.ParseMetadataKeynameVersion] = strconv.FormatInt(int64(denseInfoVersion), 10)
-							}
-							if config.ParseMetadataVarTimestamp {
-								tags[config.ParseMetadataKeynameTimestamp] = denseInfoTimestamp.UTC().Format(time.RFC3339)
-							}
-							if config.ParseMetadataVarChangeset {
-								tags[config.ParseMetadataKeynameChangeset] = strconv.FormatInt(denseInfoChangeset, 10)
-							}
-							if config.ParseMetadataVarUid {
-								tags[config.ParseMetadataKeynameUid] = strconv.FormatInt(int64(denseInfoUid), 10)
-							}
-							if config.ParseMetadataVarUser {
-								tags[config.ParseMetadataKeynameUser] = stringtable[denseInfoUserSid]
-							}
+							metaInfo.Version = denseInfoVersion
+							metaInfo.Timestamp = denseInfoTimestamp
+							metaInfo.Changeset = denseInfoChangeset
+							metaInfo.Uid = denseInfoUid
+							metaInfo.User = stringtable[denseInfoUserSid]
 
+							tags.AddMetaInfo(metaInfo)
 						}
-
 						nd := coords[i]
 						nd.Tags = tags
 						nodes = append(nodes, nd)
@@ -115,9 +104,9 @@ func readDenseNodes(
 	return coords, nodes
 }
 
-func parseDenseNodeTags(stringtable stringTable, keysVals *[]int32, pos *int) map[string]string {
+func parseDenseNodeTags(stringtable stringTable, keysVals *[]int32, pos *int) element.Tags {
 	// make map later if needed
-	var result map[string]string
+	var result element.Tags
 	for {
 		if *pos >= len(*keysVals) {
 			return result
@@ -130,17 +119,17 @@ func parseDenseNodeTags(stringtable stringTable, keysVals *[]int32, pos *int) ma
 		val := (*keysVals)[*pos]
 		*pos += 1
 		if result == nil {
-			result = make(map[string]string)
+			result = make(element.Tags)
 		}
 		result[stringtable[key]] = stringtable[val]
 	}
 }
 
-func parseTags(stringtable stringTable, keys []uint32, vals []uint32) map[string]string {
+func parseTags(stringtable stringTable, keys []uint32, vals []uint32) element.Tags {
 	if len(keys) == 0 {
 		return nil
 	}
-	tags := make(map[string]string)
+	tags := make(element.Tags)
 	for i := 0; i < len(keys); i++ {
 		key := stringtable[keys[i]]
 		val := stringtable[vals[i]]
@@ -161,6 +150,8 @@ func readNodes(
 	lonOffset := block.GetLonOffset()
 	coordScale := 0.000000001
 
+	var metaInfo element.MetaInfo
+
 	for i := range nodes {
 		id := *nodes[i].Id
 		lon := *nodes[i].Lon
@@ -172,27 +163,19 @@ func readNodes(
 			tags := parseTags(stringtable, nodes[i].Keys, nodes[i].Vals)
 
 			if tags != nil {
-				if _, ok := tags["created_by"]; ok && config.ParseDontAddOnlyCreatedByTag && (len(tags) == 1) {
+				if _, ok := tags["created_by"]; ok && element.ParseDontAddOnlyCreatedByTag && (len(tags) == 1) {
 					// don't add nodes with only created_by tag to nodes cache
 				} else {
 
-					if config.ParseMetadata {
+					if element.ParseMetadata {
 
-						if config.ParseMetadataVarVersion {
-							tags[config.ParseMetadataKeynameVersion] = strconv.FormatInt(int64(*nodes[i].Info.Version), 10)
-						}
-						if config.ParseMetadataVarTimestamp {
-							tags[config.ParseMetadataKeynameTimestamp] = time.Unix(*nodes[i].Info.Timestamp, 0).UTC().Format(time.RFC3339)
-						}
-						if config.ParseMetadataVarChangeset {
-							tags[config.ParseMetadataKeynameChangeset] = strconv.FormatInt(int64(*nodes[i].Info.Changeset), 10)
-						}
-						if config.ParseMetadataVarUid {
-							tags[config.ParseMetadataKeynameUid] = strconv.FormatInt(int64(*nodes[i].Info.Uid), 10)
-						}
-						if config.ParseMetadataVarUser {
-							tags[config.ParseMetadataKeynameUser] = stringtable[nodes[i].GetInfo().GetUserSid()]
-						}
+						metaInfo.Version = *nodes[i].Info.Version
+						metaInfo.Timestamp = time.Unix(*nodes[i].Info.Timestamp, 0)
+						metaInfo.Changeset = *nodes[i].Info.Changeset
+						metaInfo.Uid = *nodes[i].Info.Uid
+						metaInfo.User = stringtable[nodes[i].GetInfo().GetUserSid()]
+
+						tags.AddMetaInfo(metaInfo)
 					}
 
 					nd := coords[i]
@@ -223,30 +206,23 @@ func readWays(
 
 	result := make([]element.Way, len(ways))
 
+	var metaInfo element.MetaInfo
+
 	for i := range ways {
 		id := *ways[i].Id
 		result[i].Id = id
 		result[i].Tags = parseTags(stringtable, ways[i].Keys, ways[i].Vals)
 		result[i].Refs = parseDeltaRefs(ways[i].Refs)
 
-		if config.ParseMetadata && (ways[i].Info != nil) && (len(result[i].Tags) > 0) {
+		if element.ParseMetadata && (ways[i].Info != nil) && (len(result[i].Tags) > 0) {
 
-			if config.ParseMetadataVarVersion {
-				result[i].Tags[config.ParseMetadataKeynameVersion] = strconv.FormatInt(int64(*ways[i].Info.Version), 10)
-			}
-			if config.ParseMetadataVarTimestamp {
-				result[i].Tags[config.ParseMetadataKeynameTimestamp] = time.Unix(*ways[i].Info.Timestamp, 0).UTC().Format(time.RFC3339)
-			}
-			if config.ParseMetadataVarChangeset {
-				result[i].Tags[config.ParseMetadataKeynameChangeset] = strconv.FormatInt(int64(*ways[i].Info.Changeset), 10)
-			}
-			if config.ParseMetadataVarUid {
-				result[i].Tags[config.ParseMetadataKeynameUid] = strconv.FormatInt(int64(*ways[i].Info.Uid), 10)
-			}
-			if config.ParseMetadataVarUser {
-				result[i].Tags[config.ParseMetadataKeynameUser] = stringtable[ways[i].GetInfo().GetUserSid()]
-			}
+			metaInfo.Version = *ways[i].Info.Version
+			metaInfo.Timestamp = time.Unix(*ways[i].Info.Timestamp, 0)
+			metaInfo.Changeset = *ways[i].Info.Changeset
+			metaInfo.Uid = *ways[i].Info.Uid
+			metaInfo.User = stringtable[ways[i].GetInfo().GetUserSid()]
 
+			result[i].Tags.AddMetaInfo(metaInfo)
 		}
 	}
 	return result
@@ -271,6 +247,7 @@ func readRelations(
 	stringtable stringTable) []element.Relation {
 
 	result := make([]element.Relation, len(relations))
+	var metaInfo element.MetaInfo
 
 	for i := range relations {
 		id := *relations[i].Id
@@ -278,24 +255,15 @@ func readRelations(
 		result[i].Tags = parseTags(stringtable, relations[i].Keys, relations[i].Vals)
 		result[i].Members = parseRelationMembers(relations[i], stringtable)
 
-		if config.ParseMetadata && (relations[i].Info != nil) && (len(result[i].Tags) > 0) {
+		if element.ParseMetadata && (relations[i].Info != nil) && (len(result[i].Tags) > 0) {
 
-			if config.ParseMetadataVarVersion {
-				result[i].Tags[config.ParseMetadataKeynameVersion] = strconv.FormatInt(int64(*relations[i].Info.Version), 10)
-			}
-			if config.ParseMetadataVarTimestamp {
-				result[i].Tags[config.ParseMetadataKeynameTimestamp] = time.Unix(*relations[i].Info.Timestamp, 0).UTC().Format(time.RFC3339)
-			}
-			if config.ParseMetadataVarChangeset {
-				result[i].Tags[config.ParseMetadataKeynameChangeset] = strconv.FormatInt(int64(*relations[i].Info.Changeset), 10)
-			}
-			if config.ParseMetadataVarUid {
-				result[i].Tags[config.ParseMetadataKeynameUid] = strconv.FormatInt(int64(*relations[i].Info.Uid), 10)
-			}
-			if config.ParseMetadataVarUser {
-				result[i].Tags[config.ParseMetadataKeynameUser] = stringtable[relations[i].GetInfo().GetUserSid()]
-			}
+			metaInfo.Version = *relations[i].Info.Version
+			metaInfo.Timestamp = time.Unix(*relations[i].Info.Timestamp, 0)
+			metaInfo.Changeset = *relations[i].Info.Changeset
+			metaInfo.Uid = *relations[i].Info.Uid
+			metaInfo.User = stringtable[relations[i].GetInfo().GetUserSid()]
 
+			result[i].Tags.AddMetaInfo(metaInfo)
 		}
 	}
 	return result

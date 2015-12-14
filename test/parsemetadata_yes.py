@@ -45,64 +45,64 @@ def test_parsemetadata_pbf_created_by():
  
 
 def test_parsemetadata_pbf_n31101():
-    """parsemetadata=yes test : PBF-node osm_id=n31101 : keys:testnote_*  should equal with keys:osm_*  """     
+    """parsemetadata=yes test : PBF-node osm_id=n31101 : keys:testnote_*  should equal with  meta keys  """     
     element = t.query_row(t.db_conf, 'osm_parsemetadata', 31101)
-    assert element['osm_changeset']         == element['tags']['testnote_changeset']  
-    assert element['osm_version']           == element['tags']['testnote_version']  
-    assert element['osm_user']              == element['tags']['testnote_user']  
-    assert element['osm_uid']               == element['tags']['testnote_uid']  
-    assert element['osm_timestamp']         == element['tags']['testnote_timestamp']  
+    assert element['_changeset_']         == element['tags']['testnote_changeset']  
+    assert element['_version_']           == element['tags']['testnote_version']  
+    assert element['_user_']              == element['tags']['testnote_user']  
+    assert element['_uid_']               == element['tags']['testnote_uid']  
+    assert element['_timestamp_']         == element['tags']['testnote_timestamp']  
     
-    assert element['tags']['osm_changeset'] == element['tags']['testnote_changeset']  
-    assert element['tags']['osm_version']   == element['tags']['testnote_version']  
-    assert element['tags']['osm_user']      == element['tags']['testnote_user']  
-    assert element['tags']['osm_uid']       == element['tags']['testnote_uid']  
-    assert element['tags']['osm_timestamp'] == element['tags']['testnote_timestamp']  
+    assert element['tags']['_changeset_'] == element['tags']['testnote_changeset']  
+    assert element['tags']['_version_']   == element['tags']['testnote_version']  
+    assert element['tags']['_user_']      == element['tags']['testnote_user']  
+    assert element['tags']['_uid_']       == element['tags']['testnote_uid']  
+    assert element['tags']['_timestamp_'] == element['tags']['testnote_timestamp']  
 
 def test_parsemetadata_pbf_w31101():
-    """parsemetadata=yes test : PBF-way  osm_id=w31101 : keys:testnote_*  should equal with keys:osm_*  """      
+    """parsemetadata=yes test : PBF-way  osm_id=w31101 : keys:testnote_*  should equal with  meta keys  """      
     element = t.query_row(t.db_conf, 'osm_parsemetadata', -31101)
-    assert element['osm_changeset']         == element['tags']['testnote_changeset']  
-    assert element['osm_version']           == element['tags']['testnote_version']  
-    assert element['osm_user']              == element['tags']['testnote_user']  
-    assert element['osm_uid']               == element['tags']['testnote_uid']  
-    assert element['osm_timestamp']         == element['tags']['testnote_timestamp']  
+    assert element['_changeset_']         == element['tags']['testnote_changeset']  
+    assert element['_version_']           == element['tags']['testnote_version']  
+    assert element['_user_']              == element['tags']['testnote_user']  
+    assert element['_uid_']               == element['tags']['testnote_uid']  
+    assert element['_timestamp_']         == element['tags']['testnote_timestamp']  
     
-    assert element['tags']['osm_changeset'] == element['tags']['testnote_changeset']  
-    assert element['tags']['osm_version']   == element['tags']['testnote_version']  
-    assert element['tags']['osm_user']      == element['tags']['testnote_user']  
-    assert element['tags']['osm_uid']       == element['tags']['testnote_uid']  
-    assert element['tags']['osm_timestamp'] == element['tags']['testnote_timestamp']  
+    assert element['tags']['_changeset_'] == element['tags']['testnote_changeset']  
+    assert element['tags']['_version_']   == element['tags']['testnote_version']  
+    assert element['tags']['_user_']      == element['tags']['testnote_user']  
+    assert element['tags']['_uid_']       == element['tags']['testnote_uid']  
+    assert element['tags']['_timestamp_'] == element['tags']['testnote_timestamp']  
 
 def test_parsemetadata_pbf_w31002():
-    """parsemetadata=yes test : PBF-way  osm_id=w31002 : keys:testnote_*  should equal with keys:osm_*  """  
+    """parsemetadata=yes test : PBF-way  osm_id=w31002 : keys:testnote_*  should equal with  meta keys  """  
     element = t.query_row(t.db_conf, 'osm_parsemetadata',  -31002)
-    assert element['osm_changeset']         == element['tags']['testnote_changeset']  
-    assert element['osm_version']           == element['tags']['testnote_version']  
-    assert element['osm_user']              == element['tags']['testnote_user']  
-    assert element['osm_uid']               == element['tags']['testnote_uid']  
-    assert element['osm_timestamp']         == element['tags']['testnote_timestamp'] 
+    assert element['_changeset_']         == element['tags']['testnote_changeset']  
+    assert element['_version_']           == element['tags']['testnote_version']  
+    assert element['_user_']              == element['tags']['testnote_user']  
+    assert element['_uid_']               == element['tags']['testnote_uid']  
+    assert element['_timestamp_']         == element['tags']['testnote_timestamp'] 
      
-    assert element['tags']['osm_changeset'] == element['tags']['testnote_changeset']  
-    assert element['tags']['osm_version']   == element['tags']['testnote_version']  
-    assert element['tags']['osm_user']      == element['tags']['testnote_user']  
-    assert element['tags']['osm_uid']       == element['tags']['testnote_uid']  
-    assert element['tags']['osm_timestamp'] == element['tags']['testnote_timestamp']  
+    assert element['tags']['_changeset_'] == element['tags']['testnote_changeset']  
+    assert element['tags']['_version_']   == element['tags']['testnote_version']  
+    assert element['tags']['_user_']      == element['tags']['testnote_user']  
+    assert element['tags']['_uid_']       == element['tags']['testnote_uid']  
+    assert element['tags']['_timestamp_'] == element['tags']['testnote_timestamp']  
 
 def test_parsemetadata_pbf_r31101():
-    """parsemetadata=yes test : PBF-rel  osm_id=r31101 : keys:testnote_*  should equal with keys:osm_*  """ 
+    """parsemetadata=yes test : PBF-rel  osm_id=r31101 : keys:testnote_*  should equal with  meta keys  """ 
     element = t.query_row(t.db_conf, 'osm_parsemetadata',  -100000000000031101)
-    assert element['osm_changeset']         == element['tags']['testnote_changeset']  
-    assert element['osm_version']           == element['tags']['testnote_version']  
-    assert element['osm_user']              == element['tags']['testnote_user']  
-    assert element['osm_uid']               == element['tags']['testnote_uid']  
-    assert element['osm_timestamp']         == element['tags']['testnote_timestamp']  
+    assert element['_changeset_']         == element['tags']['testnote_changeset']  
+    assert element['_version_']           == element['tags']['testnote_version']  
+    assert element['_user_']              == element['tags']['testnote_user']  
+    assert element['_uid_']               == element['tags']['testnote_uid']  
+    assert element['_timestamp_']         == element['tags']['testnote_timestamp']  
     
-    assert element['tags']['osm_changeset'] == element['tags']['testnote_changeset']  
-    assert element['tags']['osm_version']   == element['tags']['testnote_version']  
-    assert element['tags']['osm_user']      == element['tags']['testnote_user']  
-    assert element['tags']['osm_uid']       == element['tags']['testnote_uid']  
-    assert element['tags']['osm_timestamp'] == element['tags']['testnote_timestamp']  
+    assert element['tags']['_changeset_'] == element['tags']['testnote_changeset']  
+    assert element['tags']['_version_']   == element['tags']['testnote_version']  
+    assert element['tags']['_user_']      == element['tags']['testnote_user']  
+    assert element['tags']['_uid_']       == element['tags']['testnote_uid']  
+    assert element['tags']['_timestamp_'] == element['tags']['testnote_timestamp']  
  
    
 #######################################################################
@@ -126,79 +126,79 @@ def test_parsemetadata_osc_created_by():
 
 
 def test_parsemetadata_osc_n31101():
-    """parsemetadata=yes test : OSC-node osm_id=n31101 : keys:testnote_*  should equal with keys:osm_*  """
+    """parsemetadata=yes test : OSC-node osm_id=n31101 : keys:testnote_*  should equal with  meta keys  """
     element = t.query_row(t.db_conf, 'osm_parsemetadata', 31101)
-    assert element['osm_changeset']         == element['tags']['testnote_changeset']  
-    assert element['osm_version']           == element['tags']['testnote_version']  
-    assert element['osm_user']              == element['tags']['testnote_user']  
-    assert element['osm_uid']               == element['tags']['testnote_uid']  
-    assert element['osm_timestamp']         == element['tags']['testnote_timestamp']  
+    assert element['_changeset_']         == element['tags']['testnote_changeset']  
+    assert element['_version_']           == element['tags']['testnote_version']  
+    assert element['_user_']              == element['tags']['testnote_user']  
+    assert element['_uid_']               == element['tags']['testnote_uid']  
+    assert element['_timestamp_']         == element['tags']['testnote_timestamp']  
     
-    assert element['tags']['osm_changeset'] == element['tags']['testnote_changeset']  
-    assert element['tags']['osm_version']   == element['tags']['testnote_version']  
-    assert element['tags']['osm_user']      == element['tags']['testnote_user']  
-    assert element['tags']['osm_uid']       == element['tags']['testnote_uid']  
-    assert element['tags']['osm_timestamp'] == element['tags']['testnote_timestamp']  
+    assert element['tags']['_changeset_'] == element['tags']['testnote_changeset']  
+    assert element['tags']['_version_']   == element['tags']['testnote_version']  
+    assert element['tags']['_user_']      == element['tags']['testnote_user']  
+    assert element['tags']['_uid_']       == element['tags']['testnote_uid']  
+    assert element['tags']['_timestamp_'] == element['tags']['testnote_timestamp']  
 
 
 def test_parsemetadata_osc_w31101():
-    """parsemetadata=yes test : OSC-way  osm_id=w31101 : keys:testnote_*  should equal with keys:osm_* """    
+    """parsemetadata=yes test : OSC-way  osm_id=w31101 : keys:testnote_*  should equal with  meta keys """    
     aelement = t.query_row(t.db_conf, 'osm_parsemetadata', -31101)
     element=aelement[0]
-    assert element['osm_changeset']         == element['tags']['testnote_changeset']  
-    assert element['osm_version']           == element['tags']['testnote_version']  
-    assert element['osm_user']              == element['tags']['testnote_user']  
-    assert element['osm_uid']               == element['tags']['testnote_uid']  
-    assert element['osm_timestamp']         == element['tags']['testnote_timestamp']  
+    assert element['_changeset_']         == element['tags']['testnote_changeset']  
+    assert element['_version_']           == element['tags']['testnote_version']  
+    assert element['_user_']              == element['tags']['testnote_user']  
+    assert element['_uid_']               == element['tags']['testnote_uid']  
+    assert element['_timestamp_']         == element['tags']['testnote_timestamp']  
     
-    assert element['tags']['osm_changeset'] == element['tags']['testnote_changeset']  
-    assert element['tags']['osm_version']   == element['tags']['testnote_version']  
-    assert element['tags']['osm_user']      == element['tags']['testnote_user']  
-    assert element['tags']['osm_uid']       == element['tags']['testnote_uid']  
-    assert element['tags']['osm_timestamp'] == element['tags']['testnote_timestamp']  
+    assert element['tags']['_changeset_'] == element['tags']['testnote_changeset']  
+    assert element['tags']['_version_']   == element['tags']['testnote_version']  
+    assert element['tags']['_user_']      == element['tags']['testnote_user']  
+    assert element['tags']['_uid_']       == element['tags']['testnote_uid']  
+    assert element['tags']['_timestamp_'] == element['tags']['testnote_timestamp']  
 
     element=aelement[1]
-    assert element['osm_changeset']         == element['tags']['testnote_changeset']  
-    assert element['osm_version']           == element['tags']['testnote_version']  
-    assert element['osm_user']              == element['tags']['testnote_user']  
-    assert element['osm_uid']               == element['tags']['testnote_uid']  
-    assert element['osm_timestamp']         == element['tags']['testnote_timestamp']  
+    assert element['_changeset_']         == element['tags']['testnote_changeset']  
+    assert element['_version_']           == element['tags']['testnote_version']  
+    assert element['_user_']              == element['tags']['testnote_user']  
+    assert element['_uid_']               == element['tags']['testnote_uid']  
+    assert element['_timestamp_']         == element['tags']['testnote_timestamp']  
     
-    assert element['tags']['osm_changeset'] == element['tags']['testnote_changeset']  
-    assert element['tags']['osm_version']   == element['tags']['testnote_version']  
-    assert element['tags']['osm_user']      == element['tags']['testnote_user']  
-    assert element['tags']['osm_uid']       == element['tags']['testnote_uid']  
-    assert element['tags']['osm_timestamp'] == element['tags']['testnote_timestamp']  
+    assert element['tags']['_changeset_'] == element['tags']['testnote_changeset']  
+    assert element['tags']['_version_']   == element['tags']['testnote_version']  
+    assert element['tags']['_user_']      == element['tags']['testnote_user']  
+    assert element['tags']['_uid_']       == element['tags']['testnote_uid']  
+    assert element['tags']['_timestamp_'] == element['tags']['testnote_timestamp']  
  
 def test_parsemetadata_osc_w31002():
-    """parsemetadata=yes test : OSC-way  osm_id=w31002 : keys:testnote_*  should equal with keys:osm_* """  
+    """parsemetadata=yes test : OSC-way  osm_id=w31002 : keys:testnote_*  should equal with  meta keys """  
     element = t.query_row(t.db_conf, 'osm_parsemetadata',  -31002)
-    assert element['osm_changeset']         == element['tags']['testnote_changeset']  
-    assert element['osm_version']           == element['tags']['testnote_version']  
-    assert element['osm_user']              == element['tags']['testnote_user']  
-    assert element['osm_uid']               == element['tags']['testnote_uid']  
-    assert element['osm_timestamp']         == element['tags']['testnote_timestamp'] 
+    assert element['_changeset_']         == element['tags']['testnote_changeset']  
+    assert element['_version_']           == element['tags']['testnote_version']  
+    assert element['_user_']              == element['tags']['testnote_user']  
+    assert element['_uid_']               == element['tags']['testnote_uid']  
+    assert element['_timestamp_']         == element['tags']['testnote_timestamp'] 
      
-    assert element['tags']['osm_changeset'] == element['tags']['testnote_changeset']  
-    assert element['tags']['osm_version']   == element['tags']['testnote_version']  
-    assert element['tags']['osm_user']      == element['tags']['testnote_user']  
-    assert element['tags']['osm_uid']       == element['tags']['testnote_uid']  
-    assert element['tags']['osm_timestamp'] == element['tags']['testnote_timestamp']  
+    assert element['tags']['_changeset_'] == element['tags']['testnote_changeset']  
+    assert element['tags']['_version_']   == element['tags']['testnote_version']  
+    assert element['tags']['_user_']      == element['tags']['testnote_user']  
+    assert element['tags']['_uid_']       == element['tags']['testnote_uid']  
+    assert element['tags']['_timestamp_'] == element['tags']['testnote_timestamp']  
 
 def test_parsemetadata_osc_r31101():
-    """parsemetadata=yes test : OSC-rel  osm_id=r31101 : keys:testnote_*  should equal with keys:osm_* """  
+    """parsemetadata=yes test : OSC-rel  osm_id=r31101 : keys:testnote_*  should equal with  meta keys """  
     element = t.query_row(t.db_conf, 'osm_parsemetadata',  -100000000000031101)
-    assert element['osm_changeset']         == element['tags']['testnote_changeset']  
-    assert element['osm_version']           == element['tags']['testnote_version']  
-    assert element['osm_user']              == element['tags']['testnote_user']  
-    assert element['osm_uid']               == element['tags']['testnote_uid']  
-    assert element['osm_timestamp']         == element['tags']['testnote_timestamp']  
+    assert element['_changeset_']         == element['tags']['testnote_changeset']  
+    assert element['_version_']           == element['tags']['testnote_version']  
+    assert element['_user_']              == element['tags']['testnote_user']  
+    assert element['_uid_']               == element['tags']['testnote_uid']  
+    assert element['_timestamp_']         == element['tags']['testnote_timestamp']  
     
-    assert element['tags']['osm_changeset'] == element['tags']['testnote_changeset']  
-    assert element['tags']['osm_version']   == element['tags']['testnote_version']  
-    assert element['tags']['osm_user']      == element['tags']['testnote_user']  
-    assert element['tags']['osm_uid']       == element['tags']['testnote_uid']  
-    assert element['tags']['osm_timestamp'] == element['tags']['testnote_timestamp']  
+    assert element['tags']['_changeset_'] == element['tags']['testnote_changeset']  
+    assert element['tags']['_version_']   == element['tags']['testnote_version']  
+    assert element['tags']['_user_']      == element['tags']['testnote_user']  
+    assert element['tags']['_uid_']       == element['tags']['testnote_uid']  
+    assert element['tags']['_timestamp_'] == element['tags']['testnote_timestamp']  
  
    
 
