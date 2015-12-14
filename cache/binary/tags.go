@@ -17,7 +17,6 @@ package binary
 import (
 	"unicode/utf8"
 
-	"github.com/omniscale/imposm3/config"
 	"github.com/omniscale/imposm3/element"
 )
 
@@ -126,13 +125,13 @@ func init() {
 	addCommonKey("addr:postcode")
 	addCommonKey("addr:housenumber")
 
-	if config.ParseMetadata {
-		addCommonKey(config.ParseMetadataKeynameVersion)
-		addCommonKey(config.ParseMetadataKeynameTimestamp)
-		addCommonKey(config.ParseMetadataKeynameChangeset)
-		addCommonKey(config.ParseMetadataKeynameUid)
-		addCommonKey(config.ParseMetadataKeynameUser)
-	}
+	// Reserved for OSM metadata variables.
+	addCommonKey(element.ParseMetadataKeynameVersion)
+	addCommonKey(element.ParseMetadataKeynameTimestamp)
+	addCommonKey(element.ParseMetadataKeynameChangeset)
+	addCommonKey(element.ParseMetadataKeynameUid)
+	addCommonKey(element.ParseMetadataKeynameUser)
+	//
 
 	// most used tags for ways
 	//

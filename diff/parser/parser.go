@@ -5,8 +5,8 @@ import (
 	"encoding/xml"
 	"os"
 	"strconv"
+	"time"
 
-	"github.com/omniscale/imposm3/config"
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/logging"
 )
@@ -33,18 +33,8 @@ func parse(diff string, elems chan DiffElem, errc chan error) {
 	defer close(elems)
 	defer close(errc)
 
-	var user string
-	var uid int64
-	var changeset int64
-	var version int64
-	var timestamp string
-
-	// reset osm metadata
-	user = ""
-	uid = 0
-	changeset = 0
-	version = 0
-	timestamp = ""
+	var metaInfo element.MetaInfo
+	metaInfo.Reset()
 
 	file, err := os.Open(diff)
 	if err != nil {
@@ -64,7 +54,7 @@ func parse(diff string, elems chan DiffElem, errc chan error) {
 	add := false
 	mod := false
 	del := false
-	tags := make(map[string]string)
+	tags := make(element.Tags)
 	newElem := false
 
 	node := &element.Node{}
@@ -106,18 +96,20 @@ NextToken:
 						node.Long, _ = strconv.ParseFloat(attr.Value, 64)
 					}
 
-					if config.ParseMetadata {
+					if element.ParseMetadata {
 						switch attr.Name.Local {
 						case "version":
-							version, _ = strconv.ParseInt(attr.Value, 10, 64)
+							x, _ := strconv.ParseInt(attr.Value, 10, 32)
+							metaInfo.Version = int32(x)
 						case "user":
-							user = attr.Value
+							metaInfo.User = attr.Value
 						case "uid":
-							uid, _ = strconv.ParseInt(attr.Value, 10, 64)
+							x, _ := strconv.ParseInt(attr.Value, 10, 32)
+							metaInfo.Uid = int32(x)
 						case "changeset":
-							changeset, _ = strconv.ParseInt(attr.Value, 10, 64)
+							metaInfo.Changeset, _ = strconv.ParseInt(attr.Value, 10, 64)
 						case "timestamp":
-							timestamp = attr.Value
+							metaInfo.Timestamp, _ = time.Parse(time.RFC3339, attr.Value)
 						}
 					}
 
@@ -129,18 +121,20 @@ NextToken:
 						way.Id, _ = strconv.ParseInt(attr.Value, 10, 64)
 					}
 
-					if config.ParseMetadata {
+					if element.ParseMetadata {
 						switch attr.Name.Local {
 						case "version":
-							version, _ = strconv.ParseInt(attr.Value, 10, 64)
+							x, _ := strconv.ParseInt(attr.Value, 10, 32)
+							metaInfo.Version = int32(x)
 						case "user":
-							user = attr.Value
+							metaInfo.User = attr.Value
 						case "uid":
-							uid, _ = strconv.ParseInt(attr.Value, 10, 64)
+							x, _ := strconv.ParseInt(attr.Value, 10, 32)
+							metaInfo.Uid = int32(x)
 						case "changeset":
-							changeset, _ = strconv.ParseInt(attr.Value, 10, 64)
+							metaInfo.Changeset, _ = strconv.ParseInt(attr.Value, 10, 64)
 						case "timestamp":
-							timestamp = attr.Value
+							metaInfo.Timestamp, _ = time.Parse(time.RFC3339, attr.Value)
 						}
 					}
 
@@ -152,18 +146,20 @@ NextToken:
 						rel.Id, _ = strconv.ParseInt(attr.Value, 10, 64)
 					}
 
-					if config.ParseMetadata {
+					if element.ParseMetadata {
 						switch attr.Name.Local {
 						case "version":
-							version, _ = strconv.ParseInt(attr.Value, 10, 64)
+							x, _ := strconv.ParseInt(attr.Value, 10, 32)
+							metaInfo.Version = int32(x)
 						case "user":
-							user = attr.Value
+							metaInfo.User = attr.Value
 						case "uid":
-							uid, _ = strconv.ParseInt(attr.Value, 10, 64)
+							x, _ := strconv.ParseInt(attr.Value, 10, 32)
+							metaInfo.Uid = int32(x)
 						case "changeset":
-							changeset, _ = strconv.ParseInt(attr.Value, 10, 64)
+							metaInfo.Changeset, _ = strconv.ParseInt(attr.Value, 10, 64)
 						case "timestamp":
-							timestamp = attr.Value
+							metaInfo.Timestamp, _ = time.Parse(time.RFC3339, attr.Value)
 						}
 					}
 				}
@@ -218,29 +214,14 @@ NextToken:
 			switch tok.Name.Local {
 			case "node":
 
-				if _, ok := tags["created_by"]; ok && len(tags) == 1 && config.ParseDontAddOnlyCreatedByTag {
+				if _, ok := tags["created_by"]; ok && len(tags) == 1 && element.ParseDontAddOnlyCreatedByTag {
 					// don't add nodes with only created_by tag to nodes cache
 				} else {
 
 					if len(tags) > 0 {
 
-						if config.ParseMetadata {
-
-							if config.ParseMetadataVarChangeset {
-								tags[config.ParseMetadataKeynameChangeset] = strconv.FormatInt(changeset, 10)
-							}
-							if config.ParseMetadataVarVersion {
-								tags[config.ParseMetadataKeynameVersion] = strconv.FormatInt(version, 10)
-							}
-							if config.ParseMetadataVarUser {
-								tags[config.ParseMetadataKeynameUser] = user
-							}
-							if config.ParseMetadataVarUid {
-								tags[config.ParseMetadataKeynameUid] = strconv.FormatInt(uid, 10)
-							}
-							if config.ParseMetadataVarTimestamp {
-								tags[config.ParseMetadataKeynameTimestamp] = timestamp
-							}
+						if element.ParseMetadata {
+							tags.AddMetaInfo(metaInfo)
 						}
 
 						node.Tags = tags
@@ -252,32 +233,13 @@ NextToken:
 				newElem = true
 
 				// reset osm metadata
-				user = ""
-				uid = 0
-				changeset = 0
-				version = 0
-				timestamp = ""
+				metaInfo.Reset()
 
 			case "way":
 				if len(tags) > 0 {
 
-					if config.ParseMetadata {
-
-						if config.ParseMetadataVarChangeset {
-							tags[config.ParseMetadataKeynameChangeset] = strconv.FormatInt(changeset, 10)
-						}
-						if config.ParseMetadataVarVersion {
-							tags[config.ParseMetadataKeynameVersion] = strconv.FormatInt(version, 10)
-						}
-						if config.ParseMetadataVarUser {
-							tags[config.ParseMetadataKeynameUser] = user
-						}
-						if config.ParseMetadataVarUid {
-							tags[config.ParseMetadataKeynameUid] = strconv.FormatInt(uid, 10)
-						}
-						if config.ParseMetadataVarTimestamp {
-							tags[config.ParseMetadataKeynameTimestamp] = timestamp
-						}
+					if element.ParseMetadata {
+						tags.AddMetaInfo(metaInfo)
 					}
 
 					way.Tags = tags
@@ -287,32 +249,13 @@ NextToken:
 				newElem = true
 
 				// reset osm metadata
-				user = ""
-				uid = 0
-				changeset = 0
-				version = 0
-				timestamp = ""
+				metaInfo.Reset()
 
 			case "relation":
 				if len(tags) > 0 {
 
-					if config.ParseMetadata {
-
-						if config.ParseMetadataVarChangeset {
-							tags[config.ParseMetadataKeynameChangeset] = strconv.FormatInt(changeset, 10)
-						}
-						if config.ParseMetadataVarVersion {
-							tags[config.ParseMetadataKeynameVersion] = strconv.FormatInt(version, 10)
-						}
-						if config.ParseMetadataVarUser {
-							tags[config.ParseMetadataKeynameUser] = user
-						}
-						if config.ParseMetadataVarUid {
-							tags[config.ParseMetadataKeynameUid] = strconv.FormatInt(uid, 10)
-						}
-						if config.ParseMetadataVarTimestamp {
-							tags[config.ParseMetadataKeynameTimestamp] = timestamp
-						}
+					if element.ParseMetadata {
+						tags.AddMetaInfo(metaInfo)
 					}
 
 					rel.Tags = tags
@@ -322,11 +265,7 @@ NextToken:
 				newElem = true
 
 				// reset osm metadata
-				user = ""
-				uid = 0
-				changeset = 0
-				version = 0
-				timestamp = ""
+				metaInfo.Reset()
 
 			case "osmChange":
 				return
@@ -337,7 +276,7 @@ NextToken:
 				e.Del = del
 				e.Mod = mod
 				if len(tags) > 0 {
-					tags = make(map[string]string)
+					tags = make(element.Tags)
 				}
 				newElem = false
 				elems <- e

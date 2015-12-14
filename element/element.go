@@ -4,12 +4,138 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strconv"
+	"sync/atomic"
+	"time"
 )
 
 type Tags map[string]string
 
 func (t *Tags) String() string {
 	return fmt.Sprintf("%v", (map[string]string)(*t))
+}
+
+// individual metadata parsing
+var ParseMetadataVarVersion = false
+var ParseMetadataVarTimestamp = false
+var ParseMetadataVarChangeset = false
+var ParseMetadataVarUid = false
+var ParseMetadataVarUser = false
+
+var ParseMetadataKeynameVersion = "_version_"
+var ParseMetadataKeynameTimestamp = "_timestamp_"
+var ParseMetadataKeynameChangeset = "_changeset_"
+var ParseMetadataKeynameUid = "_uid_"
+var ParseMetadataKeynameUser = "_user_"
+
+// if any ParseMetadaVar* is 'true' ->  set ParseMetadata = true
+var ParseMetadata = ParseMetadataVarVersion || ParseMetadataVarTimestamp || ParseMetadataVarChangeset || ParseMetadataVarUid || ParseMetadataVarUser
+
+// don't add nodes/ways/relations with only "created_by" tag to nodes cache  = FALSE
+var ParseDontAddOnlyCreatedByTag = true
+
+// For storing OSM metadata
+type MetaInfo struct {
+	Version   int32
+	Timestamp time.Time
+	Changeset int64
+	Uid       int32
+	User      string
+}
+
+var countMetaVersion int64 = 0
+var countMetaTimestamp int64 = 0
+var countMetaChangeset int64 = 0
+var countMetaUid int64 = 0
+var countMetaUser int64 = 0
+
+// Reset OSM MetaInfo to zero and empty string
+func (metaInfo MetaInfo) Reset() {
+	metaInfo.Version = 0
+	metaInfo.Timestamp = time.Unix(0, 0)
+	metaInfo.Changeset = 0
+	metaInfo.Uid = 0
+	metaInfo.User = ""
+}
+
+// Evaulate metadata keyname collision - and write a Warning
+// Warning : metadata keyname collision  ....
+// for example
+//  _timestamp_ : http://taginfo.openstreetmap.org/keys/_timestamp_  ( Number of the objects : 17   ; data from2015-dec-14 )
+//  _user_      : http://taginfo.openstreetmap.org/keys/_user_       ( Number of the objects : 17   ; data from2015-dec-14 )
+//
+func WriteMetaInfo() {
+
+	mcountMetaVersion := atomic.LoadInt64(&countMetaVersion)
+	if mcountMetaVersion > 0 {
+		fmt.Println("Warning : metadata keyname collision ", ParseMetadataKeynameVersion, "  : ", mcountMetaVersion)
+	}
+
+	mcountMetaTimestamp := atomic.LoadInt64(&countMetaTimestamp)
+	if mcountMetaTimestamp > 0 {
+		fmt.Println("Warning : metadata keyname collision ", ParseMetadataKeynameTimestamp, "  : ", mcountMetaTimestamp)
+	}
+
+	mcountMetaChangeset := atomic.LoadInt64(&countMetaChangeset)
+	if mcountMetaChangeset > 0 {
+		fmt.Println("Warning : metadata keyname collision ", ParseMetadataKeynameChangeset, "  : ", mcountMetaChangeset)
+	}
+
+	mcountMetaUid := atomic.LoadInt64(&countMetaUid)
+	if mcountMetaUid > 0 {
+		fmt.Println("Warning : metadata keyname collision ", ParseMetadataKeynameUid, "  : ", mcountMetaUid)
+	}
+
+	mcountMetaUser := atomic.LoadInt64(&countMetaUser)
+	if mcountMetaUser > 0 {
+		fmt.Println("Warning : metadata keyname collision ", ParseMetadataKeynameUser, "  : ", mcountMetaUser)
+	}
+
+}
+
+// add OSM metadata to the Tags   and count key name collision .
+func (t Tags) AddMetaInfo(info MetaInfo) {
+
+	if ParseMetadataVarVersion {
+		if _, ok := t[ParseMetadataKeynameVersion]; ok {
+
+			atomic.AddInt64(&countMetaVersion, 1)
+		}
+		t[ParseMetadataKeynameVersion] = strconv.FormatInt(int64(info.Version), 10)
+	}
+
+	if ParseMetadataVarTimestamp {
+		if _, ok := t[ParseMetadataKeynameTimestamp]; ok {
+			// count key name collision
+			atomic.AddInt64(&countMetaTimestamp, 1)
+		}
+		t[ParseMetadataKeynameTimestamp] = info.Timestamp.UTC().Format(time.RFC3339)
+	}
+
+	if ParseMetadataVarChangeset {
+		if _, ok := t[ParseMetadataKeynameChangeset]; ok {
+			// count key name collision
+			atomic.AddInt64(&countMetaChangeset, 1)
+		}
+		t[ParseMetadataKeynameChangeset] = strconv.FormatInt(info.Changeset, 10)
+	}
+
+	if ParseMetadataVarUid {
+		if _, ok := t[ParseMetadataKeynameUid]; ok {
+			// count key name collision
+			atomic.AddInt64(&countMetaUid, 1)
+		}
+		t[ParseMetadataKeynameUid] = strconv.FormatInt(int64(info.Uid), 10)
+	}
+
+	if ParseMetadataVarUser {
+		if _, ok := t[ParseMetadataKeynameUser]; ok {
+			// count key name collision
+			atomic.AddInt64(&countMetaUser, 1)
+		}
+		t[ParseMetadataKeynameUser] = info.User
+	}
+
 }
 
 type OSMElem struct {

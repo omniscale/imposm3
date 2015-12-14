@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<osm version="0.6" generator="manual test">
+<osm version="0.6" generator="testdata" upload="false">
 
   <!-- source nodes for parsemetadata tests below -->
    <node id="31001" version="1" timestamp="2000-11-11T00:11:11Z" lat="47" lon="80"  changeset="3000000" uid="1" user="u1">
@@ -82,11 +82,11 @@
     
   <!-- key osm_*  test   -->  
   <node id="1" lat="47.1" lon="77"  version="1" timestamp="2001-01-01T00:22:11Z" changeset="1" uid="111" user="z111">
-    <tag k="osm_version"   v="OpenStreetMap_node_osm_version"/> 
-    <tag k="osm_timestamp" v="OpenStreetMap_node_osm_timestamp"/> 
-    <tag k="osm_changeset" v="OpenStreetMap_node_osm_changeset" />
-    <tag k="osm_uid"       v="OpenStreetMap_node_osm_uid"/>
-    <tag k="osm_user"      v="OpenStreetMap_node_osm_user"/>
+    <tag k="_version_"   v="OpenStreetMap_node_osm_version"/> 
+    <tag k="_timestamp_" v="OpenStreetMap_node_osm_timestamp"/> 
+    <tag k="_changeset_" v="OpenStreetMap_node_osm_changeset" />
+    <tag k="_uid_"       v="OpenStreetMap_node_osm_uid"/>
+    <tag k="_user_"      v="OpenStreetMap_node_osm_user"/>
  
     <tag k="amenity"   v="cafe"/>
 
@@ -96,11 +96,11 @@
   <way  id="1"                      version="1" timestamp="2001-01-01T00:22:22Z" changeset="1" uid="111" user="z111">
     <nd ref="1"/>
     <nd ref="31001"/>
-    <tag k="osm_version"   v="OpenStreetMap_way_osm_version"/> 
-    <tag k="osm_timestamp" v="OpenStreetMap_way_osm_timestamp"/> 
-    <tag k="osm_changeset" v="OpenStreetMap_way_osm_changeset" />
-    <tag k="osm_uid"       v="OpenStreetMap_way_osm_uid"/>
-    <tag k="osm_user"      v="OpenStreetMap_way_osm_user"/>   
+    <tag k="_version_"   v="OpenStreetMap_way_osm_version"/> 
+    <tag k="_timestamp_" v="OpenStreetMap_way_osm_timestamp"/> 
+    <tag k="_changeset_" v="OpenStreetMap_way_osm_changeset" />
+    <tag k="_uid_"       v="OpenStreetMap_way_osm_uid"/>
+    <tag k="_user_"      v="OpenStreetMap_way_osm_user"/>   
     
     <tag k="highway" v="secondary"/>
         
@@ -109,11 +109,11 @@
   <relation id="1"                  version="1" timestamp="2001-01-01T00:22:33Z"  changeset="1" uid="111" user="z111">
     <member type="way" ref="31002" role="outer"/>
     <member type="way" ref="31003" role="outer"/>
-    <tag k="osm_version"   v="OpenStreetMap_rel_osm_version"/> 
-    <tag k="osm_timestamp" v="OpenStreetMap_rel_osm_timestamp"/> 
-    <tag k="osm_changeset" v="OpenStreetMap_rel_osm_changeset" />
-    <tag k="osm_uid"       v="OpenStreetMap_rel_osm_uid"/>
-    <tag k="osm_user"      v="OpenStreetMap_rel_osm_user"/>    
+    <tag k="_version_"   v="OpenStreetMap_rel_osm_version"/> 
+    <tag k="_timestamp_" v="OpenStreetMap_rel_osm_timestamp"/> 
+    <tag k="_changeset_" v="OpenStreetMap_rel_osm_changeset" />
+    <tag k="_uid_"       v="OpenStreetMap_rel_osm_uid"/>
+    <tag k="_user_"      v="OpenStreetMap_rel_osm_user"/>    
     
     <tag k="amenity"   v="cafe"/>
         

@@ -4,7 +4,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/omniscale/imposm3/config"
 	"github.com/omniscale/imposm3/element"
 )
 
@@ -62,7 +61,7 @@ func TestParser(t *testing.T) {
 		t.Error("parsed an unexpected number of coords:", numCoords)
 	}
 
-	if config.ParseDontAddOnlyCreatedByTag {
+	if element.ParseDontAddOnlyCreatedByTag {
 		if numNodes != 978 {
 			t.Error("parsed an unexpected number of nodes:", numNodes)
 		}
@@ -183,7 +182,7 @@ func TestParserNotify(t *testing.T) {
 		t.Error("parsed an unexpected number of coords:", numCoords)
 	}
 
-	if config.ParseDontAddOnlyCreatedByTag {
+	if element.ParseDontAddOnlyCreatedByTag {
 		if numNodes != 978 {
 			t.Error("parsed an unexpected number of nodes:", numNodes)
 		}

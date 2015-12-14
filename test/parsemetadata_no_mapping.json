@@ -13,28 +13,28 @@
                 },
                 {
                     "type": "string",
-                    "name": "osm_changeset",
-                    "key":  "osm_changeset"
+                    "name": "_changeset_",
+                    "key":  "_changeset_"
                 },                
                 {
                     "type": "string",
-                    "name": "osm_version",
-                    "key":  "osm_version"
+                    "name": "_version_",
+                    "key":  "_version_"
                 }, 
                 {
                     "type": "string",
-                    "name": "osm_user",
-                    "key":  "osm_user"
+                    "name": "_user_",
+                    "key":  "_user_"
                 }, 
                 {
                     "type": "string",
-                    "name": "osm_uid",
-                    "key":  "osm_uid"
+                    "name": "_uid_",
+                    "key":  "_uid_"
                 },                                                 
                 {
                     "type": "string",
-                    "name": "osm_timestamp",
-                    "key":  "osm_timestamp"
+                    "name": "_timestamp_",
+                    "key":  "_timestamp_"
                 },                 
                 {
                     "type": "geometry",
