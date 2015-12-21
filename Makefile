@@ -34,11 +34,13 @@ clean:
 	rm -f imposm3
 	(cd test && make clean)
 
-test: test-unit test-system
+test: imposm3
+	$(GO) test ./... -i
+	$(GO) test ./...
 
 test-unit: imposm3
 	$(GO) test ./... -i
-	$(GO) test ./...
+	$(GO) test `$(GO) list ./... | grep -v 'imposm3/test'`
 
 test-system: imposm3
 	(cd test && make test)
