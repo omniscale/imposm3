@@ -69,18 +69,26 @@ func (t *validatedGeometryType) GeneralizeSql(colSpec *ColumnSpec, spec *General
 	)
 }
 
-var pgTypes map[string]ColumnType
-
-func init() {
-	pgTypes = map[string]ColumnType{
-		"string":             &simpleColumnType{"VARCHAR"},
-		"bool":               &simpleColumnType{"BOOL"},
-		"int8":               &simpleColumnType{"SMALLINT"},
-		"int32":              &simpleColumnType{"INT"},
-		"int64":              &simpleColumnType{"BIGINT"},
-		"float32":            &simpleColumnType{"REAL"},
-		"hstore_string":      &simpleColumnType{"HSTORE"},
-		"geometry":           &geometryType{"GEOMETRY"},
-		"validated_geometry": &validatedGeometryType{geometryType{"GEOMETRY"}},
-	}
+//TODO: add minimum PostgreSQL and PostGIS version:  JSONB !
+//TODO: need test and example code for all new type!
+//TODO: re-think:  registering new pgTypes ?  with user functions ?
+var pgTypes = map[string]ColumnType{
+	"string":             &simpleColumnType{"VARCHAR"},
+	"bool":               &simpleColumnType{"BOOL"},
+	"int8":               &simpleColumnType{"SMALLINT"},
+	"int32":              &simpleColumnType{"INT"},
+	"int64":              &simpleColumnType{"BIGINT"},
+	"float32":            &simpleColumnType{"REAL"},
+	"hstore_string":      &simpleColumnType{"HSTORE"},
+	"geometry":           &geometryType{"GEOMETRY"},
+	"validated_geometry": &validatedGeometryType{geometryType{"GEOMETRY"}},
+	"json_string":        &simpleColumnType{"JSON"},
+	"jsonb_string":       &simpleColumnType{"JSONB"}, // only  >= PostgreSQL 9.4
+	"date":               &simpleColumnType{"DATE"},
+	"timestamp":          &simpleColumnType{"TIMESTAMP"},
+	"int16":              &simpleColumnType{"SMALLINT"},
+	"double_precision":   &simpleColumnType{"DOUBLE PRECISION"},
+	"numeric":            &simpleColumnType{"NUMERIC"},
+	"bytea_escape":       &simpleColumnType{"BYTEA"},
+	"char1":              &simpleColumnType{"\"char\""}, // PostgreSQL single-byte internal type ;
 }

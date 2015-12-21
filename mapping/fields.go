@@ -13,31 +13,27 @@ import (
 
 var log = logging.NewLogger("mapping")
 
-var AvailableFieldTypes map[string]FieldType
-
-func init() {
-	AvailableFieldTypes = map[string]FieldType{
-		"bool":                 {"bool", "bool", Bool, nil, nil, false},
-		"boolint":              {"boolint", "int8", BoolInt, nil, nil, false},
-		"id":                   {"id", "int64", Id, nil, nil, false},
-		"string":               {"string", "string", String, nil, nil, false},
-		"direction":            {"direction", "int8", Direction, nil, nil, false},
-		"integer":              {"integer", "int32", Integer, nil, nil, false},
-		"mapping_key":          {"mapping_key", "string", KeyName, nil, nil, false},
-		"mapping_value":        {"mapping_value", "string", ValueName, nil, nil, false},
-		"member_id":            {"member_id", "int64", nil, nil, RelationMemberID, true},
-		"member_role":          {"member_role", "string", nil, nil, RelationMemberRole, true},
-		"member_type":          {"member_type", "int8", nil, nil, RelationMemberType, true},
-		"member_index":         {"member_index", "int32", nil, nil, RelationMemberIndex, true},
-		"geometry":             {"geometry", "geometry", Geometry, nil, nil, false},
-		"validated_geometry":   {"validated_geometry", "validated_geometry", Geometry, nil, nil, false},
-		"hstore_tags":          {"hstore_tags", "hstore_string", HstoreString, nil, nil, false},
-		"wayzorder":            {"wayzorder", "int32", WayZOrder, nil, nil, false},
-		"pseudoarea":           {"pseudoarea", "float32", PseudoArea, nil, nil, false},
-		"zorder":               {"zorder", "int32", nil, MakeZOrder, nil, false},
-		"enumerate":            {"enumerate", "int32", nil, MakeEnumerate, nil, false},
-		"string_suffixreplace": {"string_suffixreplace", "string", nil, MakeSuffixReplace, nil, false},
-	}
+var AvailableFieldTypes = map[string]FieldType{
+	"bool":                 {"bool", "bool", Bool, nil, nil, false},
+	"boolint":              {"boolint", "int8", BoolInt, nil, nil, false},
+	"id":                   {"id", "int64", Id, nil, nil, false},
+	"string":               {"string", "string", String, nil, nil, false},
+	"direction":            {"direction", "int8", Direction, nil, nil, false},
+	"integer":              {"integer", "int32", Integer, nil, nil, false},
+	"mapping_key":          {"mapping_key", "string", KeyName, nil, nil, false},
+	"mapping_value":        {"mapping_value", "string", ValueName, nil, nil, false},
+	"member_id":            {"member_id", "int64", nil, nil, RelationMemberID, true},
+	"member_role":          {"member_role", "string", nil, nil, RelationMemberRole, true},
+	"member_type":          {"member_type", "int8", nil, nil, RelationMemberType, true},
+	"member_index":         {"member_index", "int32", nil, nil, RelationMemberIndex, true},
+	"geometry":             {"geometry", "geometry", Geometry, nil, nil, false},
+	"validated_geometry":   {"validated_geometry", "validated_geometry", Geometry, nil, nil, false},
+	"hstore_tags":          {"hstore_tags", "hstore_string", HstoreString, nil, nil, false},
+	"wayzorder":            {"wayzorder", "int32", WayZOrder, nil, nil, false},
+	"pseudoarea":           {"pseudoarea", "float32", PseudoArea, nil, nil, false},
+	"zorder":               {"zorder", "int32", nil, MakeZOrder, nil, false},
+	"enumerate":            {"enumerate", "int32", nil, MakeEnumerate, nil, false},
+	"string_suffixreplace": {"string_suffixreplace", "string", nil, MakeSuffixReplace, nil, false},
 }
 
 type MakeValue func(string, *element.OSMElem, *geom.Geometry, Match) interface{}
@@ -137,6 +133,33 @@ type FieldType struct {
 	MakeFunc   MakeMakeValue
 	MemberFunc MakeMemberValue
 	FromMember bool
+}
+
+// TODO:  need rethink
+// ideas: automatic parameter type checking.
+// ideas: automatic documentation generation
+type FieldTypeDoc struct {
+	Label      string              // sort description
+	Doc        string              // documentation ( markdown text ? )
+	Parameters string              // parameters ...
+	Status     string              // draft,notest,tested,notsupported,production,depricated
+	Category   string              // tags,geometry,osm_id,system
+	Repository string              // https://github.com/..../..... ; for local repos
+	Lastupdate string              // "2015-12-21"
+	Author     string              // e-mail or other nick name
+	Tags       map[string][]string // any other key value ... for adding to the documentation
+}
+
+func registerFieldTypes(newFieldType FieldType, newFieldTypeDoc FieldTypeDoc) {
+	if _, ok := AvailableFieldTypes[newFieldType.Name]; ok {
+		panic("registerFieldTypes called twice for registration this FieldType :" + newFieldType.Name)
+	} else {
+		// TODO: check if  newFieldType.GoType     is valid  and not nil
+		// TODO: check if  newFieldType.Func       is valid  or nil
+		// TODO: check if  newFieldType.MakeFunc   is valid  or nil
+		AvailableFieldTypes[newFieldType.Name] = newFieldType
+		// log.Print("Registered new Fieldtypes : " + newFieldType.Name)
+	}
 }
 
 func Bool(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
