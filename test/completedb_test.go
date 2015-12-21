@@ -2,6 +2,9 @@ package test
 
 import (
 	"database/sql"
+	"fmt"
+
+	"github.com/omniscale/imposm3/cache"
 
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/geom"
@@ -54,22 +57,24 @@ func TestDeploy(t *testing.T) {
 
 func TestLandusageToWaterarea1(t *testing.T) {
 	// Parks inserted into landusages
-	// t.assert_cached_way(11001)
-	// t.assert_cached_way(12001)
-	// t.assert_cached_way(13001)
+	cache := ts.cache(t)
+	defer cache.Close()
+	assertCachedWay(t, cache, 11001)
+	assertCachedWay(t, cache, 12001)
+	assertCachedWay(t, cache, 13001)
 
 	assertRecords(t, []checkElem{
-		{"osm_waterareas", 11001, "", nil},
-		{"osm_waterareas", -12001, "", nil},
-		{"osm_waterareas", -13001, "", nil},
+		{"osm_waterareas", 11001, Missing, nil},
+		{"osm_waterareas", -12001, Missing, nil},
+		{"osm_waterareas", -13001, Missing, nil},
 
-		{"osm_waterareas_gen0", 11001, "", nil},
-		{"osm_waterareas_gen0", -12001, "", nil},
-		{"osm_waterareas_gen0", -13001, "", nil},
+		{"osm_waterareas_gen0", 11001, Missing, nil},
+		{"osm_waterareas_gen0", -12001, Missing, nil},
+		{"osm_waterareas_gen0", -13001, Missing, nil},
 
-		{"osm_waterareas_gen1", 11001, "", nil},
-		{"osm_waterareas_gen1", -12001, "", nil},
-		{"osm_waterareas_gen1", -13001, "", nil},
+		{"osm_waterareas_gen1", 11001, Missing, nil},
+		{"osm_waterareas_gen1", -12001, Missing, nil},
+		{"osm_waterareas_gen1", -13001, Missing, nil},
 
 		{"osm_landusages", 11001, "park", nil},
 		{"osm_landusages", -12001, "park", nil},
@@ -87,12 +92,14 @@ func TestLandusageToWaterarea1(t *testing.T) {
 
 func TestChangedHoleTags1(t *testing.T) {
 	// Multipolygon relation with untagged hole
-	// t.assert_cached_way(14001)
-	// t.assert_cached_way(14011)
+	cache := ts.cache(t)
+	defer cache.Close()
+	assertCachedWay(t, cache, 14001)
+	assertCachedWay(t, cache, 14011)
 
 	assertRecords(t, []checkElem{
-		{"osm_waterareas", 14011, "", nil},
-		{"osm_waterareas", -14011, "", nil},
+		{"osm_waterareas", 14011, Missing, nil},
+		{"osm_waterareas", -14011, Missing, nil},
 		{"osm_landusages", -14001, "park", nil},
 	})
 }
@@ -100,7 +107,7 @@ func TestChangedHoleTags1(t *testing.T) {
 func TestSplitOuterMultipolygonWay1(t *testing.T) {
 	// Single outer way of multipolygon was inserted.
 	assertRecords(t, []checkElem{
-		{"osm_roads", 15002, "", nil},
+		{"osm_roads", 15002, Missing, nil},
 		{"osm_landusages", -15001, "park", nil},
 	})
 	assertArea(t, checkElem{"osm_landusages", -15001, "park", nil}, 9816216452)
@@ -118,25 +125,22 @@ func TestMergeOuterMultipolygonWay1(t *testing.T) {
 func TestBrokenMultipolygonWays(t *testing.T) {
 	// MultiPolygons with broken outer ways are handled.
 	// outer way does not merge (17002 has one node)
-
 	assertRecords(t, []checkElem{
-		{"osm_landusages", -17001, "", nil},
+		{"osm_landusages", -17001, Missing, nil},
 		{"osm_roads", 17001, "residential", nil},
-		{"osm_roads", 17002, "", nil},
+		{"osm_roads", 17002, Missing, nil},
 	})
 
 	// outer way does not merge (17102 has no nodes)
 	assertRecords(t, []checkElem{
-		{"osm_landusages", -17101, "", nil},
+		{"osm_landusages", -17101, Missing, nil},
 		{"osm_roads", 17101, "residential", nil},
-		{"osm_roads", 17102, "", nil},
+		{"osm_roads", 17102, Missing, nil},
 	})
 }
 
 func TestNodeWayInsertedTwice(t *testing.T) {
 	// Way with multiple mappings is inserted twice in same table
-	//     rows = t.query_row(t.db_conf, 'osm_roads', 18001)
-	//     rows.sort(key=lambda x: x['type'])
 	rows := ts.queryRows(t, "osm_roads", 18001)
 	if len(rows) != 2 || rows[0].osmType != "residential" || rows[1].osmType != "tram" {
 		t.Errorf("unexpected roads: %v", rows)
@@ -145,17 +149,15 @@ func TestNodeWayInsertedTwice(t *testing.T) {
 
 func TestOuterWayNotInserted(t *testing.T) {
 	// Outer way with different tag is not inserted twice into same table
-
 	assertRecords(t, []checkElem{
 		{"osm_landusages", -19001, "farmland", nil},
 		{"osm_landusages", 19002, "farmyard", nil},
-		{"osm_landusages", 19001, "", nil},
+		{"osm_landusages", 19001, Missing, nil},
 	})
 }
 
 func TestOuterWayInserted(t *testing.T) {
 	// Outer way with different tag is inserted twice into different table
-
 	assertRecords(t, []checkElem{
 		{"osm_landusages", 19101, "farm", nil},
 		{"osm_landusages", 19102, "farmyard", nil},
@@ -164,10 +166,17 @@ func TestOuterWayInserted(t *testing.T) {
 }
 
 func TestNodeWayRefAfterDelete1(t *testing.T) {
-	// Nodes refereces way
-	//     data = t.cache_query(nodes=[20001, 20002], deps=True)
-	//     assert '20001' in data['nodes']['20001']['ways']
-	//     assert '20001' in data['nodes']['20002']['ways']
+	// Nodes references way
+
+	cache := ts.diffCache(t)
+	defer cache.Close()
+	if ids := cache.Coords.Get(20001); len(ids) != 1 || ids[0] != 20001 {
+		t.Error("node does not references way")
+	}
+	if ids := cache.Coords.Get(20002); len(ids) != 1 || ids[0] != 20001 {
+		t.Error("node does not references way")
+	}
+
 	assertRecords(t, []checkElem{
 		{"osm_roads", 20001, "residential", nil},
 		{"osm_barrierpoints", 20001, "block", nil},
@@ -176,8 +185,13 @@ func TestNodeWayRefAfterDelete1(t *testing.T) {
 
 func TestWayRelRefAfterDelete1(t *testing.T) {
 	// Ways references relation
-	//     data = t.cache_query(ways=[21001], deps=True)
-	//     assert data['ways']['21001']['relations'].keys() == ['21001']
+
+	cache := ts.diffCache(t)
+	defer cache.Close()
+	if ids := cache.Ways.Get(21001); len(ids) != 1 || ids[0] != 21001 {
+		t.Error("way does not references relation")
+	}
+
 	assertRecords(t, []checkElem{
 		{"osm_roads", 21001, "residential", nil},
 		{"osm_landusages", -21001, "park", nil},
@@ -186,22 +200,20 @@ func TestWayRelRefAfterDelete1(t *testing.T) {
 
 func TestRelationWayNotInserted(t *testing.T) {
 	// Part of relation was inserted only once.
-
 	assertRecords(t, []checkElem{
 		{"osm_landusages", -9001, "park", map[string]string{"name": "rel 9001"}},
-		{"osm_landusages", 9009, "", nil},
+		{"osm_landusages", 9009, Missing, nil},
 		{"osm_landusages", -9101, "park", map[string]string{"name": "rel 9101"}},
-		{"osm_landusages", 9109, "", nil},
+		{"osm_landusages", 9109, Missing, nil},
 		{"osm_landusages", 9110, "scrub", nil},
 	})
 }
 
 func TestRelationWaysInserted(t *testing.T) {
 	// Outer ways of multipolygon are inserted.
-
 	assertRecords(t, []checkElem{
 		{"osm_landusages", -9201, "park", map[string]string{"name": "9209"}},
-		{"osm_landusages", 9201, "", nil},
+		{"osm_landusages", 9201, Missing, nil},
 		// outer ways of multipolygon stand for their own
 		{"osm_roads", 9209, "secondary", map[string]string{"name": "9209"}},
 		{"osm_roads", 9210, "residential", map[string]string{"name": "9210"}},
@@ -217,7 +229,6 @@ func TestRelationWaysInserted(t *testing.T) {
 
 func TestRelationWayInserted(t *testing.T) {
 	// Part of relation was inserted twice.
-
 	assertRecords(t, []checkElem{
 		{"osm_landusages", -8001, "park", map[string]string{"name": "rel 8001"}},
 		{"osm_roads", 8009, "residential", nil},
@@ -226,17 +237,15 @@ func TestRelationWayInserted(t *testing.T) {
 
 func TestSingleNodeWaysNotInserted(t *testing.T) {
 	// Ways with single/duplicate nodes are not inserted.
-
 	assertRecords(t, []checkElem{
-		{"osm_landusages", 30001, "", nil},
-		{"osm_landusages", 30002, "", nil},
-		{"osm_landusages", 30003, "", nil},
+		{"osm_landusages", 30001, Missing, nil},
+		{"osm_landusages", 30002, Missing, nil},
+		{"osm_landusages", 30003, Missing, nil},
 	})
 }
 
 func TestPolygonWithDuplicateNodesIsValid(t *testing.T) {
 	// Polygon with duplicate nodes is valid.
-
 	assertValid(t, checkElem{"osm_landusages", 30005, "park", nil})
 }
 
@@ -244,8 +253,8 @@ func TestIncompletePolygons(t *testing.T) {
 	// Non-closed/incomplete polygons are not inserted.
 
 	assertRecords(t, []checkElem{
-		{"osm_landusages", 30004, "", nil},
-		{"osm_landusages", 30006, "", nil},
+		{"osm_landusages", 30004, Missing, nil},
+		{"osm_landusages", 30006, Missing, nil},
 	})
 }
 
@@ -254,8 +263,8 @@ func TestResidentialToSecondary(t *testing.T) {
 
 	assertRecords(t, []checkElem{
 		{"osm_roads", 40001, "residential", nil},
-		{"osm_roads_gen0", 40001, "", nil},
-		{"osm_roads_gen1", 40002, "", nil},
+		{"osm_roads_gen0", 40001, Missing, nil},
+		{"osm_roads_gen1", 40002, Missing, nil},
 	})
 }
 
@@ -272,7 +281,7 @@ func TestRelationWithoutTags(t *testing.T) {
 	// Relation without tags is inserted.
 
 	assertRecords(t, []checkElem{
-		{"osm_buildings", 50111, "", nil},
+		{"osm_buildings", 50111, Missing, nil},
 		{"osm_buildings", -50121, "yes", nil},
 	})
 }
@@ -291,10 +300,10 @@ func TestDuplicateIds(t *testing.T) {
 func TestGeneralizedBananaPolygonIsValid(t *testing.T) {
 	// Generalized polygons are valid.
 
-	assertValid(t, checkElem{"osm_landusages", 7101, "", nil})
+	assertValid(t, checkElem{"osm_landusages", 7101, Missing, nil})
 	// simplified geometies are valid too
-	assertValid(t, checkElem{"osm_landusages_gen0", 7101, "", nil})
-	assertValid(t, checkElem{"osm_landusages_gen1", 7101, "", nil})
+	assertValid(t, checkElem{"osm_landusages_gen0", 7101, Missing, nil})
+	assertValid(t, checkElem{"osm_landusages_gen1", 7101, Missing, nil})
 }
 
 func TestGeneralizedLinestringIsValid(t *testing.T) {
@@ -312,28 +321,25 @@ func TestGeneralizedLinestringIsValid(t *testing.T) {
 
 func TestRingWithGap(t *testing.T) {
 	// Multipolygon and way with gap (overlapping but different endpoints) gets closed
-	assertValid(t, checkElem{"osm_landusages", -7301, "", nil})
-	assertValid(t, checkElem{"osm_landusages", 7311, "", nil})
+	assertValid(t, checkElem{"osm_landusages", -7301, Missing, nil})
+	assertValid(t, checkElem{"osm_landusages", 7311, Missing, nil})
 }
 
 func TestMultipolygonWithOpenRing(t *testing.T) {
 	// Multipolygon is inserted even if there is an open ring/member
-	assertValid(t, checkElem{"osm_landusages", -7401, "", nil})
+	assertValid(t, checkElem{"osm_landusages", -7401, Missing, nil})
 }
 
 func TestUpdatedNodes1(t *testing.T) {
 	// Zig-Zag line is inserted.
-	assertLength(t, checkElem{"osm_roads", 60000, "", nil}, 14035.61150207768)
+	assertLength(t, checkElem{"osm_roads", 60000, Missing, nil}, 14035.61150207768)
 }
 
 func TestUpdateNodeToCoord1(t *testing.T) {
 	// Node is inserted with tag.
-	//     coords = t.cache_query(nodes=(70001, 70002))
-	//     assert coords['nodes']["70001"]["tags"] == {"amenity": "police"}
-	//     assert "tags" not in coords['nodes']["70002"]
 	assertRecords(t, []checkElem{
 		{"osm_amenities", 70001, "police", nil},
-		{"osm_amenities", 70002, "", nil},
+		{"osm_amenities", 70002, Missing, nil},
 	})
 }
 
@@ -353,17 +359,33 @@ func TestUpdate(t *testing.T) {
 func TestNoDuplicates(t *testing.T) {
 	// Relations/ways are only inserted once Checks #66
 
-	// highways = t.query_duplicates(t.db_conf, 'osm_roads')
-	// # one duplicate for test_node_way_inserted_twice is expected
-	// assert highways == [[18001, 2]], highways
-	// landusages = t.query_duplicates(t.db_conf, 'osm_landusages')
-	// assert not landusages, landusages
+	for _, table := range []string{"osm_roads", "osm_landusages"} {
+		rows, err := ts.db.Query(
+			fmt.Sprintf(`SELECT osm_id, count(osm_id) FROM "%s"."%s" GROUP BY osm_id HAVING count(osm_id) > 1`,
+				dbschemaProduction, table))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var osmId, count int64
+		for rows.Next() {
+			if err := rows.Scan(&osmId, &count); err != nil {
+				t.Fatal(err)
+			}
+			if table == "osm_roads" && osmId == 18001 {
+				// # duplicate for TestNodeWayInsertedTwice is expected
+				if count != 2 {
+					t.Error("highway not inserted twice", osmId, count)
+				}
+			} else {
+				t.Error("found duplicate way in osm_roads", osmId, count)
+			}
+		}
+	}
 }
 
 func TestUpdatedLandusage(t *testing.T) {
 	// Multipolygon relation was modified
 
-	// t.assert_cached_node(1001, (13.5, 47.5))
 	nd := element.Node{Long: 13.4, Lat: 47.5}
 	proj.NodeToMerc(&nd)
 	point, err := geom.Point(ts.g, nd)
@@ -380,22 +402,26 @@ func TestUpdatedLandusage(t *testing.T) {
 func TestPartialDelete(t *testing.T) {
 	// Deleted relation but nodes are still cached
 
-	// t.assert_cached_node(2001)
-	// t.assert_cached_way(2001)
-	// t.assert_cached_way(2002)
+	cache := ts.cache(t)
+	defer cache.Close()
+	assertCachedNode(t, cache, 2001)
+	assertCachedWay(t, cache, 2001)
+	assertCachedWay(t, cache, 2002)
 
 	assertRecords(t, []checkElem{
-		{"osm_landusages", -2001, "", nil},
-		{"osm_landusages", 2001, "", nil},
+		{"osm_landusages", -2001, Missing, nil},
+		{"osm_landusages", 2001, Missing, nil},
 	})
 }
 
 func TestUpdatedNodes(t *testing.T) {
 	// Nodes were added, modified or deleted
 
-	// t.assert_missing_node(10000)
-	// t.assert_cached_node(10001, (10.0, 40.0))
-	// t.assert_cached_node(10002, (10.1, 40.0))
+	c := ts.cache(t)
+	defer c.Close()
+	if _, err := c.Coords.GetCoord(10000); err != cache.NotFound {
+		t.Fatal("coord not missing")
+	}
 
 	assertRecords(t, []checkElem{
 		{"osm_places", 10001, "village", map[string]string{"name": "Bar"}},
@@ -407,7 +433,6 @@ func TestLandusageToWaterarea2(t *testing.T) {
 	// Parks converted to water moved from landusages to waterareas
 
 	assertRecords(t, []checkElem{
-
 		{"osm_waterareas", 11001, "water", nil},
 		{"osm_waterareas", -12001, "water", nil},
 		{"osm_waterareas", -13001, "water", nil},
@@ -420,25 +445,27 @@ func TestLandusageToWaterarea2(t *testing.T) {
 		{"osm_waterareas_gen1", -12001, "water", nil},
 		{"osm_waterareas_gen1", -13001, "water", nil},
 
-		{"osm_landusages", 11001, "", nil},
-		{"osm_landusages", -12001, "", nil},
-		{"osm_landusages", -13001, "", nil},
+		{"osm_landusages", 11001, Missing, nil},
+		{"osm_landusages", -12001, Missing, nil},
+		{"osm_landusages", -13001, Missing, nil},
 
-		{"osm_landusages_gen0", 11001, "", nil},
-		{"osm_landusages_gen0", -12001, "", nil},
-		{"osm_landusages_gen0", -13001, "", nil},
+		{"osm_landusages_gen0", 11001, Missing, nil},
+		{"osm_landusages_gen0", -12001, Missing, nil},
+		{"osm_landusages_gen0", -13001, Missing, nil},
 
-		{"osm_landusages_gen1", 11001, "", nil},
-		{"osm_landusages_gen1", -12001, "", nil},
-		{"osm_landusages_gen1", -13001, "", nil},
+		{"osm_landusages_gen1", 11001, Missing, nil},
+		{"osm_landusages_gen1", -12001, Missing, nil},
+		{"osm_landusages_gen1", -13001, Missing, nil},
 	})
 }
 
 func TestChangedHoleTags2(t *testing.T) {
 	// Newly tagged hole is inserted
 
-	// t.assert_cached_way(14001)
-	// t.assert_cached_way(14011)
+	cache := ts.cache(t)
+	defer cache.Close()
+	assertCachedWay(t, cache, 14001)
+	assertCachedWay(t, cache, 14011)
 
 	assertArea(t, checkElem{"osm_waterareas", 14011, "water", nil}, 26672019779)
 	assertArea(t, checkElem{"osm_landusages", -14001, "park", nil}, 10373697182)
@@ -447,12 +474,17 @@ func TestChangedHoleTags2(t *testing.T) {
 func TestSplitOuterMultipolygonWay2(t *testing.T) {
 	// Splitted outer way of multipolygon was inserted
 
-	// data = t.cache_query(ways=[15001, 15002], deps=True)
-	// assert data['ways']['15001']['relations'].keys() == ['15001']
-	// assert data['ways']['15002']['relations'].keys() == ['15001']
+	diffCache := ts.diffCache(t)
+	defer diffCache.Close()
+	if ids := diffCache.Ways.Get(15001); len(ids) != 1 || ids[0] != 15001 {
+		t.Error("way does not references relation")
+	}
+	if ids := diffCache.Ways.Get(15002); len(ids) != 1 || ids[0] != 15001 {
+		t.Error("way does not references relation")
+	}
 
 	assertRecords(t, []checkElem{
-		{"osm_landusages", 15001, "", nil},
+		{"osm_landusages", 15001, Missing, nil},
 		{"osm_roads", 15002, "residential", nil},
 	})
 	assertArea(t, checkElem{"osm_landusages", -15001, "park", nil}, 9816216452)
@@ -461,16 +493,28 @@ func TestSplitOuterMultipolygonWay2(t *testing.T) {
 func TestMergeOuterMultipolygonWay2(t *testing.T) {
 	// Merged outer way of multipolygon was inserted
 
-	//     data = t.cache_query(ways=[16001, 16002], deps=True)
-	//     assert data['ways']['16001']['relations'].keys() == ['16001']
-	//     assert data['ways']['16002'] == None
+	diffCache := ts.diffCache(t)
+	defer diffCache.Close()
+	if ids := diffCache.Ways.Get(16001); len(ids) != 1 || ids[0] != 16001 {
+		t.Error("way does not references relation")
+	}
+	if ids := diffCache.Ways.Get(16002); len(ids) != 0 {
+		t.Error("way references relation")
+	}
 
-	//     data = t.cache_query(relations=[16001], full=True)
-	//     assert sorted(data['relations']['16001']['ways'].keys()) == ['16001', '16011']
+	cache := ts.cache(t)
+	defer cache.Close()
+	rel, err := cache.Relations.GetRelation(16001)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rel.Members) != 2 || rel.Members[0].Id != 16001 || rel.Members[1].Id != 16011 {
+		t.Error("unexpected relation members", rel)
+	}
 
 	assertRecords(t, []checkElem{
-		{"osm_landusages", 16001, "", nil},
-		{"osm_roads", 16002, "", nil},
+		{"osm_landusages", 16001, Missing, nil},
+		{"osm_roads", 16002, Missing, nil},
 	})
 	assertArea(t, checkElem{"osm_landusages", -16001, "park", nil}, 12779350582)
 }
@@ -478,11 +522,20 @@ func TestMergeOuterMultipolygonWay2(t *testing.T) {
 func TestNodeWayRefAfterDelete2(t *testing.T) {
 	// Node does not referece deleted way
 
-	// data = t.cache_query(nodes=[20001, 20002], deps=True)
-	// assert 'ways' not in data['nodes']['20001']
-	// assert data['nodes']['20002'] == None
+	diffCache := ts.diffCache(t)
+	defer diffCache.Close()
+	if ids := diffCache.Coords.Get(20001); len(ids) != 0 {
+		t.Error("node references way")
+	}
+	c := ts.cache(t)
+	defer c.Close()
+	_, err := c.Coords.GetCoord(20002)
+	if err != cache.NotFound {
+		t.Error("found deleted node")
+	}
+
 	assertRecords(t, []checkElem{
-		{"osm_roads", 20001, "", nil},
+		{"osm_roads", 20001, Missing, nil},
 		{"osm_barrierpoints", 20001, "block", nil},
 	})
 }
@@ -490,12 +543,16 @@ func TestNodeWayRefAfterDelete2(t *testing.T) {
 func TestWayRelRefAfterDelete2(t *testing.T) {
 	// Way does not referece deleted relation
 
-	// data = t.cache_query(ways=[21001], deps=True)
-	// assert 'relations' not in data['ways']['21001']
+	diffCache := ts.diffCache(t)
+	defer diffCache.Close()
+	if ids := diffCache.Ways.Get(21001); len(ids) != 0 {
+		t.Error("way references relation")
+	}
+
 	assertRecords(t, []checkElem{
 		{"osm_roads", 21001, "residential", nil},
-		{"osm_landusages", 21001, "", nil},
-		{"osm_landusages", -21001, "", nil},
+		{"osm_landusages", 21001, Missing, nil},
+		{"osm_landusages", -21001, Missing, nil},
 	})
 }
 
@@ -513,21 +570,27 @@ func TestRelationAfterRemove(t *testing.T) {
 	// Relation is deleted and way is still present.
 	assertRecords(t, []checkElem{
 		{"osm_buildings", 50011, "yes", nil},
-		{"osm_landusages", 50021, "", nil},
-		{"osm_landusages", -50021, "", nil},
+		{"osm_landusages", 50021, Missing, nil},
+		{"osm_landusages", -50021, Missing, nil},
 	})
 }
 
 func TestRelationWithoutTags2(t *testing.T) {
 	// Relation without tags is removed.
 
-	// t.cache_query(ways=[50111], deps=True)
-	// assert t.cache_query(relations=[50121], deps=True)['relations']["50121"] == None
+	c := ts.cache(t)
+	defer c.Close()
+	assertCachedWay(t, c, 50111)
+
+	_, err := c.Ways.GetWay(20002)
+	if err != cache.NotFound {
+		t.Error("found deleted node")
+	}
 
 	assertRecords(t, []checkElem{
 		{"osm_buildings", 50111, "yes", nil},
-		{"osm_buildings", 50121, "", nil},
-		{"osm_buildings", -50121, "", nil},
+		{"osm_buildings", 50121, Missing, nil},
+		{"osm_buildings", -50121, Missing, nil},
 	})
 }
 
@@ -536,8 +599,8 @@ func TestDuplicateIds2(t *testing.T) {
 
 	assertRecords(t, []checkElem{
 		{"osm_buildings", 51001, "way", nil},
-		{"osm_buildings", -51001, "", nil},
-		{"osm_buildings", 51011, "", nil},
+		{"osm_buildings", -51001, Missing, nil},
+		{"osm_buildings", 51011, Missing, nil},
 		{"osm_buildings", -51011, "mp", nil},
 	})
 }
@@ -552,15 +615,8 @@ func TestUpdatedWay2(t *testing.T) {
 func TestUpdateNodeToCoord2(t *testing.T) {
 	// Node is becomes coord after tags are removed.
 
-	// coords = t.cache_query(nodes=(70001, 70002))
-
-	// assert "tags" not in coords['nodes']["70001"]
-	// assert coords['nodes']["70002"]["tags"] == {"amenity": "police"}
-
-	// assert not t.query_row(t.db_conf, 'osm_amenities', 70001)
-	// assert t.query_row(t.db_conf, 'osm_amenities', 70002)
 	assertRecords(t, []checkElem{
-		{"osm_amenities", 70001, "", nil},
+		{"osm_amenities", 70001, Missing, nil},
 		{"osm_amenities", 70002, "police", nil},
 	})
 }
@@ -580,7 +636,7 @@ func TestUnsupportedRelation(t *testing.T) {
 	// Unsupported relation type is not inserted with update
 
 	assertRecords(t, []checkElem{
-		{"osm_landusages", -201291, "", nil},
+		{"osm_landusages", -201291, Missing, nil},
 		{"osm_landusages", 201251, "park", nil},
 	})
 }

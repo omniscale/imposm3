@@ -2,6 +2,7 @@ package test
 
 import (
 	"database/sql"
+	"strings"
 
 	"testing"
 
@@ -50,16 +51,20 @@ func TestSingleTable_Deploy(t *testing.T) {
 
 func TestSingleTable_NonMappedNodeIsMissing(t *testing.T) {
 	// Node without mapped tags is missing.
-	// t.assert_cached_node(10001, (10, 42))
+	cache := ts.cache(t)
+	defer cache.Close()
+	assertCachedNode(t, cache, 10001)
 
 	assertHstore(t, []checkElem{
-		{"osm_all", 10001, "", nil},
+		{"osm_all", 10001, Missing, nil},
 	})
 }
 
 func TestSingleTable_MappedNode(t *testing.T) {
 	// Node is stored with all tags.
-	// t.assert_cached_node(10002, (11, 42))
+	cache := ts.cache(t)
+	defer cache.Close()
+	assertCachedNode(t, cache, 10002)
 
 	assertHstore(t, []checkElem{
 		{"osm_all", 10002, "*", map[string]string{"random": "tag", "but": "mapped", "poi": "unicorn"}},
@@ -68,19 +73,25 @@ func TestSingleTable_MappedNode(t *testing.T) {
 
 func TestSingleTable_NonMappedWayIsMissing(t *testing.T) {
 	// Way without mapped tags is missing.
-	// t.assert_cached_way(20101)
-	// t.assert_cached_way(20102)
-	// t.assert_cached_way(20103)
+	cache := ts.cache(t)
+	defer cache.Close()
+	assertCachedWay(t, cache, 20101)
+	assertCachedWay(t, cache, 20102)
+	assertCachedWay(t, cache, 20103)
+
 	assertHstore(t, []checkElem{
-		{"osm_all", 20101, "", nil},
-		{"osm_all", 20102, "", nil},
-		{"osm_all", 20103, "", nil},
+		{"osm_all", 20101, Missing, nil},
+		{"osm_all", 20102, Missing, nil},
+		{"osm_all", 20103, Missing, nil},
 	})
 }
 
 func TestSingleTable_MappedWay(t *testing.T) {
 	// Way is stored with all tags.
-	// t.assert_cached_way(20201)
+	cache := ts.cache(t)
+	defer cache.Close()
+	assertCachedWay(t, cache, 20201)
+
 	assertHstore(t, []checkElem{
 		{"osm_all", -20201, "*", map[string]string{"random": "tag", "highway": "yes"}},
 	})
@@ -88,15 +99,17 @@ func TestSingleTable_MappedWay(t *testing.T) {
 
 func TestSingleTable_NonMappedClosedWayIsMissing(t *testing.T) {
 	// Closed way without mapped tags is missing.
-	// t.assert_cached_way(20301)
+	cache := ts.cache(t)
+	defer cache.Close()
+	assertCachedWay(t, cache, 20301)
 	assertHstore(t, []checkElem{
-		{"osm_all", -20301, "", nil},
+		{"osm_all", 20301, Missing, nil},
+		{"osm_all", -20301, Missing, nil},
 	})
 }
 
 func TestSingleTable_MappedClosedWay(t *testing.T) {
 	// Closed way is stored with all tags.
-	// t.assert_cached_way(20401)
 	assertHstore(t, []checkElem{
 		{"osm_all", -20401, "*", map[string]string{"random": "tag", "building": "yes"}},
 	})
@@ -104,7 +117,6 @@ func TestSingleTable_MappedClosedWay(t *testing.T) {
 
 func TestSingleTable_MappedClosedWayAreaYes(t *testing.T) {
 	// Closed way with area=yes is not stored as linestring.
-	// t.assert_cached_way(20501)
 	assertHstore(t, []checkElem{
 		{"osm_all", -20501, "*", map[string]string{"random": "tag", "landuse": "grass", "highway": "pedestrian", "area": "yes"}},
 	})
@@ -113,7 +125,6 @@ func TestSingleTable_MappedClosedWayAreaYes(t *testing.T) {
 
 func TestSingleTable_MappedClosedWayAreaNo(t *testing.T) {
 	// Closed way with area=no is not stored as polygon.
-	// t.assert_cached_way(20502)
 	assertHstore(t, []checkElem{
 		{"osm_all", -20502, "*", map[string]string{"random": "tag", "landuse": "grass", "highway": "pedestrian", "area": "no"}},
 	})
@@ -122,30 +133,24 @@ func TestSingleTable_MappedClosedWayAreaNo(t *testing.T) {
 
 func TestSingleTable_MappedClosedWayWithoutArea(t *testing.T) {
 	// Closed way without area is stored as mapped (linestring and polygon).
-	// t.assert_cached_way(20601)
-	// elems = t.query_row(t.db_conf, 'osm_all', -20601)
-	// assert len(elems) == 2
-	// elems.sort(key=lambda x: x['geometry'].type)
 
-	// assert elems[0]['geometry'].type == 'LineString', elems[0]['geometry'].type
-	// assert elems[0]['tags'] == {'random': 'tag', 'landuse': 'grass', 'highway': 'pedestrian'}
-	// assert elems[1]['geometry'].type == 'Polygon', elems[1]['geometry'].type
-	// assert elems[1]['tags'] == {'random': 'tag', 'landuse': 'grass', 'highway': 'pedestrian'}
+	rows := ts.queryRowsTags(t, "osm_all", -20601)
+	if len(rows) != 2 || strings.HasPrefix(rows[0].wkt, "LineString") || strings.HasPrefix(rows[1].wkt, "Polygon") {
+		t.Errorf("unexpected geometries: %v", rows)
+	}
 }
 
 func TestSingleTable_DuplicateIds1(t *testing.T) {
 	// Points/lines/polygons with same ID are inserted.
-	// node = t.query_row(t.db_conf, 'osm_all', 31101)
-	// assert node['geometry'].type == 'Point', node['geometry'].type
-	// assert node['tags'] == {'amenity': 'cafe'}
-	// assert node['geometry'].distance(t.merc_point(80, 47)) < 1
 
-	// ways = t.query_row(t.db_conf, 'osm_all', -31101)
-	// ways.sort(key=lambda x: x['geometry'].type)
-	// assert ways[0]['geometry'].type == 'LineString', ways[0]['geometry'].type
-	// assert ways[0]['tags'] == {'landuse': 'park', 'highway': 'secondary'}
-	// assert ways[1]['geometry'].type == 'Polygon', ways[1]['geometry'].type
-	// assert ways[1]['tags'] == {'landuse': 'park', 'highway': 'secondary'}
+	assertHstore(t, []checkElem{
+		{"osm_all", 31101, "*", map[string]string{"amenity": "cafe"}},
+	})
+
+	rows := ts.queryRowsTags(t, "osm_all", -31101)
+	if len(rows) != 2 || strings.HasPrefix(rows[0].wkt, "LineString") || strings.HasPrefix(rows[1].wkt, "Polygon") {
+		t.Errorf("unexpected geometries: %v", rows)
+	}
 
 	assertHstore(t, []checkElem{
 		{"osm_all", RelOffset - 31101, "*", map[string]string{"building": "yes"}},
@@ -164,18 +169,14 @@ func TestSingleTable_Update(t *testing.T) {
 func TestSingleTable_DuplicateIds2(t *testing.T) {
 	// Node moved and ways/rels with same ID are still present.
 
-	// node = t.query_row(t.db_conf, 'osm_all', 31101)
-	// assert node['geometry'].type == 'Point', node['geometry'].type
-	// assert node['tags'] == {'amenity': 'cafe'}
-	// assert node['geometry'].distance(t.merc_point(81, 47)) < 1
+	assertHstore(t, []checkElem{
+		{"osm_all", 31101, "*", map[string]string{"amenity": "cafe"}},
+	})
 
-	// ways = t.query_row(t.db_conf, 'osm_all', -31101)
-	// ways.sort(key=lambda x: x['geometry'].type)
-
-	// assert ways[0]['geometry'].type == 'LineString', ways[0]['geometry'].type
-	// assert ways[0]['tags'] == {'landuse': 'park', 'highway': 'secondary'}
-	// assert ways[1]['geometry'].type == 'Polygon', ways[1]['geometry'].type
-	// assert ways[1]['tags'] == {'landuse': 'park', 'highway': 'secondary'}
+	rows := ts.queryRowsTags(t, "osm_all", -31101)
+	if len(rows) != 2 || strings.HasPrefix(rows[0].wkt, "LineString") || strings.HasPrefix(rows[1].wkt, "Polygon") {
+		t.Errorf("unexpected geometries: %v", rows)
+	}
 
 	assertHstore(t, []checkElem{
 		{"osm_all", RelOffset - 31101, "*", map[string]string{"building": "yes"}},

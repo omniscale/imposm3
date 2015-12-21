@@ -8,6 +8,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/omniscale/imposm3/element"
+
+	"github.com/omniscale/imposm3/cache"
+
 	"github.com/lib/pq/hstore"
 
 	"github.com/omniscale/imposm3/diff"
@@ -37,6 +41,8 @@ type importTestSuite struct {
 	db     *sql.DB
 	g      *geos.Geos
 }
+
+const Missing = ""
 
 func (s *importTestSuite) importOsm(t *testing.T) {
 	importArgs := []string{
@@ -101,6 +107,22 @@ func (s *importTestSuite) revertDeployOsm(t *testing.T) {
 
 	config.ParseImport(importArgs)
 	import_.Import()
+}
+
+func (s *importTestSuite) cache(t *testing.T) *cache.OSMCache {
+	c := cache.NewOSMCache(s.config.cacheDir)
+	if err := c.Open(); err != nil {
+		t.Fatal(err)
+	}
+	return c
+}
+
+func (s *importTestSuite) diffCache(t *testing.T) *cache.DiffCache {
+	c := cache.NewDiffCache(s.config.cacheDir)
+	if err := c.Open(); err != nil {
+		t.Fatal(err)
+	}
+	return c
 }
 
 func (s *importTestSuite) removeBackupOsm(t *testing.T) {
@@ -253,6 +275,31 @@ func (s *importTestSuite) queryRows(t *testing.T, table string, id int64) []reco
 	return rs
 }
 
+func (s *importTestSuite) queryRowsTags(t *testing.T, table string, id int64) []record {
+	rows, err := s.db.Query(fmt.Sprintf(`SELECT osm_id, ST_AsText(geometry), tags FROM "%s"."%s" WHERE osm_id=$1 ORDER BY ST_GeometryType(geometry)`, dbschemaProduction, table), id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rs := []record{}
+	for rows.Next() {
+		var r record
+		h := hstore.Hstore{}
+		if err := rows.Scan(&r.id, &r.wkt, &h); err != nil {
+			t.Fatal(err)
+		}
+		if len(h.Map) > 0 {
+			r.tags = make(map[string]string)
+		}
+		for k, v := range h.Map {
+			if v.Valid {
+				r.tags[k] = v.String
+			}
+		}
+		rs = append(rs, r)
+	}
+	return rs
+}
+
 func (s *importTestSuite) queryGeom(t *testing.T, table string, id int64) *geos.Geom {
 	stmt := fmt.Sprintf(`SELECT osm_id, ST_AsText(geometry) FROM "%s"."%s" WHERE osm_id=$1`, dbschemaProduction, table)
 	row := s.db.QueryRow(stmt, id)
@@ -366,4 +413,34 @@ func assertGeomType(t *testing.T, e checkElem, expect string) {
 	if actual != expect {
 		t.Errorf("expected %s geometry for %d, got %s", expect, e.id, actual)
 	}
+}
+
+func assertCachedWay(t *testing.T, c *cache.OSMCache, id int64) *element.Way {
+	way, err := c.Ways.GetWay(id)
+	if err == cache.NotFound {
+		t.Errorf("missing way %d", id)
+	} else if err != nil {
+		t.Fatal(err)
+	}
+	if way.Id != id {
+		t.Errorf("cached way contains invalid id, %d != %d", way.Id, id)
+	}
+	return way
+}
+
+func assertCachedNode(t *testing.T, c *cache.OSMCache, id int64) *element.Node {
+	node, err := c.Nodes.GetNode(id)
+	if err == cache.NotFound {
+		node, err = c.Coords.GetCoord(id)
+		if err == cache.NotFound {
+			t.Errorf("missing node %d", id)
+			return nil
+		}
+	} else if err != nil {
+		t.Fatal(err)
+	}
+	if node.Id != id {
+		t.Errorf("cached node contains invalid id, %d != %d", node.Id, id)
+	}
+	return node
 }
