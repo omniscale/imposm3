@@ -173,9 +173,6 @@ Imposm contains a fixed set of the dependencies that are known to work. You need
     cd src/github.com/omniscale/imposm3
     godep go install ./...
 
-### FreeBSD
-
-On FreeBSD you can use the ports system: Simply fetch https://github.com/thomersch/imposm3-freebsd and run `make install`.
 
 Usage
 -----
