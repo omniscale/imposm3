@@ -171,7 +171,7 @@ Imposm contains a fixed set of the dependencies that are known to work. You need
 
     git clone https://github.com/omniscale/imposm3 src/github.com/omniscale/imposm3
     cd src/github.com/omniscale/imposm3
-    godep go install ./...
+    godep go install ./
 
 
 Usage
