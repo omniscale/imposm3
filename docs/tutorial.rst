@@ -209,6 +209,8 @@ To update an existing database with three change files::
 
   imposm3 diff -config config.json changes-1.osc.gz changes-2.osc.gz changes-3.osc.gz
 
+Imposm 3 stores the sequence number of the last imported changeset in `${cachedir}/last.state.txt`, if it finds a matching state file (`123.state.txt` for `123.osc.gz`). Imposm refuses to import the same diff files a second time if these state files are present.
+
 Remember that you have to make the initial import with the ``-diff`` option. See above.
 
 .. note:: You should not make changes to the mapping file after the initial import. Changes are not detected and this can result aborted updates or incomplete data.

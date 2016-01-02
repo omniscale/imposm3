@@ -171,11 +171,8 @@ Imposm contains a fixed set of the dependencies that are known to work. You need
 
     git clone https://github.com/omniscale/imposm3 src/github.com/omniscale/imposm3
     cd src/github.com/omniscale/imposm3
-    godep go install ./...
+    godep go install ./
 
-### FreeBSD
-
-On FreeBSD you can use the ports system: Simply fetch https://github.com/thomersch/imposm3-freebsd and run `make install`.
 
 Usage
 -----
@@ -250,29 +247,23 @@ The GEOS package is released as LGPL3 and is linked dynamically. See LICENSE.bin
 
 #### Unit tests ####
 
-    go test imposm3/...
+To run all unit tests:
+
+    make test-unit
+
+Or:
+
+    godep go test ./...
 
 
 #### System tests ####
 
 There are system test that import and update OSM data and verify the database content.
-
-##### Dependencies #####
-
-These tests are written in Python and requires `nose`, `shapely` and `psycopg2`.
-
-On a recent Ubuntu can install the following packages for that: `python-nose python-shapely python-psycopg2`
-Or you can [install a Python virtualenv](https://virtualenv.pypa.io/en/latest/installation.html):
-
-    virtualenv imposm3test
-    source imposm3test/bin/activate
-    pip install nose shapely psycopg2
-
-You also need `osmosis` to create test PBF files.
-There is a Makefile that (re)builds `imposm3` and creates all test files if necessary and then runs the test itself.
+You need `osmosis` to create the test PBF files.
+There is a Makefile that creates all test files if necessary and then runs the test itself.
 
     make test
 
 Call `make test-system` to skip the unit tests.
 
-WARNING: It uses your local PostgeSQL database (`import` schema). Change the database with the standard `PGDATABASE`, `PGHOST`, etc. environment variables.
+WARNING: It uses your local PostgeSQL database (`imposm3testimport`, `imposm3testproduction` and `imposm3testbackup` schema). Change the database with the standard `PGDATABASE`, `PGHOST`, etc. environment variables.

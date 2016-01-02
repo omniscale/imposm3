@@ -246,6 +246,13 @@ func (this *Geos) IsValid(geom *Geom) bool {
 	return false
 }
 
+func (this *Geos) IsSimple(geom *Geom) bool {
+	if C.GEOSisSimple_r(this.v, geom.v) == 1 {
+		return true
+	}
+	return false
+}
+
 func (this *Geos) IsEmpty(geom *Geom) bool {
 	if C.GEOSisEmpty_r(this.v, geom.v) == 1 {
 		return true
