@@ -295,36 +295,52 @@ func (m *Mapping) ElementFilters() map[string][]ElementFilter {
 
 func (m *Mapping) SetParseMetadata() {
 
-	fmt.Println(" m.Tags.KeepSingleCreatedByTag:", m.Tags.KeepSingleCreatedByTag)
+	//fmt.Println(" m.Tags.KeepSingleCreatedByTag:", m.Tags.KeepSingleCreatedByTag)
 	element.ParseDontAddOnlyCreatedByTag = !m.Tags.KeepSingleCreatedByTag
 
 	mappingTagsParseMetadata := m.Tags.ParseMetadata
-	fmt.Println("mappingTagsParseMetadata:", mappingTagsParseMetadata)
+	//fmt.Println("mappingTagsParseMetadata:", mappingTagsParseMetadata)
 	if mappingTagsParseMetadata.KeynameVersion != "" {
 		element.ParseMetadataVarVersion = true
 		element.ParseMetadataKeynameVersion = mappingTagsParseMetadata.KeynameVersion
+	} else {
+		element.ParseMetadataVarVersion = false
+		element.ParseMetadataKeynameVersion = ""
 	}
-
+	
 	if mappingTagsParseMetadata.KeynameTimestamp != "" {
 		element.ParseMetadataVarTimestamp = true
 		element.ParseMetadataKeynameTimestamp = mappingTagsParseMetadata.KeynameTimestamp
+	} else {
+		element.ParseMetadataVarTimestamp = false
+		element.ParseMetadataKeynameTimestamp = ""
 	}
 
 	if mappingTagsParseMetadata.KeynameChangeset != "" {
 		element.ParseMetadataVarChangeset = true
 		element.ParseMetadataKeynameChangeset = mappingTagsParseMetadata.KeynameChangeset
+	} else {
+		element.ParseMetadataVarChangeset = false
+		element.ParseMetadataKeynameChangeset = ""
 	}
 
 	if mappingTagsParseMetadata.KeynameUid != "" {
 		element.ParseMetadataVarUid = true
 		element.ParseMetadataKeynameUid = mappingTagsParseMetadata.KeynameUid
+	} else {
+		element.ParseMetadataVarUid = false
+		element.ParseMetadataKeynameUid = ""
 	}
+	
 
 	if mappingTagsParseMetadata.KeynameUser != "" {
 		element.ParseMetadataVarUser = true
 		element.ParseMetadataKeynameUser = mappingTagsParseMetadata.KeynameUser
+	} else {
+		element.ParseMetadataVarUser = false
+		element.ParseMetadataKeynameUser = "" 
 	}
 
 	element.ParseMetadata = element.ParseMetadataVarVersion || element.ParseMetadataVarTimestamp || element.ParseMetadataVarChangeset || element.ParseMetadataVarUid || element.ParseMetadataVarUser
-
+	
 }

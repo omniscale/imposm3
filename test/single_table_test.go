@@ -9,8 +9,6 @@ import (
 	"github.com/omniscale/imposm3/geom/geos"
 )
 
-const RelOffset = -1e17
-
 func TestSingleTable_Prepare(t *testing.T) {
 	ts.dir = "/tmp/imposm3test"
 	ts.config = importConfig{
