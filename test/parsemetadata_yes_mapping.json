@@ -12,38 +12,13 @@
     },  
     "use_single_id_space": true,
     "tables": {
-        "parsemetadata": {
+        "parsemetadata_yes": {
             "fields": [
                 {
                     "type": "id",
                     "name": "osm_id",
                     "key": null
-                },
-                {
-                    "type": "string",
-                    "name": "_changeset_",
-                    "key":  "_changeset_"
-                },                
-                {
-                    "type": "string",
-                    "name": "_version_",
-                    "key":  "_version_"
-                }, 
-                {
-                    "type": "string",
-                    "name": "_user_",
-                    "key":  "_user_"
-                }, 
-                {
-                    "type": "string",
-                    "name": "_uid_",
-                    "key":  "_uid_"
-                },                                                 
-                {
-                    "type": "string",
-                    "name": "_timestamp_",
-                    "key":  "_timestamp_"
-                },                 
+                },          
                 {
                     "type": "geometry",
                     "name": "geometry",

@@ -1,16 +1,22 @@
 {
     "tags": {
-        "load_all": true
-    },
+        "load_all": true,
+        "keep_single_createdby_tag": false,
+        "parsemetadata": {
+	          "create_tag_from_version": "openstreetmap_version",
+	          "create_tag_from_timestamp": "openstreetmap_timestamp",
+	          "create_tag_from_user": "openstreetmap_user"
+        }
+    },  
     "use_single_id_space": true,
     "tables": {
-        "parsemetadata_no": {
+        "parsemetadata_timestamp_version_user": {
             "fields": [
                 {
                     "type": "id",
                     "name": "osm_id",
                     "key": null
-                },            
+                },          
                 {
                     "type": "geometry",
                     "name": "geometry",

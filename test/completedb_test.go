@@ -15,8 +15,6 @@ import (
 	"github.com/omniscale/imposm3/geom/geos"
 )
 
-var ts importTestSuite
-
 func TestPrepare(t *testing.T) {
 	ts.dir = "/tmp/imposm3test"
 	ts.config = importConfig{
