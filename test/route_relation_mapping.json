@@ -1,0 +1,128 @@
+{
+    "tags": {
+        "load_all": true,
+        "exclude": [
+            "created_by",
+            "source"
+        ]
+    },
+    "tables": {
+        "route_members": {
+            "fields": [
+                {
+                    "type": "id",
+                    "name": "osm_id"
+                },
+                {
+                    "type": "string",
+                    "name": "ref",
+                    "key": "ref"
+                },
+                {
+                    "type": "relation_member_id",
+                    "name": "member"
+                },
+                {
+                    "type": "relation_member_index",
+                    "name": "index"
+                },
+                {
+                    "type": "relation_member_role",
+                    "name": "role"
+                },
+                {
+                    "type": "relation_member_type",
+                    "name": "type"
+                },
+                {
+                    "type": "geometry",
+                    "name": "geometry"
+                },
+                {
+                    "type": "string",
+                    "name": "name",
+                    "key": "name",
+                    "from_members": true
+                }
+            ],
+            "type": "relation_member",
+            "mapping": {
+                "route": [
+                    "bus",
+                    "tram",
+                    "rail"
+                ]
+            }
+        },
+        "routes": {
+            "fields": [
+                {
+                    "type": "id",
+                    "name": "osm_id"
+                },
+                {
+                    "type": "string",
+                    "name": "ref",
+                    "key": "ref"
+                },
+                {
+                    "type": "hstore_tags",
+                    "name": "tags"
+                }
+            ],
+            "type": "relation",
+            "mapping": {
+                "route": [
+                    "bus",
+                    "tram",
+                    "rail"
+                ]
+            }
+        },
+        "master_routes": {
+            "fields": [
+                {
+                    "type": "id",
+                    "name": "osm_id"
+                },
+                {
+                    "type": "relation_member_id",
+                    "name": "member"
+                },
+                {
+                    "type": "relation_member_index",
+                    "name": "index"
+                },
+                {
+                    "type": "relation_member_role",
+                    "name": "role"
+                },
+                {
+                    "type": "relation_member_type",
+                    "name": "type"
+                },
+                {
+                    "type": "geometry",
+                    "name": "geometry"
+                },
+                {
+                    "type": "string",
+                    "name": "subname",
+                    "key": "name",
+                    "from_members": true
+                },
+                {
+                    "type": "string",
+                    "name": "name",
+                    "key": "name"
+                }
+            ],
+            "type": "relation_member",
+            "mapping": {
+                "route_master": [
+                    "bus"
+                ]
+            }
+        }
+    }
+}

@@ -72,6 +72,8 @@ type Member struct {
 	Type MemberType `json:"type"`
 	Role string     `json:"role"`
 	Way  *Way       `json:"-"`
+	Node *Node      `json:"-"`
+	Elem *OSMElem   `json:"-"`
 }
 
 type Relation struct {

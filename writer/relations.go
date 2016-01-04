@@ -9,17 +9,19 @@ import (
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/expire"
 	geomp "github.com/omniscale/imposm3/geom"
-	"github.com/omniscale/imposm3/geom/geos"
+	geosp "github.com/omniscale/imposm3/geom/geos"
 	"github.com/omniscale/imposm3/mapping"
 	"github.com/omniscale/imposm3/stats"
 )
 
 type RelationWriter struct {
 	OsmElemWriter
-	singleIdSpace  bool
-	rel            chan *element.Relation
-	polygonMatcher mapping.RelWayMatcher
-	maxGap         float64
+	singleIdSpace         bool
+	rel                   chan *element.Relation
+	polygonMatcher        mapping.RelWayMatcher
+	relationMatcher       mapping.RelationMatcher
+	relationMemberMatcher mapping.RelationMatcher
+	maxGap                float64
 }
 
 func NewRelationWriter(
@@ -30,6 +32,8 @@ func NewRelationWriter(
 	inserter database.Inserter,
 	progress *stats.Statistics,
 	matcher mapping.RelWayMatcher,
+	relMatcher mapping.RelationMatcher,
+	relMemberMatcher mapping.RelationMatcher,
 	srid int,
 ) *OsmElemWriter {
 	maxGap := 1e-1 // 0.1m
@@ -45,10 +49,12 @@ func NewRelationWriter(
 			inserter:  inserter,
 			srid:      srid,
 		},
-		singleIdSpace:  singleIdSpace,
-		polygonMatcher: matcher,
-		rel:            rel,
-		maxGap:         maxGap,
+		singleIdSpace:         singleIdSpace,
+		polygonMatcher:        matcher,
+		relationMatcher:       relMatcher,
+		relationMemberMatcher: relMemberMatcher,
+		rel:    rel,
+		maxGap: maxGap,
 	}
 	rw.OsmElemWriter.writer = &rw
 	return &rw.OsmElemWriter
@@ -62,7 +68,7 @@ func (rw *RelationWriter) relId(id int64) int64 {
 }
 
 func (rw *RelationWriter) loop() {
-	geos := geos.NewGeos()
+	geos := geosp.NewGeos()
 	geos.SetHandleSrid(rw.srid)
 	defer geos.Finish()
 
@@ -76,7 +82,7 @@ NextRel:
 			}
 			continue NextRel
 		}
-		for _, m := range r.Members {
+		for i, m := range r.Members {
 			if m.Way == nil {
 				continue
 			}
@@ -88,6 +94,76 @@ NextRel:
 				continue NextRel
 			}
 			rw.NodesToSrid(m.Way.Nodes)
+			r.Members[i].Elem = &m.Way.OSMElem
+		}
+
+		relMemberMatches := rw.relationMemberMatcher.MatchRelation(r)
+		if len(relMemberMatches) > 0 {
+			for i, m := range r.Members {
+				if m.Type == element.RELATION {
+					mrel, err := rw.osmCache.Relations.GetRelation(m.Id)
+					if err != nil {
+						if err == cache.NotFound {
+							log.Warn(err)
+							continue NextRel
+						}
+					}
+					r.Members[i].Elem = &mrel.OSMElem
+				} else if m.Type == element.NODE {
+					nd, err := rw.osmCache.Nodes.GetNode(m.Id)
+					if err != nil {
+						if err == cache.NotFound {
+							nd, err = rw.osmCache.Coords.GetCoord(m.Id)
+							if err != nil {
+								if err != cache.NotFound {
+									log.Warn(err)
+								}
+								continue NextRel
+							}
+						} else {
+							log.Warn(err)
+							continue NextRel
+						}
+					}
+					rw.NodeToSrid(nd)
+					r.Members[i].Node = nd
+					r.Members[i].Elem = &nd.OSMElem
+				}
+			}
+
+			for _, m := range r.Members {
+				var g *geosp.Geom
+				var err error
+				if m.Node != nil {
+					g, err = geomp.Point(geos, *m.Node)
+				} else if m.Way != nil {
+					g, err = geomp.LineString(geos, m.Way.Nodes)
+				}
+
+				if err != nil {
+					log.Warn(err)
+					continue
+				}
+
+				var gelem geomp.Geometry
+				if g == nil {
+					g = geos.FromWkt("POLYGON EMPTY")
+					gelem = geomp.Geometry{Geom: g, Wkb: geos.AsEwkbHex(g)}
+				} else {
+					gelem, err = geomp.AsGeomElement(geos, g)
+					if err != nil {
+						log.Warn(err)
+						continue
+					}
+				}
+
+				rw.inserter.InsertRelationMember(*r, m, gelem, relMemberMatches)
+			}
+		}
+
+		relMatches := rw.relationMatcher.MatchRelation(r)
+		if len(relMatches) > 0 {
+			rw.inserter.InsertPolygon(r.OSMElem, geomp.Geometry{}, relMatches)
 		}
 
 		// BuildRelation updates r.Members but we need all of them

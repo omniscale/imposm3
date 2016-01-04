@@ -1,29 +1,47 @@
 package mapping
 
 import (
+	_ "log"
+
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/geom"
 )
 
 func (m *Mapping) PointMatcher() NodeMatcher {
 	mappings := make(TagTables)
-	m.mappings("point", mappings)
+	m.mappings(PointTable, mappings)
 	filters := m.ElementFilters()
-	return &tagMatcher{mappings, m.tables("point"), filters, false}
+	return &tagMatcher{mappings, m.tables(PointTable), filters, false}
 }
 
 func (m *Mapping) LineStringMatcher() WayMatcher {
 	mappings := make(TagTables)
-	m.mappings("linestring", mappings)
+	m.mappings(LineStringTable, mappings)
 	filters := m.ElementFilters()
-	return &tagMatcher{mappings, m.tables("linestring"), filters, false}
+	return &tagMatcher{mappings, m.tables(LineStringTable), filters, false}
 }
 
 func (m *Mapping) PolygonMatcher() RelWayMatcher {
 	mappings := make(TagTables)
-	m.mappings("polygon", mappings)
+	m.mappings(PolygonTable, mappings)
 	filters := m.ElementFilters()
-	return &tagMatcher{mappings, m.tables("polygon"), filters, true}
+	return &tagMatcher{mappings, m.tables(PolygonTable), filters, true}
+}
+
+func (m *Mapping) RelationMatcher() RelationMatcher {
+	mappings := make(TagTables)
+	m.mappings(RelationTable, mappings)
+	filters := m.ElementFilters()
+	log.Print(mappings)
+	return &tagMatcher{mappings, m.tables(RelationTable), filters, true}
+}
+
+func (m *Mapping) RelationMemberMatcher() RelationMatcher {
+	mappings := make(TagTables)
+	m.mappings(RelationMemberTable, mappings)
+	filters := m.ElementFilters()
+	log.Print(mappings)
+	return &tagMatcher{mappings, m.tables(RelationMemberTable), filters, true}
 }
 
 type Match struct {
@@ -59,6 +77,10 @@ type tagMatcher struct {
 
 func (m *Match) Row(elem *element.OSMElem, geom *geom.Geometry) []interface{} {
 	return m.tableFields.MakeRow(elem, geom, *m)
+}
+
+func (m *Match) MemberRow(rel *element.Relation, member *element.Member, geom *geom.Geometry) []interface{} {
+	return m.tableFields.MakeMemberRow(rel, member, geom, *m)
 }
 
 func (tm *tagMatcher) MatchNode(node *element.Node) []Match {

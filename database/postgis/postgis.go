@@ -58,12 +58,16 @@ func createTable(tx *sql.Tx, spec TableSpec) error {
 }
 
 func addGeometryColumn(tx *sql.Tx, tableName string, spec TableSpec) error {
-	colName := "geometry"
+	colName := ""
 	for _, col := range spec.Columns {
 		if col.Type.Name() == "GEOMETRY" {
 			colName = col.Name
 			break
 		}
+	}
+
+	if colName == "" {
+		return nil
 	}
 
 	geomType := strings.ToUpper(spec.GeometryType)
@@ -475,6 +479,16 @@ func (pg *PostGIS) InsertPolygon(elem element.OSMElem, geom geom.Geometry, match
 	if pg.updateGeneralizedTables {
 		for _, generalizedTable := range pg.generalizedFromMatches(matches) {
 			pg.updatedIds[generalizedTable.Name] = append(pg.updatedIds[generalizedTable.Name], elem.Id)
+		}
+	}
+	return nil
+}
+
+func (pg *PostGIS) InsertRelationMember(rel element.Relation, m element.Member, geom geom.Geometry, matches []mapping.Match) error {
+	for _, match := range matches {
+		row := match.MemberRow(&rel, &m, &geom)
+		if err := pg.txRouter.Insert(match.Table.Name, row); err != nil {
+			return err
 		}
 	}
 	return nil

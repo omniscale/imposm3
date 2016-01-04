@@ -1,4 +1,4 @@
-.PHONY: all test clean
+.PHONY: all test clean files
 
 ifdef VERBOSE
 TESTOPTS = -v
@@ -16,12 +16,16 @@ OSCGZ_FILES=$(addprefix build/,$(patsubst %.osc,%.osc.gz,$(wildcard *.osc)))
 
 build/%.pbf: %.osm
 	@mkdir -p build
-	osmosis --read-xml $< --sort TypeThenId --write-pbf $@ omitmetadata=true
+	osmosis --read-xml $< --sort type="TypeThenId" --write-pbf $@ omitmetadata=true
 
 build/%.osc.gz: %.osc
 	@mkdir -p build
 	gzip --stdout $< > $@
 
-test: $(PBF_FILES) $(OSCGZ_FILES)
+files: $(PBF_FILES) $(OSCGZ_FILES)
+
+test: files
 	(cd .. && godep go test ./test $(TESTOPTS))
 
+route_relation: files
+	(cd .. && godep go test -test.run TestRouteRelation_ ./test $(TESTOPTS))
