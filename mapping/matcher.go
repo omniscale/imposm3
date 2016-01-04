@@ -1,8 +1,6 @@
 package mapping
 
 import (
-	_ "log"
-
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/geom"
 )
@@ -32,7 +30,6 @@ func (m *Mapping) RelationMatcher() RelationMatcher {
 	mappings := make(TagTables)
 	m.mappings(RelationTable, mappings)
 	filters := m.ElementFilters()
-	log.Print(mappings)
 	return &tagMatcher{mappings, m.tables(RelationTable), filters, true}
 }
 
@@ -40,7 +37,6 @@ func (m *Mapping) RelationMemberMatcher() RelationMatcher {
 	mappings := make(TagTables)
 	m.mappings(RelationMemberTable, mappings)
 	filters := m.ElementFilters()
-	log.Print(mappings)
 	return &tagMatcher{mappings, m.tables(RelationMemberTable), filters, true}
 }
 
