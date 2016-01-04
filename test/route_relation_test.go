@@ -14,7 +14,7 @@ func TestRouteRelation_Prepare(t *testing.T) {
 		connection:      "postgis://",
 		cacheDir:        ts.dir,
 		osmFileName:     "build/route_relation.pbf",
-		mappingFileName: "route_relation_mapping.json",
+		mappingFileName: "route_relation_mapping.yml",
 	}
 	ts.g = geos.NewGeos()
 
