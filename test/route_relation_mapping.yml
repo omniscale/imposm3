@@ -23,7 +23,7 @@ tables:
     - name: subname
       key: name
       type: string
-      from_members: true
+      from_member: true
     - key: name
       name: name
       type: string
@@ -47,10 +47,13 @@ tables:
       type: relation_member_type
     - name: geometry
       type: geometry
+    - name: relname
+      key: name
+      type: string
     - name: name
       key: name
       type: string
-      from_members: true
+      from_member: true
     mapping:
       route: [bus, tram, rail]
   routes:

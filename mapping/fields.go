@@ -62,7 +62,7 @@ func (f *FieldSpec) Value(elem *element.OSMElem, geom *geom.Geometry, match Matc
 
 func (f *FieldSpec) MemberValue(rel *element.Relation, member *element.Member, geom *geom.Geometry, match Match) interface{} {
 	if f.Type.Func != nil {
-		if f.Type.FromMembers {
+		if f.Type.FromMember {
 			if member.Elem == nil {
 				return nil
 			}
@@ -104,9 +104,9 @@ func (field *Field) FieldType() *FieldType {
 				log.Print(err)
 				return nil
 			}
-			fieldType = FieldType{fieldType.Name, fieldType.GoType, makeValue, nil, nil, fieldType.FromMembers}
+			fieldType = FieldType{fieldType.Name, fieldType.GoType, makeValue, nil, nil, fieldType.FromMember}
 		}
-		fieldType.FromMembers = field.FromMembers
+		fieldType.FromMember = field.FromMember
 		return &fieldType
 	}
 	return nil
@@ -131,12 +131,12 @@ func (t *Table) TableFields() *TableFields {
 }
 
 type FieldType struct {
-	Name        string
-	GoType      string
-	Func        MakeValue
-	MakeFunc    MakeMakeValue
-	MemberFunc  MakeMemberValue
-	FromMembers bool
+	Name       string
+	GoType     string
+	Func       MakeValue
+	MakeFunc   MakeMakeValue
+	MemberFunc MakeMemberValue
+	FromMember bool
 }
 
 func Bool(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {

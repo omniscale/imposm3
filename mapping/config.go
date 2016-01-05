@@ -11,12 +11,12 @@ import (
 )
 
 type Field struct {
-	Name        string                 `yaml:"name"`
-	Key         Key                    `yaml:"key"`
-	Keys        []Key                  `yaml:"keys"`
-	Type        string                 `yaml:"type"`
-	Args        map[string]interface{} `yaml:"args"`
-	FromMembers bool                   `yaml:"from_members"`
+	Name       string                 `yaml:"name"`
+	Key        Key                    `yaml:"key"`
+	Keys       []Key                  `yaml:"keys"`
+	Type       string                 `yaml:"type"`
+	Args       map[string]interface{} `yaml:"args"`
+	FromMember bool                   `yaml:"from_member"`
 }
 
 type Table struct {
