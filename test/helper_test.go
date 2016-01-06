@@ -237,11 +237,11 @@ func (s *importTestSuite) query(t *testing.T, table string, id int64, keys []str
 }
 
 func (s *importTestSuite) queryTags(t *testing.T, table string, id int64) record {
-	stmt := fmt.Sprintf(`SELECT osm_id, ST_AsText(geometry), tags FROM "%s"."%s" WHERE osm_id=$1`, dbschemaProduction, table)
+	stmt := fmt.Sprintf(`SELECT osm_id, tags FROM "%s"."%s" WHERE osm_id=$1`, dbschemaProduction, table)
 	row := s.db.QueryRow(stmt, id)
 	r := record{}
 	h := hstore.Hstore{}
-	if err := row.Scan(&r.id, &r.wkt, &h); err != nil {
+	if err := row.Scan(&r.id, &h); err != nil {
 		if err == sql.ErrNoRows {
 			r.missing = true
 		} else {
@@ -318,6 +318,29 @@ func (s *importTestSuite) queryGeom(t *testing.T, table string, id int64) *geos.
 		t.Fatalf("unable to read WKT for %s", id)
 	}
 	return geom
+}
+
+func (s *importTestSuite) queryDynamic(t *testing.T, table, where string) []map[string]string {
+	stmt := fmt.Sprintf(`SELECT hstore(r) FROM (SELECT ST_AsText(geometry) AS wkt, * FROM "%s"."%s" WHERE %s) AS r`, dbschemaProduction, table, where)
+	rows, err := s.db.Query(stmt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	results := []map[string]string{}
+	for rows.Next() {
+		h := hstore.Hstore{}
+		if err := rows.Scan(&h); err != nil {
+			t.Fatal(err)
+		}
+		r := make(map[string]string)
+		for k, v := range h.Map {
+			if v.Valid {
+				r[k] = v.String
+			}
+		}
+		results = append(results, r)
+	}
+	return results
 }
 
 type checkElem struct {

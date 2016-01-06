@@ -512,10 +512,10 @@ func (pg *PostGIS) DeleteElem(elem element.OSMElem) error {
 	// handle deletes of geometries that did not match in ProbeXxx.
 	// we have to handle multipolygon relations that took the tags of the
 	// main-member. those tags are not avail. during delete. just try to
-	// delete from each polygon table.
-	if v, ok := elem.Tags["type"]; ok && (v == "multipolygon" || v == "boundary") {
+	// delete from each polygon/relation table.
+	if _, ok := elem.Tags["type"]; ok {
 		for _, tableSpec := range pg.Tables {
-			if tableSpec.GeometryType != "polygon" {
+			if tableSpec.GeometryType != "polygon" && tableSpec.GeometryType != "geometry" && tableSpec.GeometryType != "relation" {
 				continue
 			}
 			pg.txRouter.Delete(tableSpec.Name, elem.Id)

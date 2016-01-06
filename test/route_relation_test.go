@@ -2,6 +2,7 @@ package test
 
 import (
 	"database/sql"
+	"strconv"
 
 	"testing"
 
@@ -46,8 +47,68 @@ func TestRouteRelation_Deploy(t *testing.T) {
 	}
 }
 
+func TestRouteRelation_RelationData(t *testing.T) {
+	// check tags of relation
+	r := ts.queryTags(t, "osm_routes", -100901)
+	if r.tags["name"] != "Bus 301: A => B" {
+		t.Error(r)
+	}
+}
+
+func TestRouteRelation_MemberGeomUpdated1(t *testing.T) {
+	rows := ts.queryDynamic(t, "osm_route_members", "osm_id = -100902 AND member = 100502")
+	if len(rows) != 1 {
+		t.Fatal(rows)
+	}
+	g := ts.g.FromWkt(rows[0]["wkt"])
+	if g.Length() != 111.32448543701321 {
+		t.Fatal(g.Length())
+	}
+
+	rows = ts.queryDynamic(t, "osm_route_members", "osm_id = -100902 AND member = 100503")
+	if len(rows) != 1 {
+		t.Fatal(rows)
+	}
+	if rows[0]["name"] != "" {
+		t.Error(rows[0])
+	}
+}
+
 // #######################################################################
 
 func TestRouteRelation_Update(t *testing.T) {
 	ts.updateOsm(t, "./build/route_relation.osc.gz")
+}
+
+// #######################################################################
+
+func TestRouteRelation_MemberGeomUpdated2(t *testing.T) {
+	rows := ts.queryDynamic(t, "osm_route_members", "osm_id = -100902 AND member = 100502")
+	if len(rows) != 1 {
+		t.Fatal(rows)
+	}
+	g := ts.g.FromWkt(rows[0]["wkt"])
+	if g.Length() != 184.97560221624542 {
+		t.Fatal(g.Length())
+	}
+
+	rows = ts.queryDynamic(t, "osm_route_members", "osm_id = -100902 AND member = 100503")
+	if len(rows) != 1 {
+		t.Fatal(rows)
+	}
+	if rows[0]["name"] != "new name" {
+		t.Error(rows[0])
+	}
+}
+
+func TestRouteRelation_MemberNotUpdated(t *testing.T) {
+	// check that member is not updated if no node/way changed
+	rows := ts.queryDynamic(t, "osm_route_members", "osm_id = -100903 AND member = 100501")
+	if len(rows) != 1 {
+		t.Fatal(rows)
+	}
+	if id, err := strconv.ParseInt(rows[0]["id"], 10, 32); err != nil || id > 27 {
+		t.Error("member was re-inserted", rows)
+	}
+
 }

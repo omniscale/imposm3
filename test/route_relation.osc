@@ -1,3 +1,12 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <osmChange version="0.6" generator="Osmosis 0.41">
+  <modify>
+     <node id="100103" version="2" timestamp="2015-12-31T23:59:99Z" lat="53.001" lon="8.201"/>
+
+     <way id="100503" version="1" timestamp="2015-12-31T23:59:99Z">
+      <nd ref="100103"/>
+      <nd ref="100104"/>
+      <tag k="name" v="new name"/>
+     </way>
+  </modify>
 </osmChange>
