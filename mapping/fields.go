@@ -135,22 +135,7 @@ type FieldType struct {
 	FromMember bool
 }
 
-// TODO:  need rethink
-// ideas: automatic parameter type checking.
-// ideas: automatic documentation generation
-type FieldTypeDoc struct {
-	Label      string              // sort description
-	Doc        string              // documentation ( markdown text ? )
-	Parameters string              // parameters ...
-	Status     string              // draft,notest,tested,notsupported,production,depricated
-	Category   string              // tags,geometry,osm_id,system
-	Repository string              // https://github.com/..../..... ; for local repos
-	Lastupdate string              // "2015-12-21"
-	Author     string              // e-mail or other nick name
-	Tags       map[string][]string // any other key value ... for adding to the documentation
-}
-
-func registerFieldTypes(newFieldType FieldType, newFieldTypeDoc FieldTypeDoc) {
+func registerFieldTypes(newFieldType FieldType) {
 	if _, ok := AvailableFieldTypes[newFieldType.Name]; ok {
 		panic("registerFieldTypes called twice for registration this FieldType :" + newFieldType.Name)
 	} else {
