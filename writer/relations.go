@@ -115,6 +115,7 @@ NextRel:
 
 		if inserted && rw.diffCache != nil {
 			rw.diffCache.Ways.AddFromMembers(r.Id, allMembers)
+			rw.diffCache.CoordsRel.AddFromMembers(r.Id, allMembers)
 			for _, member := range allMembers {
 				if member.Way != nil {
 					rw.diffCache.Coords.AddFromWay(member.Way)

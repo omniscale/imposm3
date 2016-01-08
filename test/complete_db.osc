@@ -225,4 +225,11 @@
     </relation>
   </create>
 
+
+  <!-- test that relations are updated after modified node -->
+  <modify>
+    <node id="52101" version="1" timestamp="2011-11-11T00:11:11Z" lat="61" lon="10"/>
+  </modify>
+
+
 </osmChange>

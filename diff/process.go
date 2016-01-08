@@ -175,9 +175,9 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 	nodeWriter.SetExpireor(expireor)
 	nodeWriter.Start()
 
-	nodeIds := make(map[int64]bool)
-	wayIds := make(map[int64]bool)
-	relIds := make(map[int64]bool)
+	nodeIds := make(map[int64]struct{})
+	wayIds := make(map[int64]struct{})
+	relIds := make(map[int64]struct{})
 
 	step := log.StartStep("Parsing changes, updating cache and removing elements")
 
@@ -251,7 +251,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 						if err != nil {
 							return diffError(err, "put relation %v", elem.Rel)
 						}
-						relIds[elem.Rel.Id] = true
+						relIds[elem.Rel.Id] = struct{}{}
 					}
 				} else if elem.Way != nil {
 					// check if first coord is cached to avoid caching
@@ -265,7 +265,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 						if err != nil {
 							return diffError(err, "put way %v", elem.Way)
 						}
-						wayIds[elem.Way.Id] = true
+						wayIds[elem.Way.Id] = struct{}{}
 					}
 				} else if elem.Node != nil {
 					addNode := true
@@ -283,7 +283,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 						if err != nil {
 							return diffError(err, "put coord %v", elem.Node)
 						}
-						nodeIds[elem.Node.Id] = true
+						nodeIds[elem.Node.Id] = struct{}{}
 					}
 				}
 			}
@@ -301,7 +301,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 
 	// mark member ways from deleted relations for re-insert
 	for id, _ := range deleter.DeletedMemberWays() {
-		wayIds[id] = true
+		wayIds[id] = struct{}{}
 	}
 
 	progress.Stop()
@@ -314,16 +314,22 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 	for nodeId, _ := range nodeIds {
 		dependers := diffCache.Coords.Get(nodeId)
 		for _, way := range dependers {
-			wayIds[way] = true
+			wayIds[way] = struct{}{}
 		}
 	}
 
 	// mark depending relations for (re)insert
+	for nodeId, _ := range nodeIds {
+		dependers := diffCache.CoordsRel.Get(nodeId)
+		for _, rel := range dependers {
+			relIds[rel] = struct{}{}
+		}
+	}
 	for wayId, _ := range wayIds {
 		dependers := diffCache.Ways.Get(wayId)
 		// mark depending relations for (re)insert
 		for _, rel := range dependers {
-			relIds[rel] = true
+			relIds[rel] = struct{}{}
 		}
 	}
 

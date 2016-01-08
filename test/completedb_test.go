@@ -297,6 +297,12 @@ func TestDuplicateIds(t *testing.T) {
 	})
 }
 
+func TestRelationUpdatedByNode(t *testing.T) {
+	// Relations was updated after modified node.
+
+	assertArea(t, checkElem{"osm_buildings", -52121, "yes", nil}, 13653930440.868315)
+}
+
 func TestGeneralizedBananaPolygonIsValid(t *testing.T) {
 	// Generalized polygons are valid.
 
@@ -603,6 +609,12 @@ func TestDuplicateIds2(t *testing.T) {
 		{"osm_buildings", 51011, Missing, nil},
 		{"osm_buildings", -51011, "mp", nil},
 	})
+}
+
+func TestRelationUpdatedByNode2(t *testing.T) {
+	// Relations was updated after modified node.
+
+	assertArea(t, checkElem{"osm_buildings", -52121, "yes", nil}, 16276875196.653734)
 }
 
 func TestUpdatedWay2(t *testing.T) {

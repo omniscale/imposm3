@@ -258,6 +258,15 @@ func (d *Deleter) Delete(delElem parser.DiffElem) error {
 					}
 				}
 			}
+			dependers = d.diffCache.CoordsRel.Get(delElem.Node.Id)
+			for _, rel := range dependers {
+				if _, ok := d.deletedRelations[rel]; ok {
+					continue
+				}
+				if err := d.deleteRelation(rel, false, false); err != nil {
+					return err
+				}
+			}
 		}
 		if !delElem.Add {
 			if err := d.diffCache.Coords.Delete(delElem.Node.Id); err != nil {

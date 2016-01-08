@@ -2,7 +2,6 @@ package test
 
 import (
 	"database/sql"
-	"strconv"
 
 	"testing"
 
@@ -92,6 +91,7 @@ func TestRouteRelation_MemberGeomUpdated2(t *testing.T) {
 		t.Fatal(g.Length())
 	}
 
+	// tag from member is updated
 	rows = ts.queryDynamic(t, "osm_route_members", "osm_id = -100902 AND member = 100503")
 	if len(rows) != 1 {
 		t.Fatal(rows)
@@ -99,16 +99,31 @@ func TestRouteRelation_MemberGeomUpdated2(t *testing.T) {
 	if rows[0]["name"] != "new name" {
 		t.Error(rows[0])
 	}
-}
 
-func TestRouteRelation_MemberNotUpdated(t *testing.T) {
-	// check that member is not updated if no node/way changed
-	rows := ts.queryDynamic(t, "osm_route_members", "osm_id = -100903 AND member = 100501")
+	// member is removed
+	rows = ts.queryDynamic(t, "osm_route_members", "osm_id = -100902 AND member = 100512")
+	if len(rows) != 0 {
+		t.Fatal(rows)
+	}
+
+	// role from member is updated
+	rows = ts.queryDynamic(t, "osm_route_members", "osm_id = -100902 AND member = 100102")
 	if len(rows) != 1 {
 		t.Fatal(rows)
 	}
-	if id, err := strconv.ParseInt(rows[0]["id"], 10, 32); err != nil || id > 27 {
-		t.Error("member was re-inserted", rows)
+	if rows[0]["role"] != "halt" {
+		t.Error(rows[0])
 	}
 
+}
+
+func TestRouteRelation_MemberUpdatedByNode(t *testing.T) {
+	// check that member is updated after node was modified
+	rows := ts.queryDynamic(t, "osm_route_members", "osm_id = -110901 AND member = 110101")
+	if len(rows) != 1 {
+		t.Fatal(rows)
+	}
+	if rows[0]["name"] != "Stop2" {
+		t.Error(rows[0])
+	}
 }
