@@ -203,8 +203,8 @@ func createIndex(pg *PostGIS, tableName string, columns []ColumnSpec) error {
 			}
 		}
 		if col.FieldType.Name == "id" {
-			sql := fmt.Sprintf(`CREATE INDEX "%s_osm_id_idx" ON "%s"."%s" USING BTREE ("%s")`,
-				tableName, pg.Config.ImportSchema, tableName, col.Name)
+			sql := fmt.Sprintf(`CREATE INDEX "%s_%s_idx" ON "%s"."%s" USING BTREE ("%s")`,
+				tableName, col.Name, pg.Config.ImportSchema, tableName, col.Name)
 			step := log.StartStep(fmt.Sprintf("Creating OSM id index on %s", tableName))
 			_, err := pg.Db.Exec(sql)
 			log.StopStep(step)
