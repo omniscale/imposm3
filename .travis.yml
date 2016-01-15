@@ -1,9 +1,12 @@
 language: go
 
+addons:
+    postgresql: "9.3"
+
 before_script:
-  - psql -U postgres -c 'create database travis;'
-  - psql -U postgres -d travis -c "create extension postgis"
-  - psql -U postgres -d travis -c "create extension hstore"
+  - psql -U postgres -c 'create database travis' || true
+  - psql -U postgres -c "create extension if not exists postgis"
+  - psql -U postgres -c "create extension if not exists hstore"
 
 env:
   global:
