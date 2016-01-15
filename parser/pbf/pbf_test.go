@@ -3,7 +3,6 @@ package pbf
 import (
 	"bytes"
 	"compress/zlib"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -15,13 +14,12 @@ import (
 
 func BenchmarkHello(b *testing.B) {
 	b.StopTimer()
-	pbf, err := Open("../azores.osm.pbf")
+	pbf, err := Open("./monaco-20150428.osm.pbf")
 	if err != nil {
 		panic(err)
 	}
 
 	for pos := range pbf.BlockPositions() {
-		fmt.Println(pos.size, pos.offset)
 		b.StartTimer()
 		for i := 0; i < b.N; i++ {
 			readPrimitiveBlock(pos)
@@ -43,7 +41,7 @@ func BenchmarkHello(b *testing.B) {
 func BenchmarkPrimitiveBlock(b *testing.B) {
 	b.StopTimer()
 
-	file, err := os.Open("../azores.osm.pbf")
+	file, err := os.Open("./monaco-20150428.osm.pbf")
 	if err != nil {
 		log.Panic(err)
 	}
@@ -52,8 +50,8 @@ func BenchmarkPrimitiveBlock(b *testing.B) {
 	var block = &osmpbf.PrimitiveBlock{}
 	var blob = &osmpbf.Blob{}
 
-	var size = 56092
-	var offset int64 = 197
+	var size = 79566
+	var offset int64 = 155
 
 	blobData := make([]byte, size)
 	file.Seek(offset, 0)

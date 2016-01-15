@@ -31,7 +31,6 @@ func buildRelation(rel *element.Relation, srid int) (Geometry, error) {
 	if err != nil {
 		return Geometry{}, err
 	}
-
 	return prep.Build()
 }
 
@@ -54,8 +53,8 @@ func TestSimplePolygonWithHole(t *testing.T) {
 	rel := element.Relation{
 		OSMElem: element.OSMElem{Id: 1, Tags: element.Tags{}}}
 	rel.Members = []element.Member{
-		{1, element.WAY, "outer", &w1},
-		{2, element.WAY, "inner", &w2},
+		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
+		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
 	}
 
 	geom, err := buildRelation(&rel, 3857)
@@ -97,8 +96,8 @@ func TestMultiPolygonWithHoleAndRelName(t *testing.T) {
 	rel := element.Relation{
 		OSMElem: element.OSMElem{Id: 1, Tags: element.Tags{"name": "rel"}}}
 	rel.Members = []element.Member{
-		{1, element.WAY, "outer", &w1},
-		{2, element.WAY, "inner", &w2},
+		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
+		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
 	}
 
 	geom, err := buildRelation(&rel, 3857)
@@ -150,9 +149,9 @@ func TestMultiPolygonWithMultipleHoles(t *testing.T) {
 	rel := element.Relation{
 		OSMElem: element.OSMElem{Id: 1, Tags: element.Tags{"landusage": "forest"}}}
 	rel.Members = []element.Member{
-		{1, element.WAY, "outer", &w1},
-		{2, element.WAY, "inner", &w2},
-		{3, element.WAY, "inner", &w3},
+		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
+		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
+		{Id: 3, Type: element.WAY, Role: "inner", Way: &w3},
 	}
 
 	geom, err := buildRelation(&rel, 3857)
@@ -217,11 +216,11 @@ func TestMultiPolygonWithNeastedHoles(t *testing.T) {
 
 	rel := element.Relation{OSMElem: element.OSMElem{Id: 1}}
 	rel.Members = []element.Member{
-		{1, element.WAY, "outer", &w1},
-		{2, element.WAY, "inner", &w2},
-		{3, element.WAY, "inner", &w3},
-		{4, element.WAY, "inner", &w4},
-		{5, element.WAY, "inner", &w5},
+		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
+		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
+		{Id: 3, Type: element.WAY, Role: "inner", Way: &w3},
+		{Id: 4, Type: element.WAY, Role: "inner", Way: &w4},
+		{Id: 5, Type: element.WAY, Role: "inner", Way: &w5},
 	}
 
 	geom, err := buildRelation(&rel, 3857)
@@ -264,9 +263,9 @@ func TestPolygonFromThreeWays(t *testing.T) {
 
 	rel := element.Relation{OSMElem: element.OSMElem{Id: 1}}
 	rel.Members = []element.Member{
-		{1, element.WAY, "outer", &w1},
-		{2, element.WAY, "inner", &w2},
-		{3, element.WAY, "inner", &w3},
+		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
+		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
+		{Id: 3, Type: element.WAY, Role: "inner", Way: &w3},
 	}
 
 	geom, err := buildRelation(&rel, 3857)
@@ -317,9 +316,9 @@ func TestTouchingPolygonsWithHole(t *testing.T) {
 
 	rel := element.Relation{OSMElem: element.OSMElem{Id: 1, Tags: element.Tags{"water": "riverbank"}}}
 	rel.Members = []element.Member{
-		{1, element.WAY, "outer", &w1},
-		{2, element.WAY, "outer", &w2},
-		{3, element.WAY, "inner", &w3},
+		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
+		{Id: 2, Type: element.WAY, Role: "outer", Way: &w2},
+		{Id: 3, Type: element.WAY, Role: "inner", Way: &w3},
 	}
 	geom, err := buildRelation(&rel, 3857)
 	if err != nil {
@@ -359,8 +358,8 @@ func TestInsertedWaysDifferentTags(t *testing.T) {
 
 	rel := element.Relation{OSMElem: element.OSMElem{Id: 1, Tags: element.Tags{"landusage": "forest"}}}
 	rel.Members = []element.Member{
-		{1, element.WAY, "outer", &w1},
-		{2, element.WAY, "inner", &w2},
+		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
+		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
 	}
 
 	geom, err := buildRelation(&rel, 3857)
@@ -401,8 +400,8 @@ func TestInsertMultipleTags(t *testing.T) {
 
 	rel := element.Relation{OSMElem: element.OSMElem{Id: 1, Tags: element.Tags{"landusage": "forest"}}}
 	rel.Members = []element.Member{
-		{1, element.WAY, "outer", &w1}, // also highway=secondary
-		{2, element.WAY, "inner", &w2},
+		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1}, // also highway=secondary
+		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
 	}
 
 	geom, err := buildRelation(&rel, 3857)
@@ -450,8 +449,8 @@ func TestBrokenPolygonSelfIntersect(t *testing.T) {
 
 	rel1 := element.Relation{OSMElem: element.OSMElem{Id: 1}}
 	rel1.Members = []element.Member{
-		{1, element.WAY, "outer", &w1},
-		{2, element.WAY, "inner", &w2},
+		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
+		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
 	}
 
 	geom1, err := buildRelation(&rel1, 3857)
@@ -491,8 +490,8 @@ func TestBrokenPolygonSelfIntersect(t *testing.T) {
 
 	rel2 := element.Relation{OSMElem: element.OSMElem{Id: 1}}
 	rel2.Members = []element.Member{
-		{1, element.WAY, "outer", &w3},
-		{2, element.WAY, "inner", &w2},
+		{Id: 1, Type: element.WAY, Role: "outer", Way: &w3},
+		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
 	}
 
 	geom2, err := buildRelation(&rel2, 3857)
@@ -540,8 +539,8 @@ func TestBrokenPolygonSelfIntersectTriangle(t *testing.T) {
 
 	rel := element.Relation{OSMElem: element.OSMElem{Id: 1}}
 	rel.Members = []element.Member{
-		{1, element.WAY, "outer", &w1},
-		{2, element.WAY, "inner", &w2},
+		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
+		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
 	}
 
 	geom, err := buildRelation(&rel, 3857)
@@ -580,8 +579,8 @@ func TestBrokenPolygonSelfIntersectTriangle(t *testing.T) {
 
 	rel = element.Relation{OSMElem: element.OSMElem{Id: 1}}
 	rel.Members = []element.Member{
-		{1, element.WAY, "outer", &w3},
-		{2, element.WAY, "inner", &w4},
+		{Id: 1, Type: element.WAY, Role: "outer", Way: &w3},
+		{Id: 2, Type: element.WAY, Role: "inner", Way: &w4},
 	}
 
 	geom, err = buildRelation(&rel, 3857)
@@ -597,5 +596,65 @@ func TestBrokenPolygonSelfIntersectTriangle(t *testing.T) {
 	if math.Abs((area - (100*98/2 - 100))) > 10 {
 		t.Fatal("area invalid", area)
 
+	}
+}
+
+func TestOpenRing(t *testing.T) {
+	w1 := makeWay(1, element.Tags{}, []coord{
+		{1, 0, 0},
+		{2, 10, 0},
+		{3, 10, 10},
+		{4, 0, 10},
+	})
+
+	rel := element.Relation{
+		OSMElem: element.OSMElem{Id: 1, Tags: element.Tags{}}}
+	rel.Members = []element.Member{
+		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
+	}
+
+	_, err := buildRelation(&rel, 3857)
+	if err == nil {
+		t.Fatal("no error from open ring")
+	}
+}
+
+func TestClosedAndOpenRing(t *testing.T) {
+	w1 := makeWay(1, element.Tags{}, []coord{
+		{1, 0, 0},
+		{2, 10, 0},
+		{3, 10, 10},
+		{4, 0, 10},
+		{1, 0, 0},
+	})
+	w2 := makeWay(2, element.Tags{}, []coord{
+		{5, 0, 0},
+		{6, -5, -2},
+	})
+	rel := element.Relation{
+		OSMElem: element.OSMElem{Id: 1, Tags: element.Tags{}}}
+	rel.Members = []element.Member{
+		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
+		{Id: 2, Type: element.WAY, Role: "outer", Way: &w2},
+	}
+
+	prep, err := PrepareRelation(&rel, 3857, 0.1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// open ring is excluded
+	if len(prep.rings) != 1 {
+		t.Fatal("expected single ring")
+	}
+	geom, err := prep.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	g := geos.NewGeos()
+	defer g.Finish()
+
+	if !g.IsValid(geom.Geom) {
+		t.Fatal("geometry not valid", g.AsWkt(geom.Geom))
 	}
 }

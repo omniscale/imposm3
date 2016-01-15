@@ -13,9 +13,11 @@ extern void initGEOS_debug();
 import "C"
 
 import (
-	"github.com/omniscale/imposm3/logging"
+	"errors"
 	"runtime"
 	"unsafe"
+
+	"github.com/omniscale/imposm3/logging"
 )
 
 var log = logging.NewLogger("GEOS")
@@ -244,6 +246,13 @@ func (this *Geos) IsValid(geom *Geom) bool {
 	return false
 }
 
+func (this *Geos) IsSimple(geom *Geom) bool {
+	if C.GEOSisSimple_r(this.v, geom.v) == 1 {
+		return true
+	}
+	return false
+}
+
 func (this *Geos) IsEmpty(geom *Geom) bool {
 	if C.GEOSisEmpty_r(this.v, geom.v) == 1 {
 		return true
@@ -266,6 +275,19 @@ func (this *Geos) Equals(a, b *Geom) bool {
 		return true
 	}
 	return false
+}
+
+func (g *Geos) MakeValid(geom *Geom) (*Geom, error) {
+	if g.IsValid(geom) {
+		return geom, nil
+	}
+	fixed := g.Buffer(geom, 0)
+	if fixed == nil {
+		return nil, errors.New("Error while fixing geom with buffer(0)")
+	}
+	g.Destroy(geom)
+
+	return fixed, nil
 }
 
 func (this *Geom) Area() float64 {

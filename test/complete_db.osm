@@ -386,6 +386,31 @@
     <tag k="landuse" v="park"/>
   </way>
 
+  <!-- relation/way with "gap" (ways overlap, but are only sharing one endpoint) -->
+  <node id="7401" version="1" timestamp="2011-11-11T00:11:11Z" lat="60" lon="60"/>
+  <node id="7402" version="1" timestamp="2011-11-11T00:11:11Z" lat="60" lon="62"/>
+  <node id="7403" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="62"/>
+  <node id="7404" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="60"/>
+  <way id="7401" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="7401"/>
+    <nd ref="7402"/>
+    <nd ref="7403"/>
+    <nd ref="7404"/>
+    <nd ref="7401"/>
+  </way>
+  <way id="7402" version="1" timestamp="2011-11-11T00:11:11Z">
+    <!-- connected to other way, but not at start/end node and neither a ring on its own -->
+    <nd ref="7402"/>
+    <nd ref="7404"/>
+  </way>
+  <relation id="7401" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="7401" role="outer"/>
+    <member type="way" ref="7402" role="outer"/>
+    <tag k="name" v="rel 7401"/>
+    <tag k="landuse" v="park"/>
+    <tag k="type" v="multipolygon"/>
+  </relation>
+
   <!-- test that single node ways or incomplete polygons are _not_ inserted -->
   <node id="30001" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="80"/>
   <node id="30002" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="80"/>
@@ -994,6 +1019,26 @@
     <tag k="building" v="mp"/>
   </relation>
 
+
+  <!-- test that relations are updated after modified node -->
+  <node id="52101" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="10"/>
+  <node id="52102" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="11"/>
+  <node id="52103" version="1" timestamp="2011-11-11T00:11:11Z" lat="64" lon="10"/>
+  <node id="52104" version="1" timestamp="2011-11-11T00:11:11Z" lat="64" lon="11"/>
+  <way id="52111" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="52101"/>
+    <nd ref="52102"/>
+    <nd ref="52103"/>
+    <nd ref="52104"/>
+    <nd ref="52101"/>
+    <tag k="building" v="yes"/>
+  </way>
+  <relation id="52121" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="52111" role="outer"/>
+    <tag k="type" v="multipolygon"/>
+  </relation>
+
+
   <!-- zig-zag line with coords internaly cached in differend deltacoords bunches -->
   <node id="60001" version="1" timestamp="2011-11-11T00:11:11Z" lat="0.01" lon="20.00"/>
   <node id="60002" version="1" timestamp="2011-11-11T00:11:11Z" lat="0.00" lon="20.01"/>
@@ -1055,9 +1100,9 @@
   <!-- test if additional create inserts duplicate elements (checks #66) -->
   <node id="201001" version="1" timestamp="2011-11-11T00:11:11Z" lat="32" lon="10"/>
   <node id="201002" version="1" timestamp="2011-11-11T00:11:11Z" lat="32" lon="11"/>
-  <node id="201003" version="1" timestamp="2011-11-11T00:11:11Z" lat="34" lon="10"/>
-  <node id="201004" version="1" timestamp="2011-11-11T00:11:11Z" lat="34" lon="11"/>
-  <way id="201001" version="1" timestamp="2011-11-11T00:11:11Z">
+  <node id="201003" version="1" timestamp="2011-11-11T00:11:11Z" lat="34" lon="11"/>
+  <node id="201004" version="1" timestamp="2011-11-11T00:11:11Z" lat="34" lon="10"/>
+  <way id="201051" version="1" timestamp="2011-11-11T00:11:11Z">
     <nd ref="201001"/>
     <nd ref="201002"/>
     <nd ref="201003"/>
@@ -1065,8 +1110,8 @@
     <nd ref="201001"/>
     <tag k="highway" v="residential"/>
   </way>
-  <relation id="201001" version="1" timestamp="2011-11-11T00:11:11Z">
-    <member type="way" ref="201001" role="outer"/>
+  <relation id="201091" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="201051" role="outer"/>
     <tag k="type" v="multipolygon"/>
     <tag k="landuse" v="park"/>
   </relation>
@@ -1075,9 +1120,9 @@
        relation (201101) with shared way (checks #65) -->
   <node id="201101" version="1" timestamp="2011-11-11T00:11:11Z" lat="32" lon="10"/>
   <node id="201102" version="1" timestamp="2011-11-11T00:11:11Z" lat="32" lon="11"/>
-  <node id="201103" version="1" timestamp="2011-11-11T00:11:11Z" lat="34" lon="10"/>
-  <node id="201104" version="1" timestamp="2011-11-11T00:11:11Z" lat="34" lon="11"/>
-  <way id="201101" version="1" timestamp="2011-11-11T00:11:11Z">
+  <node id="201103" version="1" timestamp="2011-11-11T00:11:11Z" lat="34" lon="11"/>
+  <node id="201104" version="1" timestamp="2011-11-11T00:11:11Z" lat="34" lon="10"/>
+  <way id="201151" version="1" timestamp="2011-11-11T00:11:11Z">
     <nd ref="201101"/>
     <nd ref="201102"/>
     <nd ref="201103"/>
@@ -1085,15 +1130,29 @@
     <nd ref="201101"/>
     <tag k="highway" v="residential"/>
   </way>
-  <relation id="201101" version="1" timestamp="2011-11-11T00:11:11Z">
-    <member type="way" ref="201101" role="outer"/>
+  <relation id="201191" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="201151" role="outer"/>
     <tag k="type" v="multipolygon"/>
     <tag k="landuse" v="park"/>
   </relation>
-  <relation id="201102" version="1" timestamp="2011-11-11T00:11:11Z">
-    <member type="way" ref="201101" role="outer"/>
+  <relation id="201192" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="201151" role="outer"/>
     <tag k="type" v="multipolygon"/>
     <tag k="landuse" v="forest"/>
   </relation>
+
+  <!-- test that relations with unsupported types are not inserted with updates -->
+  <node id="201201" version="1" timestamp="2011-11-11T00:11:11Z" lat="32" lon="20"/>
+  <node id="201202" version="1" timestamp="2011-11-11T00:11:11Z" lat="32" lon="21"/>
+  <node id="201203" version="1" timestamp="2011-11-11T00:11:11Z" lat="34" lon="21"/>
+  <node id="201204" version="1" timestamp="2011-11-11T00:11:11Z" lat="34" lon="20"/>
+  <way id="201251" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="201201"/>
+    <nd ref="201202"/>
+    <nd ref="201203"/>
+    <nd ref="201204"/>
+    <nd ref="201201"/>
+    <tag k="landuse" v="park"/>
+  </way>
 
 </osm>

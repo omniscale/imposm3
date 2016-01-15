@@ -83,18 +83,12 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 	if elem.Tags == nil {
 		return nil
 	}
-	if matches := d.tmPolygons.MatchRelation(elem); len(matches) > 0 {
-		if err := d.delDb.Delete(d.RelId(elem.Id), matches); err != nil {
-			return err
-		}
-	} else {
-		// handle relations with tags from members by deleting
-		// from all tables
-		e := element.OSMElem(elem.OSMElem)
-		e.Id = -e.Id
-		if err := d.delDb.DeleteElem(e); err != nil {
-			return err
-		}
+	// delete from all tables to handle relations with tags from members
+	// and relation_members
+	e := element.OSMElem(elem.OSMElem)
+	e.Id = -e.Id
+	if err := d.delDb.DeleteElem(e); err != nil {
+		return err
 	}
 
 	if deleteRefs {
@@ -116,8 +110,10 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 				if _, ok := d.deletedWays[member.Id]; ok {
 					continue
 				}
-				if err := d.deleteRelation(member.Id, false, false); err != nil {
-					return err
+				for _, r := range d.diffCache.Ways.Get(member.Id) {
+					if err := d.deleteRelation(r, false, false); err != nil {
+						return err
+					}
 				}
 				if err := d.deleteWay(member.Id, false); err != nil {
 					return err
@@ -260,6 +256,15 @@ func (d *Deleter) Delete(delElem parser.DiffElem) error {
 					if err := d.deleteRelation(rel, false, false); err != nil {
 						return err
 					}
+				}
+			}
+			dependers = d.diffCache.CoordsRel.Get(delElem.Node.Id)
+			for _, rel := range dependers {
+				if _, ok := d.deletedRelations[rel]; ok {
+					continue
+				}
+				if err := d.deleteRelation(rel, false, false); err != nil {
+					return err
 				}
 			}
 		}

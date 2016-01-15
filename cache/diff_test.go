@@ -90,9 +90,10 @@ func BenchmarkWriteDiff(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		for w := 0; w < 5; w++ {
 			for n := 0; n < 200; n++ {
-				cache.addc <- idRef{id: int64(n), ref: int64(w)}
+				cache.Add(int64(n), int64(w))
 			}
 		}
+		cache.Flush()
 	}
 
 }

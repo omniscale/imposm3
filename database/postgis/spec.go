@@ -125,11 +125,19 @@ func (spec *TableSpec) DeleteSQL() string {
 }
 
 func NewTableSpec(pg *PostGIS, t *mapping.Table) *TableSpec {
+	var geomType string
+	switch t.Type {
+	case mapping.RelationMemberTable:
+		geomType = "geometry"
+	default:
+		geomType = string(t.Type)
+	}
+
 	spec := TableSpec{
 		Name:         t.Name,
 		FullName:     pg.Prefix + t.Name,
 		Schema:       pg.Config.ImportSchema,
-		GeometryType: string(t.Type),
+		GeometryType: geomType,
 		Srid:         pg.Config.Srid,
 	}
 	for _, field := range t.Fields {

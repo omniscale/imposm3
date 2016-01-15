@@ -24,7 +24,7 @@ This is step zero, since you have to do it only once. The following commands cre
     createdb -E UTF8 -O osm osm
     psql -d osm -c "CREATE EXTENSION postgis;"
     psql -d osm -c "CREATE EXTENSION hstore;" # only required for hstore support
-    echo "ALTER USER osm WITH PASSWORD \'osm\';" |psql -d osm
+    echo "ALTER USER osm WITH PASSWORD 'osm';" |psql -d osm
 
 You can change the names if you like, but we will use `osm` for user name, password and database name in all following examples.
 
@@ -84,6 +84,11 @@ In our example:
 You can combine reading and writing::
 
   imposm3 import -mapping mapping.yml -read hamburg.osm.pbf -write -connection postgis://osm:osm@localhost/osm
+
+
+All tables are prefixed with ``osm_``, e.g. ``roads`` will create the table ``osm_roads``. You can change the prefix by appending ``?prefix=myprefix`` to the connection URL. Use ``NONE`` to disable prefixing::
+
+  imposm3 import -mapping mapping.yml -write -connection postgis://osm:osm@localhost/osm?prefix=NONE
 
 
 Limit to
@@ -203,6 +208,8 @@ The ``diff`` sub-command requires similar options as the ``import`` sub-command.
 To update an existing database with three change files::
 
   imposm3 diff -config config.json changes-1.osc.gz changes-2.osc.gz changes-3.osc.gz
+
+Imposm 3 stores the sequence number of the last imported changeset in `${cachedir}/last.state.txt`, if it finds a matching state file (`123.state.txt` for `123.osc.gz`). Imposm refuses to import the same diff files a second time if these state files are present.
 
 Remember that you have to make the initial import with the ``-diff`` option. See above.
 

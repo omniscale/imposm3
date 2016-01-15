@@ -11,11 +11,12 @@ import (
 )
 
 type Field struct {
-	Name string                 `yaml:"name"`
-	Key  Key                    `yaml:"key"`
-	Keys []Key                  `yaml:"keys"`
-	Type string                 `yaml:"type"`
-	Args map[string]interface{} `yaml:"args"`
+	Name       string                 `yaml:"name"`
+	Key        Key                    `yaml:"key"`
+	Keys       []Key                  `yaml:"keys"`
+	Type       string                 `yaml:"type"`
+	Args       map[string]interface{} `yaml:"args"`
+	FromMember bool                   `yaml:"from_member"`
 }
 
 type Table struct {
@@ -133,6 +134,10 @@ func (tt *TableType) UnmarshalJSON(data []byte) error {
 		*tt = PolygonTable
 	case `"geometry"`:
 		*tt = GeometryTable
+	case `"relation"`:
+		*tt = RelationTable
+	case `"relation_member"`:
+		*tt = RelationMemberTable
 	default:
 		return errors.New("unknown type " + string(data))
 	}
@@ -140,10 +145,12 @@ func (tt *TableType) UnmarshalJSON(data []byte) error {
 }
 
 const (
-	PolygonTable    TableType = "polygon"
-	LineStringTable TableType = "linestring"
-	PointTable      TableType = "point"
-	GeometryTable   TableType = "geometry"
+	PolygonTable        TableType = "polygon"
+	LineStringTable     TableType = "linestring"
+	PointTable          TableType = "point"
+	GeometryTable       TableType = "geometry"
+	RelationTable       TableType = "relation"
+	RelationMemberTable TableType = "relation_member"
 )
 
 func NewMapping(filename string) (*Mapping, error) {
@@ -242,7 +249,7 @@ func (m *Mapping) tables(tableType TableType) map[string]*TableFields {
 
 func (m *Mapping) extraTags(tableType TableType, tags map[Key]bool) {
 	for _, t := range m.Tables {
-		if t.Type != tableType {
+		if t.Type != tableType && t.Type != "geometry" {
 			continue
 		}
 		for key, _ := range t.ExtraTags() {

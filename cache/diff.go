@@ -1,13 +1,14 @@
 package cache
 
 import (
-	"github.com/jmhodges/levigo"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sort"
 	"sync"
+
+	"github.com/jmhodges/levigo"
 
 	"github.com/omniscale/imposm3/cache/binary"
 	"github.com/omniscale/imposm3/element"
@@ -20,10 +21,11 @@ func (a byInt64) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a byInt64) Less(i, j int) bool { return a[i] < a[j] }
 
 type DiffCache struct {
-	Dir    string
-	Coords *CoordsRefIndex
-	Ways   *WaysRefIndex
-	opened bool
+	Dir       string
+	Coords    *CoordsRefIndex    // Stores which ways a coord references
+	CoordsRel *CoordsRelRefIndex // Stores which relations a coord references
+	Ways      *WaysRefIndex      // Stores which relations a way references
+	opened    bool
 }
 
 func NewDiffCache(dir string) *DiffCache {
@@ -36,6 +38,10 @@ func (c *DiffCache) Close() {
 		c.Coords.Close()
 		c.Coords = nil
 	}
+	if c.CoordsRel != nil {
+		c.CoordsRel.Close()
+		c.CoordsRel = nil
+	}
 	if c.Ways != nil {
 		c.Ways.Close()
 		c.Ways = nil
@@ -46,6 +52,9 @@ func (c *DiffCache) Flush() {
 	if c.Coords != nil {
 		c.Coords.Flush()
 	}
+	if c.CoordsRel != nil {
+		c.CoordsRel.Flush()
+	}
 	if c.Ways != nil {
 		c.Ways.Flush()
 	}
@@ -54,6 +63,11 @@ func (c *DiffCache) Flush() {
 func (c *DiffCache) Open() error {
 	var err error
 	c.Coords, err = newCoordsRefIndex(filepath.Join(c.Dir, "coords_index"))
+	if err != nil {
+		c.Close()
+		return err
+	}
+	c.CoordsRel, err = newCoordsRelRefIndex(filepath.Join(c.Dir, "coords_rel_index"))
 	if err != nil {
 		c.Close()
 		return err
@@ -74,6 +88,9 @@ func (c *DiffCache) Exists() bool {
 	if _, err := os.Stat(filepath.Join(c.Dir, "coords_index")); !os.IsNotExist(err) {
 		return true
 	}
+	if _, err := os.Stat(filepath.Join(c.Dir, "coords_rel_index")); !os.IsNotExist(err) {
+		return true
+	}
 	if _, err := os.Stat(filepath.Join(c.Dir, "ways_index")); !os.IsNotExist(err) {
 		return true
 	}
@@ -85,6 +102,9 @@ func (c *DiffCache) Remove() error {
 		c.Close()
 	}
 	if err := os.RemoveAll(filepath.Join(c.Dir, "coords_index")); err != nil {
+		return err
+	}
+	if err := os.RemoveAll(filepath.Join(c.Dir, "coords_rel_index")); err != nil {
 		return err
 	}
 	if err := os.RemoveAll(filepath.Join(c.Dir, "ways_index")); err != nil {
@@ -198,6 +218,9 @@ func newRefIndex(path string, opts *cacheOptions) (*bunchRefCache, error) {
 type CoordsRefIndex struct {
 	bunchRefCache
 }
+type CoordsRelRefIndex struct {
+	bunchRefCache
+}
 type WaysRefIndex struct {
 	bunchRefCache
 }
@@ -208,6 +231,14 @@ func newCoordsRefIndex(dir string) (*CoordsRefIndex, error) {
 		return nil, err
 	}
 	return &CoordsRefIndex{*cache}, nil
+}
+
+func newCoordsRelRefIndex(dir string) (*CoordsRelRefIndex, error) {
+	cache, err := newRefIndex(dir, &globalCacheOptions.CoordsIndex)
+	if err != nil {
+		return nil, err
+	}
+	return &CoordsRelRefIndex{*cache}, nil
 }
 
 func newWaysRefIndex(dir string) (*WaysRefIndex, error) {
@@ -362,6 +393,18 @@ func (index *CoordsRefIndex) DeleteFromWay(way *element.Way) {
 	}
 	for _, node := range way.Nodes {
 		index.DeleteRef(node.Id, way.Id)
+	}
+}
+
+func (index *CoordsRelRefIndex) AddFromMembers(relId int64, members []element.Member) {
+	for _, member := range members {
+		if member.Type == element.NODE {
+			if index.linearImport {
+				index.addc <- idRef{id: member.Id, ref: relId}
+			} else {
+				index.Add(member.Id, relId)
+			}
+		}
 	}
 }
 

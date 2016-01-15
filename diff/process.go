@@ -24,6 +24,51 @@ import (
 
 var log = logging.NewLogger("diff")
 
+func Diff() {
+	if config.BaseOptions.Quiet {
+		logging.SetQuiet(true)
+	}
+
+	var geometryLimiter *limit.Limiter
+	if config.BaseOptions.LimitTo != "" {
+		var err error
+		step := log.StartStep("Reading limitto geometries")
+		geometryLimiter, err = limit.NewFromGeoJSON(
+			config.BaseOptions.LimitTo,
+			config.BaseOptions.LimitToCacheBuffer,
+			config.BaseOptions.Srid,
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.StopStep(step)
+	}
+	osmCache := cache.NewOSMCache(config.BaseOptions.CacheDir)
+	err := osmCache.Open()
+	if err != nil {
+		log.Fatal("osm cache: ", err)
+	}
+	defer osmCache.Close()
+
+	diffCache := cache.NewDiffCache(config.BaseOptions.CacheDir)
+	err = diffCache.Open()
+	if err != nil {
+		log.Fatal("diff cache: ", err)
+	}
+
+	for _, oscFile := range config.DiffFlags.Args() {
+		err := Update(oscFile, geometryLimiter, nil, osmCache, diffCache, false)
+		if err != nil {
+			osmCache.Close()
+			diffCache.Close()
+			log.Fatalf("unable to process %s: %v", oscFile, err)
+		}
+	}
+	// explicitly Close since os.Exit prevents defers
+	osmCache.Close()
+	diffCache.Close()
+}
+
 func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expireor, osmCache *cache.OSMCache, diffCache *cache.DiffCache, force bool) error {
 	state, err := diffstate.ParseFromOsc(oscFile)
 	if err != nil {
@@ -104,6 +149,8 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 		relations,
 		db, progress,
 		tagmapping.PolygonMatcher(),
+		tagmapping.RelationMatcher(),
+		tagmapping.RelationMemberMatcher(),
 		config.BaseOptions.Srid)
 	relWriter.SetLimiter(geometryLimiter)
 	relWriter.SetExpireor(expireor)
@@ -128,9 +175,9 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 	nodeWriter.SetExpireor(expireor)
 	nodeWriter.Start()
 
-	nodeIds := make(map[int64]bool)
-	wayIds := make(map[int64]bool)
-	relIds := make(map[int64]bool)
+	nodeIds := make(map[int64]struct{})
+	wayIds := make(map[int64]struct{})
+	relIds := make(map[int64]struct{})
 
 	step := log.StartStep("Parsing changes, updating cache and removing elements")
 
@@ -204,7 +251,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 						if err != nil {
 							return diffError(err, "put relation %v", elem.Rel)
 						}
-						relIds[elem.Rel.Id] = true
+						relIds[elem.Rel.Id] = struct{}{}
 					}
 				} else if elem.Way != nil {
 					// check if first coord is cached to avoid caching
@@ -218,7 +265,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 						if err != nil {
 							return diffError(err, "put way %v", elem.Way)
 						}
-						wayIds[elem.Way.Id] = true
+						wayIds[elem.Way.Id] = struct{}{}
 					}
 				} else if elem.Node != nil {
 					addNode := true
@@ -236,7 +283,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 						if err != nil {
 							return diffError(err, "put coord %v", elem.Node)
 						}
-						nodeIds[elem.Node.Id] = true
+						nodeIds[elem.Node.Id] = struct{}{}
 					}
 				}
 			}
@@ -254,7 +301,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 
 	// mark member ways from deleted relations for re-insert
 	for id, _ := range deleter.DeletedMemberWays() {
-		wayIds[id] = true
+		wayIds[id] = struct{}{}
 	}
 
 	progress.Stop()
@@ -267,16 +314,22 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 	for nodeId, _ := range nodeIds {
 		dependers := diffCache.Coords.Get(nodeId)
 		for _, way := range dependers {
-			wayIds[way] = true
+			wayIds[way] = struct{}{}
 		}
 	}
 
 	// mark depending relations for (re)insert
+	for nodeId, _ := range nodeIds {
+		dependers := diffCache.CoordsRel.Get(nodeId)
+		for _, rel := range dependers {
+			relIds[rel] = struct{}{}
+		}
+	}
 	for wayId, _ := range wayIds {
 		dependers := diffCache.Ways.Get(wayId)
 		// mark depending relations for (re)insert
 		for _, rel := range dependers {
-			relIds[rel] = true
+			relIds[rel] = struct{}{}
 		}
 	}
 
@@ -290,7 +343,11 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 		}
 		// insert new relation
 		progress.AddRelations(1)
-		relations <- rel
+		// filter out unsupported relation types, otherwise they might
+		// get inserted with the tags from an outer way
+		if relTagFilter.Filter(&rel.Tags) {
+			relations <- rel
+		}
 	}
 
 	for wayId, _ := range wayIds {
