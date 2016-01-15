@@ -5,8 +5,7 @@ before_script:
 
 install:
   - sudo apt-get update -y
-  - sudo apt-get install -y libleveldb-dev libgeos-dev python-psycopg2 python-shapely python-nose libprotobuf-dev osmosis
-  - go get github.com/golang/protobuf/{proto,protoc-gen-go}
+  - sudo apt-get install -y libleveldb-dev libgeos-dev libprotobuf-dev osmosis
   - go get github.com/tools/godep
 
 script: make
