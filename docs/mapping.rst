@@ -251,25 +251,25 @@ Element types for ``relation_member``
 
 The following types are only valid for tables of the type ``relation_member``.
 
-``relation_member_id``
-^^^^^^^^^^^^^^^^^^^^^^
+``member_id``
+^^^^^^^^^^^^^
 
 The OSM ID of the relation member.
 
-``relation_member_type``
-^^^^^^^^^^^^^^^^^^^^^^^^
+``member_type``
+^^^^^^^^^^^^^^^
 
 The type of the relation member. 0 for nodes, 1 for ways and 2 for relations.
 
 
-``relation_member_role``
-^^^^^^^^^^^^^^^^^^^^^^^^
+``member_role``
+^^^^^^^^^^^^^^^
 
 The role of the relation member as a string, e.g. `outer`, `stop`, etc.
 
 
-``relation_member_index``
-^^^^^^^^^^^^^^^^^^^^^^^^^
+``member_index``
+^^^^^^^^^^^^^^^^
 
 The index of the member in the relation, starting from 0. E.g. the first member is 0, second member is 1, etc.
 This can be used to query bus stops of a route relation in the right order.

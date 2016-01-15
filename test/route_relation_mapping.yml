@@ -11,13 +11,13 @@ tables:
     - name: osm_id
       type: id
     - name: member
-      type: relation_member_id
+      type: member_id
     - name: index
-      type: relation_member_index
+      type: member_index
     - name: role
-      type: relation_member_role
+      type: member_role
     - name: type
-      type: relation_member_type
+      type: member_type
     - name: geometry
       type: geometry
     - name: subname
@@ -38,13 +38,13 @@ tables:
       name: ref
       type: string
     - name: member
-      type: relation_member_id
+      type: member_id
     - name: index
-      type: relation_member_index
+      type: member_index
     - name: role
-      type: relation_member_role
+      type: member_role
     - name: type
-      type: relation_member_type
+      type: member_type
     - name: geometry
       type: geometry
     - name: relname

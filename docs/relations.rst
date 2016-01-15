@@ -88,13 +88,13 @@ You can use the following mapping::
     - name: osm_id
       type: id
     - name: member
-      type: relation_member_id
+      type: member_id
     - name: index
-      type: relation_member_index
+      type: member_index
     - name: role
-      type: relation_member_role
+      type: member_role
     - name: type
-      type: relation_member_type
+      type: member_type
     - name: geometry
       type: geometry
     - name: relname
@@ -146,7 +146,7 @@ ref      The value of the ``ref`` tag of the relation. ``301`` in this case.
 
 
 You can insert the tags of the relation in a separate ``relation`` table to avoid duplication and then use `joins` when querying the data.
-Both ``osm_id`` and ``relation_member_id`` columns are indexed in PostgreSQL by default to speed up these joins.
+Both ``osm_id`` and ``member_id`` columns are indexed in PostgreSQL by default to speed up these joins.
 
 ``relation``
 ^^^^^^^^^^^^
