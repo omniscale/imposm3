@@ -45,10 +45,13 @@ Features
   Automatically creates tables with lower spatial resolutions, perfect for rendering large road networks in low resolutions.
 
 - Limit to polygons:
-  Limit imported geometries to polygons from Shapefiles or GeoJSON, for city/state/country imports.
+  Limit imported geometries to polygons from GeoJSON, for city/state/country imports.
 
 - Easy deployment:
-  Single binary with only runtime dependencies to common libs (GEOS, SQLite and LevelDB)
+  Single binary with only runtime dependencies to common libs (GEOS, ProtoBuf and LevelDB)
+
+- Route relations:
+  Import all relation types including routes.
 
 - Support for table namespace (PostgreSQL schema)
 
@@ -88,7 +91,6 @@ There are a few features we like to see in Imposm 3:
 
 * Automatic download and import of differential files
 * Support for other projections than EPSG:3857 or EPSG:4326
-* Support for route relations
 * Improved integration with tile servers (expiration of updated tiles)
 * Custom field/filter functions
 * Official releases with binaries for more platforms
