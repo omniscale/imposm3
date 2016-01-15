@@ -34,7 +34,7 @@ clean:
 	rm -f imposm3
 	(cd test && make clean)
 
-test: imposm3
+test: imposm3 system-test-files
 	$(GO) test ./... -i
 	$(GO) test ./...
 
@@ -44,6 +44,9 @@ test-unit: imposm3
 
 test-system: imposm3
 	(cd test && make test)
+
+system-test-files:
+	(cd test && make files)
 
 %.pb.go: %.proto
 	protoc --go_out=. $^
