@@ -135,9 +135,9 @@ type FieldType struct {
 	FromMember bool
 }
 
-func registerFieldTypes(newFieldType FieldType) {
+func RegisterFieldTypes(newFieldType FieldType) {
 	if _, ok := AvailableFieldTypes[newFieldType.Name]; ok {
-		panic("registerFieldTypes called twice for registration this FieldType :" + newFieldType.Name)
+		panic("RegisterFieldTypes called twice for registration this FieldType :" + newFieldType.Name)
 	} else {
 		// TODO: check if  newFieldType.GoType     is valid  and not nil
 		// TODO: check if  newFieldType.Func       is valid  or nil

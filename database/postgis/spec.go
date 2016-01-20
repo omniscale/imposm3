@@ -55,7 +55,7 @@ func (spec *TableSpec) CreateTableSQL() string {
 	}
 
 	for _, col := range spec.Columns {
-		if col.Type.Name() == "GEOMETRY" {
+		if col.Type.IsGeometry() {
 			continue
 		}
 		cols = append(cols, col.AsSQL())

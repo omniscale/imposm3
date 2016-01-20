@@ -6,6 +6,7 @@ import (
 
 type ColumnType interface {
 	Name() string
+	IsGeometry() bool
 	PrepareInsertSql(i int,
 		spec *TableSpec) string
 	GeneralizeSql(colSpec *ColumnSpec, spec *GeneralizedTableSpec) string
@@ -17,6 +18,10 @@ type simpleColumnType struct {
 
 func (t *simpleColumnType) Name() string {
 	return t.name
+}
+
+func (t *simpleColumnType) IsGeometry() bool {
+	return false
 }
 
 func (t *simpleColumnType) PrepareInsertSql(i int, spec *TableSpec) string {
@@ -41,6 +46,10 @@ type geometryType struct {
 
 func (t *geometryType) Name() string {
 	return t.name
+}
+
+func (t *geometryType) IsGeometry() bool {
+	return true
 }
 
 func (t *geometryType) PrepareInsertSql(i int, spec *TableSpec) string {
@@ -69,9 +78,6 @@ func (t *validatedGeometryType) GeneralizeSql(colSpec *ColumnSpec, spec *General
 	)
 }
 
-//TODO: add minimum PostgreSQL and PostGIS version:  JSONB !
-//TODO: need test and example code for all new type!
-//TODO: re-think:  registering new pgTypes ?  with user functions ?
 var pgTypes = map[string]ColumnType{
 	"string":             &simpleColumnType{"VARCHAR"},
 	"bool":               &simpleColumnType{"BOOL"},
@@ -82,13 +88,22 @@ var pgTypes = map[string]ColumnType{
 	"hstore_string":      &simpleColumnType{"HSTORE"},
 	"geometry":           &geometryType{"GEOMETRY"},
 	"validated_geometry": &validatedGeometryType{geometryType{"GEOMETRY"}},
+	"geometry_noindex":   &geometryType{"GEOMETRYNOINDEX"},
+	"point":              &geometryType{"POINT"},
+	"linestring":         &geometryType{"LINESTRING"},
 	"json_string":        &simpleColumnType{"JSON"},
-	"jsonb_string":       &simpleColumnType{"JSONB"}, // only  >= PostgreSQL 9.4
 	"date":               &simpleColumnType{"DATE"},
+	"time":               &simpleColumnType{"TIME"},
 	"timestamp":          &simpleColumnType{"TIMESTAMP"},
-	"int16":              &simpleColumnType{"SMALLINT"},
-	"double_precision":   &simpleColumnType{"DOUBLE PRECISION"},
-	"numeric":            &simpleColumnType{"NUMERIC"},
-	"bytea_escape":       &simpleColumnType{"BYTEA"},
 	"char1":              &simpleColumnType{"\"char\""}, // PostgreSQL single-byte internal type ;
+}
+
+func registerColumnType(ColumnTypeName string, columntype ColumnType) {
+
+	if _, ok := pgTypes[ColumnTypeName]; ok {
+		panic("postgis.RegisterColumnType duplicate key: " + ColumnTypeName)
+	} else {
+		pgTypes[ColumnTypeName] = columntype
+		//log.Print("Registered new ColumnType : " + ColumnTypeName )
+	}
 }
