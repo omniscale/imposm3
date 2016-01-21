@@ -6,8 +6,3 @@ config.json
 test/build
 test/.lasttestrun*
 test/*.pyc
-contrib/monaco_osm2osc_test/output
-contrib/monaco_osm2osc_test/output/_*
-*~
-*.swp
-*.swo
