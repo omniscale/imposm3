@@ -126,12 +126,11 @@ func init() {
 	addCommonKey("addr:housenumber")
 
 	// Reserved for OSM metadata variables.
-	addCommonKey(element.ParseMetadataKeynameVersion)
-	addCommonKey(element.ParseMetadataKeynameTimestamp)
-	addCommonKey(element.ParseMetadataKeynameChangeset)
-	addCommonKey(element.ParseMetadataKeynameUid)
-	addCommonKey(element.ParseMetadataKeynameUser)
-	//
+	addCommonKey(element.Meta.Version.KeyName)
+	addCommonKey(element.Meta.Timestamp.KeyName)
+	addCommonKey(element.Meta.Changeset.KeyName)
+	addCommonKey(element.Meta.Uid.KeyName)
+	addCommonKey(element.Meta.User.KeyName)
 
 	// most used tags for ways
 	//

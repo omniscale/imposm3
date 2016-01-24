@@ -96,7 +96,7 @@ NextToken:
 						node.Long, _ = strconv.ParseFloat(attr.Value, 64)
 					}
 
-					if element.ParseMetadata {
+					if element.Meta.Parse {
 						switch attr.Name.Local {
 						case "version":
 							x, _ := strconv.ParseInt(attr.Value, 10, 32)
@@ -121,7 +121,7 @@ NextToken:
 						way.Id, _ = strconv.ParseInt(attr.Value, 10, 64)
 					}
 
-					if element.ParseMetadata {
+					if element.Meta.Parse {
 						switch attr.Name.Local {
 						case "version":
 							x, _ := strconv.ParseInt(attr.Value, 10, 32)
@@ -146,7 +146,7 @@ NextToken:
 						rel.Id, _ = strconv.ParseInt(attr.Value, 10, 64)
 					}
 
-					if element.ParseMetadata {
+					if element.Meta.Parse {
 						switch attr.Name.Local {
 						case "version":
 							x, _ := strconv.ParseInt(attr.Value, 10, 32)
@@ -220,7 +220,7 @@ NextToken:
 
 					if len(tags) > 0 {
 
-						if element.ParseMetadata {
+						if element.Meta.Parse {
 							tags.AddMetaInfo(metaInfo)
 						}
 
@@ -238,7 +238,7 @@ NextToken:
 			case "way":
 				if len(tags) > 0 {
 
-					if element.ParseMetadata {
+					if element.Meta.Parse {
 						tags.AddMetaInfo(metaInfo)
 					}
 
@@ -254,7 +254,7 @@ NextToken:
 			case "relation":
 				if len(tags) > 0 {
 
-					if element.ParseMetadata {
+					if element.Meta.Parse {
 						tags.AddMetaInfo(metaInfo)
 					}
 

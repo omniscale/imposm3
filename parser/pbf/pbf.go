@@ -56,7 +56,7 @@ func readDenseNodes(
 		coords[i].Long = (coordScale * float64(lonOffset+(granularity*lastLon)))
 		coords[i].Lat = (coordScale * float64(latOffset+(granularity*lastLat)))
 
-		if element.ParseMetadata {
+		if element.Meta.Parse {
 			lastDenseInfoTimestamp += dense.Denseinfo.Timestamp[i]
 			lastDenseInfoChangeset += dense.Denseinfo.Changeset[i]
 			lastDenseInfoUid += dense.Denseinfo.Uid[i]
@@ -80,7 +80,7 @@ func readDenseNodes(
 
 					} else {
 
-						if element.ParseMetadata {
+						if element.Meta.Parse {
 
 							metaInfo.Version = denseInfoVersion
 							metaInfo.Timestamp = denseInfoTimestamp
@@ -167,7 +167,7 @@ func readNodes(
 					// don't add nodes with only created_by tag to nodes cache
 				} else {
 
-					if element.ParseMetadata {
+					if element.Meta.Parse {
 
 						metaInfo.Version = *nodes[i].Info.Version
 						metaInfo.Timestamp = time.Unix(*nodes[i].Info.Timestamp, 0)
@@ -214,7 +214,7 @@ func readWays(
 		result[i].Tags = parseTags(stringtable, ways[i].Keys, ways[i].Vals)
 		result[i].Refs = parseDeltaRefs(ways[i].Refs)
 
-		if element.ParseMetadata && (ways[i].Info != nil) && (len(result[i].Tags) > 0) {
+		if element.Meta.Parse && (ways[i].Info != nil) && (len(result[i].Tags) > 0) {
 
 			metaInfo.Version = *ways[i].Info.Version
 			metaInfo.Timestamp = time.Unix(*ways[i].Info.Timestamp, 0)
@@ -255,7 +255,7 @@ func readRelations(
 		result[i].Tags = parseTags(stringtable, relations[i].Keys, relations[i].Vals)
 		result[i].Members = parseRelationMembers(relations[i], stringtable)
 
-		if element.ParseMetadata && (relations[i].Info != nil) && (len(result[i].Tags) > 0) {
+		if element.Meta.Parse && (relations[i].Info != nil) && (len(result[i].Tags) > 0) {
 
 			metaInfo.Version = *relations[i].Info.Version
 			metaInfo.Timestamp = time.Unix(*relations[i].Info.Timestamp, 0)

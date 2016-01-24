@@ -32,6 +32,7 @@ build: imposm3
 
 clean:
 	rm -f imposm3
+	$(GO) clean -i -r
 	(cd test && make clean)
 
 test: imposm3
