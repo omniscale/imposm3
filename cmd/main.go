@@ -6,9 +6,12 @@ import (
 	"os"
 	"runtime"
 
+	"github.com/jmhodges/levigo"
+
 	"github.com/omniscale/imposm3/cache/query"
 	"github.com/omniscale/imposm3/config"
 	"github.com/omniscale/imposm3/diff"
+	"github.com/omniscale/imposm3/geom/geos"
 	"github.com/omniscale/imposm3/import_"
 	"github.com/omniscale/imposm3/logging"
 	"github.com/omniscale/imposm3/stats"
@@ -23,6 +26,7 @@ func PrintCmds() {
 	fmt.Println("\tdiff")
 	fmt.Println("\tquery-cache")
 	fmt.Println("\tversion")
+	fmt.Println("See more: http://imposm.org/\n")
 }
 
 func Main(usage func()) {
@@ -55,7 +59,10 @@ func Main(usage func()) {
 	case "query-cache":
 		query.Query(os.Args[2:])
 	case "version":
-		fmt.Println(Version)
+		fmt.Printf("%s %s(%s-%s-%s)", Version, runtime.Version(), runtime.GOARCH, runtime.GOOS, runtime.Compiler)
+		fmt.Printf(" geos=(%s)", geos.Version())
+		fmt.Printf(" leveldb=%d.%d", levigo.GetLevelDBMajorVersion(), levigo.GetLevelDBMinorVersion())
+		fmt.Printf(" numcpu=%d\n", runtime.NumCPU())
 		os.Exit(0)
 	default:
 		usage()

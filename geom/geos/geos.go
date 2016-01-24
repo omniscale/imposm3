@@ -355,3 +355,7 @@ func (this *Geom) Bounds() Bounds {
 
 	return Bounds{minx, miny, maxx, maxy}
 }
+
+func Version() string {
+	return (C.GoString(C.GEOSversion()))
+}
