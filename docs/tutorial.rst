@@ -154,7 +154,7 @@ Deploy production tables
 Since Imposm overwrites existing tables on import (``-write``), it is recommended to use different schemas for import and for production.
 Imposm imports all tables into the ``import`` schema by default. For example, after the import the table ``osm_roads`` is accessible as ``import.osm_roads`` and not as ``osm_roads`` or ``public.osm_roads``.
 
-.. note:: Database schemas are a feature of a few databases including PostgreSQL to define multiple namespaces for tables. Don't mistake this for database schemas (as in data model) which are discussed in doc:`mapping`.
+.. note:: Database schemas are a feature of a few databases including PostgreSQL to define multiple namespaces for tables. Don't mistake this for database schemas (as in data model) which are discussed in :doc:`mapping`.
 
 Imposm can `deploy` all imported tables by updating the schema of the tables.
 To move all tables form ``import`` to the default schema ``public``::
