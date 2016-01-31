@@ -91,7 +91,8 @@ var pgTypes = map[string]ColumnType{
 	"geometry_noindex":   &geometryType{"GEOMETRYNOINDEX"},
 	"point":              &geometryType{"POINT"},
 	"linestring":         &geometryType{"LINESTRING"},
-	"json_string":        &simpleColumnType{"JSON"}, // only  >= PostgreSQL 9.2
+	"json_string":        &simpleColumnType{"JSON"},  // only  >= PostgreSQL 9.2
+	"jsonb_string":       &simpleColumnType{"JSONB"}, // only  >= PostgreSQL 9.4
 	"date":               &simpleColumnType{"DATE"},
 	"time":               &simpleColumnType{"TIME"},
 	"timestamp":          &simpleColumnType{"TIMESTAMP"},
@@ -104,6 +105,5 @@ func registerColumnType(ColumnTypeName string, columntype ColumnType) {
 		panic("postgis.RegisterColumnType duplicate key: " + ColumnTypeName)
 	} else {
 		pgTypes[ColumnTypeName] = columntype
-		//log.Print("Registered new ColumnType : " + ColumnTypeName )
 	}
 }

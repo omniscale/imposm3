@@ -139,11 +139,7 @@ func RegisterFieldTypes(newFieldType FieldType) {
 	if _, ok := AvailableFieldTypes[newFieldType.Name]; ok {
 		panic("RegisterFieldTypes called twice for registration this FieldType :" + newFieldType.Name)
 	} else {
-		// TODO: check if  newFieldType.GoType     is valid  and not nil
-		// TODO: check if  newFieldType.Func       is valid  or nil
-		// TODO: check if  newFieldType.MakeFunc   is valid  or nil
 		AvailableFieldTypes[newFieldType.Name] = newFieldType
-		// log.Print("Registered new Fieldtypes : " + newFieldType.Name)
 	}
 }
 

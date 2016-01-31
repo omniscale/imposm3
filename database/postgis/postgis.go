@@ -90,7 +90,6 @@ func addGeometryColumn(tx *sql.Tx, tableName string, spec TableSpec) error {
 			sql := fmt.Sprintf("SELECT AddGeometryColumn('%s', '%s', '%s', '%d', '%s', 2);",
 				spec.Schema, tableName, colName, spec.Srid, geomType)
 
-			fmt.Println("@addGeometryColumn@::", sql)
 			row := tx.QueryRow(sql)
 			var void interface{}
 			err := row.Scan(&void)
