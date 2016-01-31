@@ -27,14 +27,13 @@ import (
 
 func init() {
 
-	mapping.RegisterFieldTypes(mapping.FieldType{Name: "example_string_char1", GoType: "char1", Func: getField_test_String1, MakeFunc: nil})
-	mapping.RegisterFieldTypes(mapping.FieldType{Name: "example_json", GoType: "json_string", Func: getField_test_JSON, MakeFunc: nil})
-	mapping.RegisterFieldTypes(mapping.FieldType{Name: "example_date", GoType: "date", Func: getField_test_date, MakeFunc: nil})
-	mapping.RegisterFieldTypes(mapping.FieldType{Name: "example_time", GoType: "time", Func: getField_test_time, MakeFunc: nil})
-	mapping.RegisterFieldTypes(mapping.FieldType{Name: "example_timestamp", GoType: "timestamp", Func: getField_test_timestamp, MakeFunc: nil})
-	mapping.RegisterFieldTypes(mapping.FieldType{Name: "example_geometry_noindex", GoType: "geometry_noindex", Func: getField_test_geometry_noindex, MakeFunc: nil})
-	mapping.RegisterFieldTypes(mapping.FieldType{Name: "example_point", GoType: "point", Func: getField_test_point, MakeFunc: nil})
-	mapping.RegisterFieldTypes(mapping.FieldType{Name: "example_linestring", GoType: "linestring", Func: getField_test_linestring, MakeFunc: nil})
+	mapping.RegisterFieldTypes(mapping.FieldType{Name: "example_string_char1", GoType: "char1", Func: getField_test_String1, MakeFunc: nil, MemberFunc: nil, FromMember: false})
+	mapping.RegisterFieldTypes(mapping.FieldType{Name: "example_date", GoType: "date", Func: getField_test_date, MakeFunc: nil, MemberFunc: nil, FromMember: false})
+	mapping.RegisterFieldTypes(mapping.FieldType{Name: "example_time", GoType: "time", Func: getField_test_time, MakeFunc: nil, MemberFunc: nil, FromMember: false})
+	mapping.RegisterFieldTypes(mapping.FieldType{Name: "example_timestamp", GoType: "timestamp", Func: getField_test_timestamp, MakeFunc: nil, MemberFunc: nil, FromMember: false})
+	mapping.RegisterFieldTypes(mapping.FieldType{Name: "example_geometry_noindex", GoType: "geometry_noindex", Func: getField_test_geometry_noindex, MakeFunc: nil, MemberFunc: nil, FromMember: false})
+	mapping.RegisterFieldTypes(mapping.FieldType{Name: "example_point", GoType: "point", Func: getField_test_point, MakeFunc: nil, MemberFunc: nil, FromMember: false})
+	mapping.RegisterFieldTypes(mapping.FieldType{Name: "example_linestring", GoType: "linestring", Func: getField_test_linestring, MakeFunc: nil, MemberFunc: nil, FromMember: false})
 
 }
 

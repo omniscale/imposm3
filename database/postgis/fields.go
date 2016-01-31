@@ -91,7 +91,7 @@ var pgTypes = map[string]ColumnType{
 	"geometry_noindex":   &geometryType{"GEOMETRYNOINDEX"},
 	"point":              &geometryType{"POINT"},
 	"linestring":         &geometryType{"LINESTRING"},
-	"json_string":        &simpleColumnType{"JSON"},
+	"json_string":        &simpleColumnType{"JSON"}, // only  >= PostgreSQL 9.2
 	"date":               &simpleColumnType{"DATE"},
 	"time":               &simpleColumnType{"TIME"},
 	"timestamp":          &simpleColumnType{"TIMESTAMP"},
