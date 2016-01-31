@@ -17,11 +17,6 @@
                     "key":  "admin_level"
                 },                 
                 {
-                    "type": "example_json",
-                    "name": "example_json",
-                    "key":  null
-                }, 
-                {
                     "type": "example_date",
                     "name": "example_date",
                     "key":  null
@@ -40,8 +35,7 @@
                     "type": "geometry",
                     "name": "geometry",
                     "key":  null
-                },    
-                                               
+                },                                                  
                 {
                     "type": "example_geometry_noindex",
                     "name": "example_geometry_noindex",

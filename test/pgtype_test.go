@@ -1,11 +1,12 @@
 package test
 
 /*
+
 Test case:
   create new mapping.FieldType -s based on new pgtypes.
 
 Expected:
-  new mappings - on the PostgreSQL table (  mapping: test_fieldtype_mapping.json )
+  new mappings - on the PostgreSQL table (  mapping: pgtype_test_mapping.json )
 
 
 Test command with verbose logging:
@@ -39,10 +40,6 @@ func init() {
 
 func getField_test_String1(val string, elem *element.OSMElem, geom *geom.Geometry, match mapping.Match) interface{} {
 	return ("O")[:1]
-}
-
-func getField_test_JSON(val string, elem *element.OSMElem, geom *geom.Geometry, match mapping.Match) interface{} {
-	return ` {"hello": "JSON" } `
 }
 
 func getField_test_date(val string, elem *element.OSMElem, geom *geom.Geometry, match mapping.Match) interface{} {
@@ -97,7 +94,7 @@ func TestPgTypes(t *testing.T) {
 		connection:      "postgis://",
 		cacheDir:        ts.dir,
 		osmFileName:     "build/complete_db.pbf",
-		mappingFileName: "test_fieldtype_mapping.json",
+		mappingFileName: "pgtype_test_mapping.json",
 	}
 	ts.g = geos.NewGeos()
 
@@ -169,7 +166,6 @@ func TestPgTypes(t *testing.T) {
 		{"id", "int4"},
 		{"osm_id", "int8"},
 		{"admin_level_char1", "char"},
-		{"example_json", "json"},
 		{"example_date", "date"},
 		{"example_time", "time"},
 		{"example_timestamp", "timestamp"},
