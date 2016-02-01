@@ -28,7 +28,8 @@ func (b *coordsBunch) GetCoord(id int64) (*element.Node, error) {
 		return b.coords[i].Id >= id
 	})
 	if idx < len(b.coords) && b.coords[idx].Id == id {
-		return &b.coords[idx], nil
+		nd := b.coords[idx] // create copy prevent to race when node gets reprojected
+		return &nd, nil
 	}
 	return nil, NotFound
 }

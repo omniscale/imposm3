@@ -17,26 +17,31 @@ var AvailableFieldTypes map[string]FieldType
 
 func init() {
 	AvailableFieldTypes = map[string]FieldType{
-		"bool":                 {"bool", "bool", Bool, nil},
-		"boolint":              {"boolint", "int8", BoolInt, nil},
-		"id":                   {"id", "int64", Id, nil},
-		"string":               {"string", "string", String, nil},
-		"direction":            {"direction", "int8", Direction, nil},
-		"integer":              {"integer", "int32", Integer, nil},
-		"mapping_key":          {"mapping_key", "string", KeyName, nil},
-		"mapping_value":        {"mapping_value", "string", ValueName, nil},
-		"geometry":             {"geometry", "geometry", Geometry, nil},
-		"validated_geometry":   {"validated_geometry", "validated_geometry", Geometry, nil},
-		"hstore_tags":          {"hstore_tags", "hstore_string", HstoreString, nil},
-		"wayzorder":            {"wayzorder", "int32", WayZOrder, nil},
-		"pseudoarea":           {"pseudoarea", "float32", PseudoArea, nil},
-		"zorder":               {"zorder", "int32", nil, MakeZOrder},
-		"enumerate":            {"enumerate", "int32", nil, MakeEnumerate},
-		"string_suffixreplace": {"string_suffixreplace", "string", nil, MakeSuffixReplace},
+		"bool":                 {"bool", "bool", Bool, nil, nil, false},
+		"boolint":              {"boolint", "int8", BoolInt, nil, nil, false},
+		"id":                   {"id", "int64", Id, nil, nil, false},
+		"string":               {"string", "string", String, nil, nil, false},
+		"direction":            {"direction", "int8", Direction, nil, nil, false},
+		"integer":              {"integer", "int32", Integer, nil, nil, false},
+		"mapping_key":          {"mapping_key", "string", KeyName, nil, nil, false},
+		"mapping_value":        {"mapping_value", "string", ValueName, nil, nil, false},
+		"member_id":            {"member_id", "int64", nil, nil, RelationMemberID, true},
+		"member_role":          {"member_role", "string", nil, nil, RelationMemberRole, true},
+		"member_type":          {"member_type", "int8", nil, nil, RelationMemberType, true},
+		"member_index":         {"member_index", "int32", nil, nil, RelationMemberIndex, true},
+		"geometry":             {"geometry", "geometry", Geometry, nil, nil, false},
+		"validated_geometry":   {"validated_geometry", "validated_geometry", Geometry, nil, nil, false},
+		"hstore_tags":          {"hstore_tags", "hstore_string", HstoreString, nil, nil, false},
+		"wayzorder":            {"wayzorder", "int32", WayZOrder, nil, nil, false},
+		"pseudoarea":           {"pseudoarea", "float32", PseudoArea, nil, nil, false},
+		"zorder":               {"zorder", "int32", nil, MakeZOrder, nil, false},
+		"enumerate":            {"enumerate", "int32", nil, MakeEnumerate, nil, false},
+		"string_suffixreplace": {"string_suffixreplace", "string", nil, MakeSuffixReplace, nil, false},
 	}
 }
 
 type MakeValue func(string, *element.OSMElem, *geom.Geometry, Match) interface{}
+type MakeMemberValue func(*element.Relation, *element.Member, Match) interface{}
 
 type MakeMakeValue func(string, FieldType, Field) (MakeValue, error)
 
@@ -55,6 +60,22 @@ func (f *FieldSpec) Value(elem *element.OSMElem, geom *geom.Geometry, match Matc
 	return nil
 }
 
+func (f *FieldSpec) MemberValue(rel *element.Relation, member *element.Member, geom *geom.Geometry, match Match) interface{} {
+	if f.Type.Func != nil {
+		if f.Type.FromMember {
+			if member.Elem == nil {
+				return nil
+			}
+			return f.Type.Func(member.Elem.Tags[string(f.Key)], member.Elem, geom, match)
+		}
+		return f.Type.Func(rel.Tags[string(f.Key)], &rel.OSMElem, geom, match)
+	}
+	if f.Type.MemberFunc != nil {
+		return f.Type.MemberFunc(rel, member, match)
+	}
+	return nil
+}
+
 type TableFields struct {
 	fields []FieldSpec
 }
@@ -67,6 +88,14 @@ func (t *TableFields) MakeRow(elem *element.OSMElem, geom *geom.Geometry, match 
 	return row
 }
 
+func (t *TableFields) MakeMemberRow(rel *element.Relation, member *element.Member, geom *geom.Geometry, match Match) []interface{} {
+	var row []interface{}
+	for _, field := range t.fields {
+		row = append(row, field.MemberValue(rel, member, geom, match))
+	}
+	return row
+}
+
 func (field *Field) FieldType() *FieldType {
 	if fieldType, ok := AvailableFieldTypes[field.Type]; ok {
 		if fieldType.MakeFunc != nil {
@@ -75,8 +104,9 @@ func (field *Field) FieldType() *FieldType {
 				log.Print(err)
 				return nil
 			}
-			fieldType = FieldType{fieldType.Name, fieldType.GoType, makeValue, nil}
+			fieldType = FieldType{fieldType.Name, fieldType.GoType, makeValue, nil, nil, fieldType.FromMember}
 		}
+		fieldType.FromMember = field.FromMember
 		return &fieldType
 	}
 	return nil
@@ -101,10 +131,12 @@ func (t *Table) TableFields() *TableFields {
 }
 
 type FieldType struct {
-	Name     string
-	GoType   string
-	Func     MakeValue
-	MakeFunc MakeMakeValue
+	Name       string
+	GoType     string
+	Func       MakeValue
+	MakeFunc   MakeMakeValue
+	MemberFunc MakeMemberValue
+	FromMember bool
 }
 
 func Bool(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
@@ -143,6 +175,27 @@ func KeyName(val string, elem *element.OSMElem, geom *geom.Geometry, match Match
 
 func ValueName(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
 	return match.Value
+}
+
+func RelationMemberType(rel *element.Relation, member *element.Member, match Match) interface{} {
+	return member.Type
+}
+
+func RelationMemberRole(rel *element.Relation, member *element.Member, match Match) interface{} {
+	return member.Role
+}
+
+func RelationMemberID(rel *element.Relation, member *element.Member, match Match) interface{} {
+	return member.Id
+}
+
+func RelationMemberIndex(rel *element.Relation, member *element.Member, match Match) interface{} {
+	for i := range rel.Members {
+		if rel.Members[i].Id == member.Id {
+			return i
+		}
+	}
+	return -1
 }
 
 func Direction(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {

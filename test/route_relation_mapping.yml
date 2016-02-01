@@ -1,0 +1,70 @@
+tags:
+  load_all: true
+  exclude:
+  - created_by
+  - source
+
+tables:
+  master_routes:
+    type: relation_member
+    fields:
+    - name: osm_id
+      type: id
+    - name: member
+      type: member_id
+    - name: index
+      type: member_index
+    - name: role
+      type: member_role
+    - name: type
+      type: member_type
+    - name: geometry
+      type: geometry
+    - name: subname
+      key: name
+      type: string
+      from_member: true
+    - key: name
+      name: name
+      type: string
+    mapping:
+      route_master: [bus]
+  route_members:
+    type: relation_member
+    fields:
+    - name: osm_id
+      type: id
+    - key: ref
+      name: ref
+      type: string
+    - name: member
+      type: member_id
+    - name: index
+      type: member_index
+    - name: role
+      type: member_role
+    - name: type
+      type: member_type
+    - name: geometry
+      type: geometry
+    - name: relname
+      key: name
+      type: string
+    - name: name
+      key: name
+      type: string
+      from_member: true
+    mapping:
+      route: [bus, tram, rail]
+  routes:
+    type: relation
+    fields:
+    - name: osm_id
+      type: id
+    - key: ref
+      name: ref
+      type: string
+    - name: tags
+      type: hstore_tags
+    mapping:
+      route: [bus, tram, rail]

@@ -1,7 +1,7 @@
 package geos
 
 /*
-#cgo LDFLAGS: -lgeos_c -lgeos
+#cgo LDFLAGS: -lgeos_c
 #include "geos_c.h"
 #include <stdlib.h>
 

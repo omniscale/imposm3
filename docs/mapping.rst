@@ -15,7 +15,7 @@ The most important part is the ``tables`` definition. Each table is a YAML objec
 ``type``
 ~~~~~~~~
 
-``type`` can be ``point``, ``linestring``, ``polygon`` or ``geometry``. ``geometry`` requires a special ``mapping``.
+``type`` can be ``point``, ``linestring``, ``polygon``, ``geometry``, ``relation`` and ``relation_member``. ``geometry`` requires a special ``mapping``. :doc:`Relations are described in more detail here <relations>`.
 
 
 ``mapping``
@@ -41,7 +41,7 @@ To import all polygons with `tourism=zoo`, `natural=wood` or `natural=land` into
 ``columns``
 ~~~~~~~~~~~
 
-``columns`` is a list of columns that Imposm should create for this table. Each column is a YAML object with a ``type`` and a ``name`` and optionaly ``key`` and ``args``.
+``columns`` is a list of columns that Imposm should create for this table. Each column is a YAML object with a ``type`` and a ``name`` and optionaly ``key``, ``args`` and ``from_member``.
 
 ``name``
 ^^^^^^^^^
@@ -66,6 +66,11 @@ See :ref:`column_types` for documentation of all types.
 ^^^^^^^^
 
 Some column types require additional arguments. Refer to the documentation of the type.
+
+``from_member``
+^^^^^^^^^^^^^^^
+
+``from_member`` is only valid for tables of the type ``relation_member``. If this is set to ``true``, then tags will be used from the member instead of the relation.
 
 
 Example
@@ -240,6 +245,34 @@ Stores all tags in a HStore column. Requires the PostGIS HStore extension. This 
 .. TODO
 .. "string_suffixreplace": {"string_suffixreplace", "string", nil, MakeSuffixReplace},
 
+
+Element types for ``relation_member``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following types are only valid for tables of the type ``relation_member``.
+
+``member_id``
+^^^^^^^^^^^^^
+
+The OSM ID of the relation member.
+
+``member_type``
+^^^^^^^^^^^^^^^
+
+The type of the relation member. 0 for nodes, 1 for ways and 2 for relations.
+
+
+``member_role``
+^^^^^^^^^^^^^^^
+
+The role of the relation member as a string, e.g. `outer`, `stop`, etc.
+
+
+``member_index``
+^^^^^^^^^^^^^^^^
+
+The index of the member in the relation, starting from 0. E.g. the first member is 0, second member is 1, etc.
+This can be used to query bus stops of a route relation in the right order.
 
 
 Generalized Tables

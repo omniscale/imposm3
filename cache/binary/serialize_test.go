@@ -1,8 +1,9 @@
 package binary
 
 import (
-	"github.com/omniscale/imposm3/element"
 	"testing"
+
+	"github.com/omniscale/imposm3/element"
 )
 
 func compareRefs(a []int64, b []int64) bool {
@@ -74,8 +75,8 @@ func TestMarshalRelation(t *testing.T) {
 	rel.Tags = make(element.Tags)
 	rel.Tags["name"] = "test"
 	rel.Tags["landusage"] = "forest"
-	rel.Members = append(rel.Members, element.Member{123, element.WAY, "outer", nil})
-	rel.Members = append(rel.Members, element.Member{124, element.WAY, "inner", nil})
+	rel.Members = append(rel.Members, element.Member{Id: 123, Type: element.WAY, Role: "outer"})
+	rel.Members = append(rel.Members, element.Member{Id: 124, Type: element.WAY, Role: "inner"})
 
 	data, _ := MarshalRelation(rel)
 	rel, _ = UnmarshalRelation(data)

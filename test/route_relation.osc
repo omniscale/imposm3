@@ -1,0 +1,44 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osmChange version="0.6" generator="Osmosis 0.41">
+  <modify>
+     <node id="100103" version="2" timestamp="2015-12-31T23:59:99Z" lat="53.001" lon="8.201"/>
+
+     <way id="100503" version="1" timestamp="2015-12-31T23:59:99Z">
+      <nd ref="100103"/>
+      <nd ref="100104"/>
+      <tag k="name" v="new name"/>
+     </way>
+  </modify>
+
+  <modify>
+     <relation id="100902" version="23" timestamp="2015-06-02T04:13:19Z">
+      <member type="node" ref="100104" role="stop_entry_only"/>
+      <member type="way" ref="100514" role="platform_entry_only"/>
+      <member type="node" ref="100103" role="stop"/>
+      <member type="way" ref="100513" role="platform"/>
+      <member type="node" ref="100102" role="halt"/> <!-- changed role -->
+      <!-- <member type="way" ref="100512" role="platform"/> removed -->
+      <member type="node" ref="100101" role="stop_exit_only"/>
+      <member type="way" ref="100511" role="platform_exit_only"/>
+      <member type="way" ref="100503" role=""/>
+      <member type="way" ref="100502" role=""/>
+      <member type="way" ref="100501" role=""/>
+      <tag k="colour" v="#F5A9E1"/>
+      <tag k="from" v="B"/>
+      <tag k="name" v="Bus 301: B =&gt; A"/>
+      <tag k="network" v="ABC"/>
+      <tag k="ref" v="301"/>
+      <tag k="route" v="bus"/>
+      <tag k="to" v="A"/>
+      <tag k="type" v="route"/>
+     </relation>
+  </modify>
+
+  <modify>
+    <!-- modified node updates relation -->
+    <node id="110101" version="1" timestamp="2015-12-31T23:59:99Z" lat="53.0" lon="8.200">
+    <tag k="name" v="Stop2"/>
+    </node>
+  </modify>
+
+</osmChange>

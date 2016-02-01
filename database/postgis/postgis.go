@@ -58,12 +58,16 @@ func createTable(tx *sql.Tx, spec TableSpec) error {
 }
 
 func addGeometryColumn(tx *sql.Tx, tableName string, spec TableSpec) error {
-	colName := "geometry"
+	colName := ""
 	for _, col := range spec.Columns {
 		if col.Type.Name() == "GEOMETRY" {
 			colName = col.Name
 			break
 		}
+	}
+
+	if colName == "" {
+		return nil
 	}
 
 	geomType := strings.ToUpper(spec.GeometryType)
@@ -480,6 +484,16 @@ func (pg *PostGIS) InsertPolygon(elem element.OSMElem, geom geom.Geometry, match
 	return nil
 }
 
+func (pg *PostGIS) InsertRelationMember(rel element.Relation, m element.Member, geom geom.Geometry, matches []mapping.Match) error {
+	for _, match := range matches {
+		row := match.MemberRow(&rel, &m, &geom)
+		if err := pg.txRouter.Insert(match.Table.Name, row); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (pg *PostGIS) Delete(id int64, matches interface{}) error {
 	if matches, ok := matches.([]mapping.Match); ok {
 		for _, match := range matches {
@@ -498,10 +512,10 @@ func (pg *PostGIS) DeleteElem(elem element.OSMElem) error {
 	// handle deletes of geometries that did not match in ProbeXxx.
 	// we have to handle multipolygon relations that took the tags of the
 	// main-member. those tags are not avail. during delete. just try to
-	// delete from each polygon table.
-	if v, ok := elem.Tags["type"]; ok && (v == "multipolygon" || v == "boundary") {
+	// delete from each polygon/relation table.
+	if _, ok := elem.Tags["type"]; ok {
 		for _, tableSpec := range pg.Tables {
-			if tableSpec.GeometryType != "polygon" {
+			if tableSpec.GeometryType != "polygon" && tableSpec.GeometryType != "geometry" && tableSpec.GeometryType != "relation" {
 				continue
 			}
 			pg.txRouter.Delete(tableSpec.Name, elem.Id)

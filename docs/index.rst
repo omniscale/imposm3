@@ -58,6 +58,7 @@ Contents
    install
    tutorial
    mapping
+   relations
 
 
 .. Indices and tables

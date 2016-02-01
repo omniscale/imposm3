@@ -1019,6 +1019,26 @@
     <tag k="building" v="mp"/>
   </relation>
 
+
+  <!-- test that relations are updated after modified node -->
+  <node id="52101" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="10"/>
+  <node id="52102" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="11"/>
+  <node id="52103" version="1" timestamp="2011-11-11T00:11:11Z" lat="64" lon="10"/>
+  <node id="52104" version="1" timestamp="2011-11-11T00:11:11Z" lat="64" lon="11"/>
+  <way id="52111" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="52101"/>
+    <nd ref="52102"/>
+    <nd ref="52103"/>
+    <nd ref="52104"/>
+    <nd ref="52101"/>
+    <tag k="building" v="yes"/>
+  </way>
+  <relation id="52121" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="52111" role="outer"/>
+    <tag k="type" v="multipolygon"/>
+  </relation>
+
+
   <!-- zig-zag line with coords internaly cached in differend deltacoords bunches -->
   <node id="60001" version="1" timestamp="2011-11-11T00:11:11Z" lat="0.01" lon="20.00"/>
   <node id="60002" version="1" timestamp="2011-11-11T00:11:11Z" lat="0.00" lon="20.01"/>
