@@ -7,7 +7,7 @@ set -x
 #  -  public.osm_all_original
 #  -  public.osm_all_osm2osc
 
-TESTVERSION= master
+TESTVERSION=0
 BUILD_ID=0
 BUILD_LASTMOD=0
 BUILD_REV=0
@@ -16,6 +16,8 @@ impconnection=postgis://$PGHOST/$PGDATABASE
 monaco_osm_latest_pbf=./build/monaco-160101.osm.pbf
 monaco_osm_zero_pbf=../../parser/pbf/monaco-20150428.osm.pbf
 monaco_osm_zero_osc=./build/monaco_diff_20150428_20150101.osc
+
+workdir=$(pwd)
 
 
 mkdir -p ./output
@@ -47,6 +49,8 @@ fi
 # Big TEST function ....
 function runtest {
 
+  cd $workdir
+  
   BUILD_REV=$(git rev-parse --short HEAD)
   BUILD_LASTMOD=$(date -d @$(git log -n1 --format="%at") +%Y%m%d%H%M )
   BUILD_ID=${BUILD_LASTMOD}_${BUILD_REV}_
@@ -120,7 +124,7 @@ function testgitversion {
   make clean
   godep go clean -i -r
   make build
-  cd ./contrib/monaco_osm2osc_test
+  cd $workdir
 }
 
 
@@ -135,31 +139,24 @@ function check_latest {
 }
 
 
-check_old
-check_latest
+function check  {
+# no git checkout ...
+ VERSIONDATE=#current    TESTVERSION=current  runtest
+}
+
+
+##  Run from a renamed directory like  /contrib/monaco_osm2osc_run1  - because "git checkout" remove some files ..
+#--------------------------
+#check_old
+#check_latest
+
+
+# for testing actual version - no git checkout 
+check
 
 echo "Filenames start with  LastGitDatetime_GitHash prefix, like:  /201508071417_29a4d4e__..."
 echo "Test results:  zero length OK ,  not zero BAD!" 
 ls -Xl ./output/*_diff_tags_should_be_empty.txt | awk '{print $9, $5}'
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
