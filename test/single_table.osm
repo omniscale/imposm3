@@ -124,7 +124,7 @@
     <nd ref="31001"/>
   </way>
 
-  <!-- modify duplicate node -->
+  <!-- modify duplicate node id -->
   <node id="31101" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="80">
     <tag k="amenity" v="cafe"/>
   </node>
@@ -141,6 +141,29 @@
   <relation id="31101" version="1" timestamp="2011-11-11T00:11:11Z">
     <member type="way" ref="31002" role="outer"/>
     <member type="way" ref="31003" role="outer"/>
+    <tag k="type" v="multipolygon"/>
+    <tag k="building" v="yes"/>
+  </relation>
+
+
+  <!-- modify relation does create duplicate polygon -->
+  <node id="32001" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="90"/>
+  <node id="32002" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="92"/>
+  <node id="32003" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="92"/>
+  <node id="32004" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="90"/>
+
+  <way id="32101" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="32001"/>
+    <nd ref="32002"/>
+    <nd ref="32003"/>
+    <nd ref="32004"/>
+    <nd ref="32001"/>
+    <tag k="highway" v="secondary"/>
+    <tag k="landuse" v="park"/>
+  </way>
+
+  <relation id="32901" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="32101" role="outer"/>
     <tag k="type" v="multipolygon"/>
     <tag k="building" v="yes"/>
   </relation>
