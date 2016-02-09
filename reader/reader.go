@@ -152,7 +152,7 @@ func ReadPbf(cache *osmcache.OSMCache, progress *stats.Statistics,
 						numWithTags += 1
 					}
 					if withLimiter {
-						cached, err := cache.Ways.FirstMemberIsCached(rels[i].Members)
+						cached, err := cache.FirstMemberIsCached(rels[i].Members)
 						if err != nil {
 							log.Errorf("error while checking for cached members of relation %d: %v", rels[i].Id, err)
 							cached = true // don't skip in case of error
