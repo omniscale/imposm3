@@ -405,6 +405,11 @@ func MakeSuffixReplace(fieldName string, fieldType FieldType, field Field) (Make
 }
 
 func MakePbfTimestamp(fieldName string, fieldType FieldType, field Field) (MakeValue, error) {
+
+	if config.ImportOptions.Read == "" {
+		return nil, nil
+	}
+
 	pbfFile, err := pbf.Open(config.ImportOptions.Read)
 	defer pbfFile.Close()
 
