@@ -5,10 +5,13 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/omniscale/imposm3/config"
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/geom"
 	"github.com/omniscale/imposm3/logging"
+	"github.com/omniscale/imposm3/parser/pbf"
 )
 
 var log = logging.NewLogger("mapping")
@@ -37,6 +40,7 @@ func init() {
 		"zorder":               {"zorder", "int32", nil, MakeZOrder, nil, false},
 		"enumerate":            {"enumerate", "int32", nil, MakeEnumerate, nil, false},
 		"string_suffixreplace": {"string_suffixreplace", "string", nil, MakeSuffixReplace, nil, false},
+		"pbf_timestamp":        {"pbf_timestamp", "timestamp", nil, MakePbfTimestamp, nil, false},
 	}
 }
 
@@ -398,6 +402,22 @@ func MakeSuffixReplace(fieldName string, fieldType FieldType, field Field) (Make
 	}
 
 	return suffixReplace, nil
+}
+
+func MakePbfTimestamp(fieldName string, fieldType FieldType, field Field) (MakeValue, error) {
+	pbfFile, err := pbf.Open(config.ImportOptions.Read)
+	defer pbfFile.Close()
+
+	if err != nil {
+		return nil, err
+	}
+
+	timestamp := pbfFile.Header.Time.UTC().Format(time.RFC3339)
+	pbfTimestamp := func(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
+		return timestamp
+	}
+
+	return pbfTimestamp, nil
 }
 
 func asHex(b []byte) string {
