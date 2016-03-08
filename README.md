@@ -104,7 +104,6 @@ Installation
 
 There are no official releases, but you find development builds at <http://imposm.org/static/rel/>.
 These builds are for x86 64bit Linux and require *no* further dependencies. Download, untar and start `imposm3`.
-(Note: These binaries require glibc >= 2.15 at the moment. Ubuntu 12.04 is recent enough, Debian 7 not.)
 
 ### Source
 
@@ -160,6 +159,7 @@ Done. You should now have an imposm3 binary in `$GOPATH/bin`.
 Go compiles to static binaries and so Imposm 3 has no runtime dependencies to Go.
 Just copy the `imposm3` binary to your server for deployment. The C/C++ libraries listed above are still required though.
 
+See `packaging.sh` for instruction on how to build binary packages for Linux.
 
 Usage
 -----
