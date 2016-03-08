@@ -1,7 +1,7 @@
 #! /bin/bash
 
 cat <<EOF
-==============++=== Imposm Packaging Script ============================
+=================== Imposm Packaging Script ============================
 
 This script creates binary packages for Imposm 3 for Linux.
 It installs and builds all dependencies, compiles the master
@@ -27,16 +27,24 @@ or
     $ vagrant ssh
     % bash /vagrant/packaging.sh
 
+You can specify a revision or branch by setting the REVISION
+environment. REVISION defaults to the master branch:
+
+    $ REVISION=mybranch vagrant provision
+
 To shutdown the VM:
     $ vagrant halt
 
 To remove the VM:
     $ vagrant destroy
 
+
 EOF
 
 set -e
 # set -x
+
+REVISION=${1:-master}
 
 BUILD_BASE=$HOME/imposm
 PREFIX=$BUILD_BASE/local
@@ -46,7 +54,6 @@ export PATH=$PATH:$BUILD_BASE/go/bin
 export GOROOT=$BUILD_BASE/go
 IMPOSM_SRC=$GOPATH/src/github.com/omniscale/imposm3
 BUILD_TMP=$BUILD_BASE/imposm-build
-
 
 GEOS_VERSION=3.5.0
 
@@ -150,7 +157,7 @@ pushd $IMPOSM_SRC
     popd
 
     git reset --hard
-    git checkout build-refactor
+    git checkout $REVISION
 
     echo '-> compiling imposm'
     make clean
