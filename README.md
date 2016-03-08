@@ -160,14 +160,6 @@ Done. You should now have an imposm3 binary in `$GOPATH/bin`.
 Go compiles to static binaries and so Imposm 3 has no runtime dependencies to Go.
 Just copy the `imposm3` binary to your server for deployment. The C/C++ libraries listed above are still required though.
 
-##### Godep
-
-Imposm contains a fixed set of the dependencies that are known to work. You need to install Imposm with [godep][] to compile with this set.
-
-    git clone https://github.com/omniscale/imposm3 src/github.com/omniscale/imposm3
-    cd src/github.com/omniscale/imposm3
-    godep go install ./
-
 
 Usage
 -----
@@ -245,10 +237,6 @@ The GEOS package is released as LGPL3 and is linked dynamically. See LICENSE.bin
 To run all unit tests:
 
     make test-unit
-
-Or:
-
-    godep go test ./...
 
 
 #### System tests ####
