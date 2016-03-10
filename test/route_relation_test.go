@@ -2,7 +2,7 @@ package test
 
 import (
 	"database/sql"
-
+	"math"
 	"testing"
 
 	"github.com/omniscale/imposm3/geom/geos"
@@ -60,7 +60,7 @@ func TestRouteRelation_MemberGeomUpdated1(t *testing.T) {
 		t.Fatal(rows)
 	}
 	g := ts.g.FromWkt(rows[0]["wkt"])
-	if g.Length() != 111.32448543701321 {
+	if math.Abs(g.Length() - 111.32448543701321) > 0.00000001 {
 		t.Fatal(g.Length())
 	}
 
@@ -87,7 +87,7 @@ func TestRouteRelation_MemberGeomUpdated2(t *testing.T) {
 		t.Fatal(rows)
 	}
 	g := ts.g.FromWkt(rows[0]["wkt"])
-	if g.Length() != 184.97560221624542 {
+	if math.Abs(g.Length() - 184.97560221624542) > 0.00000001 {
 		t.Fatal(g.Length())
 	}
 
