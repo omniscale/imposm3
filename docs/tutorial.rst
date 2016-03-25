@@ -66,6 +66,7 @@ Cache files
 
 Imposm stores the cache files in `/tmp/imposm3`. You can change that path with ``-cachedir``. Imposm can merge multiple OSM files into the same cache (e.g. when combining multiple extracts) with the ``-appendcache`` option or it can overwrite existing caches with ``-overwritecache``. Imposm will fail to ``-read`` if it finds existing cache files and if you don't specify either ``-appendcache`` or ``-overwritecache``.
 
+Make sure that you have enough disk space for storing these cache files. The underlying LeveDB library will crash if it runs out of free space. 2-3 times the size of the PBF file is a good estimate for the cache size, even with -diff mode.
 
 Writing
 -------

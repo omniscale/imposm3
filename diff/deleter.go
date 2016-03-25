@@ -86,7 +86,7 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 	// delete from all tables to handle relations with tags from members
 	// and relation_members
 	e := element.OSMElem(elem.OSMElem)
-	e.Id = d.RelId( e.Id)
+	e.Id = d.RelId(e.Id)
 	if err := d.delDb.DeleteElem(e); err != nil {
 		return err
 	}

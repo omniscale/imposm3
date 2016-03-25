@@ -9,7 +9,7 @@ export PATH := $(GOPATH)/bin:$(PATH)
 
 GOLDFLAGS=-ldflags '-r $${ORIGIN}/lib'
 
-GO=godep go
+GO:=$(if $(shell go version |grep 'go1.5'),GO15VENDOREXPERIMENT=1,) go
 
 BUILD_DATE=$(shell date +%Y%m%d)
 BUILD_REV=$(shell git rev-parse --short HEAD)
@@ -37,11 +37,11 @@ clean:
 
 test: imposm3 system-test-files
 	$(GO) test ./... -i
-	$(GO) test ./...
+	$(GO) test `$(GO) list ./... | grep -Ev '/vendor'`
 
 test-unit: imposm3
 	$(GO) test ./... -i
-	$(GO) test `$(GO) list ./... | grep -v 'imposm3/test'`
+	$(GO) test `$(GO) list ./... | grep -Ev '/test|/vendor'`
 
 test-system: imposm3
 	(cd test && make test)
@@ -64,8 +64,8 @@ upload-docs: docs
 
 build-license-deps:
 	rm LICENSE.deps
-	find ./Godeps/_workspace/src -iname license\* -exec bash -c '\
-		dep=$${1#./Godeps/_workspace/src/}; \
+	find ./vendor -iname license\* -exec bash -c '\
+		dep=$${1#./vendor/}; \
 		(echo -e "========== $$dep ==========\n"; cat $$1; echo -e "\n\n") \
 		| fold -s -w 80 \
 		>> LICENSE.deps \

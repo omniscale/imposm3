@@ -5,4 +5,22 @@
         <tag k="amenity" v="cafe"/>
     </node>
   </modify>
+
+  <modify>
+    <relation id="31101" version="1" timestamp="2011-11-11T00:11:11Z">
+      <member type="way" ref="31002" role="outer"/>
+      <member type="way" ref="31003" role="outer"/>
+      <tag k="type" v="multipolygon"/>
+      <tag k="building" v="yes"/>
+    </relation>
+  </modify>
+
+  <!-- modify relation does create duplicate polygon -->
+  <modify>
+    <relation id="32901" version="1" timestamp="2011-11-11T00:11:11Z">
+      <member type="way" ref="32101" role="outer"/>
+      <tag k="type" v="multipolygon"/>
+      <tag k="building" v="office"/>
+    </relation>
+  </modify>
 </osmChange>
