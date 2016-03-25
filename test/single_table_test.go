@@ -181,3 +181,12 @@ func TestSingleTable_DuplicateIds2(t *testing.T) {
 	})
 	assertGeomType(t, checkElem{"osm_all", RelOffset - 31101, "*", nil}, "Polygon")
 }
+
+func TestSingleTable_ModifiedRelation2(t *testing.T) {
+	// Modified relation is not inserted twice. Check for #88
+
+	rows := ts.queryRowsTags(t, "osm_all", RelOffset-32901)
+	if len(rows) != 1 {
+		t.Errorf("found duplicate row: %v", rows)
+	}
+}

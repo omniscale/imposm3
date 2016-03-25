@@ -3,9 +3,11 @@ package cache
 import (
 	bin "encoding/binary"
 	"errors"
-	"github.com/jmhodges/levigo"
 	"os"
 	"path/filepath"
+
+	"github.com/jmhodges/levigo"
+	"github.com/omniscale/imposm3/element"
 )
 
 var (
@@ -127,6 +129,33 @@ func (c *OSMCache) Remove() error {
 		return err
 	}
 	return nil
+}
+
+// FirstMemberIsCached checks whether the first way or node member is cached.
+// Also returns true if there are no members of type WAY or NODE.
+func (c *OSMCache) FirstMemberIsCached(members []element.Member) (bool, error) {
+	for _, m := range members {
+		if m.Type == element.WAY {
+			_, err := c.Ways.GetWay(m.Id)
+			if err == NotFound {
+				return false, nil
+			}
+			if err != nil {
+				return false, err
+			}
+			return true, nil
+		} else if m.Type == element.NODE {
+			_, err := c.Coords.GetCoord(m.Id)
+			if err == NotFound {
+				return false, nil
+			}
+			if err != nil {
+				return false, err
+			}
+			return true, nil
+		}
+	}
+	return true, nil
 }
 
 type cache struct {

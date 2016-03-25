@@ -104,7 +104,6 @@ Installation
 
 There are no official releases, but you find development builds at <http://imposm.org/static/rel/>.
 These builds are for x86 64bit Linux and require *no* further dependencies. Download, untar and start `imposm3`.
-(Note: These binaries require glibc >= 2.15 at the moment. Ubuntu 12.04 is recent enough, Debian 7 not.)
 
 ### Source
 
@@ -112,7 +111,7 @@ There are some dependencies:
 
 #### Compiler
 
-You need [Go >=1.1](http://golang.org).
+You need [Go >=1.5](http://golang.org).
 
 #### C/C++ libraries
 
@@ -129,35 +128,28 @@ For best performance use [HyperLevelDB][libhyperleveldb] as an in-place replacem
 
 #### Go libraries
 
-Imposm3 uses the following libraries.
+Imposm3 uses the following Go libraries.
 
 - <https://github.com/jmhodges/levigo>
 - <https://github.com/golang/protobuf/proto>
-- <https://github.com/golang/protobuf/protoc-gen-go>
 - <https://github.com/lib/pq>
+- <https://gopkg.in/yaml.v2>
 
-`go get` will fetch these, but you can also use [godep][] to use a provided (vendorized) set of these dependencies.
-
-[godep]: https://github.com/tools/godep
-
-
-#### Other
-
-Fetching Imposm and the Go libraries requires [mercurial][] and [git][].
-
-[mercurial]: http://mercurial.selenic.com/
-[git]: http://git-scm.com/
-
+These libraries are already vendorized (i.e. the source code is included in the Imposm repository).
 
 #### Compile
 
-Create a new [Go workspace](http://golang.org/doc/code.html):
+Create a [Go workspace](http://golang.org/doc/code.html) by creating the `GOPATH` directory for all your Go code, if you don't have one already:
 
-    mkdir imposm
-    cd imposm
+    mkdir -p go
+    cd go
     export GOPATH=`pwd`
 
-Get Imposm 3 and all dependencies:
+Then you need to enable GO15VENDOREXPERIMENT, if you are using Go 1.5. You can skip this if you are using 1.6 or higher:
+
+    export GO15VENDOREXPERIMENT=1
+
+Get the code and install Imposm 3:
 
     go get github.com/omniscale/imposm3
     go install github.com/omniscale/imposm3
@@ -167,14 +159,7 @@ Done. You should now have an imposm3 binary in `$GOPATH/bin`.
 Go compiles to static binaries and so Imposm 3 has no runtime dependencies to Go.
 Just copy the `imposm3` binary to your server for deployment. The C/C++ libraries listed above are still required though.
 
-##### Godep
-
-Imposm contains a fixed set of the dependencies that are known to work. You need to install Imposm with [godep][] to compile with this set.
-
-    git clone https://github.com/omniscale/imposm3 src/github.com/omniscale/imposm3
-    cd src/github.com/omniscale/imposm3
-    godep go install ./
-
+See `packaging.sh` for instruction on how to build binary packages for Linux.
 
 Usage
 -----
@@ -252,10 +237,6 @@ The GEOS package is released as LGPL3 and is linked dynamically. See LICENSE.bin
 To run all unit tests:
 
     make test-unit
-
-Or:
-
-    godep go test ./...
 
 
 #### System tests ####

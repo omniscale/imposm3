@@ -242,7 +242,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 				if elem.Rel != nil {
 					// check if first member is cached to avoid caching
 					// unneeded relations (typical outside of our coverage)
-					cached, err := osmCache.Ways.FirstMemberIsCached(elem.Rel.Members)
+					cached, err := osmCache.FirstMemberIsCached(elem.Rel.Members)
 					if err != nil {
 						return diffError(err, "query first member %v", elem.Rel)
 					}

@@ -113,22 +113,6 @@ func (self *WaysCache) FillMembers(members []element.Member) error {
 	return nil
 }
 
-func (self *WaysCache) FirstMemberIsCached(members []element.Member) (bool, error) {
-	for _, m := range members {
-		if m.Type == element.WAY {
-			_, err := self.GetWay(m.Id)
-			if err == NotFound {
-				return false, nil
-			}
-			if err != nil {
-				return false, err
-			}
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
 type InsertedWaysCache struct {
 	cache
 }
