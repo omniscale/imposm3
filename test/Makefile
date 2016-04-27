@@ -16,7 +16,7 @@ OSCGZ_FILES=$(addprefix build/,$(patsubst %.osc,%.osc.gz,$(wildcard *.osc)))
 
 build/%.pbf: %.osm
 	@mkdir -p build
-	osmosis --read-xml $< --sort type="TypeThenId" --write-pbf $@ omitmetadata=true
+	osmosis --read-xml $< --sort type="TypeThenId" --write-pbf $@ omitmetadata=false
 
 build/%.osc.gz: %.osc
 	@mkdir -p build

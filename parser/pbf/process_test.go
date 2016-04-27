@@ -60,9 +60,17 @@ func TestParser(t *testing.T) {
 	if numCoords != 17233 {
 		t.Error("parsed an unexpected number of coords:", numCoords)
 	}
-	if numNodes != 978 {
-		t.Error("parsed an unexpected number of nodes:", numNodes)
+
+	if element.ParseDontAddOnlyCreatedByTag {
+		if numNodes != 978 {
+			t.Error("parsed an unexpected number of nodes:", numNodes)
+		}
+	} else {
+		if numNodes != 980 {
+			t.Error("parsed an unexpected number of nodes:", numNodes)
+		}
 	}
+
 	if numWays != 2398 {
 		t.Error("parsed an unexpected number of ways:", numWays)
 	}
@@ -173,9 +181,17 @@ func TestParserNotify(t *testing.T) {
 	if numCoords != 17233 {
 		t.Error("parsed an unexpected number of coords:", numCoords)
 	}
-	if numNodes != 978 {
-		t.Error("parsed an unexpected number of nodes:", numNodes)
+
+	if element.ParseDontAddOnlyCreatedByTag {
+		if numNodes != 978 {
+			t.Error("parsed an unexpected number of nodes:", numNodes)
+		}
+	} else {
+		if numNodes != 980 {
+			t.Error("parsed an unexpected number of nodes:", numNodes)
+		}
 	}
+
 	if numWays != 2398 {
 		t.Error("parsed an unexpected number of ways:", numWays)
 	}

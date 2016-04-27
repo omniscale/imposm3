@@ -1,0 +1,89 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osmChange version="0.6"  generator="testdata" upload="false">
+  <modify>
+ 
+  <!-- source nodes for meta tests below -->
+  <node id="31001" lat="47.1" lon="80"  version="12" timestamp="2012-12-22T00:22:11Z" changeset="4000001" uid="311" user="node311"/>
+  <node id="31002" lat="47.1" lon="82"  version="12" timestamp="2012-12-22T00:22:11Z" changeset="4000001" uid="311" user="node311">
+       <tag k="created_by"   v="iDEditor"/>
+  </node>
+  <node id="31003" lat="49.1" lon="82"  version="12" timestamp="2012-12-22T00:22:11Z" changeset="4000001" uid="311" user="node311"/>
+  <node id="31004" lat="49.1" lon="80"  version="12" timestamp="2012-12-22T00:22:11Z" changeset="4000001" uid="311" user="node311"/>
+  
+  <node id="31101" lat="47.1" lon="80"  version="12" timestamp="2012-12-22T00:22:11Z" changeset="4000001" uid="311" user="node311">
+    <tag k="amenity"      v="restaurant"/>
+    <tag k="created_by"   v="JOSM"/>
+           
+    <tag k="testnote_version"   v="12"/> 
+    <tag k="testnote_timestamp" v="2012-12-22T00:22:11Z"/> 
+    <tag k="testnote_changeset" v="4000001" />
+    <tag k="testnote_uid"       v="311"/>
+    <tag k="testnote_user"      v="node311"/>
+
+
+  </node>
+
+   
+  <!-- source wayss for meta tests below -->      
+  <way  id="31002"                      version="22" timestamp="2012-12-22T00:22:22Z" changeset="4000002" uid="312" user="way312">
+    <nd ref="31001"/>
+    <nd ref="31002"/>
+    <tag k="barrier" v="fence"/>
+    <tag k="access"  v="private"/>
+    
+    
+    <tag k="testnote_version"   v="22"/> 
+    <tag k="testnote_timestamp" v="2012-12-22T00:22:22Z"/> 
+    <tag k="testnote_changeset" v="4000002" />
+    <tag k="testnote_uid"       v="312"/>
+    <tag k="testnote_user"      v="way312"/>
+
+    
+  </way>
+
+  <way id="31003"                       version="22" timestamp="2012-12-22T00:22:22Z" changeset="4000002" uid="312" user="way312">
+    <nd ref="31002"/>
+    <nd ref="31003"/>
+    <nd ref="31004"/>
+    <nd ref="31001"/>
+  </way>
+
+  <way id="31101"                       version="22" timestamp="2012-12-22T00:22:22Z" changeset="4000002" uid="312" user="way312">
+    <nd ref="31001"/>
+    <nd ref="31002"/>
+    <nd ref="31003"/>
+    <nd ref="31004"/>
+    <nd ref="31001"/>
+    <tag k="highway" v="secondary"/>
+    <tag k="landuse" v="park"/>
+    
+    <tag k="testnote_version"   v="22"/> 
+    <tag k="testnote_timestamp" v="2012-12-22T00:22:22Z"/> 
+    <tag k="testnote_changeset" v="4000002" />
+    <tag k="testnote_uid"       v="312"/>
+    <tag k="testnote_user"      v="way312"/>
+
+
+  </way>
+
+
+  <!-- source relations for meta tests below -->
+  <relation id="31101"                 version="32" timestamp="2012-12-22T00:22:33Z"  changeset="4000003" uid="313" user="rel313">
+    <member type="way" ref="31002" role="outer"/>
+    <member type="way" ref="31003" role="outer"/>
+    <tag k="type" v="multipolygon"/>
+    <tag k="building" v="yes"/>
+    <tag k="amenity" v="pub"/>
+    
+        
+    <tag k="testnote_version"   v="32"/> 
+    <tag k="testnote_timestamp" v="2012-12-22T00:22:33Z"/> 
+    <tag k="testnote_changeset" v="4000003" />
+    <tag k="testnote_uid"       v="313"/>
+    <tag k="testnote_user"      v="rel313"/>
+
+  </relation>
+    
+    
+  </modify>
+</osmChange>

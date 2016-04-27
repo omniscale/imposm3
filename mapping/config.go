@@ -55,8 +55,19 @@ type Mapping struct {
 }
 
 type Tags struct {
-	LoadAll bool  `yaml:"load_all"`
-	Exclude []Key `yaml:"exclude"`
+	LoadAll       bool          `yaml:"load_all"`
+	Exclude       []Key         `yaml:"exclude"`
+	ParseMetadata ParseMetadata `yaml:"parsemetadata"`
+	// keep if only "created_by" tag and no more?    default: false
+	KeepSingleCreatedByTag bool `yaml:"keep_single_createdby_tag"`
+}
+
+type ParseMetadata struct {
+	KeynameVersion   string `yaml:"create_tag_from_version"`
+	KeynameTimestamp string `yaml:"create_tag_from_timestamp"`
+	KeynameChangeset string `yaml:"create_tag_from_changeset"`
+	KeynameUid       string `yaml:"create_tag_from_uid"`
+	KeynameUser      string `yaml:"create_tag_from_user"`
 }
 
 type orderedValue struct {
@@ -169,6 +180,17 @@ func NewMapping(filename string) (*Mapping, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	element.ParseDontAddOnlyCreatedByTag = !mapping.Tags.KeepSingleCreatedByTag
+
+	element.Meta.Init()
+	element.Meta.Version.SetMetaKey(mapping.Tags.ParseMetadata.KeynameVersion)
+	element.Meta.Timestamp.SetMetaKey(mapping.Tags.ParseMetadata.KeynameTimestamp)
+	element.Meta.Changeset.SetMetaKey(mapping.Tags.ParseMetadata.KeynameChangeset)
+	element.Meta.Uid.SetMetaKey(mapping.Tags.ParseMetadata.KeynameUid)
+	element.Meta.User.SetMetaKey(mapping.Tags.ParseMetadata.KeynameUser)
+	element.Meta.SetParse()
+
 	return &mapping, nil
 }
 

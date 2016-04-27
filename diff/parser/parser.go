@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/logging"
@@ -32,6 +33,9 @@ func parse(diff string, elems chan DiffElem, errc chan error) {
 	defer close(elems)
 	defer close(errc)
 
+	var metaInfo element.MetaInfo
+	metaInfo.Reset()
+
 	file, err := os.Open(diff)
 	if err != nil {
 		errc <- err
@@ -50,7 +54,7 @@ func parse(diff string, elems chan DiffElem, errc chan error) {
 	add := false
 	mod := false
 	del := false
-	tags := make(map[string]string)
+	tags := make(element.Tags)
 	newElem := false
 
 	node := &element.Node{}
@@ -82,6 +86,7 @@ NextToken:
 				del = true
 			case "node":
 				for _, attr := range tok.Attr {
+
 					switch attr.Name.Local {
 					case "id":
 						node.Id, _ = strconv.ParseInt(attr.Value, 10, 64)
@@ -90,19 +95,75 @@ NextToken:
 					case "lon":
 						node.Long, _ = strconv.ParseFloat(attr.Value, 64)
 					}
+
+					if element.Meta.Parse {
+						switch attr.Name.Local {
+						case "version":
+							x, _ := strconv.ParseInt(attr.Value, 10, 32)
+							metaInfo.Version = int32(x)
+						case "user":
+							metaInfo.User = attr.Value
+						case "uid":
+							x, _ := strconv.ParseInt(attr.Value, 10, 32)
+							metaInfo.Uid = int32(x)
+						case "changeset":
+							metaInfo.Changeset, _ = strconv.ParseInt(attr.Value, 10, 64)
+						case "timestamp":
+							metaInfo.Timestamp, _ = time.Parse(time.RFC3339, attr.Value)
+						}
+					}
+
 				}
 			case "way":
 				for _, attr := range tok.Attr {
+
 					if attr.Name.Local == "id" {
 						way.Id, _ = strconv.ParseInt(attr.Value, 10, 64)
 					}
+
+					if element.Meta.Parse {
+						switch attr.Name.Local {
+						case "version":
+							x, _ := strconv.ParseInt(attr.Value, 10, 32)
+							metaInfo.Version = int32(x)
+						case "user":
+							metaInfo.User = attr.Value
+						case "uid":
+							x, _ := strconv.ParseInt(attr.Value, 10, 32)
+							metaInfo.Uid = int32(x)
+						case "changeset":
+							metaInfo.Changeset, _ = strconv.ParseInt(attr.Value, 10, 64)
+						case "timestamp":
+							metaInfo.Timestamp, _ = time.Parse(time.RFC3339, attr.Value)
+						}
+					}
+
 				}
 			case "relation":
 				for _, attr := range tok.Attr {
+
 					if attr.Name.Local == "id" {
 						rel.Id, _ = strconv.ParseInt(attr.Value, 10, 64)
 					}
+
+					if element.Meta.Parse {
+						switch attr.Name.Local {
+						case "version":
+							x, _ := strconv.ParseInt(attr.Value, 10, 32)
+							metaInfo.Version = int32(x)
+						case "user":
+							metaInfo.User = attr.Value
+						case "uid":
+							x, _ := strconv.ParseInt(attr.Value, 10, 32)
+							metaInfo.Uid = int32(x)
+						case "changeset":
+							metaInfo.Changeset, _ = strconv.ParseInt(attr.Value, 10, 64)
+						case "timestamp":
+							metaInfo.Timestamp, _ = time.Parse(time.RFC3339, attr.Value)
+						}
+					}
 				}
+
 			case "nd":
 				for _, attr := range tok.Attr {
 					if attr.Name.Local == "ref" {
@@ -152,26 +213,60 @@ NextToken:
 			var e DiffElem
 			switch tok.Name.Local {
 			case "node":
-				if len(tags) > 0 {
-					node.Tags = tags
+
+				if _, ok := tags["created_by"]; ok && len(tags) == 1 && element.ParseDontAddOnlyCreatedByTag {
+					// don't add nodes with only created_by tag to nodes cache
+				} else {
+
+					if len(tags) > 0 {
+
+						if element.Meta.Parse {
+							tags.AddMetaInfo(metaInfo)
+						}
+
+						node.Tags = tags
+					}
 				}
+
 				e.Node = node
 				node = &element.Node{}
 				newElem = true
+
+				// reset osm metadata
+				metaInfo.Reset()
+
 			case "way":
 				if len(tags) > 0 {
+
+					if element.Meta.Parse {
+						tags.AddMetaInfo(metaInfo)
+					}
+
 					way.Tags = tags
 				}
 				e.Way = way
 				way = &element.Way{}
 				newElem = true
+
+				// reset osm metadata
+				metaInfo.Reset()
+
 			case "relation":
 				if len(tags) > 0 {
+
+					if element.Meta.Parse {
+						tags.AddMetaInfo(metaInfo)
+					}
+
 					rel.Tags = tags
 				}
 				e.Rel = rel
 				rel = &element.Relation{}
 				newElem = true
+
+				// reset osm metadata
+				metaInfo.Reset()
+
 			case "osmChange":
 				return
 			}
@@ -181,7 +276,7 @@ NextToken:
 				e.Del = del
 				e.Mod = mod
 				if len(tags) > 0 {
-					tags = make(map[string]string)
+					tags = make(element.Tags)
 				}
 				newElem = false
 				elems <- e

@@ -15,8 +15,9 @@ package binary
 // etc.) are converted to a single ASCII control char (0x01-0x1f)
 
 import (
-	"github.com/omniscale/imposm3/element"
 	"unicode/utf8"
+
+	"github.com/omniscale/imposm3/element"
 )
 
 type codepoint rune
@@ -123,6 +124,13 @@ func init() {
 	addCommonKey("addr:city")
 	addCommonKey("addr:postcode")
 	addCommonKey("addr:housenumber")
+
+	// Reserved for OSM metadata variables.
+	addCommonKey(element.Meta.Version.KeyName)
+	addCommonKey(element.Meta.Timestamp.KeyName)
+	addCommonKey(element.Meta.Changeset.KeyName)
+	addCommonKey(element.Meta.Uid.KeyName)
+	addCommonKey(element.Meta.User.KeyName)
 
 	// most used tags for ways
 	//

@@ -1,0 +1,54 @@
+{
+    "tags": {
+        "load_all": true,
+        "keep_single_createdby_tag": true,
+        "parsemetadata": {
+	          "create_tag_from_version": "_version_",
+	          "create_tag_from_timestamp": "_timestamp_",
+	          "create_tag_from_changeset": "_changeset_",
+	          "create_tag_from_uid": "_uid_",
+	          "create_tag_from_user": "_user_"
+        }
+    },  
+    "use_single_id_space": true,
+    "tables": {
+        "parsemetadata_yes": {
+            "fields": [
+                {
+                    "type": "id",
+                    "name": "osm_id",
+                    "key": null
+                },          
+                {
+                    "type": "geometry",
+                    "name": "geometry",
+                    "key": null
+                },
+                {
+                    "type": "hstore_tags",
+                    "name": "tags",
+                    "key": null
+                }
+            ],
+            "type": "geometry",
+            "type_mappings": {
+                "points": {
+                     "created_by": ["__any__"],
+                     "amenity": ["__any__"],
+                     "poi":     ["__any__"],
+                     "shop":    ["__any__"]
+                },
+                "linestrings": {
+                     "highway": ["__any__"],
+                     "barrier": ["__any__"]
+                },
+                "polygons": {
+                     "amenity": ["__any__"],
+                     "landuse": ["__any__"],
+                     "building":["__any__"],
+                     "shop":    ["__any__"]
+                }
+            }
+        }
+    }
+}

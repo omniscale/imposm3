@@ -1,0 +1,52 @@
+{
+    "tags": {
+        "load_all": true,
+        "keep_single_createdby_tag": false,
+        "parsemetadata": {
+	          "create_tag_from_version": "openstreetmap_version",
+	          "create_tag_from_timestamp": "openstreetmap_timestamp",
+	          "create_tag_from_user": "openstreetmap_user"
+        }
+    },  
+    "use_single_id_space": true,
+    "tables": {
+        "parsemetadata_timestamp_version_user": {
+            "fields": [
+                {
+                    "type": "id",
+                    "name": "osm_id",
+                    "key": null
+                },          
+                {
+                    "type": "geometry",
+                    "name": "geometry",
+                    "key": null
+                },
+                {
+                    "type": "hstore_tags",
+                    "name": "tags",
+                    "key": null
+                }
+            ],
+            "type": "geometry",
+            "type_mappings": {
+                "points": {
+                     "created_by": ["__any__"],
+                     "amenity": ["__any__"],
+                     "poi":     ["__any__"],
+                     "shop":    ["__any__"]
+                },
+                "linestrings": {
+                     "highway": ["__any__"],
+                     "barrier": ["__any__"]
+                },
+                "polygons": {
+                     "amenity": ["__any__"],
+                     "landuse": ["__any__"],
+                     "building":["__any__"],
+                     "shop":    ["__any__"]
+                }
+            }
+        }
+    }
+}

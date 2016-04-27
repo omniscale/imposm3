@@ -21,6 +21,12 @@ import (
 	"github.com/omniscale/imposm3/import_"
 )
 
+var ts = importTestSuite{
+	dir: "/tmp/imposm3test",
+}
+
+const RelOffset = -1e17
+
 const (
 	dbschemaImport     = "imposm3testimport"
 	dbschemaProduction = "imposm3testproduction"
