@@ -25,7 +25,7 @@ build/%.osc.gz: %.osc
 files: $(PBF_FILES) $(OSCGZ_FILES)
 
 test: files
-	(cd .. && godep go test ./test $(TESTOPTS))
+	(cd .. && go test ./test $(TESTOPTS))
 
 route_relation: files
-	(cd .. && godep go test -test.run TestRouteRelation_ ./test $(TESTOPTS))
+	(cd .. && go test -test.run TestRouteRelation_ ./test $(TESTOPTS))
