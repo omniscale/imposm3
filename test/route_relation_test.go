@@ -60,7 +60,7 @@ func TestRouteRelation_MemberGeomUpdated1(t *testing.T) {
 		t.Fatal(rows)
 	}
 	g := ts.g.FromWkt(rows[0]["wkt"])
-	if math.Abs(g.Length() - 111.32448543701321) > 0.00000001 {
+	if math.Abs(g.Length()-111.32448543701321) > 0.00000001 {
 		t.Fatal(g.Length())
 	}
 
@@ -70,6 +70,14 @@ func TestRouteRelation_MemberGeomUpdated1(t *testing.T) {
 	}
 	if rows[0]["name"] != "" {
 		t.Error(rows[0])
+	}
+}
+
+func TestRouteRelation_NoRouteWithMissingMember(t *testing.T) {
+	// current implementation: route members are all or nothing.
+	// if one member is missing, no member is imported
+	if r := ts.queryDynamic(t, "osm_route_members", "osm_id = -120901 AND member = 120101"); len(r) > 0 {
+		t.Error("found member from route with missing members")
 	}
 }
 
@@ -87,7 +95,7 @@ func TestRouteRelation_MemberGeomUpdated2(t *testing.T) {
 		t.Fatal(rows)
 	}
 	g := ts.g.FromWkt(rows[0]["wkt"])
-	if math.Abs(g.Length() - 184.97560221624542) > 0.00000001 {
+	if math.Abs(g.Length()-184.97560221624542) > 0.00000001 {
 		t.Fatal(g.Length())
 	}
 

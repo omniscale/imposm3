@@ -140,4 +140,18 @@
   <tag k="type" v="route"/>
  </relation>
 
+ <!-- relation with missing members -->
+ <node id="120101" version="1" timestamp="2015-12-31T23:59:99Z" lat="53.0" lon="8.200">
+    <tag k="name" v="Stop"/>
+ </node>
+
+ <relation id="120901" version="23" timestamp="2015-06-02T04:13:19Z">
+  <member type="node" ref="120101" role="stop"/>
+  <member type="relation" ref="120102" role="stop"/> <!-- missing -->
+  <member type="node" ref="120103" role="stop"/> <!-- missing -->
+  <tag k="route" v="bus"/>
+  <tag k="type" v="route"/>
+ </relation>
+
+
 </osm>

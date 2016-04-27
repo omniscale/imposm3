@@ -225,10 +225,10 @@ func handleRelationMembers(rw *RelationWriter, r *element.Relation, geos *geosp.
 		if m.Type == element.RELATION {
 			mrel, err := rw.osmCache.Relations.GetRelation(m.Id)
 			if err != nil {
-				if err == cache.NotFound {
+				if err != cache.NotFound {
 					log.Warn(err)
-					return false
 				}
+				return false
 			}
 			r.Members[i].Elem = &mrel.OSMElem
 		} else if m.Type == element.NODE {
