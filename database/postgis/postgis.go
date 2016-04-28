@@ -2,6 +2,7 @@ package postgis
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"runtime"
 	"strings"
@@ -58,30 +59,46 @@ func createTable(tx *sql.Tx, spec TableSpec) error {
 }
 
 func addGeometryColumn(tx *sql.Tx, tableName string, spec TableSpec) error {
-	colName := ""
+
+	var colName string
+	var geometry_fields int = 0
+
 	for _, col := range spec.Columns {
-		if col.Type.Name() == "GEOMETRY" {
-			colName = col.Name
-			break
+
+		if col.Type.IsGeometry() {
+
+			if col.Type.Name() == "GEOMETRY" {
+				if geometry_fields > 0 {
+					return errors.New("Error: only 1  'geometry' field alowed per table: " + tableName)
+				}
+				geometry_fields++
+			}
+
+			if col.Name != "" {
+				colName = col.Name
+			} else {
+				colName = "geometry" // the default variable name for geometry is : "geometry"
+			}
+
+			geomType := strings.ToUpper(spec.GeometryType)
+			if col.Type.Name() == "POINT" || col.Type.Name() == "LINESTRING" {
+				geomType = col.Type.Name()
+			} else if geomType == "POLYGON" {
+				geomType = "GEOMETRY" // for multipolygon support
+			}
+
+			sql := fmt.Sprintf("SELECT AddGeometryColumn('%s', '%s', '%s', '%d', '%s', 2);",
+				spec.Schema, tableName, colName, spec.Srid, geomType)
+
+			row := tx.QueryRow(sql)
+			var void interface{}
+			err := row.Scan(&void)
+			if err != nil {
+				return &SQLError{sql, err}
+			}
 		}
 	}
 
-	if colName == "" {
-		return nil
-	}
-
-	geomType := strings.ToUpper(spec.GeometryType)
-	if geomType == "POLYGON" {
-		geomType = "GEOMETRY" // for multipolygon support
-	}
-	sql := fmt.Sprintf("SELECT AddGeometryColumn('%s', '%s', '%s', '%d', '%s', 2);",
-		spec.Schema, tableName, colName, spec.Srid, geomType)
-	row := tx.QueryRow(sql)
-	var void interface{}
-	err := row.Scan(&void)
-	if err != nil {
-		return &SQLError{sql, err}
-	}
 	return nil
 }
 

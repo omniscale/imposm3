@@ -6,6 +6,7 @@ import (
 
 type ColumnType interface {
 	Name() string
+	IsGeometry() bool
 	PrepareInsertSql(i int,
 		spec *TableSpec) string
 	GeneralizeSql(colSpec *ColumnSpec, spec *GeneralizedTableSpec) string
@@ -17,6 +18,10 @@ type simpleColumnType struct {
 
 func (t *simpleColumnType) Name() string {
 	return t.name
+}
+
+func (t *simpleColumnType) IsGeometry() bool {
+	return false
 }
 
 func (t *simpleColumnType) PrepareInsertSql(i int, spec *TableSpec) string {
@@ -41,6 +46,10 @@ type geometryType struct {
 
 func (t *geometryType) Name() string {
 	return t.name
+}
+
+func (t *geometryType) IsGeometry() bool {
+	return true
 }
 
 func (t *geometryType) PrepareInsertSql(i int, spec *TableSpec) string {
@@ -69,18 +78,32 @@ func (t *validatedGeometryType) GeneralizeSql(colSpec *ColumnSpec, spec *General
 	)
 }
 
-var pgTypes map[string]ColumnType
+var pgTypes = map[string]ColumnType{
+	"string":             &simpleColumnType{"VARCHAR"},
+	"bool":               &simpleColumnType{"BOOL"},
+	"int8":               &simpleColumnType{"SMALLINT"},
+	"int32":              &simpleColumnType{"INT"},
+	"int64":              &simpleColumnType{"BIGINT"},
+	"float32":            &simpleColumnType{"REAL"},
+	"hstore_string":      &simpleColumnType{"HSTORE"},
+	"geometry":           &geometryType{"GEOMETRY"},
+	"validated_geometry": &validatedGeometryType{geometryType{"GEOMETRY"}},
+	"geometry_noindex":   &geometryType{"GEOMETRYNOINDEX"},
+	"point":              &geometryType{"POINT"},
+	"linestring":         &geometryType{"LINESTRING"},
+	"json_string":        &simpleColumnType{"JSON"},  // only  >= PostgreSQL 9.2
+	"jsonb_string":       &simpleColumnType{"JSONB"}, // only  >= PostgreSQL 9.4
+	"date":               &simpleColumnType{"DATE"},
+	"time":               &simpleColumnType{"TIME"},
+	"timestamp":          &simpleColumnType{"TIMESTAMP"},
+	"char1":              &simpleColumnType{"\"char\""}, // PostgreSQL single-byte internal type ;
+}
 
-func init() {
-	pgTypes = map[string]ColumnType{
-		"string":             &simpleColumnType{"VARCHAR"},
-		"bool":               &simpleColumnType{"BOOL"},
-		"int8":               &simpleColumnType{"SMALLINT"},
-		"int32":              &simpleColumnType{"INT"},
-		"int64":              &simpleColumnType{"BIGINT"},
-		"float32":            &simpleColumnType{"REAL"},
-		"hstore_string":      &simpleColumnType{"HSTORE"},
-		"geometry":           &geometryType{"GEOMETRY"},
-		"validated_geometry": &validatedGeometryType{geometryType{"GEOMETRY"}},
+func registerColumnType(ColumnTypeName string, columntype ColumnType) {
+
+	if _, ok := pgTypes[ColumnTypeName]; ok {
+		panic("postgis.RegisterColumnType duplicate key: " + ColumnTypeName)
+	} else {
+		pgTypes[ColumnTypeName] = columntype
 	}
 }

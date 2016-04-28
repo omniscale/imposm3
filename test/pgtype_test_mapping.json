@@ -1,0 +1,72 @@
+{
+    "tags": {
+        "load_all": true
+    },
+    "use_single_id_space": true,
+    "tables": {
+        "fieldtype_test": {
+            "fields": [
+                {
+                    "type": "id",
+                    "name": "osm_id",
+                    "key": null
+                },
+                {
+                    "type": "example_string_char1",
+                    "name": "admin_level_char1",
+                    "key":  "admin_level"
+                },                 
+                {
+                    "type": "example_date",
+                    "name": "example_date",
+                    "key":  null
+                },                   
+                {
+                    "type": "example_time",
+                    "name": "example_time",
+                    "key":  null
+                },                   
+                {
+                    "type": "example_timestamp",
+                    "name": "example_timestamp",
+                    "key":  null
+                },   
+                {
+                    "type": "geometry",
+                    "name": "geometry",
+                    "key":  null
+                },                                                  
+                {
+                    "type": "example_geometry_noindex",
+                    "name": "example_geometry_noindex",
+                    "key":  null
+                },                  
+                {
+                    "type": "example_point",
+                    "name": "example_point",
+                    "key":  null
+                },     
+                {
+                    "type": "example_linestring",
+                    "name": "example_linestring",
+                    "key":  null
+                } 
+            
+            ],
+            "type": "geometry",
+            "type_mappings": {
+                "points": {
+                     "shop": ["__any__"]
+                },
+                "linestrings": {
+                     "admin_level": ["__any__"]
+                },
+                "polygons": {
+                     "landuse": ["__any__"],
+                     "building": ["__any__"],
+                     "shop": ["__any__"]
+                }
+            }
+        }
+    }
+}
