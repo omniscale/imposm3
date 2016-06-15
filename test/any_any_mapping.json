@@ -1,0 +1,56 @@
+{
+    "tags": {
+        "load_all": true,
+        "exclude": [
+            "created_by",
+            "source"
+        ]
+    },
+    "tables": {
+        "all": {
+            "fields": [
+                {
+                    "type": "id",
+                    "name": "osm_id"
+                },
+                {
+                    "type": "geometry",
+                    "name": "geometry"
+                },
+                {
+                    "type": "hstore_tags",
+                    "name": "tags"
+                }
+            ],
+            "type": "point",
+            "mapping": {
+                "__any__": ["__any__"]
+            }
+        },
+        "amenities": {
+            "fields": [
+                {
+                    "type": "id",
+                    "name": "osm_id"
+                },
+                {
+                    "type": "geometry",
+                    "name": "geometry"
+                },
+                {
+                    "type": "hstore_tags",
+                    "name": "tags"
+                },
+                {
+                    "type": "mapping_value",
+                    "name": "type"
+                },
+            ],
+            "type": "point",
+            "mapping": {
+                "amenity": ["__any__"]
+            }
+        }
+
+    }
+}

@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osm version="0.6" generator="Osmosis SNAPSHOT-r25240">
+
+  <node id="10000" version="1" timestamp="2011-11-11T00:11:11Z" lat="42" lon="9">
+  </node>
+
+  <node id="10001" version="1" timestamp="2011-11-11T00:11:11Z" lat="42" lon="10">
+      <tag k="random" v="tag"/>
+  </node>
+
+  <node id="10002" version="1" timestamp="2011-11-11T00:11:11Z" lat="42" lon="11">
+      <tag k="amenity" v="shop"/>
+  </node>
+
+  <node id="10003" version="1" timestamp="2011-11-11T00:11:11Z" lat="42" lon="12">
+      <tag k="random" v="tag"/>
+      <tag k="but" v="mapped"/>
+      <tag k="amenity" v="shop"/>
+  </node>
+
+</osm>

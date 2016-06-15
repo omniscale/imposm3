@@ -22,7 +22,7 @@ The most important part is the ``tables`` definition. Each table is a YAML objec
 ~~~~~~~~~~~
 
 ``mapping`` defines which OSM key/values an element needs to have to be imported into this table. ``mapping`` is a YAML object with the OSM `key` as the object key and a list of all OSM `values` to be matched as the object value.
-You can use the value ``__any__`` to match all values.
+You can use ``__any__`` to match all values (e.g. ``amenity: [__any__]``). To match elements regardless of their tags use ``__any__: [__any__]``. You need to use :ref:`load_all<tags>` in this case so that Imposm has access to all tags.
 
 To import all polygons with `tourism=zoo`, `natural=wood` or `natural=land` into the ``landusages`` table:
 

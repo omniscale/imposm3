@@ -127,7 +127,10 @@ func (tm *tagMatcher) match(tags *element.Tags) []Match {
 			}
 			tables[t.DestTable] = this
 		}
+	}
 
+	if values, ok := tm.mappings[Key("__any__")]; ok {
+		addTables("__any__", "__any__", values["__any__"])
 	}
 
 	for k, v := range *tags {
