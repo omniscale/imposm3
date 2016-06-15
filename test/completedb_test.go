@@ -3,6 +3,8 @@ package test
 import (
 	"database/sql"
 	"fmt"
+	"io/ioutil"
+	"os"
 
 	"github.com/omniscale/imposm3/cache"
 
@@ -18,7 +20,12 @@ import (
 var ts importTestSuite
 
 func TestPrepare(t *testing.T) {
-	ts.dir = "/tmp/imposm3test"
+	var err error
+
+	ts.dir, err = ioutil.TempDir("", "imposm3test")
+	if err != nil {
+		t.Fatal(err)
+	}
 	ts.config = importConfig{
 		connection:      "postgis://",
 		cacheDir:        ts.dir,
@@ -27,7 +34,6 @@ func TestPrepare(t *testing.T) {
 	}
 	ts.g = geos.NewGeos()
 
-	var err error
 	ts.db, err = sql.Open("postgres", "sslmode=disable")
 	if err != nil {
 		t.Fatal(err)
@@ -736,5 +742,12 @@ func TestRemoveBackup(t *testing.T) {
 	}
 	if ts.tableExists(t, dbschemaBackup, "osm_roads") {
 		t.Fatalf("table osm_roads exists in schema %s", dbschemaBackup)
+	}
+}
+
+func TestCleanup(t *testing.T) {
+	ts.dropSchemas()
+	if err := os.RemoveAll(ts.dir); err != nil {
+		t.Error(err)
 	}
 }

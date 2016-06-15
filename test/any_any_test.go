@@ -2,6 +2,8 @@ package test
 
 import (
 	"database/sql"
+	"io/ioutil"
+	"os"
 
 	"testing"
 
@@ -9,7 +11,12 @@ import (
 )
 
 func TestAnyAny_Prepare(t *testing.T) {
-	ts.dir = "/tmp/imposm3test"
+	var err error
+
+	ts.dir, err = ioutil.TempDir("", "imposm3test")
+	if err != nil {
+		t.Fatal(err)
+	}
 	ts.config = importConfig{
 		connection:      "postgis://",
 		cacheDir:        ts.dir,
@@ -18,7 +25,6 @@ func TestAnyAny_Prepare(t *testing.T) {
 	}
 	ts.g = geos.NewGeos()
 
-	var err error
 	ts.db, err = sql.Open("postgres", "sslmode=disable")
 	if err != nil {
 		t.Fatal(err)
@@ -46,4 +52,11 @@ func TestAnyAny_InsertedNodes(t *testing.T) {
 		{"osm_amenities", 10002, "*", map[string]string{"amenity": "shop"}},
 		{"osm_amenities", 10003, "*", map[string]string{"random": "tag", "but": "mapped", "amenity": "shop"}},
 	})
+}
+
+func TestAnyAny_Cleanup(t *testing.T) {
+	ts.dropSchemas()
+	if err := os.RemoveAll(ts.dir); err != nil {
+		t.Error(err)
+	}
 }

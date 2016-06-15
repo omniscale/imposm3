@@ -2,14 +2,21 @@ package test
 
 import (
 	"database/sql"
+	"io/ioutil"
 	"math"
+	"os"
 	"testing"
 
 	"github.com/omniscale/imposm3/geom/geos"
 )
 
 func TestRouteRelation_Prepare(t *testing.T) {
-	ts.dir = "/tmp/imposm3test"
+	var err error
+
+	ts.dir, err = ioutil.TempDir("", "imposm3test")
+	if err != nil {
+		t.Fatal(err)
+	}
 	ts.config = importConfig{
 		connection:      "postgis://",
 		cacheDir:        ts.dir,
@@ -18,7 +25,6 @@ func TestRouteRelation_Prepare(t *testing.T) {
 	}
 	ts.g = geos.NewGeos()
 
-	var err error
 	ts.db, err = sql.Open("postgres", "sslmode=disable")
 	if err != nil {
 		t.Fatal(err)
@@ -133,5 +139,12 @@ func TestRouteRelation_MemberUpdatedByNode(t *testing.T) {
 	}
 	if rows[0]["name"] != "Stop2" {
 		t.Error(rows[0])
+	}
+}
+
+func TestRouteRelation_Cleanup(t *testing.T) {
+	ts.dropSchemas()
+	if err := os.RemoveAll(ts.dir); err != nil {
+		t.Error(err)
 	}
 }

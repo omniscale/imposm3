@@ -2,6 +2,8 @@ package test
 
 import (
 	"database/sql"
+	"io/ioutil"
+	"os"
 	"strings"
 
 	"testing"
@@ -12,7 +14,12 @@ import (
 const RelOffset = -1e17
 
 func TestSingleTable_Prepare(t *testing.T) {
-	ts.dir = "/tmp/imposm3test"
+	var err error
+
+	ts.dir, err = ioutil.TempDir("", "imposm3test")
+	if err != nil {
+		t.Fatal(err)
+	}
 	ts.config = importConfig{
 		connection:      "postgis://",
 		cacheDir:        ts.dir,
@@ -21,7 +28,6 @@ func TestSingleTable_Prepare(t *testing.T) {
 	}
 	ts.g = geos.NewGeos()
 
-	var err error
 	ts.db, err = sql.Open("postgres", "sslmode=disable")
 	if err != nil {
 		t.Fatal(err)
@@ -190,5 +196,12 @@ func TestSingleTable_ModifiedRelation2(t *testing.T) {
 	rows := ts.queryRowsTags(t, "osm_all", RelOffset-32901)
 	if len(rows) != 1 {
 		t.Errorf("found duplicate row: %v", rows)
+	}
+}
+
+func TestSingleTable_Cleanup(t *testing.T) {
+	ts.dropSchemas()
+	if err := os.RemoveAll(ts.dir); err != nil {
+		t.Error(err)
 	}
 }
