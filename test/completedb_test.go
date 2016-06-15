@@ -110,7 +110,7 @@ func TestSplitOuterMultipolygonWay1(t *testing.T) {
 		{"osm_roads", 15002, Missing, nil},
 		{"osm_landusages", -15001, "park", nil},
 	})
-	assertArea(t, checkElem{"osm_landusages", -15001, "park", nil}, 9816216452)
+	assertGeomArea(t, checkElem{"osm_landusages", -15001, "park", nil}, 9816216452)
 }
 
 func TestMergeOuterMultipolygonWay1(t *testing.T) {
@@ -119,7 +119,7 @@ func TestMergeOuterMultipolygonWay1(t *testing.T) {
 		{"osm_landusages", -16001, "park", nil},
 		{"osm_roads", 16002, "residential", nil},
 	})
-	assertArea(t, checkElem{"osm_landusages", -16001, "park", nil}, 12779350582)
+	assertGeomArea(t, checkElem{"osm_landusages", -16001, "park", nil}, 12779350582)
 }
 
 func TestBrokenMultipolygonWays(t *testing.T) {
@@ -246,7 +246,7 @@ func TestSingleNodeWaysNotInserted(t *testing.T) {
 
 func TestPolygonWithDuplicateNodesIsValid(t *testing.T) {
 	// Polygon with duplicate nodes is valid.
-	assertValid(t, checkElem{"osm_landusages", 30005, "park", nil})
+	assertGeomValid(t, checkElem{"osm_landusages", 30005, "park", nil})
 }
 
 func TestIncompletePolygons(t *testing.T) {
@@ -300,45 +300,45 @@ func TestDuplicateIds(t *testing.T) {
 func TestRelationUpdatedByNode(t *testing.T) {
 	// Relations was updated after modified node.
 
-	assertArea(t, checkElem{"osm_buildings", -52121, "yes", nil}, 13653930440.868315)
+	assertGeomArea(t, checkElem{"osm_buildings", -52121, "yes", nil}, 13653930440.868315)
 }
 
 func TestGeneralizedBananaPolygonIsValid(t *testing.T) {
 	// Generalized polygons are valid.
 
-	assertValid(t, checkElem{"osm_landusages", 7101, Missing, nil})
+	assertGeomValid(t, checkElem{"osm_landusages", 7101, Missing, nil})
 	// simplified geometies are valid too
-	assertValid(t, checkElem{"osm_landusages_gen0", 7101, Missing, nil})
-	assertValid(t, checkElem{"osm_landusages_gen1", 7101, Missing, nil})
+	assertGeomValid(t, checkElem{"osm_landusages_gen0", 7101, Missing, nil})
+	assertGeomValid(t, checkElem{"osm_landusages_gen1", 7101, Missing, nil})
 }
 
 func TestGeneralizedLinestringIsValid(t *testing.T) {
 	// Generalized linestring is valid.
 
 	// geometry is not simple, but valid
-	assertLength(t, checkElem{"osm_roads", 7201, "primary", nil}, 1243660.044819)
+	assertGeomLength(t, checkElem{"osm_roads", 7201, "primary", nil}, 1243660.044819)
 	if ts.g.IsSimple(ts.queryGeom(t, "osm_roads", 7201)) {
 		t.Errorf("expected non-simple geometry for 7201")
 	}
 	// check that geometry 'survives' simplification
-	assertLength(t, checkElem{"osm_roads_gen0", 7201, "primary", nil}, 1243660.044819)
-	assertLength(t, checkElem{"osm_roads_gen1", 7201, "primary", nil}, 1243660.044819)
+	assertGeomLength(t, checkElem{"osm_roads_gen0", 7201, "primary", nil}, 1243660.044819)
+	assertGeomLength(t, checkElem{"osm_roads_gen1", 7201, "primary", nil}, 1243660.044819)
 }
 
 func TestRingWithGap(t *testing.T) {
 	// Multipolygon and way with gap (overlapping but different endpoints) gets closed
-	assertValid(t, checkElem{"osm_landusages", -7301, Missing, nil})
-	assertValid(t, checkElem{"osm_landusages", 7311, Missing, nil})
+	assertGeomValid(t, checkElem{"osm_landusages", -7301, Missing, nil})
+	assertGeomValid(t, checkElem{"osm_landusages", 7311, Missing, nil})
 }
 
 func TestMultipolygonWithOpenRing(t *testing.T) {
 	// Multipolygon is inserted even if there is an open ring/member
-	assertValid(t, checkElem{"osm_landusages", -7401, Missing, nil})
+	assertGeomValid(t, checkElem{"osm_landusages", -7401, Missing, nil})
 }
 
 func TestUpdatedNodes1(t *testing.T) {
 	// Zig-Zag line is inserted.
-	assertLength(t, checkElem{"osm_roads", 60000, Missing, nil}, 14035.61150207768)
+	assertGeomLength(t, checkElem{"osm_roads", 60000, Missing, nil}, 14035.61150207768)
 }
 
 func TestUpdateNodeToCoord1(t *testing.T) {
@@ -473,8 +473,8 @@ func TestChangedHoleTags2(t *testing.T) {
 	assertCachedWay(t, cache, 14001)
 	assertCachedWay(t, cache, 14011)
 
-	assertArea(t, checkElem{"osm_waterareas", 14011, "water", nil}, 26672019779)
-	assertArea(t, checkElem{"osm_landusages", -14001, "park", nil}, 10373697182)
+	assertGeomArea(t, checkElem{"osm_waterareas", 14011, "water", nil}, 26672019779)
+	assertGeomArea(t, checkElem{"osm_landusages", -14001, "park", nil}, 10373697182)
 }
 
 func TestSplitOuterMultipolygonWay2(t *testing.T) {
@@ -493,7 +493,7 @@ func TestSplitOuterMultipolygonWay2(t *testing.T) {
 		{"osm_landusages", 15001, Missing, nil},
 		{"osm_roads", 15002, "residential", nil},
 	})
-	assertArea(t, checkElem{"osm_landusages", -15001, "park", nil}, 9816216452)
+	assertGeomArea(t, checkElem{"osm_landusages", -15001, "park", nil}, 9816216452)
 }
 
 func TestMergeOuterMultipolygonWay2(t *testing.T) {
@@ -522,7 +522,7 @@ func TestMergeOuterMultipolygonWay2(t *testing.T) {
 		{"osm_landusages", 16001, Missing, nil},
 		{"osm_roads", 16002, Missing, nil},
 	})
-	assertArea(t, checkElem{"osm_landusages", -16001, "park", nil}, 12779350582)
+	assertGeomArea(t, checkElem{"osm_landusages", -16001, "park", nil}, 12779350582)
 }
 
 func TestNodeWayRefAfterDelete2(t *testing.T) {
@@ -614,14 +614,14 @@ func TestDuplicateIds2(t *testing.T) {
 func TestRelationUpdatedByNode2(t *testing.T) {
 	// Relations was updated after modified node.
 
-	assertArea(t, checkElem{"osm_buildings", -52121, "yes", nil}, 16276875196.653734)
+	assertGeomArea(t, checkElem{"osm_buildings", -52121, "yes", nil}, 16276875196.653734)
 }
 
 func TestUpdatedWay2(t *testing.T) {
 	// All nodes of straightened way are updated.
 
 	// new length 0.1 degree
-	assertLength(t, checkElem{"osm_roads", 60000, "park", nil}, 20037508.342789244/180.0/10.0)
+	assertGeomLength(t, checkElem{"osm_roads", 60000, "park", nil}, 20037508.342789244/180.0/10.0)
 }
 
 func TestUpdateNodeToCoord2(t *testing.T) {
