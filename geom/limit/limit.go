@@ -479,7 +479,7 @@ func geosPolygon(g *geos.Geos, polygon geojson.Polygon) (*geos.Geom, error) {
 }
 
 func transformPolygon(p geojson.Polygon, targetSRID int) {
-	if targetSRID != 3857 {
+	if targetSRID != 900913 {
 		panic("transformation to non-4326/3856 not implemented")
 	}
 	for _, ls := range p {

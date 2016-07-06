@@ -68,8 +68,8 @@ func (writer *OsmElemWriter) NodesToSrid(nodes []element.Node) {
 	if writer.srid == 4326 {
 		return
 	}
-	if writer.srid != 3857 {
-		panic("invalid srid. only 4326 and 3857 are supported")
+	if writer.srid != 900913 {
+		panic("invalid srid. only 4326 and 900913 are supported")
 	}
 
 	for i, nd := range nodes {
@@ -81,8 +81,8 @@ func (writer *OsmElemWriter) NodeToSrid(node *element.Node) {
 	if writer.srid == 4326 {
 		return
 	}
-	if writer.srid != 3857 {
-		panic("invalid srid. only 4326 and 3857 are supported")
+	if writer.srid != 900913 {
+		panic("invalid srid. only 4326 and 900913 are supported")
 	}
 	node.Long, node.Lat = proj.WgsToMerc(node.Long, node.Lat)
 }

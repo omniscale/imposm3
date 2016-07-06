@@ -57,7 +57,7 @@ func TestSimplePolygonWithHole(t *testing.T) {
 		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
 	}
 
-	geom, err := buildRelation(&rel, 3857)
+	geom, err := buildRelation(&rel, 900913)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +100,7 @@ func TestMultiPolygonWithHoleAndRelName(t *testing.T) {
 		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
 	}
 
-	geom, err := buildRelation(&rel, 3857)
+	geom, err := buildRelation(&rel, 900913)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -154,7 +154,7 @@ func TestMultiPolygonWithMultipleHoles(t *testing.T) {
 		{Id: 3, Type: element.WAY, Role: "inner", Way: &w3},
 	}
 
-	geom, err := buildRelation(&rel, 3857)
+	geom, err := buildRelation(&rel, 900913)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -223,7 +223,7 @@ func TestMultiPolygonWithNeastedHoles(t *testing.T) {
 		{Id: 5, Type: element.WAY, Role: "inner", Way: &w5},
 	}
 
-	geom, err := buildRelation(&rel, 3857)
+	geom, err := buildRelation(&rel, 900913)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -268,7 +268,7 @@ func TestPolygonFromThreeWays(t *testing.T) {
 		{Id: 3, Type: element.WAY, Role: "inner", Way: &w3},
 	}
 
-	geom, err := buildRelation(&rel, 3857)
+	geom, err := buildRelation(&rel, 900913)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -320,7 +320,7 @@ func TestTouchingPolygonsWithHole(t *testing.T) {
 		{Id: 2, Type: element.WAY, Role: "outer", Way: &w2},
 		{Id: 3, Type: element.WAY, Role: "inner", Way: &w3},
 	}
-	geom, err := buildRelation(&rel, 3857)
+	geom, err := buildRelation(&rel, 900913)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -362,7 +362,7 @@ func TestInsertedWaysDifferentTags(t *testing.T) {
 		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
 	}
 
-	geom, err := buildRelation(&rel, 3857)
+	geom, err := buildRelation(&rel, 900913)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -404,7 +404,7 @@ func TestInsertMultipleTags(t *testing.T) {
 		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
 	}
 
-	geom, err := buildRelation(&rel, 3857)
+	geom, err := buildRelation(&rel, 900913)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -453,7 +453,7 @@ func TestBrokenPolygonSelfIntersect(t *testing.T) {
 		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
 	}
 
-	geom1, err := buildRelation(&rel1, 3857)
+	geom1, err := buildRelation(&rel1, 900913)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -494,7 +494,7 @@ func TestBrokenPolygonSelfIntersect(t *testing.T) {
 		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
 	}
 
-	geom2, err := buildRelation(&rel2, 3857)
+	geom2, err := buildRelation(&rel2, 900913)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -543,7 +543,7 @@ func TestBrokenPolygonSelfIntersectTriangle(t *testing.T) {
 		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
 	}
 
-	geom, err := buildRelation(&rel, 3857)
+	geom, err := buildRelation(&rel, 900913)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -583,7 +583,7 @@ func TestBrokenPolygonSelfIntersectTriangle(t *testing.T) {
 		{Id: 2, Type: element.WAY, Role: "inner", Way: &w4},
 	}
 
-	geom, err = buildRelation(&rel, 3857)
+	geom, err = buildRelation(&rel, 900913)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -613,7 +613,7 @@ func TestOpenRing(t *testing.T) {
 		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
 	}
 
-	_, err := buildRelation(&rel, 3857)
+	_, err := buildRelation(&rel, 900913)
 	if err == nil {
 		t.Fatal("no error from open ring")
 	}
@@ -638,7 +638,7 @@ func TestClosedAndOpenRing(t *testing.T) {
 		{Id: 2, Type: element.WAY, Role: "outer", Way: &w2},
 	}
 
-	prep, err := PrepareRelation(&rel, 3857, 0.1)
+	prep, err := PrepareRelation(&rel, 900913, 0.1)
 	if err != nil {
 		t.Fatal(err)
 	}
