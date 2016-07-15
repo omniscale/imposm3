@@ -90,7 +90,7 @@ Imposm 3 is used in production but there is no official 3.0 release yet.
 There are a few features we like to see in Imposm 3:
 
 * Automatic download and import of differential files
-* Support for other projections than OpenLayers:900913 or EPSG:4326
+* Support for other projections than EPSG:3857 or EPSG:4326
 * Improved integration with tile servers (expiration of updated tiles)
 * Custom field/filter functions
 * Official releases with binaries for more platforms

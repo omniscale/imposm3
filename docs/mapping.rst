@@ -285,7 +285,7 @@ Each generalize table is a YAML object with the new table name as the key. Each 
 
 ``source`` is the table name of another Imposm table from the same mapping file. You can also reference another generalized table, to create multiple generalizations of the same data.
 
-``tolerance`` is the `resolution` used for the Douglas-Peucker simplification. It has the same unit as the import `-srid`, i.e. meters for OpenLayers:900913 and degrees for EPSG:4326. Imposm uses `PostGIS ST_SimplifyPreserveTopology <http://postgis.net/docs/ST_SimplifyPreserveTopology.html>`_.
+``tolerance`` is the `resolution` used for the Douglas-Peucker simplification. It has the same unit as the import `-srid`, i.e. meters for ESPG:3857 (equivalent to OpenLayers:900913) and degrees for EPSG:4326. Imposm uses `PostGIS ST_SimplifyPreserveTopology <http://postgis.net/docs/ST_SimplifyPreserveTopology.html>`_.
 
 The optional ``sql_filter`` can be used to limit the rows that will be generalized. You can use it to drop geometries that are to small for the target map scale.
 
@@ -315,4 +315,3 @@ To load all tags except ``created_by``, ``source``, and ``tiger:county``, ``tige
     tags:
       load_all: true,
       exclude: [created_by, source, "tiger:*"]
-
