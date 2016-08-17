@@ -87,39 +87,47 @@ func (p *parser) parseBlock(pos block) {
 	stringtable := newStringTable(block.GetStringtable())
 
 	for _, group := range block.Primitivegroup {
-		dense := group.GetDense()
-		if dense != nil {
-			parsedCoords, parsedNodes := readDenseNodes(dense, block, stringtable)
-			if len(parsedCoords) > 0 && p.coords != nil {
-				p.coords <- parsedCoords
+		if p.coords != nil || p.nodes != nil {
+			dense := group.GetDense()
+			if dense != nil {
+				parsedCoords, parsedNodes := readDenseNodes(dense, block, stringtable)
+				if len(parsedCoords) > 0 && p.coords != nil {
+					p.coords <- parsedCoords
+				}
+				if len(parsedNodes) > 0 && p.nodes != nil {
+					p.nodes <- parsedNodes
+				}
 			}
-			if len(parsedNodes) > 0 && p.nodes != nil {
-				p.nodes <- parsedNodes
+			if len(group.Nodes) > 0 {
+				parsedCoords, parsedNodes := readNodes(group.Nodes, block, stringtable)
+				if len(parsedCoords) > 0 && p.coords != nil {
+					p.coords <- parsedCoords
+				}
+				if len(parsedNodes) > 0 && p.nodes != nil {
+					p.nodes <- parsedNodes
+				}
 			}
 		}
-		parsedCoords, parsedNodes := readNodes(group.Nodes, block, stringtable)
-		if len(parsedCoords) > 0 && p.coords != nil {
-			p.coords <- parsedCoords
-		}
-		if len(parsedNodes) > 0 && p.nodes != nil {
-			p.nodes <- parsedNodes
-		}
-		parsedWays := readWays(group.Ways, block, stringtable)
-		if len(parsedWays) > 0 && p.ways != nil {
-			if p.waySync != nil {
-				p.waySync.doneWait()
+		if len(group.Ways) > 0 && p.ways != nil {
+			parsedWays := readWays(group.Ways, block, stringtable)
+			if len(parsedWays) > 0 {
+				if p.waySync != nil {
+					p.waySync.doneWait()
+				}
+				p.ways <- parsedWays
 			}
-			p.ways <- parsedWays
 		}
-		parsedRelations := readRelations(group.Relations, block, stringtable)
-		if len(parsedRelations) > 0 && p.relations != nil {
-			if p.waySync != nil {
-				p.waySync.doneWait()
+		if len(group.Relations) > 0 && p.relations != nil {
+			parsedRelations := readRelations(group.Relations, block, stringtable)
+			if len(parsedRelations) > 0 {
+				if p.waySync != nil {
+					p.waySync.doneWait()
+				}
+				if p.relSync != nil {
+					p.relSync.doneWait()
+				}
+				p.relations <- parsedRelations
 			}
-			if p.relSync != nil {
-				p.relSync.doneWait()
-			}
-			p.relations <- parsedRelations
 		}
 	}
 }
