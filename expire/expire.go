@@ -13,3 +13,26 @@ func ExpireNodes(expireor Expireor, nodes []element.Node) {
 		expireor.Expire(nd.Long, nd.Lat)
 	}
 }
+
+type TileExpireor struct {
+	tiles map[string]Tile
+}
+
+func (te *TileExpireor) MarkDirtyTile(t Tile) {
+	te.tiles[t.Key()] = t
+}
+
+func (te *TileExpireor) DirtyTiles() []Tile {
+	// How big should start be
+	tiles := make([]Tile, 64000)
+
+	for _, tile := range te.tiles {
+		tiles = append(tiles, tile)
+	}
+	return tiles
+}
+
+func (te *TileExpireor) Expire(lon, lat float64) {
+	// TODO: Zoom level is hardcoded
+	te.MarkDirtyTile(PointToTile(lon, lat, 14))
+}
