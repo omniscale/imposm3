@@ -15,11 +15,11 @@ func ExpireNodes(expireor Expireor, nodes []element.Node) {
 }
 
 type TileExpireor struct {
-	tiles map[string]Tile
+	tiles map[int]Tile
 }
 
 func (te *TileExpireor) MarkDirtyTile(t Tile) {
-	te.tiles[t.Key()] = t
+	te.tiles[t.toID()] = t
 }
 
 func (te *TileExpireor) DirtyTiles() []Tile {

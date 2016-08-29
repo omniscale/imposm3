@@ -1,10 +1,15 @@
 package expire
 
 import (
+	"fmt"
 	"math"
-	"strconv"
-	"strings"
+	"sort"
 )
+
+type TileFraction struct {
+	X float64
+	Y float64
+}
 
 type Tile struct {
 	X int
@@ -17,10 +22,6 @@ func (t Tile) toID() int {
 	return ((dim*t.Y + t.X) * 32) + t.Z
 }
 
-func (t Tile) Key() string {
-	return strings.Join([]string{strconv.Itoa(t.X), strconv.Itoa(t.Y), strconv.Itoa(t.Z)}, "/")
-}
-
 func fromID(id int) Tile {
 	z := id % 32
 	dim := 2 * (1 << uint(z))
@@ -30,10 +31,14 @@ func fromID(id int) Tile {
 	return Tile{x, y, z}
 }
 
-type TileFraction struct {
-	X float64
-	Y float64
-	Z int
+type TileID int
+
+type ByYX []TileFraction
+
+func (t ByYX) Len() int      { return len(t) }
+func (t ByYX) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
+func (t ByYX) Less(i, j int) bool {
+	return t[i].Y < t[j].Y || (t[i].Y == t[j].Y && t[i].X < t[j].X)
 }
 
 func PointToTileFraction(lon, lat float64, zoomLevel int) TileFraction {
@@ -44,7 +49,6 @@ func PointToTileFraction(lon, lat float64, zoomLevel int) TileFraction {
 	return TileFraction{
 		X: z2 * (lon/360 + 0.5),
 		Y: z2 * (0.5 - 0.25*math.Log((1+sin)/(1-sin))/math.Pi),
-		Z: zoomLevel,
 	}
 }
 
@@ -53,72 +57,128 @@ type Point struct {
 	lat float64
 }
 
-func LinestringToTile(points []Point, maxZoom int) []Tile {
-	tiles := []Tile{}
-	var prevX float64
-	var prevY float64
+func CoverPolygon(closedLinestring []Point, zoom int) map[int]Tile {
+	intersections := []TileFraction{}
+	tiles, ring := CoverLinestring(closedLinestring, zoom)
+	fmt.Printf("Ring: %v\n", ring)
 
-	for i := 0; i < len(points)-1; i++ {
-		start := PointToTileFraction(points[i].lon, points[i].lat, maxZoom)
-		stop := PointToTileFraction(points[i+1].lon, points[i+1].lat, maxZoom)
+	j := 0
+	k := len(ring) - 1
+	for j < len(ring) {
+		fmt.Printf("j: %v k: %v \n", j, k)
+		m := (j + 1) % len(ring)
+		y := ring[j].Y
 
-		x0 := start.X
-		y0 := start.Y
-		x1 := stop.X
-		y1 := stop.Y
-		dx := x1 - x0
-		dy := y1 - y0
+		//localMinimum := y <= ring[k].Y && y <= ring[m].Y
+		//localMaximum := y >= ring[k].Y && y >= ring[m].Y
+		//isDuplicate := y == ring[m].Y
 
-		if dy == 0 && dx == 0 {
-			continue
+		type TileHash map[int]Tile
+		if (y > ring[k].Y || y > ring[m].Y) && // not local minimum
+			(y < ring[k].Y || y < ring[m].Y) && // not local maximum
+			y != ring[m].Y {
+
+			intersections = append(intersections, ring[j])
 		}
 
-		sx := -1.0
-		if dx > 0 {
-			sx = 1.0
-		}
-		sy := -1.0
-		if dy > 0 {
-			sy = 1.0
-		}
+		/*if !localMinimum && !localMaximum && !isDuplicate {
+			intersections = append(intersections, ring[j])
+		}*/
 
-		x := math.Floor(x0)
-		y := math.Floor(y0)
+		k = j
+		j++
+	}
 
-		tMaxX := math.Abs((x - x0) / dx)
-		if dx > 0 {
-			tMaxX = math.Abs((1 + x - x0) / dx)
-		}
+	sort.Sort(ByYX(intersections))
+	fmt.Printf("Intersections: %v\n", intersections)
 
-		tMaxY := math.Abs((y - y0) / dy)
-		if dy > 0 {
-			tMaxY = math.Abs((1 + y - y0) / dy)
-		}
-
-		tdx := math.Abs(sx / dx)
-		tdy := math.Abs(sy / dy)
-
-		if x != prevX || y != prevY {
-			tiles = append(tiles, Tile{int(x), int(y), maxZoom})
-			prevX = x
-			prevY = y
-		}
-
-		for tMaxX < 1 || tMaxY < 1 {
-			if tMaxX < tMaxY {
-				tMaxX += tdx
-				x += sx
-			} else {
-				tMaxY += tdy
-				y += sy
-			}
-
-			tiles = append(tiles, Tile{int(x), int(y), maxZoom})
-			prevX = x
-			prevY = y
+	for i := 0; i < len(intersections); i += 2 {
+		// fill tiles between pairs of intersections
+		y := intersections[i].Y
+		for x := intersections[i].X + 1; x < intersections[i+1].X; x++ {
+			tile := Tile{int(x), int(y), zoom}
+			tiles[tile.toID()] = tile
 		}
 	}
 	return tiles
+}
+
+// Find minimum set of tiles for the given zoom level that cover a linestring
+func CoverLinestring(points []Point, zoom int) (map[int]Tile, []TileFraction) {
+	tiles := map[int]Tile{}
+	ring := []TileFraction{}
+	prev := TileFraction{}
+
+	var x, y float64
+	for i := 0; i < len(points)-1; i++ {
+		start := PointToTileFraction(points[i].lon, points[i].lat, zoom)
+		stop := PointToTileFraction(points[i+1].lon, points[i+1].lat, zoom)
+
+		//Calculate distance between points
+		d := TileFraction{stop.X - start.X, stop.Y - start.Y}
+
+		//Skip if start and stop are the same
+		if d.Y == 0 && d.X == 0 {
+			continue
+		}
+
+		x = math.Floor(start.X)
+		y = math.Floor(start.Y)
+
+		//Check if we already found the tile for this way
+		sameAsPrevious := x == prev.X && y == prev.Y
+		if !sameAsPrevious {
+			tile := Tile{int(x), int(y), zoom}
+			tiles[tile.toID()] = tile
+			ring = append(ring, TileFraction{x, y})
+			prev = TileFraction{x, y}
+		}
+
+		//TODO: What is sx?
+		sx := -1.0
+		if d.X > 0 {
+			sx = 1.0
+		}
+		sy := -1.0
+		if d.Y > 0 {
+			sy = 1.0
+		}
+
+		tMaxX := math.Abs((x - start.X) / d.X)
+		if d.X > 0 {
+			tMaxX = math.Abs((1 + x - start.X) / d.X)
+		}
+
+		tMaxY := math.Abs((y - start.Y) / d.Y)
+		if d.Y > 0 {
+			tMaxY = math.Abs((1 + y - start.Y) / d.Y)
+		}
+
+		td := TileFraction{math.Abs(sx / d.X), math.Abs(sy / d.Y)}
+		for tMaxX < 1 || tMaxY < 1 {
+			if tMaxX < tMaxY {
+				tMaxX += td.X
+				x += sx
+			} else {
+				tMaxY += td.Y
+				y += sy
+			}
+
+			tile := Tile{int(x), int(y), zoom}
+			tiles[tile.toID()] = tile
+			if y != prev.Y {
+				ring = append(ring, TileFraction{x, y})
+			}
+
+			prev = TileFraction{x, y}
+		}
+	}
+
+	if y == ring[0].Y {
+		ring = ring[:len(ring)-1]
+	}
+
+	return tiles, ring
 }
 
 func PointToTile(lon, lat float64, zoomLevel int) Tile {
@@ -126,6 +186,6 @@ func PointToTile(lon, lat float64, zoomLevel int) Tile {
 	return Tile{
 		X: int(tf.X),
 		Y: int(tf.Y),
-		Z: int(tf.Z),
+		Z: zoomLevel,
 	}
 }
