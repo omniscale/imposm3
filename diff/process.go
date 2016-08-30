@@ -71,9 +71,16 @@ func Diff() {
 	osmCache.Close()
 	diffCache.Close()
 
-	f, err := os.Create(config.DiffOptions.TileList)
-	defer f.Close()
-	expireor.WriteTiles(f)
+	if config.DiffOptions.TileList != "" {
+		f, err := os.Create(config.DiffOptions.TileList)
+		if err != nil {
+			log.Fatal("tile list: ", err)
+		}
+		defer f.Close()
+		expireor.WriteTiles(f)
+		f.Sync()
+		log.Print("Wrote list of expired tiles to %s", f.Name())
+	}
 }
 
 func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expireor, osmCache *cache.OSMCache, diffCache *cache.DiffCache, force bool) error {
