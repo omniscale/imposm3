@@ -24,7 +24,7 @@ var Building = []Point{
 
 func comparePointTile(t *testing.T, lon, lat float64, x, y, z int) {
 	expected := Tile{x, y, z}
-	actual := PointToTile(lon, lat, z)
+	actual := CoverPoint(lon, lat, z)
 	if actual != expected {
 		t.Error("Expected ", expected, ", got ", actual)
 	}
@@ -44,7 +44,7 @@ func TestLongCoverLinestring(t *testing.T) {
 	}
 	tiles, _ := CoverLinestring(points, 10)
 
-	expectedTiles := NewTileMap([]Tile{
+	expectedTiles := FromTiles([]Tile{
 		Tile{209, 427, 10},
 		Tile{209, 426, 10},
 		Tile{210, 426, 10},
@@ -52,16 +52,8 @@ func TestLongCoverLinestring(t *testing.T) {
 	})
 
 	if !reflect.DeepEqual(tiles, expectedTiles) {
-		t.Error("Unexpected tiles", tiles)
+		t.Error("Unexpected tiles", tiles.ToTiles())
 	}
-}
-
-func NewTileMap(tiles []Tile) map[int]Tile {
-	m := map[int]Tile{}
-	for _, t := range tiles {
-		m[t.toID()] = t
-	}
-	return m
 }
 
 // Test a spiked Polygon with many intersections
@@ -88,7 +80,7 @@ func TestCoverSpikePolygon(t *testing.T) {
 		Point{16.611328125, 8.667918002363134},
 	}
 	tiles := CoverPolygon(points, 6)
-	expectedTiles := NewTileMap([]Tile{
+	expectedTiles := FromTiles([]Tile{
 		Tile{35, 29, 6},
 		Tile{34, 30, 6},
 		Tile{35, 30, 6},
@@ -107,13 +99,13 @@ func TestCoverSpikePolygon(t *testing.T) {
 		Tile{36, 34, 6},
 	})
 	if !reflect.DeepEqual(tiles, expectedTiles) {
-		t.Error("Unexpected tiles", tiles)
+		t.Error("Unexpected tiles", tiles.ToTiles())
 	}
 }
 
 func TestCoverLinestringLinearRing(t *testing.T) {
 	tiles, ring := CoverLinestring(Building, 20)
-	expectedTiles := NewTileMap([]Tile{
+	expectedTiles := FromTiles([]Tile{
 		Tile{299564, 401224, 20},
 		Tile{299564, 401225, 20},
 		Tile{299565, 401225, 20},
@@ -134,7 +126,7 @@ func TestCoverLinestringLinearRing(t *testing.T) {
 	})
 
 	if !reflect.DeepEqual(tiles, expectedTiles) {
-		t.Error("Unexpected tiles", tiles)
+		t.Error("Unexpected tiles", tiles.ToTiles())
 	}
 	expectedRing := []TileFraction{
 		TileFraction{299564, 401224},
@@ -149,14 +141,14 @@ func TestCoverLinestringLinearRing(t *testing.T) {
 		TileFraction{299565, 401223},
 	}
 	if !reflect.DeepEqual(ring, expectedRing) {
-		t.Error("Unexpected ring", tiles)
+		t.Error("Unexpected ring", tiles.ToTiles())
 	}
 }
 
 // Test a building polygon
 func TestCoverPolygonBuilding(t *testing.T) {
 	tiles := CoverPolygon(Building, 20)
-	expectedTiles := NewTileMap([]Tile{
+	expectedTiles := FromTiles([]Tile{
 		Tile{299565, 401224, 20},
 		Tile{299564, 401224, 20},
 		Tile{299564, 401225, 20},
@@ -177,7 +169,7 @@ func TestCoverPolygonBuilding(t *testing.T) {
 		Tile{299564, 401223, 20},
 	})
 	if !reflect.DeepEqual(tiles, expectedTiles) {
-		t.Error("Unexpected tiles for building polygon", tiles)
+		t.Error("Unexpected tiles for building polygon", tiles.ToTiles())
 	}
 }
 
@@ -191,14 +183,14 @@ func TestCoverPolygon(t *testing.T) {
 	}
 	tiles := CoverPolygon(ring, 16)
 
-	expectedTiles := NewTileMap([]Tile{
+	expectedTiles := FromTiles([]Tile{
 		Tile{18216, 26447, 16},
 		Tile{18217, 26447, 16},
 		Tile{18217, 26446, 16},
 		Tile{18216, 26446, 16},
 	})
 	if !reflect.DeepEqual(tiles, expectedTiles) {
-		t.Error("Unexpected tiles", tiles)
+		t.Error("Unexpected tiles", tiles.ToTiles())
 	}
 }
 
@@ -210,13 +202,13 @@ func TestCoverLinestring(t *testing.T) {
 	}
 
 	tiles, _ := CoverLinestring(points, 14)
-	expectedTiles := NewTileMap([]Tile{
+	expectedTiles := FromTiles([]Tile{
 		Tile{8593, 5747, 14},
 		Tile{8593, 5748, 14},
 		Tile{8593, 5749, 14},
 	})
 
 	if !reflect.DeepEqual(tiles, expectedTiles) {
-		t.Error("Unexpected tiles", tiles)
+		t.Error("Unexpected tiles", tiles.ToTiles())
 	}
 }

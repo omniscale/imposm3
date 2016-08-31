@@ -71,8 +71,7 @@ func Diff() {
 	osmCache.Close()
 	diffCache.Close()
 
-	//TODO: Make file to write to configurable
-	f, err := os.Create("/tmp/tiles.txt")
+	f, err := os.Create(config.DiffOptions.TileList)
 	defer f.Close()
 	expireor.WriteTiles(f)
 }

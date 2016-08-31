@@ -2,14 +2,10 @@ package expire
 
 import (
 	"fmt"
-	"math"
-	"sort"
-)
+	"io"
 
-type TileFraction struct {
-	X float64
-	Y float64
-}
+	"github.com/omniscale/imposm3/element"
+)
 
 type Tile struct {
 	X int
@@ -17,21 +13,20 @@ type Tile struct {
 	Z int
 }
 
-func (t Tile) toID() int {
-	dim := 2 * (1 << uint(t.Z))
-	return ((dim*t.Y + t.X) * 32) + t.Z
+func NewTile(x, y float64, z int) Tile {
+	return Tile{X: int(x), Y: int(y), Z: z}
 }
 
-func fromID(id int) Tile {
-	z := id % 32
-	dim := 2 * (1 << uint(z))
-	xy := ((id - z) / 32)
-	x := xy % dim
-	y := ((xy - x) / dim) % dim
-	return Tile{x, y, z}
-}
+type ByID []Tile
 
-type TileID int
+func (t ByID) Len() int           { return len(t) }
+func (t ByID) Swap(i, j int)      { t[i], t[j] = t[j], t[i] }
+func (t ByID) Less(i, j int) bool { return t[i].toID() < t[j].toID() }
+
+type TileFraction struct {
+	X float64
+	Y float64
+}
 
 type ByYX []TileFraction
 
@@ -41,151 +36,52 @@ func (t ByYX) Less(i, j int) bool {
 	return t[i].Y < t[j].Y || (t[i].Y == t[j].Y && t[i].X < t[j].X)
 }
 
-func PointToTileFraction(lon, lat float64, zoomLevel int) TileFraction {
-	d2r := math.Pi / 180
-	z2 := math.Pow(2, float64(zoomLevel))
-	sin := math.Sin(lat * d2r)
-
-	return TileFraction{
-		X: z2 * (lon/360 + 0.5),
-		Y: z2 * (0.5 - 0.25*math.Log((1+sin)/(1-sin))/math.Pi),
+// The tile expireor keeps a list of dirty XYZ tiles
+// that are covered by the expired polygons, linestring and points
+func NewTileExpireor(maxZoom int) TileExpireor {
+	return TileExpireor{
+		tiles:   make(TileHash),
+		maxZoom: maxZoom,
 	}
 }
 
-type Point struct {
-	lon float64
-	lat float64
+type TileExpireor struct {
+	// Space efficient tile store
+	tiles TileHash
+	// Max zoom level to evaluate
+	maxZoom int
 }
 
-func CoverPolygon(closedLinestring []Point, zoom int) map[int]Tile {
-	intersections := []TileFraction{}
-	tiles, ring := CoverLinestring(closedLinestring, zoom)
-	fmt.Printf("Ring: %v\n", ring)
-
-	j := 0
-	k := len(ring) - 1
-	for j < len(ring) {
-		fmt.Printf("j: %v k: %v \n", j, k)
-		m := (j + 1) % len(ring)
-		y := ring[j].Y
-
-		//localMinimum := y <= ring[k].Y && y <= ring[m].Y
-		//localMaximum := y >= ring[k].Y && y >= ring[m].Y
-		//isDuplicate := y == ring[m].Y
-
-		type TileHash map[int]Tile
-		if (y > ring[k].Y || y > ring[m].Y) && // not local minimum
-			(y < ring[k].Y || y < ring[m].Y) && // not local maximum
-			y != ring[m].Y {
-
-			intersections = append(intersections, ring[j])
-		}
-
-		/*if !localMinimum && !localMaximum && !isDuplicate {
-			intersections = append(intersections, ring[j])
-		}*/
-
-		k = j
-		j++
+func (te *TileExpireor) ExpireLinestring(nodes []element.Node) {
+	linestring := []Point{}
+	//TODO: If we would not have Point we could save this conversion
+	for _, node := range nodes {
+		linestring = append(linestring, Point{node.Long, node.Lat})
 	}
 
-	sort.Sort(ByYX(intersections))
-	fmt.Printf("Intersections: %v\n", intersections)
-
-	for i := 0; i < len(intersections); i += 2 {
-		// fill tiles between pairs of intersections
-		y := intersections[i].Y
-		for x := intersections[i].X + 1; x < intersections[i+1].X; x++ {
-			tile := Tile{int(x), int(y), zoom}
-			tiles[tile.toID()] = tile
-		}
-	}
-	return tiles
+	tiles, _ := CoverLinestring(linestring, te.maxZoom)
+	te.tiles.MergeTiles(tiles)
 }
 
-// Find minimum set of tiles for the given zoom level that cover a linestring
-func CoverLinestring(points []Point, zoom int) (map[int]Tile, []TileFraction) {
-	tiles := map[int]Tile{}
-	ring := []TileFraction{}
-	prev := TileFraction{}
-
-	var x, y float64
-	for i := 0; i < len(points)-1; i++ {
-		start := PointToTileFraction(points[i].lon, points[i].lat, zoom)
-		stop := PointToTileFraction(points[i+1].lon, points[i+1].lat, zoom)
-
-		//Calculate distance between points
-		d := TileFraction{stop.X - start.X, stop.Y - start.Y}
-
-		//Skip if start and stop are the same
-		if d.Y == 0 && d.X == 0 {
-			continue
-		}
-
-		x = math.Floor(start.X)
-		y = math.Floor(start.Y)
-
-		//Check if we already found the tile for this way
-		sameAsPrevious := x == prev.X && y == prev.Y
-		if !sameAsPrevious {
-			tile := Tile{int(x), int(y), zoom}
-			tiles[tile.toID()] = tile
-			ring = append(ring, TileFraction{x, y})
-			prev = TileFraction{x, y}
-		}
-
-		//TODO: What is sx?
-		sx := -1.0
-		if d.X > 0 {
-			sx = 1.0
-		}
-		sy := -1.0
-		if d.Y > 0 {
-			sy = 1.0
-		}
-
-		tMaxX := math.Abs((x - start.X) / d.X)
-		if d.X > 0 {
-			tMaxX = math.Abs((1 + x - start.X) / d.X)
-		}
-
-		tMaxY := math.Abs((y - start.Y) / d.Y)
-		if d.Y > 0 {
-			tMaxY = math.Abs((1 + y - start.Y) / d.Y)
-		}
-
-		td := TileFraction{math.Abs(sx / d.X), math.Abs(sy / d.Y)}
-		for tMaxX < 1 || tMaxY < 1 {
-			if tMaxX < tMaxY {
-				tMaxX += td.X
-				x += sx
-			} else {
-				tMaxY += td.Y
-				y += sy
-			}
-
-			tile := Tile{int(x), int(y), zoom}
-			tiles[tile.toID()] = tile
-			if y != prev.Y {
-				ring = append(ring, TileFraction{x, y})
-			}
-
-			prev = TileFraction{x, y}
-		}
+func (te *TileExpireor) ExpirePolygon(nodes []element.Node) {
+	linearRing := []Point{}
+	//TODO: If we would not have Point we could save this conversion
+	for _, node := range nodes {
+		linearRing = append(linearRing, Point{node.Long, node.Lat})
 	}
 
-	if y == ring[0].Y {
-		ring = ring[:len(ring)-1]
-	}
-
-	return tiles, ring
+	tiles := CoverPolygon(linearRing, te.maxZoom)
+	te.tiles.MergeTiles(tiles)
 }
 
-func PointToTile(lon, lat float64, zoomLevel int) Tile {
-	tf := PointToTileFraction(lon, lat, zoomLevel)
-	return Tile{
-		X: int(tf.X),
-		Y: int(tf.Y),
-		Z: zoomLevel,
+func (te *TileExpireor) Expire(lon, lat float64) {
+	tile := CoverPoint(lon, lat, te.maxZoom)
+	te.tiles.AddTile(tile)
+}
+
+func (te *TileExpireor) WriteTiles(w io.Writer) {
+	for id, _ := range te.tiles {
+		tile := fromID(id)
+		fmt.Fprintf(w, "%d/%d/%d\n", tile.X, tile.Y, tile.Z)
 	}
 }
