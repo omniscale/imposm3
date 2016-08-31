@@ -57,8 +57,7 @@ func Diff() {
 		log.Fatal("diff cache: ", err)
 	}
 
-	//TODO: Somehow receive zoom level from config
-	expireor := expire.NewTileExpireor(14)
+	expireor := expire.NewTileExpireor(config.DiffOptions.MaxZoom)
 	for _, oscFile := range config.DiffFlags.Args() {
 		err := Update(oscFile, geometryLimiter, &expireor, osmCache, diffCache, false)
 		if err != nil {

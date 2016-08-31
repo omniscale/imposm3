@@ -141,6 +141,7 @@ type _ImportOptions struct {
 
 type _DiffOptions struct {
 	TileList string
+	MaxZoom  int
 }
 
 var BaseOptions = _BaseOptions{}
@@ -180,8 +181,8 @@ func init() {
 	DiffFlags.Usage = UsageDiff
 
 	addBaseFlags(DiffFlags)
-	//TODO: What is a smart default here? Just none?
 	DiffFlags.StringVar(&DiffOptions.TileList, "tilelist", "", "expired tiles")
+	DiffFlags.IntVar(&DiffOptions.MaxZoom, "maxzoom", 14, "max expired tile zoom level")
 
 	addBaseFlags(ImportFlags)
 	ImportFlags.BoolVar(&ImportOptions.Overwritecache, "overwritecache", false, "overwritecache")
