@@ -14,6 +14,11 @@ func (th TileHash) MergeTiles(other TileHash) {
 	}
 }
 
+func (th TileHash) TileExists(t Tile) bool {
+	_, ok := th[t.toID()]
+	return ok
+}
+
 func FromTiles(tiles []Tile) TileHash {
 	th := TileHash{}
 	for _, t := range tiles {
@@ -43,4 +48,15 @@ func fromID(id int) Tile {
 func (t Tile) toID() int {
 	dim := 2 * (1 << uint(t.Z))
 	return ((dim*t.Y + t.X) * 32) + t.Z
+}
+
+func (th TileHash) CalculateParents() {
+	for id, _ := range th {
+		tile := fromID(id)
+		parent := tile
+		for parent.Z > 0 {
+			parent = parent.Parent()
+			th.AddTile(parent)
+		}
+	}
 }

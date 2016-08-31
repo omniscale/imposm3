@@ -21,3 +21,25 @@ func TestWriteTiles(t *testing.T) {
 		t.Error("Unexpected tiles were written", buf.String())
 	}
 }
+
+type tilePair struct {
+	in  Tile
+	out Tile
+}
+
+var parentTests = []tilePair{
+	{Tile{5, 10, 10}, Tile{2, 5, 9}},
+	{Tile{486, 332, 10}, Tile{243, 166, 9}},
+}
+
+func TestParent(t *testing.T) {
+	for _, tp := range parentTests {
+		tile := tp.in
+		parent := tile.Parent()
+
+		if parent != tp.out {
+			t.Error("Wrong parent ", parent, " did not match ", tp.out)
+		}
+
+	}
+}

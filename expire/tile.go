@@ -105,3 +105,20 @@ func (te *TileExpireor) WriteTiles(w io.Writer) {
 		fmt.Fprintf(w, "%d/%d/%d\n", tile.X, tile.Y, tile.Z)
 	}
 }
+
+func (t Tile) Parent() Tile {
+	// top left
+	if t.X%2 == 0 && t.Y%2 == 0 {
+		return Tile{t.X / 2, t.Y / 2, t.Z - 1}
+	}
+	// bottom left
+	if (t.X%2 == 0) && !(t.Y%2 == 0) {
+		return Tile{t.X / 2, (t.Y - 1) / 2, t.Z - 1}
+	}
+	// top right
+	if !(t.X%2 == 0) && (t.Y%2 == 0) {
+		return Tile{(t.X - 1) / 2, (t.Y) / 2, t.Z - 1}
+	}
+	// bottom right
+	return Tile{(t.X - 1) / 2, (t.Y - 1) / 2, t.Z - 1}
+}
