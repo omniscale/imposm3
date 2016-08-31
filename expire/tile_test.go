@@ -4,19 +4,15 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/geom/geojson"
 )
 
 func TestWriteTiles(t *testing.T) {
-	expected := "8593/5747/14\n8593/5748/14\n8593/5749/14\n"
-	linestring := []element.Node{
-		element.Node{Long: 8.826313018798828, Lat: 47.22796198584928},
-		element.Node{Long: 8.82596969604492, Lat: 47.20755789924751},
-		element.Node{Long: 8.826141357421875, Lat: 47.194845099780174},
-	}
+	expected := "8627/5753/14\n"
+	point := geojson.Point{1065162.58495039, 5965498.83778885}
 
 	expireor := NewTileExpireor(14)
-	expireor.ExpireLinestring(linestring)
+	expireor.Expire(point.Long, point.Lat)
 
 	buf := new(bytes.Buffer)
 	expireor.WriteTiles(buf)
