@@ -72,14 +72,15 @@ func Diff() {
 	diffCache.Close()
 
 	if config.DiffOptions.TileList != "" {
-		f, err := os.Create(config.DiffOptions.TileList)
+		tileListPath, _ := filepath.Abs(config.DiffOptions.TileList)
+		f, err := os.Create(tileListPath)
 		if err != nil {
 			log.Fatal("tile list: ", err)
 		}
 		defer f.Close()
 		expireor.WriteTiles(f)
 		f.Sync()
-		log.Print("Wrote list of expired tiles to %s", f.Name())
+		log.Printf("Wrote list of expired tiles to %s", config.DiffOptions.TileList)
 	}
 }
 

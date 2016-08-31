@@ -3,6 +3,8 @@ package expire
 import (
 	"fmt"
 	"io"
+	"math"
+	"sync"
 
 	"github.com/omniscale/imposm3/element"
 )
@@ -50,33 +52,54 @@ type TileExpireor struct {
 	tiles TileHash
 	// Max zoom level to evaluate
 	maxZoom int
+	// Allow writing to tile hash
+	tileAccess sync.Mutex
 }
 
 func (te *TileExpireor) ExpireLinestring(nodes []element.Node) {
 	linestring := []Point{}
 	//TODO: If we would not have Point we could save this conversion
 	for _, node := range nodes {
-		linestring = append(linestring, Point{node.Long, node.Lat})
+		linestring = append(linestring, ToPoint(node))
 	}
 
 	tiles, _ := CoverLinestring(linestring, te.maxZoom)
+	te.tileAccess.Lock()
 	te.tiles.MergeTiles(tiles)
+	te.tileAccess.Unlock()
+}
+
+func Reproject(lon, lat float64) (float64, float64) {
+	return lon * 180 / 20037508.34, math.Atan(math.Exp(lat*math.Pi/20037508.34))*360/math.Pi - 90
+}
+
+// TODO: Adapt algorithms to work directly with meters instead
+// of reprojecting it. Still don't get the projections quite.
+func ToPoint(n element.Node) Point {
+	lon, lat := Reproject(n.Long, n.Lat)
+	return Point{lon, lat}
 }
 
 func (te *TileExpireor) ExpirePolygon(nodes []element.Node) {
 	linearRing := []Point{}
 	//TODO: If we would not have Point we could save this conversion
 	for _, node := range nodes {
-		linearRing = append(linearRing, Point{node.Long, node.Lat})
+		linearRing = append(linearRing, ToPoint(node))
 	}
 
 	tiles := CoverPolygon(linearRing, te.maxZoom)
+	te.tileAccess.Lock()
 	te.tiles.MergeTiles(tiles)
+	te.tileAccess.Unlock()
 }
 
 func (te *TileExpireor) Expire(lon, lat float64) {
+	lon, lat = Reproject(lon, lat)
 	tile := CoverPoint(lon, lat, te.maxZoom)
+	fmt.Println(lon, lat)
+	te.tileAccess.Lock()
 	te.tiles.AddTile(tile)
+	te.tileAccess.Unlock()
 }
 
 func (te *TileExpireor) WriteTiles(w io.Writer) {
