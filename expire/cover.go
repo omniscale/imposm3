@@ -120,7 +120,7 @@ func CoverLinestring(points geojson.LineString, zoom int) (TileHash, []TileFract
 		}
 	}
 
-	if y == ring[0].Y {
+	if len(ring) > 0 && y == ring[0].Y {
 		ring = ring[:len(ring)-1]
 	}
 
