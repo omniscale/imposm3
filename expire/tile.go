@@ -3,11 +3,11 @@ package expire
 import (
 	"fmt"
 	"io"
-	"math"
 	"sync"
 
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/geom/geojson"
+	"github.com/omniscale/imposm3/proj"
 )
 
 type Tile struct {
@@ -60,7 +60,8 @@ type TileExpireor struct {
 func (te *TileExpireor) ExpireLinestring(nodes []element.Node) {
 	linestring := geojson.LineString{}
 	for _, n := range nodes {
-		linestring = append(linestring, reproject(n.Long, n.Lat))
+		long, lat := proj.MercToWgs(n.Long, n.Lat)
+		linestring = append(linestring, geojson.Point{long, lat})
 	}
 
 	tiles, _ := CoverLinestring(linestring, te.maxZoom)
@@ -69,18 +70,11 @@ func (te *TileExpireor) ExpireLinestring(nodes []element.Node) {
 	te.tileAccess.Unlock()
 }
 
-// Reproject from spherical mercator https://epsg.io/3857 to  http://epsg.io/4326
-func reproject(lon, lat float64) geojson.Point {
-	return geojson.Point{
-		Long: lon * 180 / 20037508.34,
-		Lat:  math.Atan(math.Exp(lat*math.Pi/20037508.34))*360/math.Pi - 90,
-	}
-}
-
 func (te *TileExpireor) ExpirePolygon(nodes []element.Node) {
 	outerRing := geojson.LineString{}
 	for _, n := range nodes {
-		outerRing = append(outerRing, reproject(n.Long, n.Lat))
+		long, lat := proj.MercToWgs(n.Long, n.Lat)
+		outerRing = append(outerRing, geojson.Point{long, lat})
 	}
 	poly := geojson.Polygon{outerRing}
 	tiles := CoverPolygon(poly, te.maxZoom)
@@ -90,9 +84,9 @@ func (te *TileExpireor) ExpirePolygon(nodes []element.Node) {
 	te.tileAccess.Unlock()
 }
 
-func (te *TileExpireor) Expire(lon, lat float64) {
-	point := reproject(lon, lat)
-	tile := CoverPoint(point, te.maxZoom)
+func (te *TileExpireor) Expire(long, lat float64) {
+	long, lat = proj.MercToWgs(long, lat)
+	tile := CoverPoint(geojson.Point{long, lat}, te.maxZoom)
 
 	te.tileAccess.Lock()
 	te.tiles.AddTile(tile)
