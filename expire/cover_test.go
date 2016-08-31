@@ -123,22 +123,10 @@ func TestCoverSpikePolygon(t *testing.T) {
 	}}
 	tiles := CoverPolygon(points, 6)
 	expectedTiles := FromTiles([]Tile{
-		Tile{35, 29, 6},
-		Tile{34, 30, 6},
-		Tile{35, 30, 6},
-		Tile{36, 30, 6},
-		Tile{37, 30, 6},
-		Tile{34, 31, 6},
-		Tile{35, 31, 6},
-		Tile{36, 31, 6},
-		Tile{37, 31, 6},
-		Tile{34, 32, 6},
-		Tile{35, 32, 6},
-		Tile{36, 32, 6},
-		Tile{34, 33, 6},
-		Tile{35, 33, 6},
-		Tile{36, 33, 6},
-		Tile{36, 34, 6},
+		{35, 29, 6}, {34, 30, 6}, {35, 30, 6}, {36, 30, 6}, {37, 30, 6},
+		{34, 31, 6}, {35, 31, 6}, {36, 31, 6}, {37, 31, 6}, {34, 32, 6},
+		{35, 32, 6}, {36, 32, 6}, {34, 33, 6}, {35, 33, 6}, {36, 33, 6},
+		{36, 34, 6},
 	})
 	if !reflect.DeepEqual(tiles, expectedTiles) {
 		t.Error("Unexpected tiles", tiles.ToTiles())
@@ -149,39 +137,21 @@ func TestCoverLinestringLinearRing(t *testing.T) {
 	outerRing := Building[0]
 	tiles, ring := CoverLinestring(outerRing, 20)
 	expectedTiles := FromTiles([]Tile{
-		Tile{299564, 401224, 20},
-		Tile{299564, 401225, 20},
-		Tile{299565, 401225, 20},
-		Tile{299566, 401225, 20},
-		Tile{299566, 401224, 20},
-		Tile{299566, 401223, 20},
-		Tile{299566, 401222, 20},
-		Tile{299565, 401222, 20},
-		Tile{299565, 401221, 20},
-		Tile{299564, 401221, 20},
-		Tile{299564, 401220, 20},
-		Tile{299563, 401220, 20},
-		Tile{299562, 401220, 20},
-		Tile{299563, 401221, 20},
-		Tile{299564, 401222, 20},
-		Tile{299565, 401223, 20},
-		Tile{299564, 401223, 20},
+		{299564, 401224, 20}, {299564, 401225, 20}, {299565, 401225, 20},
+		{299566, 401225, 20}, {299566, 401224, 20}, {299566, 401223, 20},
+		{299566, 401222, 20}, {299565, 401222, 20}, {299565, 401221, 20},
+		{299564, 401221, 20}, {299564, 401220, 20}, {299563, 401220, 20},
+		{299562, 401220, 20}, {299563, 401221, 20}, {299564, 401222, 20},
+		{299565, 401223, 20}, {299564, 401223, 20},
 	})
 
 	if !reflect.DeepEqual(tiles, expectedTiles) {
 		t.Error("Unexpected tiles", tiles.ToTiles())
 	}
 	expectedRing := []TileFraction{
-		TileFraction{299564, 401224},
-		TileFraction{299564, 401225},
-		TileFraction{299566, 401224},
-		TileFraction{299566, 401223},
-		TileFraction{299566, 401222},
-		TileFraction{299565, 401221},
-		TileFraction{299564, 401220},
-		TileFraction{299563, 401221},
-		TileFraction{299564, 401222},
-		TileFraction{299565, 401223},
+		{299564, 401224}, {299564, 401225}, {299566, 401224}, {299566, 401223},
+		{299566, 401222}, {299565, 401221}, {299564, 401220}, {299563, 401221},
+		{299564, 401222}, {299565, 401223},
 	}
 	if !reflect.DeepEqual(ring, expectedRing) {
 		t.Error("Unexpected ring", tiles.ToTiles())
@@ -192,24 +162,12 @@ func TestCoverLinestringLinearRing(t *testing.T) {
 func TestCoverPolygonBuilding(t *testing.T) {
 	tiles := CoverPolygon(Building, 20)
 	expectedTiles := FromTiles([]Tile{
-		Tile{299565, 401224, 20},
-		Tile{299564, 401224, 20},
-		Tile{299564, 401225, 20},
-		Tile{299565, 401225, 20},
-		Tile{299566, 401225, 20},
-		Tile{299566, 401224, 20},
-		Tile{299566, 401223, 20},
-		Tile{299566, 401222, 20},
-		Tile{299565, 401222, 20},
-		Tile{299565, 401221, 20},
-		Tile{299564, 401221, 20},
-		Tile{299564, 401220, 20},
-		Tile{299563, 401220, 20},
-		Tile{299562, 401220, 20},
-		Tile{299563, 401221, 20},
-		Tile{299564, 401222, 20},
-		Tile{299565, 401223, 20},
-		Tile{299564, 401223, 20},
+		{299565, 401224, 20}, {299564, 401224, 20}, {299564, 401225, 20},
+		{299565, 401225, 20}, {299566, 401225, 20}, {299566, 401224, 20},
+		{299566, 401223, 20}, {299566, 401222, 20}, {299565, 401222, 20},
+		{299565, 401221, 20}, {299564, 401221, 20}, {299564, 401220, 20},
+		{299563, 401220, 20}, {299562, 401220, 20}, {299563, 401221, 20},
+		{299564, 401222, 20}, {299565, 401223, 20}, {299564, 401223, 20},
 	})
 	if !reflect.DeepEqual(tiles, expectedTiles) {
 		t.Error("Unexpected tiles for building polygon", tiles.ToTiles())
@@ -227,10 +185,8 @@ func TestCoverPolygon(t *testing.T) {
 	tiles := CoverPolygon(poly, 16)
 
 	expectedTiles := FromTiles([]Tile{
-		Tile{18216, 26447, 16},
-		Tile{18217, 26447, 16},
-		Tile{18217, 26446, 16},
-		Tile{18216, 26446, 16},
+		Tile{18216, 26447, 16}, Tile{18217, 26447, 16},
+		Tile{18217, 26446, 16}, Tile{18216, 26446, 16},
 	})
 	if !reflect.DeepEqual(tiles, expectedTiles) {
 		t.Error("Unexpected tiles", tiles.ToTiles())
@@ -246,9 +202,7 @@ func TestCoverLinestring(t *testing.T) {
 
 	tiles, _ := CoverLinestring(points, 14)
 	expectedTiles := FromTiles([]Tile{
-		Tile{8593, 5747, 14},
-		Tile{8593, 5748, 14},
-		Tile{8593, 5749, 14},
+		{8593, 5747, 14}, {8593, 5748, 14}, {8593, 5749, 14},
 	})
 
 	if !reflect.DeepEqual(tiles, expectedTiles) {
