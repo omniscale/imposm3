@@ -16,3 +16,7 @@ func ExpireNodes(expireor Expireor, nodes []element.Node) {
 		expireor.ExpireLinestring(nodes)
 	}
 }
+
+type NoExpireor struct{}
+
+func (_ NoExpireor) Expire(long, lat float64) {}

@@ -41,9 +41,9 @@ func (t ByYX) Less(i, j int) bool {
 
 // The tile expireor keeps a list of dirty XYZ tiles
 // that are covered by the expired polygons, linestring and points
-func NewTileExpireor(maxZoom int) TileExpireor {
-	return TileExpireor{
-		tiles:   make(TileHash),
+func NewTileExpireor(maxZoom int) *TileExpireor {
+	return &TileExpireor{
+		tiles:   make(TileHash, 200),
 		minZoom: 0,
 		maxZoom: maxZoom,
 	}

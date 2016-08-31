@@ -57,9 +57,14 @@ func Diff() {
 		log.Fatal("diff cache: ", err)
 	}
 
-	expireor := expire.NewTileExpireor(config.DiffOptions.MaxZoom)
+	tileExpireor := expire.NewTileExpireor(config.DiffOptions.MaxZoom)
+	var expireor expire.Expireor = expire.NoExpireor{}
+	if config.DiffOptions.TileList != "" {
+		expireor = tileExpireor
+	}
+
 	for _, oscFile := range config.DiffFlags.Args() {
-		err := Update(oscFile, geometryLimiter, &expireor, osmCache, diffCache, false)
+		err := Update(oscFile, geometryLimiter, expireor, osmCache, diffCache, false)
 		if err != nil {
 			osmCache.Close()
 			diffCache.Close()
@@ -71,17 +76,21 @@ func Diff() {
 	diffCache.Close()
 
 	if config.DiffOptions.TileList != "" {
-		tileListPath, _ := filepath.Abs(config.DiffOptions.TileList)
-		f, err := os.Create(tileListPath)
-		if err != nil {
-			log.Fatal("tile list: ", err)
-		}
-		defer f.Close()
-		expireor.CalculateParentTiles()
-		expireor.WriteTiles(f)
-		f.Sync()
-		log.Printf("Wrote list of expired tiles to %s", config.DiffOptions.TileList)
+		writeTileList(tileExpireor)
 	}
+}
+
+func writeTileList(expireor *expire.TileExpireor) {
+	tileListPath, _ := filepath.Abs(config.DiffOptions.TileList)
+	f, err := os.Create(tileListPath)
+	if err != nil {
+		log.Fatal("tile list: ", err)
+	}
+	defer f.Close()
+	expireor.CalculateParentTiles()
+	expireor.WriteTiles(f)
+	f.Sync()
+	log.Printf("Wrote list of expired tiles to %s", config.DiffOptions.TileList)
 }
 
 func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expireor, osmCache *cache.OSMCache, diffCache *cache.DiffCache, force bool) error {
