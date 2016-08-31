@@ -3,6 +3,7 @@ package diff
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
 
@@ -56,8 +57,10 @@ func Diff() {
 		log.Fatal("diff cache: ", err)
 	}
 
+	//TODO: Somehow receive zoom level from config
+	expireor := expire.NewTileExpireor(14)
 	for _, oscFile := range config.DiffFlags.Args() {
-		err := Update(oscFile, geometryLimiter, nil, osmCache, diffCache, false)
+		err := Update(oscFile, geometryLimiter, &expireor, osmCache, diffCache, false)
 		if err != nil {
 			osmCache.Close()
 			diffCache.Close()
@@ -67,6 +70,11 @@ func Diff() {
 	// explicitly Close since os.Exit prevents defers
 	osmCache.Close()
 	diffCache.Close()
+
+	//TODO: Make file to write to configurable
+	f, err := os.Create("/tmp/tiles.txt")
+	defer f.Close()
+	expireor.WriteTiles(f)
 }
 
 func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expireor, osmCache *cache.OSMCache, diffCache *cache.DiffCache, force bool) error {

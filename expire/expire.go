@@ -1,6 +1,9 @@
 package expire
 
 import (
+	"fmt"
+	"io"
+
 	"github.com/omniscale/imposm3/element"
 )
 
@@ -35,4 +38,11 @@ func (te *TileExpireor) DirtyTiles() []Tile {
 func (te *TileExpireor) Expire(lon, lat float64) {
 	// TODO: Zoom level is hardcoded
 	te.MarkDirtyTile(PointToTile(lon, lat, 14))
+}
+
+func (te *TileExpireor) WriteTiles(w io.Writer) {
+	for id, _ := range te.tiles {
+		tile := fromID(id)
+		fmt.Fprintf(w, "%d/%d/%d\n", tile.X, tile.Y, tile.Z)
+	}
 }
