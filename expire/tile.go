@@ -44,6 +44,7 @@ func (t ByYX) Less(i, j int) bool {
 func NewTileExpireor(maxZoom int) TileExpireor {
 	return TileExpireor{
 		tiles:   make(TileHash),
+		minZoom: 0,
 		maxZoom: maxZoom,
 	}
 }
@@ -51,6 +52,8 @@ func NewTileExpireor(maxZoom int) TileExpireor {
 type TileExpireor struct {
 	// Space efficient tile store
 	tiles TileHash
+	// Min zoom level to calculate parents for
+	minZoom int
 	// Max zoom level to evaluate
 	maxZoom int
 	// Allow writing to tile hash
@@ -91,6 +94,10 @@ func (te *TileExpireor) Expire(long, lat float64) {
 	te.tileAccess.Lock()
 	te.tiles.AddTile(tile)
 	te.tileAccess.Unlock()
+}
+
+func (te *TileExpireor) CalculateParentTiles() {
+	te.tiles.CalculateParents(te.minZoom)
 }
 
 func (te *TileExpireor) WriteTiles(w io.Writer) {

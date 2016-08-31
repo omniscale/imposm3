@@ -77,6 +77,7 @@ func Diff() {
 			log.Fatal("tile list: ", err)
 		}
 		defer f.Close()
+		expireor.CalculateParentTiles()
 		expireor.WriteTiles(f)
 		f.Sync()
 		log.Printf("Wrote list of expired tiles to %s", config.DiffOptions.TileList)

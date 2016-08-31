@@ -28,7 +28,7 @@ func TestCalculateParents(t *testing.T) {
 		t.Error("Length of TileHash should be 1 after adding a tile")
 	}
 
-	th.CalculateParents()
+	th.CalculateParents(0)
 
 	if len(th) != 11 {
 		t.Error("Length of TileHash should be 11 after calculating all parents, it is ", len(th))

@@ -50,11 +50,11 @@ func (t Tile) toID() int {
 	return ((dim*t.Y + t.X) * 32) + t.Z
 }
 
-func (th TileHash) CalculateParents() {
+func (th TileHash) CalculateParents(minZoom int) {
 	for id, _ := range th {
 		tile := fromID(id)
 		parent := tile
-		for parent.Z > 0 {
+		for parent.Z > minZoom {
 			parent = parent.Parent()
 			th.AddTile(parent)
 		}
