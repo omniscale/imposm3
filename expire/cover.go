@@ -7,32 +7,36 @@ import (
 	"github.com/omniscale/imposm3/geom/geojson"
 )
 
-// Calculate all tiles covered by the linear ring of the polygon
-// And the tiles enclosed by it
-// TODO: Only supports calculating the outer ring
+// Calculate all tiles covered by the linear rings of the polygon
+// and the tiles enclosed by it
 func CoverPolygon(poly geojson.Polygon, zoom int) TileHash {
 	if len(poly) == 0 {
 		return TileHash{}
 	}
-	outerRing := poly[0]
+
 	intersections := []TileFraction{}
-	tiles, ring := CoverLinestring(outerRing, zoom)
+	tiles := make(TileHash, 50)
 
-	j := 0
-	k := len(ring) - 1
-	for j < len(ring) {
-		m := (j + 1) % len(ring)
-		y := ring[j].Y
+	for _, linearRing := range poly {
+		coveredTiles, ring := CoverLinestring(linearRing, zoom)
+		tiles.MergeTiles(coveredTiles)
 
-		localMinimum := y <= ring[k].Y && y <= ring[m].Y
-		localMaximum := y >= ring[k].Y && y >= ring[m].Y
-		isDuplicate := y == ring[m].Y
-		if !localMinimum && !localMaximum && !isDuplicate {
-			intersections = append(intersections, ring[j])
+		j := 0
+		k := len(ring) - 1
+		for j < len(ring) {
+			m := (j + 1) % len(ring)
+			y := ring[j].Y
+
+			localMinimum := y <= ring[k].Y && y <= ring[m].Y
+			localMaximum := y >= ring[k].Y && y >= ring[m].Y
+			isDuplicate := y == ring[m].Y
+			if !localMinimum && !localMaximum && !isDuplicate {
+				intersections = append(intersections, ring[j])
+			}
+
+			k = j
+			j++
 		}
-
-		k = j
-		j++
 	}
 
 	sort.Sort(ByYX(intersections))
