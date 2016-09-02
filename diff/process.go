@@ -157,6 +157,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 		tagmapping.LineStringMatcher(),
 		tagmapping.PolygonMatcher(),
 	)
+	deleter.SetExpireor(expireor)
 
 	progress := stats.NewStatsReporter()
 
