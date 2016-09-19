@@ -106,6 +106,8 @@ func readAndParseHeaderBlock(pos block) (*pbfHeader, error) {
 	timestamp := header.GetOsmosisReplicationTimestamp()
 	result.Time = time.Unix(timestamp, 0 /* nanoseconds */)
 	result.Sequence = header.GetOsmosisReplicationSequenceNumber()
+	result.RequiredFeatures = header.RequiredFeatures
+	result.OptionalFeatures = header.OptionalFeatures
 	return result, nil
 }
 
@@ -119,6 +121,9 @@ type Pbf struct {
 type pbfHeader struct {
 	Time     time.Time
 	Sequence int64
+
+	RequiredFeatures []string
+	OptionalFeatures []string
 }
 
 func Open(filename string) (f *Pbf, err error) {
