@@ -15,8 +15,10 @@ package binary
 // etc.) are converted to a single ASCII control char (0x01-0x1f)
 
 import (
-	"github.com/omniscale/imposm3/element"
+	"fmt"
 	"unicode/utf8"
+
+	"github.com/omniscale/imposm3/element"
 )
 
 type codepoint rune
@@ -82,7 +84,12 @@ func tagsFromArray(arr []string) element.Tags {
 		} else if len(arr[i]) > 0 && arr[i][0] < 32 {
 			result[codePointToCommonKey[arr[i][0]]] = arr[i][1:]
 		} else {
-			result[arr[i]] = arr[i+1]
+			if len(arr) > (i + 1) {
+				result[arr[i]] = arr[i+1]
+			} else {
+				fmt.Println("##### Internal cache problem (github.com/omniscale/imposm3/issues/122) ###")
+				return element.Tags{}
+			}
 			i++
 		}
 	}
