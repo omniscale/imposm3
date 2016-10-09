@@ -112,6 +112,19 @@ func tagsAsArray(tags element.Tags) []string {
 			result = append(result, string(codepoint)+val)
 			continue
 		}
+		// check illegal OSM keys starting with codepoint < 32
+		// see https://github.com/omniscale/imposm3/issues/122
+		if len(key) > 0 && key[0] < 32 {
+			// found ->  dropping
+			continue
+		}
+		// check illegal OSM keys starting with unicode - used by codepoint
+		if r, size := utf8.DecodeRuneInString(key); size >= 3 &&
+			codepoint(r) >= minCodePoint &&
+			codepoint(r) < nextCodePoint {
+			// found ->  dropping
+			continue
+		}
 		result = append(result, key, val)
 	}
 	return result

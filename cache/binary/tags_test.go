@@ -1,9 +1,10 @@
 package binary
 
 import (
-	"github.com/omniscale/imposm3/element"
 	"sort"
 	"testing"
+
+	"github.com/omniscale/imposm3/element"
 )
 
 func TestTagsAsAndFromArray(t *testing.T) {
@@ -44,5 +45,17 @@ func TestCodePoints(t *testing.T) {
 	}
 	if c := tagsToCodePoint["type"]["associatedStreet"]; c != codepoint('\ue0a5') {
 		t.Fatalf("%x\n", c)
+	}
+}
+
+func TestIllegalOsmKeys(t *testing.T) {
+	// see https://github.com/omniscale/imposm3/issues/122
+	tags := element.Tags{"name": "foo", "\u000A" + "highway": "residential", "\uE000" + "oneway": "yes"}
+	array := tagsAsArray(tags)
+
+	// expecting  only : "name": "foo"
+	// the other 2 tags should be dropped
+	if len(array) != 1 {
+		t.Fatal("invalid length", array)
 	}
 }
