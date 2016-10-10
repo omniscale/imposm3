@@ -15,8 +15,9 @@ package binary
 // etc.) are converted to a single ASCII control char (0x01-0x1f)
 
 import (
-	"github.com/omniscale/imposm3/element"
 	"unicode/utf8"
+
+	"github.com/omniscale/imposm3/element"
 )
 
 type codepoint rune
@@ -37,6 +38,8 @@ const minCodePoint = codepoint('\uE000')
 const maxCodePoint = codepoint('\uF8FF')
 
 var nextCodePoint = codepoint('\uE000')
+
+const escapeRune = '\ufffd' // unicode replacement char
 
 func addTagCodePoint(key, value string) {
 	if nextCodePoint > maxCodePoint {
@@ -71,20 +74,33 @@ func tagsFromArray(arr []string) element.Tags {
 	}
 	result := make(element.Tags)
 	for i := 0; i < len(arr); i += 1 {
-		if r, size := utf8.DecodeRuneInString(arr[i]); size >= 3 &&
-			codepoint(r) >= minCodePoint &&
-			codepoint(r) < nextCodePoint {
-			tag, ok := codePointToTag[codepoint(r)]
-			if !ok {
-				panic("missing tag for codepoint")
+		if r, size := utf8.DecodeRuneInString(arr[i]); size >= 3 {
+			if r == escapeRune {
+				// remove escape rune
+				result[arr[i][size:]] = arr[i+1]
+				i++
+				continue
+			} else if codepoint(r) >= minCodePoint &&
+				codepoint(r) < nextCodePoint {
+				tag, ok := codePointToTag[codepoint(r)]
+				if !ok {
+					panic("missing tag for codepoint")
+				}
+				result[tag.Key] = tag.Value
+				continue
 			}
-			result[tag.Key] = tag.Value
 		} else if len(arr[i]) > 0 && arr[i][0] < 32 {
 			result[codePointToCommonKey[arr[i][0]]] = arr[i][1:]
-		} else {
-			result[arr[i]] = arr[i+1]
-			i++
+			continue
 		}
+		if len(arr) <= i+1 {
+			// notify users affected by #112
+			// TODO remove check in the future to avoid misleading message
+			// if a similar issue shows up
+			panic("Internal cache corrupt, see: https://github.com/omniscale/imposm3/issues/122")
+		}
+		result[arr[i]] = arr[i+1]
+		i++
 	}
 	return result
 }
@@ -95,19 +111,30 @@ func tagsAsArray(tags element.Tags) []string {
 	}
 	result := make([]string, 0, 2*len(tags))
 	for key, val := range tags {
-		if valMap, ok := tagsToCodePoint[key]; ok {
-			if codePoint, ok := valMap[val]; ok {
-				result = append(result, string(codePoint))
-				continue
-			}
-		}
-		if codepoint, ok := commonKeys[key]; ok {
-			result = append(result, string(codepoint)+val)
-			continue
-		}
-		result = append(result, key, val)
+		result = appendTag(result, key, val)
 	}
 	return result
+}
+
+func appendTag(arr []string, key, val string) []string {
+	if valMap, ok := tagsToCodePoint[key]; ok {
+		if codePoint, ok := valMap[val]; ok {
+			return append(arr, string(codePoint))
+		}
+	}
+	if codepoint, ok := commonKeys[key]; ok {
+		return append(arr, string(codepoint)+val)
+	}
+	// escape first char/rune if it is a commonKey/tagCodePoint
+	if key[0] < 32 {
+		key = string(escapeRune) + key
+	} else if r, size := utf8.DecodeRuneInString(key); size >= 3 &&
+		(codepoint(r) >= minCodePoint &&
+			codepoint(r) <= maxCodePoint) ||
+		(r == escapeRune) {
+		key = string(escapeRune) + key
+	}
+	return append(arr, key, val)
 }
 
 func init() {
