@@ -126,12 +126,12 @@ func appendTag(arr []string, key, val string) []string {
 		return append(arr, string(codepoint)+val)
 	}
 	// escape first char/rune if it is a commonKey/tagCodePoint
-	if key[0] < 32 {
+	if len(key) > 0 && key[0] < 32 {
 		key = string(escapeRune) + key
 	} else if r, size := utf8.DecodeRuneInString(key); size >= 3 &&
-		(codepoint(r) >= minCodePoint &&
+		((codepoint(r) >= minCodePoint &&
 			codepoint(r) <= maxCodePoint) ||
-		(r == escapeRune) {
+			(r == escapeRune)) {
 		key = string(escapeRune) + key
 	}
 	return append(arr, key, val)

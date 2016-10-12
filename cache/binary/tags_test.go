@@ -44,11 +44,12 @@ func TestTagsArrayEncoding(t *testing.T) {
 		expected []string
 	}{
 		{
-			[]string{"name", "foo", "highway", "residential", "oneway", "yes"},
+			[]string{"name", "foo", "highway", "residential", "oneway", "yes", "addr:housenumber", ""},
 			[]string{
 				"\x01foo",
 				"\ue001",
 				"\ue008",
+				"\x06",
 			},
 		},
 		{ // ascii control characters are escaped
@@ -72,6 +73,13 @@ func TestTagsArrayEncoding(t *testing.T) {
 				"\ufffd\ufffd\ufffd\ufffd\ue008foo", "bar",
 			},
 		},
+		{ // empty keys are handled #122
+			[]string{"foo", "bar", "", "empty"},
+			[]string{
+				"foo", "bar",
+				"", "empty",
+			},
+		},
 	} {
 		var actual []string
 		for i := 0; i < len(check.tags); i += 2 {
@@ -80,6 +88,11 @@ func TestTagsArrayEncoding(t *testing.T) {
 		if len(check.expected) != len(actual) {
 			t.Errorf("case %d: unexpected tag array %#v != %#v", i, actual, check.expected)
 			continue
+		}
+		for j := range check.expected {
+			if check.expected[j] != actual[j] {
+				t.Errorf("case %d: encoded string %d does not match array %#v != %#v", i, j, actual[j], check.expected[j])
+			}
 		}
 		actualTags := tagsFromArray(actual)
 		expectedTags := make(element.Tags)
