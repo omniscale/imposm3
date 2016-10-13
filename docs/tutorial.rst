@@ -180,7 +180,7 @@ Other options
 Projection
 ~~~~~~~~~~
 
-Imposm uses the the web mercator projection (``EPSG:3857``) for the imports. You can change this with the ``-srid`` option. At the moment only EPSG:3857 and EPSG:4326 are supported.
+Imposm uses the the web mercator projection (``ESPG:3857`` same as``OpenLayers:900913``) for the imports. You can change this with the ``-srid`` option. At the moment only OpenLayers:900913, ESPG:3857 and EPSG:4326 are supported.
 
 
 Diff
