@@ -156,6 +156,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 		tagmapping.PointMatcher(),
 		tagmapping.LineStringMatcher(),
 		tagmapping.PolygonMatcher(),
+		config.BaseOptions.Srid,
 	)
 	deleter.SetExpireor(expireor)
 
