@@ -9,35 +9,60 @@ func (m *Mapping) PointMatcher() NodeMatcher {
 	mappings := make(TagTables)
 	m.mappings(PointTable, mappings)
 	filters := m.ElementFilters()
-	return &tagMatcher{mappings, m.tables(PointTable), filters, false}
+	return &tagMatcher{
+		mappings:   mappings,
+		tables:     m.tables(PointTable),
+		filters:    filters,
+		matchAreas: false,
+	}
 }
 
 func (m *Mapping) LineStringMatcher() WayMatcher {
 	mappings := make(TagTables)
 	m.mappings(LineStringTable, mappings)
 	filters := m.ElementFilters()
-	return &tagMatcher{mappings, m.tables(LineStringTable), filters, false}
+	return &tagMatcher{
+		mappings:   mappings,
+		tables:     m.tables(LineStringTable),
+		filters:    filters,
+		matchAreas: false,
+	}
 }
 
 func (m *Mapping) PolygonMatcher() RelWayMatcher {
 	mappings := make(TagTables)
 	m.mappings(PolygonTable, mappings)
 	filters := m.ElementFilters()
-	return &tagMatcher{mappings, m.tables(PolygonTable), filters, true}
+	return &tagMatcher{
+		mappings:   mappings,
+		tables:     m.tables(PolygonTable),
+		filters:    filters,
+		matchAreas: true,
+	}
 }
 
 func (m *Mapping) RelationMatcher() RelationMatcher {
 	mappings := make(TagTables)
 	m.mappings(RelationTable, mappings)
 	filters := m.ElementFilters()
-	return &tagMatcher{mappings, m.tables(RelationTable), filters, true}
+	return &tagMatcher{
+		mappings:   mappings,
+		tables:     m.tables(RelationTable),
+		filters:    filters,
+		matchAreas: true,
+	}
 }
 
 func (m *Mapping) RelationMemberMatcher() RelationMatcher {
 	mappings := make(TagTables)
 	m.mappings(RelationMemberTable, mappings)
 	filters := m.ElementFilters()
-	return &tagMatcher{mappings, m.tables(RelationMemberTable), filters, true}
+	return &tagMatcher{
+		mappings:   mappings,
+		tables:     m.tables(RelationMemberTable),
+		filters:    filters,
+		matchAreas: true,
+	}
 }
 
 type Match struct {
