@@ -431,9 +431,44 @@ tables:
     - key: ref
       name: ref
       type: string
-    - key: layer
-      name: z_order
+    - name: z_order
       type: wayzorder
+      args:
+        ranks:
+          - disused
+          - raceway
+          - pedestrian
+          - pier
+          - groyne
+          - steps
+          - cycleway
+          - bridleway
+          - footway
+          - service
+          - track
+          - path
+          - monorail
+          - funicular
+          - preserved
+          - tertiary_link
+          - living_street
+          - unclassified
+          - residential
+          - road
+          - secondary_link
+          - tertiary
+          - narrow_gauge
+          - subway
+          - light_rail
+          - tram
+          - rail
+          - secondary
+          - primary_link
+          - primary
+          - trunk_link
+          - trunk
+          - motorway_link
+          - motorway
     - key: access
       name: access
       type: string

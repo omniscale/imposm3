@@ -2,6 +2,7 @@ package mapping
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -32,7 +33,7 @@ func init() {
 		"geometry":             {"geometry", "geometry", Geometry, nil, nil, false},
 		"validated_geometry":   {"validated_geometry", "validated_geometry", Geometry, nil, nil, false},
 		"hstore_tags":          {"hstore_tags", "hstore_string", HstoreString, nil, nil, false},
-		"wayzorder":            {"wayzorder", "int32", WayZOrder, nil, nil, false},
+		"wayzorder":            {"wayzorder", "int32", nil, MakeWayZOrder, nil, false},
 		"pseudoarea":           {"pseudoarea", "float32", PseudoArea, nil, nil, false},
 		"zorder":               {"zorder", "int32", nil, MakeZOrder, nil, false},
 		"enumerate":            {"enumerate", "int32", nil, MakeEnumerate, nil, false},
@@ -230,10 +231,51 @@ func HstoreString(val string, elem *element.OSMElem, geom *geom.Geometry, match 
 	return strings.Join(tags, ", ")
 }
 
-var wayRanks map[string]int
+func MakeWayZOrder(fieldName string, fieldType FieldType, field Field) (MakeValue, error) {
+	if _, ok := field.Args["ranks"]; !ok {
+		return DefaultWayZOrder, nil
+	}
+	ranks, err := decodeEnumArg(field, "ranks")
+	if err != nil {
+		return nil, err
+	}
+	levelOffset := len(ranks)
+
+	defaultRank := 0
+	if val, ok := field.Args["default"].(float64); ok {
+		defaultRank = int(val)
+	}
+
+	wayZOrder := func(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
+		var z int
+		layer, _ := strconv.ParseInt(elem.Tags["layer"], 10, 64)
+		z += int(layer) * levelOffset
+
+		rank, ok := ranks[match.Value]
+		if !ok {
+			z += defaultRank
+		}
+
+		z += rank
+
+		tunnel := elem.Tags["tunnel"]
+		if tunnel == "true" || tunnel == "yes" || tunnel == "1" {
+			z -= levelOffset
+		}
+		bridge := elem.Tags["bridge"]
+		if bridge == "true" || bridge == "yes" || bridge == "1" {
+			z += levelOffset
+		}
+
+		return z
+	}
+	return wayZOrder, nil
+}
+
+var defaultRanks map[string]int
 
 func init() {
-	wayRanks = map[string]int{
+	defaultRanks = map[string]int{
 		"minor":          3,
 		"road":           3,
 		"unclassified":   3,
@@ -251,19 +293,19 @@ func init() {
 	}
 }
 
-func WayZOrder(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
-	var z int32
+func DefaultWayZOrder(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
+	var z int
 	layer, _ := strconv.ParseInt(elem.Tags["layer"], 10, 64)
-	z += int32(layer) * 10
+	z += int(layer) * 10
 
-	rank := wayRanks[match.Value]
+	rank := defaultRanks[match.Value]
 
 	if rank == 0 {
 		if _, ok := elem.Tags["railway"]; ok {
 			rank = 7
 		}
 	}
-	z += int32(rank)
+	z += rank
 
 	tunnel := elem.Tags["tunnel"]
 	if tunnel == "true" || tunnel == "yes" || tunnel == "1" {
@@ -325,24 +367,9 @@ func MakeZOrder(fieldName string, fieldType FieldType, field Field) (MakeValue, 
 }
 
 func MakeEnumerate(fieldName string, fieldType FieldType, field Field) (MakeValue, error) {
-	_valuesList, ok := field.Args["values"]
-	if !ok {
-		return nil, errors.New("missing values in args for enumerate")
-	}
-
-	valuesList, ok := _valuesList.([]interface{})
-	if !ok {
-		return nil, errors.New("values in args for enumerate not a list")
-	}
-
-	values := make(map[string]int)
-	for i, value := range valuesList {
-		valueName, ok := value.(string)
-		if !ok {
-			return nil, errors.New("value in values not a string")
-		}
-
-		values[valueName] = i + 1
+	values, err := decodeEnumArg(field, "values")
+	if err != nil {
+		return nil, err
 	}
 	enumerate := func(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
 		if field.Key != "" {
@@ -358,6 +385,29 @@ func MakeEnumerate(fieldName string, fieldType FieldType, field Field) (MakeValu
 	}
 
 	return enumerate, nil
+}
+
+func decodeEnumArg(field Field, key string) (map[string]int, error) {
+	_valuesList, ok := field.Args[key]
+	if !ok {
+		return nil, fmt.Errorf("missing '%v' in args for %s", key, field.Type)
+	}
+
+	valuesList, ok := _valuesList.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("'%v' in args for %s not a list", key, field.Type)
+	}
+
+	values := make(map[string]int)
+	for i, value := range valuesList {
+		valueName, ok := value.(string)
+		if !ok {
+			return nil, fmt.Errorf("value in '%v' not a string", key)
+		}
+
+		values[valueName] = i + 1
+	}
+	return values, nil
 }
 
 func MakeSuffixReplace(fieldName string, fieldType FieldType, field Field) (MakeValue, error) {

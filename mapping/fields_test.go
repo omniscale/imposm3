@@ -109,7 +109,6 @@ func TestZOrder(t *testing.T) {
 
 func TestEnumerate_Match(t *testing.T) {
 	// test enumerate by matched mapping key
-	match := Match{}
 
 	zOrder, err := MakeEnumerate("enumerate",
 		AvailableFieldTypes["enumerate"],
@@ -123,33 +122,28 @@ func TestEnumerate_Match(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	elem := &element.OSMElem{}
-
-	elem.Tags = element.Tags{} // missing
-	if v := zOrder("", elem, nil, match); v != 0 {
-		t.Errorf(" -> %v", v)
+	tests := []struct {
+		key      string
+		tags     element.Tags
+		expected int
+	}{
+		{"", nil, 0},
+		{"ABCD", nil, 0},
+		{"AA", nil, 1},
+		{"CC", nil, 2},
+		{"ZZ", nil, 4},
 	}
-	match.Value = "ABCD" // unknown
-	if v := zOrder("", elem, nil, match); v != 0 {
-		t.Errorf(" -> %v", v)
-	}
-	match.Value = "AA"
-	if v := zOrder("", elem, nil, match); v != 1 {
-		t.Errorf(" -> %v", v)
-	}
-	match.Value = "CC"
-	if v := zOrder("", elem, nil, match); v != 2 {
-		t.Errorf(" -> %v", v)
-	}
-	match.Value = "ZZ"
-	if v := zOrder("", elem, nil, match); v != 4 {
-		t.Errorf(" -> %v", v)
+	for _, test := range tests {
+		elem := &element.OSMElem{Tags: test.tags}
+		match := Match{Value: test.key}
+		if v := zOrder("", elem, nil, match); v.(int) != test.expected {
+			t.Errorf("%v %v %d != %d", test.key, test.tags, v, test.expected)
+		}
 	}
 }
 
 func TestEnumerate_Key(t *testing.T) {
 	// test enumerate by key
-	match := Match{}
 
 	zOrder, err := MakeEnumerate("enumerate",
 		AvailableFieldTypes["enumerate"],
@@ -163,21 +157,77 @@ func TestEnumerate_Key(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	elem := &element.OSMElem{}
-	if v := zOrder("", elem, nil, match); v != 0 {
-		t.Errorf(" -> %v", v)
+
+	tests := []struct {
+		key      string
+		tags     element.Tags
+		expected int
+	}{
+		{"", nil, 0},
+		{"ABCD", nil, 0},
+		{"AA", nil, 1},
+		{"CC", nil, 2},
+		{"ZZ", nil, 4},
 	}
-	if v := zOrder("ABCD", elem, nil, match); v != 0 {
-		t.Errorf(" -> %v", v)
+	for _, test := range tests {
+		elem := &element.OSMElem{Tags: test.tags}
+		match := Match{}
+		if v := zOrder(test.key, elem, nil, match); v.(int) != test.expected {
+			t.Errorf("%v %v %d != %d", test.key, test.tags, v, test.expected)
+		}
 	}
-	if v := zOrder("AA", elem, nil, match); v != 1 {
-		t.Errorf(" -> %v", v)
+}
+
+func TestWayZOrder(t *testing.T) {
+	zOrder, err := MakeWayZOrder("z_order",
+		AvailableFieldTypes["wayzorder"],
+		Field{
+			Name: "zorder",
+			Type: "wayzorder",
+			Args: map[string]interface{}{
+				"default": float64(5),
+				"ranks": []interface{}{
+					"path",
+					"footway",
+					"pedestrian",
+					"residential",
+					"light_rail",
+					"primary",
+					"tram",
+					"rail",
+					"trunk",
+					"motorway_link",
+					"motorway",
+				}},
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if v := zOrder("CC", elem, nil, match); v != 2 {
-		t.Errorf(" -> %v", v)
+
+	tests := []struct {
+		key      string
+		tags     element.Tags
+		expected int
+	}{
+		{"unknown", nil, 5},
+		{"path", nil, 1},
+		{"residential", nil, 4},
+		{"residential", nil, 4},
+		{"motorway", nil, 11},
+		{"path", element.Tags{"bridge": "yes"}, 12},
+		{"path", element.Tags{"layer": "1"}, 12},
+		{"path", element.Tags{"tunnel": "yes"}, -10},
+		{"unknown", element.Tags{"tunnel": "yes"}, -6},
+		{"unknown", element.Tags{"tunnel": "yes", "layer": "1"}, 5},
 	}
-	if v := zOrder("ZZ", elem, nil, match); v != 4 {
-		t.Errorf(" -> %v", v)
+	for _, test := range tests {
+		elem := &element.OSMElem{Tags: test.tags}
+		match := Match{Value: test.key}
+
+		if v := zOrder("", elem, nil, match); v.(int) != test.expected {
+			t.Errorf("%v %v %d != %d", test.key, test.tags, v, test.expected)
+		}
 	}
 }
 
