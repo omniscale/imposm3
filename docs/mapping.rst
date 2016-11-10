@@ -239,7 +239,7 @@ Calculate the z-order of an OSM highway or railway. Returns a numeric value that
 ``hstore_tags``
 ^^^^^^^^^^^^^^^
 
-Stores all tags in a HStore column. Requires the PostGIS HStore extension. This will only insert tags that are referenced in the ``mapping`` or ``columns`` of any table. See :ref:`tags` on how to import all availabel tags.
+Stores all tags in a HStore column. Requires the PostGIS HStore extension. This will only insert tags that are referenced in the ``mapping`` or ``columns`` of any table. See :ref:`tags` on how to import all available tags.
 
 
 .. TODO
