@@ -1,3 +1,6 @@
+areas:
+  area_tags: [buildings, landuse, leisure, natural, aeroway]
+  linear_tags: [highway, barrier]
 generalized_tables:
   landusages_gen0:
     source: landusages_gen1

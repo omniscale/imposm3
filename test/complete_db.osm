@@ -1155,4 +1155,49 @@
     <tag k="landuse" v="park"/>
   </way>
 
+
+
+  <!-- test area mapping -->
+  <node id="301101" version="1" timestamp="2011-11-11T00:11:11Z" lat="-32" lon="10"/>
+  <node id="301102" version="1" timestamp="2011-11-11T00:11:11Z" lat="-32" lon="11"/>
+  <node id="301103" version="1" timestamp="2011-11-11T00:11:11Z" lat="-34" lon="11"/>
+  <node id="301104" version="1" timestamp="2011-11-11T00:11:11Z" lat="-34" lon="10"/>
+  <way id="301151" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="301101"/>
+    <nd ref="301102"/>
+    <nd ref="301103"/>
+    <nd ref="301104"/>
+    <nd ref="301101"/>
+    <tag k="highway" v="pedestrian"/>
+    <tag k="name" v="name"/>
+  </way>
+  <way id="301152" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="301101"/>
+    <nd ref="301102"/>
+    <nd ref="301103"/>
+    <nd ref="301104"/>
+    <nd ref="301101"/>
+    <tag k="highway" v="pedestrian"/>
+    <tag k="name" v="name"/>
+    <tag k="area" v="yes"/>
+  </way>
+
+  <way id="301153" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="301101"/>
+    <nd ref="301102"/>
+    <nd ref="301103"/>
+    <nd ref="301104"/>
+    <nd ref="301101"/>
+    <tag k="leisure" v="track"/>
+  </way>
+  <way id="301154" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="301101"/>
+    <nd ref="301102"/>
+    <nd ref="301103"/>
+    <nd ref="301104"/>
+    <nd ref="301101"/>
+    <tag k="leisure" v="track"/>
+    <tag k="area" v="no"/>
+  </way>
+
 </osm>

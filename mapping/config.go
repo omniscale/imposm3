@@ -49,9 +49,15 @@ type Mapping struct {
 	Tables            Tables            `yaml:"tables"`
 	GeneralizedTables GeneralizedTables `yaml:"generalized_tables"`
 	Tags              Tags              `yaml:"tags"`
+	Areas             Areas             `yaml:"areas"`
 	// SingleIdSpace mangles the overlapping node/way/relation IDs
 	// to be unique (nodes positive, ways negative, relations negative -1e17)
 	SingleIdSpace bool `yaml:"use_single_id_space"`
+}
+
+type Areas struct {
+	AreaTags   []Key `yaml:"area_tags"`
+	LinearTags []Key `yaml:"linear_tags"`
 }
 
 type Tags struct {
@@ -106,7 +112,7 @@ type TypeMappings struct {
 	Polygons    KeyValues `yaml:"polygons"`
 }
 
-type ElementFilter func(tags *element.Tags) bool
+type ElementFilter func(tags element.Tags, key Key, closed bool) bool
 
 type TagTables map[Key]map[Value][]OrderedDestTable
 
@@ -261,18 +267,67 @@ func (m *Mapping) extraTags(tableType TableType, tags map[Key]bool) {
 			}
 		}
 	}
+	// always include area tag for closed-way handling
+	tags["area"] = true
 }
 
 func (m *Mapping) ElementFilters() map[string][]ElementFilter {
 	result := make(map[string][]ElementFilter)
+
+	var areaTags map[Key]struct{}
+	var linearTags map[Key]struct{}
+	if m.Areas.AreaTags != nil {
+		areaTags = make(map[Key]struct{})
+		for _, tag := range m.Areas.AreaTags {
+			areaTags[tag] = struct{}{}
+		}
+	}
+	if m.Areas.LinearTags != nil {
+		linearTags = make(map[Key]struct{})
+		for _, tag := range m.Areas.LinearTags {
+			linearTags[tag] = struct{}{}
+		}
+	}
+
 	for name, t := range m.Tables {
+		if t.Type == LineStringTable && areaTags != nil {
+			f := func(tags element.Tags, key Key, closed bool) bool {
+				if closed {
+					if tags["area"] == "yes" {
+						return false
+					}
+					if tags["area"] != "no" {
+						if _, ok := areaTags[key]; ok {
+							return false
+						}
+					}
+				}
+				return true
+			}
+			result[name] = append(result[name], f)
+		}
+		if t.Type == PolygonTable && linearTags != nil {
+			f := func(tags element.Tags, key Key, closed bool) bool {
+				if closed && tags["area"] == "no" {
+					return false
+				}
+				if tags["area"] != "yes" {
+					if _, ok := linearTags[key]; ok {
+						return false
+					}
+				}
+				return true
+			}
+			result[name] = append(result[name], f)
+		}
+
 		if t.Filters == nil {
 			continue
 		}
 		if t.Filters.ExcludeTags != nil {
 			for _, filterKeyVal := range *t.Filters.ExcludeTags {
-				f := func(tags *element.Tags) bool {
-					if v, ok := (*tags)[filterKeyVal[0]]; ok {
+				f := func(tags element.Tags, key Key, closed bool) bool {
+					if v, ok := tags[filterKeyVal[0]]; ok {
 						if filterKeyVal[1] == "__any__" || v == filterKeyVal[1] {
 							return false
 						}

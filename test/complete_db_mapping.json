@@ -1,4 +1,8 @@
 {
+    "areas": {
+        "area_tags": ["leisure"],
+        "linear_tags": ["highway"],
+    },
     "generalized_tables": {
         "waterareas_gen1": {
             "source": "waterareas",
@@ -125,7 +129,8 @@
                     "pitch",
                     "stadium",
                     "common",
-                    "nature_reserve"
+                    "nature_reserve",
+                    "track"
                 ],
                 "tourism": [
                     "zoo"
@@ -202,6 +207,7 @@
                 }
             ],
             "type": "polygon",
+            "filters": {"areas": {}},
             "mapping": {
                 "building": [
                     "__any__"
@@ -711,9 +717,7 @@
             ],
             "type": "linestring",
             "filters": {
-                "exclude_tags": [
-                    ["area", "yes"]
-                ]
+                "areas": {},
             },
             "mappings": {
                 "railway": {
@@ -733,10 +737,6 @@
                 },
                 "roads": {
                     "mapping": {
-                        "man_made": [
-                            "pier",
-                            "groyne"
-                        ],
                         "highway": [
                             "motorway",
                             "motorway_link",
@@ -761,6 +761,13 @@
                             "unclassified",
                             "residential",
                             "raceway"
+                        ],
+                        "man_made": [
+                            "pier",
+                            "groyne"
+                        ],
+                        "leisure": [
+                            "track"
                         ]
                     }
                 }

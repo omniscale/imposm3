@@ -316,3 +316,27 @@ To load all tags except ``created_by``, ``source``, and ``tiger:county``, ``tige
       load_all: true,
       exclude: [created_by, source, "tiger:*"]
 
+
+
+.. _Areas:
+
+Areas
+-----
+
+A closed way is way where the first and last nodes are identical. These closed ways are used to represent elements like building, forest or park polygons, but they can also represent linear (non-polygon) features, like a roundabout or a race track.
+
+OpenStreetMap uses the `area <http://wiki.openstreetmap.org/wiki/Key:area>`_ tag to specify if a closed way is an area (polygon) or a linear feature (linestring). For example ``highway=pedestrian, area=yes`` is a polygon feature.
+
+By default, Imposm inserts all closed ways into polygon tables as long as ``area`` is not ``no`` and linestring tables will contain all closed ways as long as the ``area`` is not ``yes``.
+However, the ``area`` tag is missing from most OSM elements, as buildings, landuse, etc. should be interpreted as ``area=yes`` by default and highways for example are ``area=no`` by default.
+
+You can configure these default interpretations with the ``areas`` option.
+
+.. code-block:: yaml
+
+    areas:
+      area_tags: [buildings, landuse, leisure, natural, aeroway]
+      linear_tags: [highway, barrier]
+
+
+With this ``areas`` configuration, ``highway`` elements are only inserted into polygon tables if there is an ``area=yes`` tag. ``aeroway`` elements are only inserted into linestring tables if there is an ``area=no`` tag.
