@@ -54,7 +54,7 @@ system-test-files:
 docs:
 	(cd docs && make html)
 
-REMOTE_DOC_LOCATION = omniscale.de:domains/imposm.org/docs/imposm3
+REMOTE_DOC_LOCATION = omniscale.de:/opt/www/imposm.org/docs/imposm3
 DOC_VERSION = 3.0.0
 
 upload-docs: docs
