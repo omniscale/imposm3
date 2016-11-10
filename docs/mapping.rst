@@ -234,7 +234,7 @@ The OSM `key` that was matched by this table mapping (`highway`, `building`, `na
 
 The OSM `value` that was matched by this table mapping (`primary`, `secondary`, `yes`, `forest`, etc.).
 
-..note:: The note of ``mapping_key`` above applies to ``mapping_values`` as well.
+.. note:: The note of ``mapping_key`` above applies to ``mapping_values`` as well.
 
 ``geometry``
 ^^^^^^^^^^^^
