@@ -241,7 +241,7 @@ func WebmercArea(val string, elem *element.OSMElem, geom *geom.Geometry, match M
 	pole := 6378137 * math.Pi // 20037508.342789244
 	midLat := 2*math.Atan(math.Exp((midY/pole)*math.Pi)) - math.Pi/2
 
-	area = area * math.Cos(midLat)
+	area = area * math.Pow(math.Cos(midLat), 2)
 
 	return float32(area)
 }

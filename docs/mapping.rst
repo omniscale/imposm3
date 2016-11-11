@@ -261,7 +261,7 @@ Area of polygon geometries in the unit of the selected projection (m² or degree
 ``webmerc_area``
 ^^^^^^^^^^^^^^^^
 
-Area of polygon geometries in m². This field only works for the webmercator projection (EPSG:3857). The latitude of the geometry is considered when calculating the area. This area is not precise, but a soccer field geometry at the equator should have roughly the same size as a soccer field in Svalbard.
+Area of polygon geometries in m². This field only works for the webmercator projection (EPSG:3857). The latitude of the geometry is considered when calculating the area. `This area is not precise`. Polygons lower than 70° latitude should have a ``webmerc_area`` within ±20% of the true size. However, long polygons like a runway can exhibit a much larger error.
 
 ``hstore_tags``
 ^^^^^^^^^^^^^^^
