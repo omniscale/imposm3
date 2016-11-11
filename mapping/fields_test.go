@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/geom"
+	"github.com/omniscale/imposm3/geom/geos"
 )
 
 func TestBool(t *testing.T) {
@@ -227,6 +229,39 @@ func TestWayZOrder(t *testing.T) {
 
 		if v := zOrder("", elem, nil, match); v.(int) != test.expected {
 			t.Errorf("%v %v %d != %d", test.key, test.tags, v, test.expected)
+		}
+	}
+}
+
+func TestAreaFields(t *testing.T) {
+	tests := []struct {
+		wkt      string
+		expected float32
+		areaFunc MakeValue
+	}{
+		{"POLYGON((0 0, 10 0, 10 10, 0 10, 0 0))", 100.0, Area},
+		{"POLYGON((-10 0, 10 0, 10 10, -10 10, -10 0))", 200.0, Area},
+		{"POLYGON((-10 -10, 10 -10, 10 10, -10 10, -10 -10))", 400.0, WebmercArea},
+		{"POLYGON((1000000  2000000, 1001000  2000000, 1001000  2001000, 1000000  2001000, 1000000  2000000))", 1000000.0, Area},
+		{"POLYGON((1000000  2000000, 1001000  2000000, 1001000  2001000, 1000000  2001000, 1000000  2000000))", 952750.625000, WebmercArea},
+		{"POLYGON((1000000  5000000, 1001000  5000000, 1001000  5001000, 1000000  5001000, 1000000  5000000))", 755628.687500, WebmercArea},
+		{"POLYGON((1000000 10000000, 1001000 10000000, 1001000 10001000, 1000000 10001000, 1000000 10000000))", 399584.031250, WebmercArea},
+	}
+	g := geos.NewGeos()
+	for _, test := range tests {
+		ggeom := g.FromWkt(test.wkt)
+		if ggeom == nil {
+			t.Fatalf("unable to create test geometry from %v", test.wkt)
+		}
+		geometry, err := geom.AsGeomElement(g, ggeom)
+		if err != nil {
+			t.Fatalf("unable to create test geometry %v: %v", test.wkt, err)
+		}
+		elem := &element.OSMElem{}
+		match := Match{}
+
+		if v := test.areaFunc("", elem, &geometry, match); v.(float32) != test.expected {
+			t.Errorf("%v %f != %f", test.wkt, v, test.expected)
 		}
 	}
 }

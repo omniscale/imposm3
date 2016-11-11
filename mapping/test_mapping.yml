@@ -241,7 +241,7 @@ tables:
     - name: type
       type: mapping_value
     - name: area
-      type: pseudoarea
+      type: webmerc_area
     - args:
         values:
         - land

@@ -3,6 +3,7 @@ package mapping
 import (
 	"errors"
 	"fmt"
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -34,7 +35,9 @@ func init() {
 		"validated_geometry":   {"validated_geometry", "validated_geometry", Geometry, nil, nil, false},
 		"hstore_tags":          {"hstore_tags", "hstore_string", HstoreString, nil, nil, false},
 		"wayzorder":            {"wayzorder", "int32", nil, MakeWayZOrder, nil, false},
-		"pseudoarea":           {"pseudoarea", "float32", PseudoArea, nil, nil, false},
+		"pseudoarea":           {"pseudoarea", "float32", nil, MakePseudoArea, nil, false},
+		"area":                 {"area", "float32", Area, nil, nil, false},
+		"webmerc_area":         {"webmerc_area", "float32", WebmercArea, nil, nil, false},
 		"zorder":               {"zorder", "int32", nil, MakeZOrder, nil, false},
 		"enumerate":            {"enumerate", "int32", nil, MakeEnumerate, nil, false},
 		"string_suffixreplace": {"string_suffixreplace", "string", nil, MakeSuffixReplace, nil, false},
@@ -213,11 +216,33 @@ func Geometry(val string, elem *element.OSMElem, geom *geom.Geometry, match Matc
 	return string(geom.Wkb)
 }
 
-func PseudoArea(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
+func MakePseudoArea(fieldName string, fieldType FieldType, field Field) (MakeValue, error) {
+	log.Print("warn: pseudoarea type is deprecated and will be removed. See area and webmercarea type.")
+	return Area, nil
+}
+
+func Area(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
 	area := geom.Geom.Area()
 	if area == 0.0 {
 		return nil
 	}
+	return float32(area)
+}
+
+func WebmercArea(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
+	area := geom.Geom.Area()
+	if area == 0.0 {
+		return nil
+	}
+
+	bounds := geom.Geom.Bounds()
+	midY := bounds.MinY + (bounds.MaxY-bounds.MinY)/2
+
+	pole := 6378137 * math.Pi // 20037508.342789244
+	midLat := 2*math.Atan(math.Exp((midY/pole)*math.Pi)) - math.Pi/2
+
+	area = area * math.Cos(midLat)
+
 	return float32(area)
 }
 
