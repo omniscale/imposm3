@@ -55,7 +55,7 @@ export GOROOT=$BUILD_BASE/go
 IMPOSM_SRC=$GOPATH/src/github.com/omniscale/imposm3
 BUILD_TMP=$BUILD_BASE/imposm-build
 
-GEOS_VERSION=3.5.0
+GEOS_VERSION=3.5.1
 
 export CGO_CFLAGS=-I$PREFIX/include
 export CGO_LDFLAGS=-L$PREFIX/lib
@@ -90,8 +90,8 @@ fi
 if [ ! -e $BUILD_BASE/go/bin/go ]; then
     echo "-> installing go"
     pushd $SRC
-        $CURL https://storage.googleapis.com/golang/go1.6.linux-amd64.tar.gz -O
-        tar xzf go1.6.linux-amd64.tar.gz -C $BUILD_BASE/
+        $CURL https://storage.googleapis.com/golang/go1.7.3.linux-amd64.tar.gz -O
+        tar xzf go1.7.3.linux-amd64.tar.gz -C $BUILD_BASE/
     popd
 fi
 
