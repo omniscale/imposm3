@@ -63,6 +63,7 @@ type Areas struct {
 type Tags struct {
 	LoadAll bool  `yaml:"load_all"`
 	Exclude []Key `yaml:"exclude"`
+	Include []Key `yaml:"include"`
 }
 
 type orderedValue struct {
@@ -267,6 +268,10 @@ func (m *Mapping) extraTags(tableType TableType, tags map[Key]bool) {
 			}
 		}
 	}
+	for _, k := range m.Tags.Include {
+		tags[k] = true
+	}
+
 	// always include area tag for closed-way handling
 	tags["area"] = true
 }
