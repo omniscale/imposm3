@@ -1,4 +1,11 @@
 {
+    "tags": {
+        "include": [
+            "shop",
+            "amenity",
+            "opening_hours"
+        ]
+    },
     "areas": {
         "area_tags": ["leisure"],
         "linear_tags": ["highway"],
@@ -204,10 +211,16 @@
                     "type": "mapping_value",
                     "name": "type",
                     "key": null
+                },
+                {
+                    "type": "hstore_tags",
+                    "name": "tags",
+                    "args": {
+                        "include": ["amenity", "shop", "opening_hours"]
+                    }
                 }
             ],
             "type": "polygon",
-            "filters": {"areas": {}},
             "mapping": {
                 "building": [
                     "__any__"
@@ -716,9 +729,6 @@
                 }
             ],
             "type": "linestring",
-            "filters": {
-                "areas": {},
-            },
             "mappings": {
                 "railway": {
                     "mapping": {

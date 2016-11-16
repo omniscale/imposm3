@@ -386,9 +386,21 @@ func TestComplete_AreaMapping(t *testing.T) {
 	})
 }
 
+func TestComplete_HstoreTags(t *testing.T) {
+	// Mapping type dependent area-defaults.
+
+	assertHstore(t, []checkElem{
+		{"osm_buildings", 401151, "*", map[string]string{"amenity": "fuel", "opening_hours": "24/7"}},
+	})
+}
+
+// #######################################################################
+
 func TestComplete_Update(t *testing.T) {
 	ts.updateOsm(t, "./build/complete_db.osc.gz")
 }
+
+// #######################################################################
 
 func TestComplete_NoDuplicates(t *testing.T) {
 	// Relations/ways are only inserted once Checks #66

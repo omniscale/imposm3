@@ -31,8 +31,8 @@ Generalized tables
 Limit to polygons
   It can limit imported geometries to polygons from GeoJSON.
 
-HStore support
-  Don't know which tags you will be needing? Store all tags in an `HStore column <http://www.postgresql.org/docs/9.3/static/hstore.html>`_.
+hstore support
+  Don't know which tags you will be needing? Store all tags in an `hstore column <http://www.postgresql.org/docs/9.6/static/hstore.html>`_.
 
 
 Support

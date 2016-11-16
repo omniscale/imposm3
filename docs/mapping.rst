@@ -266,7 +266,9 @@ Area of polygon geometries in m². This field only works for the webmercator pro
 ``hstore_tags``
 ^^^^^^^^^^^^^^^
 
-Stores all tags in a HStore column. Requires the PostGIS HStore extension. This will only insert tags that are referenced in the ``mapping`` or ``columns`` of any table. See :ref:`tags` on how to import all available tags.
+Stores tags in an `hstore` column. Requires the `PostgreSQL hstore extension <http://www.postgresql.org/docs/9.6/static/hstore.html>`_. You can select tags with the ``include`` option, otherwise all tags will be inserted.
+
+In any case, ``hstore_tags`` will only insert tags that are referenced in the ``mapping`` or ``columns`` of any table. See :ref:`tags` on how to make additional tags available for import.
 
 
 .. TODO

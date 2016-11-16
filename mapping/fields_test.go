@@ -297,16 +297,50 @@ func TestMakeSuffixReplace(t *testing.T) {
 	}
 }
 
-func assertEq(t *testing.T, a, b string) {
-	if a != b {
-		t.Errorf("'%v' != '%v'", a, b)
-	}
-}
-
 func TestHstoreString(t *testing.T) {
-	match := Match{}
-	assertEq(t, HstoreString("", &element.OSMElem{Tags: element.Tags{"key": "value"}}, nil, match).(string), `"key"=>"value"`)
-	assertEq(t, HstoreString("", &element.OSMElem{Tags: element.Tags{`"key"`: `'"value"'`}}, nil, match).(string), `"\"key\""=>"'\"value\"'"`)
-	assertEq(t, HstoreString("", &element.OSMElem{Tags: element.Tags{`\`: `\\\\`}}, nil, match).(string), `"\\"=>"\\\\\\\\"`)
-	assertEq(t, HstoreString("", &element.OSMElem{Tags: element.Tags{"Ümlåütê=>": ""}}, nil, match).(string), `"Ümlåütê=>"=>""`)
+	field := Field{
+		Name: "tags",
+		Type: "hstore_tags",
+	}
+	hstoreAll, err := MakeHStoreString("tags", FieldType{}, field)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	field = Field{
+		Name: "tags",
+		Type: "hstore_tags",
+		Args: map[string]interface{}{"include": []interface{}{"key1", "key2"}},
+	}
+	hstoreInclude, err := MakeHStoreString("tags", FieldType{}, field)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, test := range []struct {
+		field    MakeValue
+		tags     element.Tags
+		expected interface{}
+	}{
+		{hstoreAll, element.Tags{}, ``},
+		{hstoreAll, element.Tags{"key": "value"}, `"key"=>"value"`},
+		{hstoreAll, element.Tags{`"key"`: `'"value"'`}, `"\"key\""=>"'\"value\"'"`},
+		{hstoreAll, element.Tags{`\`: `\\\\`}, `"\\"=>"\\\\\\\\"`},
+		{hstoreAll, element.Tags{"Ümlåütê=>": ""}, `"Ümlåütê=>"=>""`},
+		{hstoreInclude, element.Tags{"key": "value"}, ``},
+		{hstoreInclude, element.Tags{"key1": "value"}, `"key1"=>"value"`},
+		{hstoreInclude, element.Tags{"key": "value", "key2": "value"}, `"key2"=>"value"`},
+	} {
+		actual := test.field("", &element.OSMElem{Tags: test.tags}, nil, Match{})
+		if actual.(string) != test.expected {
+			t.Errorf("%#v != %#v for %#v", actual, test.expected, test.tags)
+		}
+	}
+
+	actual := hstoreAll("", &element.OSMElem{Tags: element.Tags{"key1": "value", "key2": "value"}}, nil, Match{})
+	// check mutliple tags, can be in any order
+	if actual.(string) != `"key1"=>"value", "key2"=>"value"` && actual.(string) != `"key2"=>"value", "key1"=>"value"` {
+		t.Error("unexpected value", actual)
+	}
+
 }

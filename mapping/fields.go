@@ -33,7 +33,7 @@ func init() {
 		"member_index":         {"member_index", "int32", nil, nil, RelationMemberIndex, true},
 		"geometry":             {"geometry", "geometry", Geometry, nil, nil, false},
 		"validated_geometry":   {"validated_geometry", "validated_geometry", Geometry, nil, nil, false},
-		"hstore_tags":          {"hstore_tags", "hstore_string", HstoreString, nil, nil, false},
+		"hstore_tags":          {"hstore_tags", "hstore_string", nil, MakeHStoreString, nil, false},
 		"wayzorder":            {"wayzorder", "int32", nil, MakeWayZOrder, nil, false},
 		"pseudoarea":           {"pseudoarea", "float32", nil, MakePseudoArea, nil, false},
 		"area":                 {"area", "float32", Area, nil, nil, false},
@@ -248,12 +248,29 @@ func WebmercArea(val string, elem *element.OSMElem, geom *geom.Geometry, match M
 
 var hstoreReplacer = strings.NewReplacer("\\", "\\\\", "\"", "\\\"")
 
-func HstoreString(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
-	tags := make([]string, 0, len(elem.Tags))
-	for k, v := range elem.Tags {
-		tags = append(tags, `"`+hstoreReplacer.Replace(k)+`"=>"`+hstoreReplacer.Replace(v)+`"`)
+func MakeHStoreString(fieldName string, fieldType FieldType, field Field) (MakeValue, error) {
+	var includeAll bool
+	var err error
+	var include map[string]int
+	if _, ok := field.Args["include"]; !ok {
+		includeAll = true
+	} else {
+		include, err = decodeEnumArg(field, "include")
+		if err != nil {
+			return nil, err
+		}
+
 	}
-	return strings.Join(tags, ", ")
+	hstoreString := func(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
+		tags := make([]string, 0, len(elem.Tags))
+		for k, v := range elem.Tags {
+			if includeAll || include[k] != 0 {
+				tags = append(tags, `"`+hstoreReplacer.Replace(k)+`"=>"`+hstoreReplacer.Replace(v)+`"`)
+			}
+		}
+		return strings.Join(tags, ", ")
+	}
+	return hstoreString, nil
 }
 
 func MakeWayZOrder(fieldName string, fieldType FieldType, field Field) (MakeValue, error) {
