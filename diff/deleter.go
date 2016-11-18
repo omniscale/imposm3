@@ -22,6 +22,7 @@ type Deleter struct {
 	deletedRelations map[int64]struct{}
 	deletedWays      map[int64]struct{}
 	deletedMembers   map[int64]struct{}
+	srid             int
 }
 
 func NewDeleter(db database.Deleter, osmCache *cache.OSMCache, diffCache *cache.DiffCache,
@@ -29,6 +30,7 @@ func NewDeleter(db database.Deleter, osmCache *cache.OSMCache, diffCache *cache.
 	tmPoints mapping.NodeMatcher,
 	tmLineStrings mapping.WayMatcher,
 	tmPolygons mapping.RelWayMatcher,
+	srid int,
 ) *Deleter {
 	return &Deleter{
 		delDb:            db,
@@ -41,6 +43,7 @@ func NewDeleter(db database.Deleter, osmCache *cache.OSMCache, diffCache *cache.
 		deletedRelations: make(map[int64]struct{}),
 		deletedWays:      make(map[int64]struct{}),
 		deletedMembers:   make(map[int64]struct{}),
+		srid:             srid,
 	}
 }
 
@@ -130,11 +133,7 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 			if m.Way == nil {
 				continue
 			}
-			err := d.osmCache.Coords.FillWay(m.Way)
-			if err != nil {
-				continue
-			}
-			proj.NodesToMerc(m.Way.Nodes)
+			d.NodesToSrid(m.Way.Nodes)
 			expire.ExpireNodes(d.expireor, m.Way.Nodes)
 		}
 	}
@@ -175,10 +174,7 @@ func (d *Deleter) deleteWay(id int64, deleteRefs bool) error {
 		}
 	}
 	if deleted && d.expireor != nil {
-		err := d.osmCache.Coords.FillWay(elem)
-		if err != nil {
-			return err
-		}
+		d.NodesToSrid(elem.Nodes)
 		expire.ExpireNodes(d.expireor, elem.Nodes)
 	}
 	return nil
@@ -205,6 +201,7 @@ func (d *Deleter) deleteNode(id int64) error {
 	}
 
 	if deleted && d.expireor != nil {
+		d.NodeToSrid(elem)
 		d.expireor.Expire(elem.Long, elem.Lat)
 	}
 	return nil
@@ -275,4 +272,27 @@ func (d *Deleter) Delete(delElem parser.DiffElem) error {
 		}
 	}
 	return nil
+}
+
+func (deleter *Deleter) NodesToSrid(nodes []element.Node) {
+	if deleter.srid == 4326 {
+		return
+	}
+	if deleter.srid != 3857 {
+		panic("invalid srid. only 4326 and 3857 are supported")
+	}
+
+	for i, nd := range nodes {
+		nodes[i].Long, nodes[i].Lat = proj.WgsToMerc(nd.Long, nd.Lat)
+	}
+}
+
+func (deleter *Deleter) NodeToSrid(node *element.Node) {
+	if deleter.srid == 4326 {
+		return
+	}
+	if deleter.srid != 3857 {
+		panic("invalid srid. only 4326 and 3857 are supported")
+	}
+	node.Long, node.Lat = proj.WgsToMerc(node.Long, node.Lat)
 }

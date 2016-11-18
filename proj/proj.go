@@ -1,8 +1,9 @@
 package proj
 
 import (
-	"github.com/omniscale/imposm3/element"
 	"math"
+
+	"github.com/omniscale/imposm3/element"
 )
 
 const pole = 6378137 * math.Pi // 20037508.342789244

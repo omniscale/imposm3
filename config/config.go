@@ -139,8 +139,14 @@ type _ImportOptions struct {
 	DiffStateBefore  time.Duration
 }
 
+type _DiffOptions struct {
+	TileList string
+	MaxZoom  int
+}
+
 var BaseOptions = _BaseOptions{}
 var ImportOptions = _ImportOptions{}
+var DiffOptions = _DiffOptions{}
 
 func addBaseFlags(flags *flag.FlagSet) {
 	flags.StringVar(&BaseOptions.Connection, "connection", "", "connection parameters")
@@ -175,6 +181,9 @@ func init() {
 	DiffFlags.Usage = UsageDiff
 
 	addBaseFlags(DiffFlags)
+	DiffFlags.StringVar(&DiffOptions.TileList, "tilelist", "", "expired tiles")
+	DiffFlags.IntVar(&DiffOptions.MaxZoom, "maxzoom", 14, "max expired tile zoom level")
+
 	addBaseFlags(ImportFlags)
 	ImportFlags.BoolVar(&ImportOptions.Overwritecache, "overwritecache", false, "overwritecache")
 	ImportFlags.BoolVar(&ImportOptions.Appendcache, "appendcache", false, "append cache")
