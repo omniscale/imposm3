@@ -112,7 +112,7 @@ func (ww *WayWriter) loop() {
 		}
 
 		if inserted && ww.expireor != nil {
-			expire.ExpireNodes(ww.expireor, w.Nodes)
+			expire.ExpireNodes(ww.expireor, w.Nodes, ww.srid)
 		}
 		if ww.diffCache != nil {
 			ww.diffCache.Coords.AddFromWay(w)

@@ -7,7 +7,6 @@ import (
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/expire"
 	"github.com/omniscale/imposm3/mapping"
-	"github.com/omniscale/imposm3/proj"
 )
 
 type Deleter struct {
@@ -134,8 +133,7 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 			if err != nil {
 				continue
 			}
-			proj.NodesToMerc(m.Way.Nodes)
-			expire.ExpireNodes(d.expireor, m.Way.Nodes)
+			expire.ExpireNodes(d.expireor, m.Way.Nodes, 4326)
 		}
 	}
 	return nil
@@ -179,7 +177,7 @@ func (d *Deleter) deleteWay(id int64, deleteRefs bool) error {
 		if err != nil {
 			return err
 		}
-		expire.ExpireNodes(d.expireor, elem.Nodes)
+		expire.ExpireNodes(d.expireor, elem.Nodes, 4326)
 	}
 	return nil
 }

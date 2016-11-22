@@ -49,10 +49,10 @@ func (nw *NodeWriter) loop() {
 	for n := range nw.nodes {
 		nw.progress.AddNodes(1)
 		if matches := nw.pointMatcher.MatchNode(n); len(matches) > 0 {
-			nw.NodeToSrid(n)
 			if nw.expireor != nil {
 				nw.expireor.Expire(n.Long, n.Lat)
 			}
+			nw.NodeToSrid(n)
 			point, err := geomp.Point(geos, *n)
 			if err != nil {
 				if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {

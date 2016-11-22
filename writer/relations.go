@@ -125,7 +125,7 @@ NextRel:
 		if inserted && rw.expireor != nil {
 			for _, m := range allMembers {
 				if m.Way != nil {
-					expire.ExpireNodes(rw.expireor, m.Way.Nodes)
+					expire.ExpireNodes(rw.expireor, m.Way.Nodes, rw.srid)
 				}
 			}
 		}
