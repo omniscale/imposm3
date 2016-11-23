@@ -56,8 +56,20 @@ func Diff() {
 		log.Fatal("diff cache: ", err)
 	}
 
+	var exp expire.Expireor
+
+	if config.BaseOptions.ExpireTilesDir != "" {
+		tileexpire := expire.NewTileList(config.BaseOptions.ExpireTilesZoom, config.BaseOptions.ExpireTilesDir)
+		exp = tileexpire
+		defer func() {
+			if err := tileexpire.Flush(); err != nil {
+				log.Error("error while writing tile expire file:", err)
+			}
+		}()
+	}
+
 	for _, oscFile := range config.DiffFlags.Args() {
-		err := Update(oscFile, geometryLimiter, nil, osmCache, diffCache, false)
+		err := Update(oscFile, geometryLimiter, exp, osmCache, diffCache, false)
 		if err != nil {
 			osmCache.Close()
 			diffCache.Close()

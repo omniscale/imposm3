@@ -125,6 +125,9 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 		return err
 	}
 	if d.expireor != nil {
+		if err := d.osmCache.Ways.FillMembers(elem.Members); err != nil {
+			return err
+		}
 		for _, m := range elem.Members {
 			if m.Way == nil {
 				continue
@@ -133,7 +136,7 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 			if err != nil {
 				continue
 			}
-			expire.ExpireNodes(d.expireor, m.Way.Nodes, 4326)
+			expire.ExpireProjectedNodes(d.expireor, m.Way.Nodes, 4326, true)
 		}
 	}
 	return nil
@@ -153,11 +156,13 @@ func (d *Deleter) deleteWay(id int64, deleteRefs bool) error {
 		return nil
 	}
 	deleted := false
+	deletedPolygon := false
 	if matches := d.tmPolygons.MatchWay(elem); len(matches) > 0 {
 		if err := d.delDb.Delete(d.WayId(elem.Id), matches); err != nil {
 			return err
 		}
 		deleted = true
+		deletedPolygon = true
 	}
 	if matches := d.tmLineStrings.MatchWay(elem); len(matches) > 0 {
 		if err := d.delDb.Delete(d.WayId(elem.Id), matches); err != nil {
@@ -177,7 +182,7 @@ func (d *Deleter) deleteWay(id int64, deleteRefs bool) error {
 		if err != nil {
 			return err
 		}
-		expire.ExpireNodes(d.expireor, elem.Nodes, 4326)
+		expire.ExpireProjectedNodes(d.expireor, elem.Nodes, 4326, deletedPolygon)
 	}
 	return nil
 }

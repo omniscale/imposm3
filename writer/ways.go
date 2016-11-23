@@ -87,6 +87,7 @@ func (ww *WayWriter) loop() {
 		w.Id = ww.wayId(w.Id)
 
 		inserted := false
+		insertedPolygon := false
 		if matches := ww.lineMatcher.MatchWay(w); len(matches) > 0 {
 			err := ww.buildAndInsert(geos, w, matches, false)
 			if err != nil {
@@ -108,11 +109,12 @@ func (ww *WayWriter) loop() {
 					continue
 				}
 				inserted = true
+				insertedPolygon = true
 			}
 		}
 
 		if inserted && ww.expireor != nil {
-			expire.ExpireNodes(ww.expireor, w.Nodes, ww.srid)
+			expire.ExpireProjectedNodes(ww.expireor, w.Nodes, ww.srid, insertedPolygon)
 		}
 		if ww.diffCache != nil {
 			ww.diffCache.Coords.AddFromWay(w)

@@ -1,0 +1,45 @@
+tables:
+  roads:
+    type: linestring
+    fields:
+    - name: osm_id
+      type: id
+    - name: type
+      type: mapping_value
+    - name: name
+      type: string
+      key: name
+    - name: geometry
+      type: geometry
+    mapping:
+      highway: [__any__]
+
+  pois:
+    type: point
+    fields:
+    - name: osm_id
+      type: id
+    - name: type
+      type: mapping_value
+    - name: name
+      type: string
+      key: name
+    - name: geometry
+      type: geometry
+    mapping:
+      amenity: [__any__]
+
+  buildings:
+    type: polygon
+    fields:
+    - name: osm_id
+      type: id
+    - name: type
+      type: mapping_value
+    - name: name
+      type: string
+      key: name
+    - name: geometry
+      type: geometry
+    mapping:
+      building: [__any__]

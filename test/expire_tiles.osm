@@ -1,0 +1,127 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osm version="0.6" generator="Osmosis SNAPSHOT-r25240">
+  <!-- modify node -->
+  <node id="10001" version="1" timestamp="2011-11-11T00:11:11Z" lon="1" lat="1">
+      <tag k="amenity" v="shop"/>
+  </node>
+
+  <!-- delete node -->
+  <node id="10002" version="1" timestamp="2011-11-11T00:11:11Z" lon="2" lat="1">
+      <tag k="amenity" v="shop"/>
+  </node>
+
+  <!-- create node -->
+  <!-- <node id="10003" ... -->
+
+  <!-- modify node to unmapped -->
+  <node id="10004" version="1" timestamp="2011-11-11T00:11:11Z" lon="4" lat="1">
+      <tag k="amenity" v="shop"/>
+  </node>
+
+
+  <!-- modify way -->
+  <node id="20101" version="1" timestamp="2011-11-11T00:11:11Z" lon="1.0001" lat="2" />
+  <node id="20102" version="1" timestamp="2011-11-11T00:11:11Z" lon="1.0002" lat="2" />
+  <way id="20151" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="20101"/>
+    <nd ref="20102"/>
+    <tag k="highway" v="motorway"/>
+  </way>
+
+  <!-- delete way -->
+  <node id="20201" version="1" timestamp="2011-11-11T00:11:11Z" lon="2.0001" lat="2" />
+  <node id="20202" version="1" timestamp="2011-11-11T00:11:11Z" lon="2.0002" lat="2" />
+  <way id="20251" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="20201"/>
+    <nd ref="20202"/>
+    <tag k="highway" v="motorway"/>
+  </way>
+
+  <!-- modify node from way -->
+  <node id="20301" version="1" timestamp="2011-11-11T00:11:11Z" lon="3.0001" lat="2" />
+  <node id="20302" version="1" timestamp="2011-11-11T00:11:11Z" lon="3.0002" lat="2" />
+  <way id="20351" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="20301"/>
+    <nd ref="20302"/>
+    <tag k="highway" v="motorway"/>
+  </way>
+
+  <!-- create way -->
+  <!-- <way id="20451" ... -->
+
+  <!-- create long way -->
+  <!-- <way id="20551" ... -->
+
+
+  <!-- modify relation -->
+  <node id="30101" version="1" timestamp="2011-11-11T00:11:11Z" lon="1.0001" lat="3" />
+  <node id="30102" version="1" timestamp="2011-11-11T00:11:11Z" lon="1.0002" lat="3" />
+  <node id="30103" version="1" timestamp="2011-11-11T00:11:11Z" lon="1.0002" lat="3.0001" />
+  <node id="30104" version="1" timestamp="2011-11-11T00:11:11Z" lon="1.0001" lat="3.0001" />
+  <way id="30151" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="30101"/>
+    <nd ref="30102"/>
+    <nd ref="30103"/>
+    <nd ref="30104"/>
+    <nd ref="30101"/>
+  </way>
+  <relation id="30191" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="30151" role="outer"/>
+    <tag k="building" v="yes"/>
+    <tag k="type" v="multipolygon"/>
+  </relation>
+
+  <!-- delete relation -->
+  <node id="30201" version="1" timestamp="2011-11-11T00:11:11Z" lon="2.0001" lat="3" />
+  <node id="30202" version="1" timestamp="2011-11-11T00:11:11Z" lon="2.0002" lat="3" />
+  <node id="30203" version="1" timestamp="2011-11-11T00:11:11Z" lon="2.0002" lat="3.0001" />
+  <node id="30204" version="1" timestamp="2011-11-11T00:11:11Z" lon="2.0001" lat="3.0001" />
+  <way id="30251" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="30201"/>
+    <nd ref="30202"/>
+    <nd ref="30203"/>
+    <nd ref="30204"/>
+    <nd ref="30201"/>
+  </way>
+  <relation id="30291" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="30251" role="outer"/>
+    <tag k="building" v="yes"/>
+    <tag k="type" v="multipolygon"/>
+  </relation>
+
+  <!-- modify way from relation -->
+  <node id="30301" version="1" timestamp="2011-11-11T00:11:11Z" lon="3.0001" lat="3" />
+  <node id="30302" version="1" timestamp="2011-11-11T00:11:11Z" lon="3.0002" lat="3" />
+  <node id="30303" version="1" timestamp="2011-11-11T00:11:11Z" lon="3.0002" lat="3.0001" />
+  <node id="30304" version="1" timestamp="2011-11-11T00:11:11Z" lon="3.0001" lat="3.0001" />
+  <way id="30351" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="30301"/>
+    <nd ref="30302"/>
+    <nd ref="30303"/>
+    <nd ref="30304"/>
+    <nd ref="30301"/>
+  </way>
+  <relation id="30391" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="30351" role="outer"/>
+    <tag k="building" v="yes"/>
+    <tag k="type" v="multipolygon"/>
+  </relation>
+
+  <!-- modify node from relation -->
+  <node id="30401" version="1" timestamp="2011-11-11T00:11:11Z" lon="4.0001" lat="3" />
+  <node id="30402" version="1" timestamp="2011-11-11T00:11:11Z" lon="4.0002" lat="3" />
+  <node id="30403" version="1" timestamp="2011-11-11T00:11:11Z" lon="4.0002" lat="3.0001" />
+  <node id="30404" version="1" timestamp="2011-11-11T00:11:11Z" lon="4.0001" lat="3.0001" />
+  <way id="30451" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="30401"/>
+    <nd ref="30402"/>
+    <nd ref="30403"/>
+    <nd ref="30404"/>
+    <nd ref="30401"/>
+  </way>
+  <relation id="30491" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="30451" role="outer"/>
+    <tag k="building" v="yes"/>
+    <tag k="type" v="multipolygon"/>
+  </relation>
+</osm>

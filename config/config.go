@@ -19,6 +19,8 @@ type Config struct {
 	LimitToCacheBuffer float64 `json:"limitto_cache_buffer"`
 	Srid               int     `json:"srid"`
 	Schemas            Schemas `json:"schemas"`
+	ExpireTilesDir     string  `json:"expire_tiles_dir"`
+	ExpireTilesZoom    int     `json:"expire_tiles_zoom"`
 }
 
 type Schemas struct {
@@ -48,6 +50,8 @@ type _BaseOptions struct {
 	Httpprofile        string
 	Quiet              bool
 	Schemas            Schemas
+	ExpireTilesDir     string
+	ExpireTilesZoom    int
 }
 
 func (o *_BaseOptions) updateFromConfig() error {
@@ -104,6 +108,13 @@ func (o *_BaseOptions) updateFromConfig() error {
 	if o.CacheDir == defaultCacheDir {
 		o.CacheDir = conf.CacheDir
 	}
+	if o.ExpireTilesDir == "" {
+		o.ExpireTilesDir = conf.ExpireTilesDir
+	}
+	if o.ExpireTilesZoom == 0 {
+		o.ExpireTilesZoom = conf.ExpireTilesZoom
+	}
+
 	if o.DiffDir == "" {
 		if conf.DiffDir == "" {
 			// use CacheDir for backwards compatibility
@@ -186,6 +197,9 @@ func init() {
 	ImportFlags.BoolVar(&ImportOptions.RevertDeploy, "revertdeploy", false, "revert deploy to production")
 	ImportFlags.BoolVar(&ImportOptions.RemoveBackup, "removebackup", false, "remove backups from deploy")
 	ImportFlags.DurationVar(&ImportOptions.DiffStateBefore, "diff-state-before", 2*time.Hour, "set initial diff sequence before")
+
+	DiffFlags.StringVar(&BaseOptions.ExpireTilesDir, "expiretiles-dir", "", "write expire tiles into dir")
+	DiffFlags.IntVar(&BaseOptions.ExpireTilesZoom, "expiretiles-zoom", 14, "write expire tiles in this zoom level")
 }
 
 func ParseImport(args []string) {
