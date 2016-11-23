@@ -2,14 +2,14 @@ package expire
 
 import (
 	"fmt"
-	"github.com/omniscale/imposm3/element"
-	"github.com/omniscale/imposm3/proj"
 	"io"
-	"math"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/proj"
 )
 
 var mercBbox = [4]float64{
@@ -30,15 +30,24 @@ func init() {
 	}
 }
 
-func TileCoord(long, lat float64, zoom uint32) (uint32, uint32) {
+// fraction of a tile that is added as a padding around an expired tile
+const tilePadding = 0.1
+
+func TileCoords(long, lat float64, zoom uint32) []tileKey {
 	x, y := proj.WgsToMerc(long, lat)
 	res := mercRes[zoom]
 	x = x - mercBbox[0]
 	y = mercBbox[3] - y
-	tileX := uint32(math.Floor(x / (res * 256)))
-	tileY := uint32(math.Floor(y / (res * 256)))
+	tileX := float32(x / (res * 256))
+	tileY := float32(y / (res * 256))
 
-	return tileX, tileY
+	tiles := make([]tileKey, 0, 4)
+	for x := uint32(tileX - tilePadding); x <= uint32(tileX+tilePadding); x++ {
+		for y := uint32(tileY - tilePadding); y <= uint32(tileY+tilePadding); y++ {
+			tiles = append(tiles, tileKey{x, y})
+		}
+	}
+	return tiles
 }
 
 type TileList struct {
@@ -50,8 +59,8 @@ type TileList struct {
 }
 
 type tileKey struct {
-	x uint32
-	y uint32
+	X uint32
+	Y uint32
 }
 
 type tile struct {
@@ -70,9 +79,10 @@ func NewTileList(zoom int, out string) *TileList {
 }
 
 func (tl *TileList) addCoord(long, lat float64) {
-	tileX, tileY := TileCoord(long, lat, tl.zoom)
 	tl.mu.Lock()
-	tl.tiles[tileKey{tileX, tileY}] = struct{}{}
+	for _, t := range TileCoords(long, lat, tl.zoom) {
+		tl.tiles[t] = struct{}{}
+	}
 	tl.mu.Unlock()
 }
 
@@ -88,7 +98,7 @@ func (tl *TileList) ExpireNodes(nodes []element.Node, closed bool) {
 
 func (tl *TileList) writeTiles(w io.Writer) error {
 	for tileKey, _ := range tl.tiles {
-		_, err := fmt.Fprintf(w, "%d/%d/%d\n", tl.zoom, tileKey.x, tileKey.y)
+		_, err := fmt.Fprintf(w, "%d/%d/%d\n", tl.zoom, tileKey.X, tileKey.Y)
 		if err != nil {
 			return err
 		}

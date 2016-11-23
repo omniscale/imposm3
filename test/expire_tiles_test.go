@@ -108,16 +108,18 @@ func TestExpireTiles_CheckExpireFile(t *testing.T) {
 		{"modify relation from nodes (old)", 4.0001, 3, true},
 		{"modify relation from nodes (new)", 4.0001, -3, true},
 	} {
-		x, y := expire.TileCoord(test.long, test.lat, 14)
-		if test.expire {
-			if _, ok := tiles[tile{x: int(x), y: int(y), z: 14}]; !ok {
-				t.Errorf("missing expire tile for %s 14/%d/%d for %f %f", test.reason, x, y, test.long, test.lat)
+		for _, coord := range expire.TileCoords(test.long, test.lat, 14) {
+			x, y := coord.X, coord.Y
+			if test.expire {
+				if _, ok := tiles[tile{x: int(x), y: int(y), z: 14}]; !ok {
+					t.Errorf("missing expire tile for %s 14/%d/%d for %f %f", test.reason, x, y, test.long, test.lat)
+				} else {
+					delete(tiles, tile{x: int(x), y: int(y), z: 14})
+				}
 			} else {
-				delete(tiles, tile{x: int(x), y: int(y), z: 14})
-			}
-		} else {
-			if _, ok := tiles[tile{x: int(x), y: int(y), z: 14}]; ok {
-				t.Errorf("found expire tile for %s 14/%d/%d for %f %f", test.reason, x, y, test.long, test.lat)
+				if _, ok := tiles[tile{x: int(x), y: int(y), z: 14}]; ok {
+					t.Errorf("found expire tile for %s 14/%d/%d for %f %f", test.reason, x, y, test.long, test.lat)
+				}
 			}
 		}
 	}
