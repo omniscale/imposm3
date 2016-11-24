@@ -3,7 +3,6 @@ package test
 import (
 	"bufio"
 	"database/sql"
-	"github.com/omniscale/imposm3/expire"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -81,49 +80,92 @@ func TestExpireTiles_CheckExpireFile(t *testing.T) {
 
 	for _, test := range []struct {
 		reason string
-		long   float64
-		lat    float64
+		tiles  []tile
 		expire bool
 	}{
-		{"create node", 3, 1, true},
-		{"modify node (old)", 1, 1, true},
-		{"modify node (new)", 1, -1, true},
-		{"modify node to unmapped (old)", 4, 1, true},
-		{"modify node to unmapped (new)", 4, -1, false},
-		{"delete node", 2, 1, true},
+		{"create node", []tile{{8328, 8146, 14}}, true},
+		{"modify node (old)", []tile{{8237, 8146, 14}}, true},
+		{"modify node (new)", []tile{{8237, 8237, 14}}, true},
+		{"modify node to unmapped (old)", []tile{{8373, 8146, 14}, {8374, 8146, 14}}, true},
+		{"modify node to unmapped (new)", []tile{{8373, 8146, 14}, {8374, 8146, 14}}, false},
+		{"delete node", []tile{{8282, 8146, 14}, {8283, 8146, 14}}, true},
 
-		{"delete way", 2.0001, 2, true},
-		{"modify way", 1.0001, 2, true},
-		{"modify way from node (old)", 3.0001, 2, true},
-		{"modify way from node (new)", 3.0001, -2, true},
-		{"create way", 4.0001, 2, true},
+		{"delete way", []tile{{8283, 8100, 14}}, true},
+		{"modify way", []tile{{8237, 8100, 14}}, true},
+		{"modify way from node (old)", []tile{{8328, 8100, 14}}, true},
+		{"modify way from node (new)", []tile{{8328, 8283, 14}}, true},
+		{"create way", []tile{{8374, 8100, 14}}, true},
+		{"create long way", []tile{{8419, 8100, 14}, {8420, 8100, 14}, {8421, 8100, 14}}, true},
 
-		{"create long way (start)", 5.00, 2, true},
-		{"create long way (mid)", 5.025, 2, false}, // TODO not implemented
-		{"create long way (end)", 5.05, 2, true},
+		{"modify relation", []tile{{8237, 8055, 14}}, true},
+		{"delete relation", []tile{{8283, 8055, 14}}, true},
+		{"modify relation from way", []tile{{8328, 8055, 14}}, true},
+		{"modify relation from nodes (old)", []tile{{8374, 8055, 14}}, true},
+		{"modify relation from nodes (new)", []tile{{8374, 8328, 14}}, true},
+		{"create polygon (box)", []tile{
+			{8237, 8007, 14},
+			{8237, 8008, 14},
+			{8237, 8009, 14},
+			{8238, 8007, 14},
+			{8238, 8008, 14},
+			{8238, 8009, 14},
+			{8239, 8007, 14},
+			{8239, 8008, 14},
+			{8239, 8009, 14},
+		}, true},
 
-		{"modify relation", 1.0001, 3, true},
-		{"delete relation", 2.0001, 3, true},
-		{"modify relation from way", 3.0001, 3, true},
-		{"modify relation from nodes (old)", 4.0001, 3, true},
-		{"modify relation from nodes (new)", 4.0001, -3, true},
+		{"create polygon (outline)", []tile{
+			{8310, 8005, 14}, {8302, 7991, 14}, {8283, 7993, 14},
+			{8300, 8009, 14}, {8283, 8003, 14}, {8308, 8009, 14},
+			{8310, 7995, 14}, {8285, 8009, 14}, {8288, 8009, 14},
+			{8301, 8009, 14}, {8310, 8002, 14}, {8302, 8009, 14},
+			{8310, 8003, 14}, {8286, 8009, 14}, {8300, 7991, 14},
+			{8283, 7994, 14}, {8296, 8009, 14}, {8298, 8009, 14},
+			{8310, 8009, 14}, {8283, 7999, 14}, {8283, 7992, 14},
+			{8290, 7991, 14}, {8305, 8009, 14}, {8309, 7991, 14},
+			{8306, 7991, 14}, {8291, 7991, 14}, {8283, 7996, 14},
+			{8310, 7996, 14}, {8293, 7991, 14}, {8310, 8007, 14},
+			{8310, 8001, 14}, {8307, 8009, 14}, {8299, 8009, 14},
+			{8310, 7998, 14}, {8310, 7999, 14}, {8301, 7991, 14},
+			{8283, 7998, 14}, {8283, 8006, 14}, {8289, 8009, 14},
+			{8310, 8008, 14}, {8285, 7991, 14}, {8283, 8002, 14},
+			{8289, 7991, 14}, {8286, 7991, 14}, {8288, 7991, 14},
+			{8283, 8008, 14}, {8283, 8005, 14}, {8310, 7992, 14},
+			{8310, 8004, 14}, {8310, 7991, 14}, {8296, 7991, 14},
+			{8292, 7991, 14}, {8283, 8009, 14}, {8291, 8009, 14},
+			{8293, 8009, 14}, {8284, 8009, 14}, {8287, 7991, 14},
+			{8297, 8009, 14}, {8283, 8007, 14}, {8299, 7991, 14},
+			{8310, 7997, 14}, {8303, 8009, 14}, {8290, 8009, 14},
+			{8306, 8009, 14}, {8283, 7995, 14}, {8283, 8000, 14},
+			{8295, 8009, 14}, {8310, 8006, 14}, {8304, 8009, 14},
+			{8295, 7991, 14}, {8292, 8009, 14}, {8309, 8009, 14},
+			{8283, 8004, 14}, {8307, 7991, 14}, {8305, 7991, 14},
+			{8283, 8001, 14}, {8284, 7991, 14}, {8297, 7991, 14},
+			{8310, 7993, 14}, {8303, 7991, 14}, {8294, 8009, 14},
+			{8287, 8009, 14}, {8283, 7991, 14}, {8283, 7997, 14},
+			{8308, 7991, 14}, {8304, 7991, 14}, {8298, 7991, 14},
+			{8310, 8000, 14}, {8310, 7994, 14}, {8294, 7991, 14},
+		}, true},
 	} {
-		for _, coord := range expire.TileCoords(test.long, test.lat, 14) {
-			x, y := coord.X, coord.Y
+
+		for _, coord := range test.tiles {
 			if test.expire {
-				if _, ok := tiles[tile{x: int(x), y: int(y), z: 14}]; !ok {
-					t.Errorf("missing expire tile for %s 14/%d/%d for %f %f", test.reason, x, y, test.long, test.lat)
+				if _, ok := tiles[coord]; !ok {
+					t.Errorf("missing expire tile for %s %v", test.reason, coord)
 				} else {
-					delete(tiles, tile{x: int(x), y: int(y), z: 14})
+					delete(tiles, coord)
 				}
 			} else {
-				if _, ok := tiles[tile{x: int(x), y: int(y), z: 14}]; ok {
-					t.Errorf("found expire tile for %s 14/%d/%d for %f %f", test.reason, x, y, test.long, test.lat)
+				if _, ok := tiles[coord]; ok {
+					t.Errorf("found expire tile for %s %v", test.reason, coord)
 				}
 			}
 		}
 	}
 
+	if len(tiles) > 0 {
+		t.Errorf("found %d unexpected tiles", len(tiles))
+	}
 	for tile, _ := range tiles {
 		t.Errorf("unexpected tile expired: %v", tile)
 	}

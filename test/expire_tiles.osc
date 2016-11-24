@@ -105,7 +105,36 @@
     <node id="30404" version="1" timestamp="2011-11-11T00:11:11Z" lon="4.0001" lat="-3.0001" />
   </modify>
 
+  <!-- create polygon (box) -->
+  <create>
+    <node id="40101" version="1" timestamp="2011-11-11T00:11:11Z" lon="1.00" lat="4.00" />
+    <node id="40102" version="1" timestamp="2011-11-11T00:11:11Z" lon="1.05" lat="4.00" />
+    <node id="40103" version="1" timestamp="2011-11-11T00:11:11Z" lon="1.05" lat="4.05" />
+    <node id="40104" version="1" timestamp="2011-11-11T00:11:11Z" lon="1.00" lat="4.05" />
+    <way id="40151" version="1" timestamp="2011-11-11T00:11:11Z">
+      <nd ref="40101"/>
+      <nd ref="40102"/>
+      <nd ref="40103"/>
+      <nd ref="40104"/>
+      <nd ref="40101"/>
+      <tag k="building" v="yes"/>
+    </way>
+  </create>
 
-
+  <!-- create large polygon (outline) -->
+  <create>
+    <node id="40201" version="1" timestamp="2011-11-11T00:11:11Z" lon="2.0" lat="4.00" />
+    <node id="40202" version="1" timestamp="2011-11-11T00:11:11Z" lon="2.6" lat="4.00" />
+    <node id="40203" version="1" timestamp="2011-11-11T00:11:11Z" lon="2.6" lat="4.4" />
+    <node id="40204" version="1" timestamp="2011-11-11T00:11:11Z" lon="2.00" lat="4.4" />
+    <way id="40251" version="1" timestamp="2011-11-11T00:11:11Z">
+      <nd ref="40201"/>
+      <nd ref="40202"/>
+      <nd ref="40203"/>
+      <nd ref="40204"/>
+      <nd ref="40201"/>
+      <tag k="building" v="yes"/>
+    </way>
+  </create>
 
 </osmChange>

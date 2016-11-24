@@ -124,4 +124,12 @@
     <tag k="building" v="yes"/>
     <tag k="type" v="multipolygon"/>
   </relation>
+
+
+  <!-- create polygon (box) -->
+  <!-- <node id="40101" ...-->
+
+  <!-- create large polygon (outline) -->
+  <!-- <node id="40201" ...-->
+
 </osm>
