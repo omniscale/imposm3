@@ -151,6 +151,8 @@ func (tl *TileList) writeTiles(w io.Writer) error {
 }
 
 func (tl *TileList) Flush() error {
+	tl.mu.Lock()
+	defer tl.mu.Unlock()
 	if len(tl.tiles) == 0 {
 		return nil
 	}
@@ -171,6 +173,7 @@ func (tl *TileList) Flush() error {
 	if err != nil {
 		return err
 	}
+	tl.tiles = make(map[tileKey]struct{})
 	// wrote to .tiles~ and now atomically move file to .tiles
 	return os.Rename(fileName, fileName[0:len(fileName)-1])
 }
