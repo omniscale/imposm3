@@ -1,4 +1,4 @@
-package cmd
+package imposm3
 
 var Version string
 

@@ -18,14 +18,14 @@ BUILD_VERSION=dev-$(BUILD_DATE)-$(BUILD_REV)
 all: build test
 
 update_version:
-	@perl -p -i -e 's/buildVersion = ".*"/buildVersion = "$(BUILD_VERSION)"/' cmd/version.go
+	@perl -p -i -e 's/buildVersion = ".*"/buildVersion = "$(BUILD_VERSION)"/' version.go
 
 revert_version:
-	@perl -p -i -e 's/buildVersion = ".*"/buildVersion = ""/' cmd/version.go
+	@perl -p -i -e 's/buildVersion = ".*"/buildVersion = ""/' version.go
 
 imposm3: $(PBGOFILES) $(GOFILES)
 	$(MAKE) update_version
-	$(GO) build $(GOLDFLAGS)
+	$(GO) build $(GOLDFLAGS) ./cmd/imposm3
 	$(MAKE) revert_version
 
 build: imposm3
