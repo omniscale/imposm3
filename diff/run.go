@@ -57,10 +57,10 @@ func Run() {
 	defer diffCache.Close()
 
 	sigc := make(chan os.Signal, 1)
-	signal.Notify(sigc, syscall.SIGTERM, syscall.SIGHUP)
+	signal.Notify(sigc, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP)
 
 	shutdown := func() {
-		logger.Print("Exiting. (SIGTERM/SIGHUB)")
+		logger.Print("Exiting. (SIGTERM/SIGINT/SIGHUB)")
 		logging.Shutdown()
 		osmCache.Close()
 		diffCache.Close()
