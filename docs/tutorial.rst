@@ -117,6 +117,7 @@ You can configure the following options:
 - ``limittocachebuffer``
 - ``mapping``
 - ``srid``
+- ``diffdir``
 
 
 Here is an example configuration::
@@ -183,26 +184,40 @@ Projection
 Imposm uses the the web mercator projection (``EPSG:3857``) for the imports. You can change this with the ``-srid`` option. At the moment only EPSG:3857 and EPSG:4326 are supported.
 
 
-Diff
-~~~~
-
-Imposm needs to cache a few more information to be able to update the database from OSM diff files. You can enable this with the `-diff` option.
-
-::
-
-  imposm3 import -config config.json -read hamburg.osm.pbf -write -diff
-
-Read :ref:`diff` for more information.
-
-.. note:: Each diff import requires access to the cache files from this initial import. So it is a good idea to set ``-cachedir`` to a premanent location instead of `/tmp/`.
-
-
-.. _diff:
-
 Updating
 ^^^^^^^^
 
-Imposm allows you to update an existing database by importing changes from an `OSM changes file <http://wiki.openstreetmap.org/wiki/OsmChange>`_. Changes files contain all edits made to the OSM dataset in a defined time-range. These files are `available at planet.openstreetmap.org <http://wiki.openstreetmap.org/wiki/Planet.osm/diffs>`_.
+Imposm can keep the OSM data up-to-date by importing changes from `OSM changes files <http://wiki.openstreetmap.org/wiki/OsmChange>`_.
+It needs to cache a few more information to be able to update the database from diff files. You can enable this with the `-diff` option during the initial import.
+
+::
+
+  imposm3 import -config config.json -read hamburg.osm.pbf -write -diff -cachedir ./cache -diffdir ./diff
+
+.. note:: Each diff import requires access to the cache files from this initial import. So it is a good idea to set ``-cachedir`` to a premanent location instead of `/tmp/`.
+
+.. note:: You should not make changes to the mapping file after the initial import. Changes are not detected and this can result aborted updates or incomplete data.
+
+.. _diff:
+
+`run`
+^^^^^
+
+Imposm 3 can automatically fetch and import diff files. It stores the current sequence in `last.state.txt` inside the `-diffdir` directory. The downloaded diff files are cached in this directory as well.
+
+To start the update process::
+
+  imposm3 run -config config.json
+
+You can stop processing new diff files SIGTERM (``crtl-c``), SIGKILL or SIGHUP. You should create systemd/upstart/init.d service for ``imposm3 run`` to always run in background.
+
+You can change to hourly updates by adding `replication_url: "http://planet.openstreetmap.org/replication/hour/"` and `replication_interval: "1h"` to the Imposm configuration.
+
+
+One-time update
+---------------
+
+You can also manually update an existing database by importing `OSM changes files <http://wiki.openstreetmap.org/wiki/OsmChange>`_. Changes files contain all edits made to the OSM dataset in a defined time-range. These files are `available at planet.openstreetmap.org <http://wiki.openstreetmap.org/wiki/Planet.osm/diffs>`_.
 
 The ``diff`` sub-command requires similar options as the ``import`` sub-command. You can pass one or more XML changes files to ``diff``, instead of a PBF file for the ``-read`` option.
 
@@ -213,5 +228,3 @@ To update an existing database with three change files::
 Imposm 3 stores the sequence number of the last imported changeset in `${cachedir}/last.state.txt`, if it finds a matching state file (`123.state.txt` for `123.osc.gz`). Imposm refuses to import the same diff files a second time if these state files are present.
 
 Remember that you have to make the initial import with the ``-diff`` option. See above.
-
-.. note:: You should not make changes to the mapping file after the initial import. Changes are not detected and this can result aborted updates or incomplete data.

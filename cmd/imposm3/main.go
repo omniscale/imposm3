@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"os"
 	"runtime"
 
+	"github.com/omniscale/imposm3"
 	"github.com/omniscale/imposm3/cache/query"
 	"github.com/omniscale/imposm3/config"
 	"github.com/omniscale/imposm3/diff"
@@ -21,6 +22,7 @@ func PrintCmds() {
 	fmt.Println("Available commands:")
 	fmt.Println("\timport")
 	fmt.Println("\tdiff")
+	fmt.Println("\trun")
 	fmt.Println("\tquery-cache")
 	fmt.Println("\tversion")
 }
@@ -51,11 +53,17 @@ func Main(usage func()) {
 			stats.StartHttpPProf(config.BaseOptions.Httpprofile)
 		}
 		diff.Diff()
+	case "run":
+		config.ParseRunImport(os.Args[2:])
 
+		if config.BaseOptions.Httpprofile != "" {
+			stats.StartHttpPProf(config.BaseOptions.Httpprofile)
+		}
+		diff.Run()
 	case "query-cache":
 		query.Query(os.Args[2:])
 	case "version":
-		fmt.Println(Version)
+		fmt.Println(imposm3.Version)
 		os.Exit(0)
 	default:
 		usage()
@@ -64,4 +72,8 @@ func Main(usage func()) {
 	logging.Shutdown()
 	os.Exit(0)
 
+}
+
+func main() {
+	Main(PrintCmds)
 }

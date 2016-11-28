@@ -219,8 +219,8 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 
 			// always delete, to prevent duplicate elements from overlap of initial
 			// import and diff import
-			if err := deleter.Delete(elem); err != nil {
-				return diffError(err, "delete element", elem)
+			if err := deleter.Delete(elem); err != nil && err != cache.NotFound {
+				return diffError(err, "delete element %#v", elem)
 			}
 			if elem.Del {
 				if !elem.Add {
