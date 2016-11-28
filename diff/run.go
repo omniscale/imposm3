@@ -59,19 +59,26 @@ func Run() {
 	sigc := make(chan os.Signal, 1)
 	signal.Notify(sigc, syscall.SIGTERM, syscall.SIGINT, syscall.SIGHUP)
 
+	var tilelist *expire.TileList
+	var lastTlFlush = time.Now()
+	var tileExpireor expire.Expireor
+	if config.BaseOptions.ExpireTilesDir != "" {
+		tilelist = expire.NewTileList(config.BaseOptions.ExpireTilesZoom, config.BaseOptions.ExpireTilesDir)
+		tileExpireor = tilelist
+	}
+
 	shutdown := func() {
 		logger.Print("Exiting. (SIGTERM/SIGINT/SIGHUB)")
 		logging.Shutdown()
 		osmCache.Close()
 		diffCache.Close()
+		if tilelist != nil {
+			err := tilelist.Flush()
+			if err != nil {
+				logger.Print("error writing tile expire list", err)
+			}
+		}
 		os.Exit(0)
-	}
-
-	var tiles *expire.TileList
-	var tileExpireor expire.Expireor
-	if config.BaseOptions.ExpireTilesDir != "" {
-		tiles = expire.NewTileList(config.BaseOptions.ExpireTilesZoom, config.BaseOptions.ExpireTilesDir)
-		tileExpireor = tiles
 	}
 
 	exp := newExpBackoff(2*time.Second, 5*time.Minute)
@@ -91,8 +98,11 @@ func Run() {
 				osmCache.Coords.Flush()
 				diffCache.Flush()
 
-				if err == nil && tiles != nil {
-					err := tiles.Flush()
+				if err == nil && tilelist != nil && time.Since(lastTlFlush) > time.Second*30 {
+					// call at most once every 30 seconds to reduce files during the
+					// catch-up phase after the initial import
+					lastTlFlush = time.Now()
+					err := tilelist.Flush()
 					if err != nil {
 						logger.Print("error writing tile expire list", err)
 					}
