@@ -7,26 +7,19 @@ GOFILES=$(shell find . \( -name \*.go ! -name version.go \) )
 # for protoc-gen-go
 export PATH := $(GOPATH)/bin:$(PATH)
 
-GOLDFLAGS=-ldflags '-r $${ORIGIN}/lib'
+GOLDFLAGS=-ldflags '-r $${ORIGIN}/lib $(VERSION_LDFLAGS)'
 
 GO:=$(if $(shell go version |grep 'go1.5'),GO15VENDOREXPERIMENT=1,) go
 
 BUILD_DATE=$(shell date +%Y%m%d)
 BUILD_REV=$(shell git rev-parse --short HEAD)
 BUILD_VERSION=dev-$(BUILD_DATE)-$(BUILD_REV)
+VERSION_LDFLAGS=-X github.com/omniscale/imposm3.buildVersion=$(BUILD_VERSION)
 
 all: build test
 
-update_version:
-	@perl -p -i -e 's/buildVersion = ".*"/buildVersion = "$(BUILD_VERSION)"/' version.go
-
-revert_version:
-	@perl -p -i -e 's/buildVersion = ".*"/buildVersion = ""/' version.go
-
 imposm3: $(PBGOFILES) $(GOFILES)
-	$(MAKE) update_version
 	$(GO) build $(GOLDFLAGS) ./cmd/imposm3
-	$(MAKE) revert_version
 
 build: imposm3
 

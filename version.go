@@ -2,9 +2,11 @@ package imposm3
 
 var Version string
 
+// buidVersion gets replaced while building with
+// go build -ldflags "-X github.com/omniscale/imposm3.buildVersion 1234"
+var buildVersion string
+
 func init() {
-	// buidVersion gets replaced during build with make
-	var buildVersion = ""
 	Version = "0.2.0"
 	Version += buildVersion
 }
