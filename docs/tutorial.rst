@@ -107,7 +107,7 @@ You can limit the imported geometries to polygon boundaries. You can load the li
 Config file
 ~~~~~~~~~~~
 
-You can create a simple Imposm configuration, instead of specifying the ``-connection`` or ``-mapping`` option with each run. You can use this configuration with the ``-config`` option.
+You can create a simple JSON configuration file, instead of specifying the ``-connection`` or ``-mapping`` option with each run. You can use this configuration with the ``-config`` option.
 
 You can configure the following options:
 
@@ -215,3 +215,9 @@ Imposm 3 stores the sequence number of the last imported changeset in `${cachedi
 Remember that you have to make the initial import with the ``-diff`` option. See above.
 
 .. note:: You should not make changes to the mapping file after the initial import. Changes are not detected and this can result aborted updates or incomplete data.
+
+Expire tiles
+^^^^^^^^^^^^
+
+Imposm can log where the OSM data was changed when it imports diff files. You can use the ``-expiretiles-dir`` option to specify a location where Imposm should log this information. Imposm creates files in the format `YYYYmmdd/HHMM.sss.tiles`` (e.g. ``20161129/2123.123.tiles``) inside this directory. Each file contains a list with webmercator tiles in the format ``z/x/y`` (e.g. ``14/7321/1339``). All tiles are based on zoom level 14. You can change this with the ``-expiretiles-zoom`` option.
+Both expire options can be set as ``expiretiles_dir`` and ``expiretiles_zoom`` in the JSON configuration.
