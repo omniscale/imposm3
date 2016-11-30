@@ -19,8 +19,8 @@ type Config struct {
 	LimitToCacheBuffer float64 `json:"limitto_cache_buffer"`
 	Srid               int     `json:"srid"`
 	Schemas            Schemas `json:"schemas"`
-	ExpireTilesDir     string  `json:"expire_tiles_dir"`
-	ExpireTilesZoom    int     `json:"expire_tiles_zoom"`
+	ExpireTilesDir     string  `json:"expiretiles_dir"`
+	ExpireTilesZoom    int     `json:"expiretiles_zoom"`
 }
 
 type Schemas struct {
