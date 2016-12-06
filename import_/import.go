@@ -11,13 +11,13 @@ import (
 	"github.com/omniscale/imposm3/config"
 	"github.com/omniscale/imposm3/database"
 	_ "github.com/omniscale/imposm3/database/postgis"
-	state "github.com/omniscale/imposm3/diff/state"
 	"github.com/omniscale/imposm3/geom/limit"
 	"github.com/omniscale/imposm3/logging"
 	"github.com/omniscale/imposm3/mapping"
 	"github.com/omniscale/imposm3/parser/pbf"
 	"github.com/omniscale/imposm3/reader"
 	"github.com/omniscale/imposm3/stats"
+	"github.com/omniscale/imposm3/update/state"
 	"github.com/omniscale/imposm3/writer"
 )
 

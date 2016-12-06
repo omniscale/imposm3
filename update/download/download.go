@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/omniscale/imposm3"
-	"github.com/omniscale/imposm3/diff/state"
 	"github.com/omniscale/imposm3/logging"
+	"github.com/omniscale/imposm3/update/state"
 )
 
 var log = logging.NewLogger("downloader")

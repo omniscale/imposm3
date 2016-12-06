@@ -1,4 +1,4 @@
-package diff
+package update
 
 import (
 	"errors"
@@ -10,8 +10,6 @@ import (
 	"github.com/omniscale/imposm3/config"
 	"github.com/omniscale/imposm3/database"
 	_ "github.com/omniscale/imposm3/database/postgis"
-	"github.com/omniscale/imposm3/diff/parser"
-	diffstate "github.com/omniscale/imposm3/diff/state"
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/expire"
 	"github.com/omniscale/imposm3/geom/geos"
@@ -19,6 +17,8 @@ import (
 	"github.com/omniscale/imposm3/logging"
 	"github.com/omniscale/imposm3/mapping"
 	"github.com/omniscale/imposm3/stats"
+	"github.com/omniscale/imposm3/update/parser"
+	diffstate "github.com/omniscale/imposm3/update/state"
 	"github.com/omniscale/imposm3/writer"
 )
 

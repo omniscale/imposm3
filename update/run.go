@@ -1,4 +1,4 @@
-package diff
+package update
 
 import (
 	"fmt"
@@ -9,10 +9,10 @@ import (
 
 	"github.com/omniscale/imposm3/cache"
 	"github.com/omniscale/imposm3/config"
-	"github.com/omniscale/imposm3/diff/download"
 	"github.com/omniscale/imposm3/expire"
 	"github.com/omniscale/imposm3/geom/limit"
 	"github.com/omniscale/imposm3/logging"
+	"github.com/omniscale/imposm3/update/download"
 )
 
 var logger = logging.NewLogger("")

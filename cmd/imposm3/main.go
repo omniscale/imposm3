@@ -9,10 +9,10 @@ import (
 	"github.com/omniscale/imposm3"
 	"github.com/omniscale/imposm3/cache/query"
 	"github.com/omniscale/imposm3/config"
-	"github.com/omniscale/imposm3/diff"
 	"github.com/omniscale/imposm3/import_"
 	"github.com/omniscale/imposm3/logging"
 	"github.com/omniscale/imposm3/stats"
+	"github.com/omniscale/imposm3/update"
 )
 
 var log = logging.NewLogger("")
@@ -52,14 +52,14 @@ func Main(usage func()) {
 		if config.BaseOptions.Httpprofile != "" {
 			stats.StartHttpPProf(config.BaseOptions.Httpprofile)
 		}
-		diff.Diff()
+		update.Diff()
 	case "run":
 		config.ParseRunImport(os.Args[2:])
 
 		if config.BaseOptions.Httpprofile != "" {
 			stats.StartHttpPProf(config.BaseOptions.Httpprofile)
 		}
-		diff.Run()
+		update.Run()
 	case "query-cache":
 		query.Query(os.Args[2:])
 	case "version":
