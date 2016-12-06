@@ -73,9 +73,9 @@ NextToken:
 				mod = false
 				del = false
 			case "modify":
-				add = true
+				add = false
 				mod = true
-				del = true
+				del = false
 			case "delete":
 				add = false
 				mod = false

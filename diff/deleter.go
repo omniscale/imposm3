@@ -271,7 +271,7 @@ func (d *Deleter) Delete(delElem parser.DiffElem) error {
 				}
 			}
 		}
-		if !delElem.Add {
+		if delElem.Del {
 			if err := d.diffCache.Coords.Delete(delElem.Node.Id); err != nil {
 				return err
 			}

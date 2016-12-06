@@ -223,35 +223,34 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 				return diffError(err, "delete element %#v", elem)
 			}
 			if elem.Del {
-				if !elem.Add {
-					// no new or modified elem -> remove from cache
-					if elem.Rel != nil {
-						if err := osmCache.Relations.DeleteRelation(elem.Rel.Id); err != nil && err != cache.NotFound {
-							return diffError(err, "delete relation %v", elem.Rel)
-						}
-					} else if elem.Way != nil {
-						if err := osmCache.Ways.DeleteWay(elem.Way.Id); err != nil && err != cache.NotFound {
-							return diffError(err, "delete way %v", elem.Way)
-						}
-						if err := diffCache.Ways.Delete(elem.Way.Id); err != nil && err != cache.NotFound {
-							return diffError(err, "delete way references %v", elem.Way)
-						}
-					} else if elem.Node != nil {
-						if err := osmCache.Nodes.DeleteNode(elem.Node.Id); err != nil && err != cache.NotFound {
-							return diffError(err, "delete node %v", elem.Node)
-						}
-						if err := osmCache.Coords.DeleteCoord(elem.Node.Id); err != nil && err != cache.NotFound {
-							return diffError(err, "delete coord %v", elem.Node)
-						}
+				// no new or modified elem -> remove from cache
+				if elem.Rel != nil {
+					if err := osmCache.Relations.DeleteRelation(elem.Rel.Id); err != nil && err != cache.NotFound {
+						return diffError(err, "delete relation %v", elem.Rel)
 					}
-				} else if elem.Node != nil && elem.Node.Tags == nil {
-					// handle modifies where a node drops all tags
+				} else if elem.Way != nil {
+					if err := osmCache.Ways.DeleteWay(elem.Way.Id); err != nil && err != cache.NotFound {
+						return diffError(err, "delete way %v", elem.Way)
+					}
+					if err := diffCache.Ways.Delete(elem.Way.Id); err != nil && err != cache.NotFound {
+						return diffError(err, "delete way references %v", elem.Way)
+					}
+				} else if elem.Node != nil {
 					if err := osmCache.Nodes.DeleteNode(elem.Node.Id); err != nil && err != cache.NotFound {
 						return diffError(err, "delete node %v", elem.Node)
 					}
+					if err := osmCache.Coords.DeleteCoord(elem.Node.Id); err != nil && err != cache.NotFound {
+						return diffError(err, "delete coord %v", elem.Node)
+					}
 				}
 			}
-			if elem.Add {
+			if elem.Mod && elem.Node != nil && elem.Node.Tags == nil {
+				// handle modifies where a node drops all tags
+				if err := osmCache.Nodes.DeleteNode(elem.Node.Id); err != nil && err != cache.NotFound {
+					return diffError(err, "delete node %v", elem.Node)
+				}
+			}
+			if elem.Add || elem.Mod {
 				if elem.Rel != nil {
 					// check if first member is cached to avoid caching
 					// unneeded relations (typical outside of our coverage)
