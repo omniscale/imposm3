@@ -213,7 +213,7 @@ func (d *Deleter) deleteNode(id int64) error {
 	return nil
 }
 
-func (d *Deleter) Delete(delElem diff.DiffElem) error {
+func (d *Deleter) Delete(delElem diff.Element) error {
 	if delElem.Rel != nil {
 		if err := d.deleteRelation(delElem.Rel.Id, true, true); err != nil {
 			return err

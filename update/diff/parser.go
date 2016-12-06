@@ -14,7 +14,7 @@ import (
 
 var log = logging.NewLogger("osc parser")
 
-type DiffElem struct {
+type Element struct {
 	Add  bool
 	Mod  bool
 	Del  bool
@@ -25,7 +25,7 @@ type DiffElem struct {
 
 type Parser struct {
 	reader   io.Reader
-	elems    chan DiffElem
+	elems    chan Element
 	errc     chan error
 	metadata bool
 	running  bool
@@ -36,7 +36,7 @@ func (p *Parser) SetWithMetadata(metadata bool) {
 	p.metadata = metadata
 }
 
-func (p *Parser) Next() (DiffElem, error) {
+func (p *Parser) Next() (Element, error) {
 	if !p.running {
 		p.running = true
 		go parse(p.reader, p.elems, p.errc, p.metadata)
@@ -56,19 +56,19 @@ func (p *Parser) Next() (DiffElem, error) {
 				p.onClose()
 				p.onClose = nil
 			}
-			return DiffElem{}, err
+			return Element{}, err
 		}
 	}
 	if p.onClose != nil {
 		err := p.onClose()
 		p.onClose = nil
-		return DiffElem{}, err
+		return Element{}, err
 	}
-	return DiffElem{}, nil
+	return Element{}, nil
 }
 
 func NewDecoder(r io.Reader) *Parser {
-	elems := make(chan DiffElem)
+	elems := make(chan Element)
 	errc := make(chan error)
 	return &Parser{reader: r, elems: elems, errc: errc}
 }
@@ -85,12 +85,12 @@ func NewOscGzDecoder(fname string) (*Parser, error) {
 		return nil, err
 	}
 
-	elems := make(chan DiffElem)
+	elems := make(chan Element)
 	errc := make(chan error)
 	return &Parser{reader: reader, elems: elems, errc: errc, onClose: file.Close}, nil
 }
 
-func parse(reader io.Reader, elems chan DiffElem, errc chan error, metadata bool) {
+func parse(reader io.Reader, elems chan Element, errc chan error, metadata bool) {
 	defer close(elems)
 	defer close(errc)
 
@@ -207,7 +207,7 @@ NextToken:
 				log.Warn("unhandled XML tag ", tok.Name.Local, " in OSC")
 			}
 		case xml.EndElement:
-			var e DiffElem
+			var e Element
 			switch tok.Name.Local {
 			case "node":
 				if len(tags) > 0 {
