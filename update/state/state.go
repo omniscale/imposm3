@@ -58,7 +58,7 @@ func WriteLastState(cacheDir string, state *DiffState) error {
 	return state.WriteToFile(stateFile)
 }
 
-func ParseFromOsc(oscFile string) (*DiffState, error) {
+func FromOscGz(oscFile string) (*DiffState, error) {
 	var stateFile string
 	if !strings.HasSuffix(oscFile, ".osc.gz") {
 		log.Warn("cannot read state file for non .osc.gz files")
@@ -79,15 +79,18 @@ func ParseFromOsc(oscFile string) (*DiffState, error) {
 	return ParseFile(stateFile)
 }
 
-func FromPbf(pbfFile *pbf.Pbf, before time.Duration) *DiffState {
+func FromPbf(filename string, before time.Duration) (*DiffState, error) {
+	pbfFile, err := pbf.NewParser(filename)
+	if err != nil {
+		return nil, err
+	}
 	var timestamp time.Time
-	if pbfFile.Header.Time.Unix() != 0 {
-		timestamp = pbfFile.Header.Time
+	if pbfFile.Header().Time.Unix() != 0 {
+		timestamp = pbfFile.Header().Time
 	} else {
-		fstat, err := os.Stat(pbfFile.Filename)
+		fstat, err := os.Stat(filename)
 		if err != nil {
-			log.Warn("unable to stat pbffile: ", err)
-			return nil
+			return nil, err
 		}
 		timestamp = fstat.ModTime()
 	}
@@ -96,12 +99,12 @@ func FromPbf(pbfFile *pbf.Pbf, before time.Duration) *DiffState {
 
 	seq := estimateSequence(replicationUrl, timestamp)
 	if seq == 0 {
-		return nil
+		return nil, nil
 	}
 
 	// start earlier
 	seq -= int32(before.Minutes())
-	return &DiffState{Time: timestamp, Url: replicationUrl, Sequence: seq}
+	return &DiffState{Time: timestamp, Url: replicationUrl, Sequence: seq}, nil
 }
 
 func ParseFile(stateFile string) (*DiffState, error) {

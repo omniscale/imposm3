@@ -83,7 +83,7 @@ func Diff() {
 }
 
 func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expireor, osmCache *cache.OSMCache, diffCache *cache.DiffCache, force bool) error {
-	state, err := diffstate.ParseFromOsc(oscFile)
+	state, err := diffstate.FromOscGz(oscFile)
 	if err != nil {
 		return err
 	}

@@ -84,7 +84,7 @@ func readPrimitiveBlock(pos block) *osmpbf.PrimitiveBlock {
 	return block
 }
 
-func readAndParseHeaderBlock(pos block) (*pbfHeader, error) {
+func readAndParseHeaderBlock(pos block) (*Header, error) {
 	raw, err := readBlobData(pos)
 	if err != nil {
 		return nil, err
@@ -102,7 +102,7 @@ func readAndParseHeaderBlock(pos block) (*pbfHeader, error) {
 		}
 	}
 
-	result := &pbfHeader{}
+	result := &Header{}
 	timestamp := header.GetOsmosisReplicationTimestamp()
 	result.Time = time.Unix(timestamp, 0 /* nanoseconds */)
 	result.Sequence = header.GetOsmosisReplicationSequenceNumber()
@@ -111,27 +111,28 @@ func readAndParseHeaderBlock(pos block) (*pbfHeader, error) {
 	return result, nil
 }
 
-type Pbf struct {
+type pbf struct {
 	file     *os.File
-	Filename string
+	filename string
 	offset   int64
-	Header   *pbfHeader
+	header   *Header
 }
 
-type pbfHeader struct {
+type Header struct {
 	Time     time.Time
 	Sequence int64
+	Filename string
 
 	RequiredFeatures []string
 	OptionalFeatures []string
 }
 
-func Open(filename string) (f *Pbf, err error) {
+func open(filename string) (f *pbf, err error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
 	}
-	f = &Pbf{Filename: filename, file: file}
+	f = &pbf{filename: filename, file: file}
 	err = f.parseHeader()
 	if err != nil {
 		file.Close()
@@ -140,21 +141,22 @@ func Open(filename string) (f *Pbf, err error) {
 	return f, nil
 }
 
-func (pbf *Pbf) Close() error {
+func (pbf *pbf) close() error {
 	return pbf.file.Close()
 }
 
-func (pbf *Pbf) parseHeader() error {
+func (pbf *pbf) parseHeader() error {
 	offset, size, header := pbf.nextBlock()
 	if header.GetType() != "OSMHeader" {
 		panic("invalid block type, expected OSMHeader, got " + header.GetType())
 	}
 	var err error
-	pbf.Header, err = readAndParseHeaderBlock(block{pbf.Filename, offset, size})
+	pbf.header, err = readAndParseHeaderBlock(block{pbf.filename, offset, size})
+	pbf.header.Filename = pbf.filename
 	return err
 }
 
-func (pbf *Pbf) nextBlock() (offset int64, size int32, header *osmpbf.BlobHeader) {
+func (pbf *pbf) nextBlock() (offset int64, size int32, header *osmpbf.BlobHeader) {
 	header = pbf.nextBlobHeader()
 	size = header.GetDatasize()
 	offset = pbf.offset
@@ -164,32 +166,32 @@ func (pbf *Pbf) nextBlock() (offset int64, size int32, header *osmpbf.BlobHeader
 	return offset, size, header
 }
 
-func (pbf *Pbf) BlockPositions() (positions chan block) {
+func (pbf *pbf) BlockPositions() (positions chan block) {
 	positions = make(chan block, 8)
 	go func() {
 		for {
 			offset, size, header := pbf.nextBlock()
 			if size == 0 {
 				close(positions)
-				pbf.Close()
+				pbf.close()
 				return
 			}
 			if header.GetType() != "OSMData" {
 				panic("invalid block type, expected OSMData, got " + header.GetType())
 			}
-			positions <- block{pbf.Filename, offset, size}
+			positions <- block{pbf.filename, offset, size}
 		}
 	}()
 	return
 }
 
-func (pbf *Pbf) nextBlobHeaderSize() (size int32) {
+func (pbf *pbf) nextBlobHeaderSize() (size int32) {
 	pbf.offset += 4
 	structs.Read(pbf.file, structs.BigEndian, &size)
 	return
 }
 
-func (pbf *Pbf) nextBlobHeader() *osmpbf.BlobHeader {
+func (pbf *pbf) nextBlobHeader() *osmpbf.BlobHeader {
 	var blobHeader = &osmpbf.BlobHeader{}
 
 	size := pbf.nextBlobHeaderSize()

@@ -14,7 +14,7 @@ import (
 
 func BenchmarkHello(b *testing.B) {
 	b.StopTimer()
-	pbf, err := Open("./monaco-20150428.osm.pbf")
+	pbf, err := open("./monaco-20150428.osm.pbf")
 	if err != nil {
 		panic(err)
 	}

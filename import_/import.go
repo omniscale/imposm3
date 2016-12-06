@@ -14,7 +14,6 @@ import (
 	"github.com/omniscale/imposm3/geom/limit"
 	"github.com/omniscale/imposm3/logging"
 	"github.com/omniscale/imposm3/mapping"
-	"github.com/omniscale/imposm3/parser/pbf"
 	"github.com/omniscale/imposm3/reader"
 	"github.com/omniscale/imposm3/stats"
 	"github.com/omniscale/imposm3/update/state"
@@ -102,11 +101,6 @@ func Import() {
 		}
 		progress := stats.NewStatsReporter()
 
-		pbfFile, err := pbf.Open(config.ImportOptions.Read)
-		if err != nil {
-			log.Fatal(err)
-		}
-
 		if !config.ImportOptions.Appendcache {
 			// enable optimization if we don't append to existing cache
 			osmCache.Coords.SetLinearImport(true)
@@ -116,16 +110,26 @@ func Import() {
 		if config.BaseOptions.LimitToCacheBuffer == 0.0 {
 			readLimiter = nil
 		}
-		reader.ReadPbf(osmCache, progress, tagmapping,
-			pbfFile, readLimiter)
+
+		err := reader.ReadPbf(config.ImportOptions.Read,
+			osmCache,
+			progress,
+			tagmapping,
+			readLimiter,
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		osmCache.Coords.SetLinearImport(false)
 		elementCounts = progress.Stop()
 		osmCache.Close()
 		log.StopStep(step)
 		if config.ImportOptions.Diff {
-			diffstate := state.FromPbf(pbfFile, config.ImportOptions.DiffStateBefore)
-			if diffstate != nil {
+			diffstate, err := state.FromPbf(config.ImportOptions.Read, config.ImportOptions.DiffStateBefore)
+			if err != nil {
+				log.Print("error parsing diff state form PBF", err)
+			} else if diffstate != nil {
 				os.MkdirAll(config.BaseOptions.DiffDir, 0755)
 				err := diffstate.WriteToFile(path.Join(config.BaseOptions.DiffDir, "last.state.txt"))
 				if err != nil {

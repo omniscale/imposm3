@@ -12,11 +12,10 @@ func TestParser(t *testing.T) {
 	coords := make(chan []element.Node)
 	ways := make(chan []element.Way)
 	relations := make(chan []element.Relation)
-	pbf, err := Open("monaco-20150428.osm.pbf")
+	p, err := NewParser("monaco-20150428.osm.pbf")
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := NewParser(pbf, coords, nodes, ways, relations)
 
 	wg := sync.WaitGroup{}
 
@@ -54,7 +53,11 @@ func TestParser(t *testing.T) {
 		wg.Done()
 	}()
 
-	p.Parse()
+	p.Parse(coords, nodes, ways, relations)
+	close(coords)
+	close(nodes)
+	close(ways)
+	close(relations)
 	wg.Wait()
 
 	if numCoords != 17233 {
@@ -74,11 +77,10 @@ func TestParser(t *testing.T) {
 func TestParseCoords(t *testing.T) {
 	coords := make(chan []element.Node)
 
-	pbf, err := Open("monaco-20150428.osm.pbf")
+	p, err := NewParser("monaco-20150428.osm.pbf")
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := NewParser(pbf, coords, nil, nil, nil)
 
 	wg := sync.WaitGroup{}
 
@@ -92,7 +94,8 @@ func TestParseCoords(t *testing.T) {
 		wg.Done()
 	}()
 
-	p.Parse()
+	p.Parse(coords, nil, nil, nil)
+	close(coords)
 	wg.Wait()
 
 	if numCoords != 17233 {
@@ -105,13 +108,13 @@ func TestParserNotify(t *testing.T) {
 	coords := make(chan []element.Node)
 	ways := make(chan []element.Way)
 	relations := make(chan []element.Relation)
-	pbf, err := Open("monaco-20150428.osm.pbf")
+
+	p, err := NewParser("monaco-20150428.osm.pbf")
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := NewParser(pbf, coords, nodes, ways, relations)
 	waysWg := sync.WaitGroup{}
-	p.FinishedCoords(func() {
+	p.RegisterFirstWayCallback(func() {
 		waysWg.Add(1)
 		coords <- nil
 		nodes <- nil
@@ -167,7 +170,11 @@ func TestParserNotify(t *testing.T) {
 		wg.Done()
 	}()
 
-	p.Parse()
+	p.Parse(coords, nodes, ways, relations)
+	close(coords)
+	close(nodes)
+	close(ways)
+	close(relations)
 	wg.Wait()
 
 	if numCoords != 17233 {

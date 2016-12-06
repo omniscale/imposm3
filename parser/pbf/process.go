@@ -7,8 +7,8 @@ import (
 	"github.com/omniscale/imposm3/element"
 )
 
-type parser struct {
-	pbf       *Pbf
+type Parser struct {
+	pbf       *pbf
 	coords    chan []element.Node
 	nodes     chan []element.Node
 	ways      chan []element.Way
@@ -19,19 +19,34 @@ type parser struct {
 	relSync   *barrier
 }
 
-func NewParser(pbf *Pbf, coords chan []element.Node, nodes chan []element.Node, ways chan []element.Way, relations chan []element.Relation) *parser {
-	return &parser{
-		pbf:       pbf,
-		coords:    coords,
-		nodes:     nodes,
-		ways:      ways,
-		relations: relations,
-		nParser:   runtime.NumCPU(),
-		wg:        sync.WaitGroup{},
+func NewParser(
+	filename string,
+) (*Parser, error) {
+	pbf, err := open(filename)
+	if err != nil {
+		return nil, err
 	}
+	return &Parser{
+		pbf:     pbf,
+		nParser: runtime.NumCPU(),
+		wg:      sync.WaitGroup{},
+	}, nil
 }
 
-func (p *parser) Parse() {
+func (p *Parser) Header() Header {
+	return *p.pbf.header
+}
+
+func (p *Parser) Parse(
+	coords chan []element.Node,
+	nodes chan []element.Node,
+	ways chan []element.Way,
+	relations chan []element.Relation,
+) {
+	p.coords = coords
+	p.nodes = nodes
+	p.ways = ways
+	p.relations = relations
 	blocks := p.pbf.BlockPositions()
 	for i := 0; i < p.nParser; i++ {
 		p.wg.Add(1)
@@ -49,40 +64,27 @@ func (p *parser) Parse() {
 		}()
 	}
 	p.wg.Wait()
-
-	if p.nodes != nil {
-		close(p.nodes)
-	}
-	if p.coords != nil {
-		close(p.coords)
-	}
-	if p.ways != nil {
-		close(p.ways)
-	}
-	if p.relations != nil {
-		close(p.relations)
-	}
 }
 
-// FinishedCoords registers a single function that gets called when all
-// nodes and coords are parsed. The callback should block until it is
-// safe to continue with parsing of all ways.
+// RegisterFirstWayCallback registers a callback that gets called when the
+// the first way is parsed. The callback should block until it is
+// safe to send ways to the way channel.
 // This only works when the PBF file is ordered by type (nodes before ways before relations).
-func (p *parser) FinishedCoords(cb func()) {
+func (p *Parser) RegisterFirstWayCallback(cb func()) {
 	p.waySync = newBarrier(cb)
 	p.waySync.add(p.nParser)
 }
 
-// FinishedWays registers a single function that gets called when all
-// nodes and coords are parsed. The callback should block until it is
-// safe to continue with parsing of all ways.
+// RegisterFirstRelationCallback registers a callback that gets called when the
+// the first relation is parsed. The callback should block until it is
+// safe to send relations to the relation channel.
 // This only works when the PBF file is ordered by type (nodes before ways before relations).
-func (p *parser) FinishedWays(cb func()) {
+func (p *Parser) RegisterFirstRelationCallback(cb func()) {
 	p.relSync = newBarrier(cb)
 	p.relSync.add(p.nParser)
 }
 
-func (p *parser) parseBlock(pos block) {
+func (p *Parser) parseBlock(pos block) {
 	block := readPrimitiveBlock(pos)
 	stringtable := newStringTable(block.GetStringtable())
 
