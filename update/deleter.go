@@ -6,7 +6,7 @@ import (
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/expire"
 	"github.com/omniscale/imposm3/mapping"
-	"github.com/omniscale/imposm3/update/diff"
+	"github.com/omniscale/imposm3/parser/diff"
 )
 
 type Deleter struct {

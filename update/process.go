@@ -17,8 +17,8 @@ import (
 	"github.com/omniscale/imposm3/geom/limit"
 	"github.com/omniscale/imposm3/logging"
 	"github.com/omniscale/imposm3/mapping"
+	"github.com/omniscale/imposm3/parser/diff"
 	"github.com/omniscale/imposm3/stats"
-	"github.com/omniscale/imposm3/update/diff"
 	diffstate "github.com/omniscale/imposm3/update/state"
 	"github.com/omniscale/imposm3/writer"
 )
