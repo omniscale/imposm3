@@ -23,6 +23,8 @@ type Element struct {
 	Rel  *element.Relation
 }
 
+// Parser is a stream based parser for OSM diff files (.osc).
+// Parsing is handled in a background goroutine.
 type Parser struct {
 	reader   io.Reader
 	elems    chan Element
@@ -32,10 +34,14 @@ type Parser struct {
 	onClose  func() error
 }
 
+// SetWithMetadata enables parsing of metadata
 func (p *Parser) SetWithMetadata(metadata bool) {
 	p.metadata = metadata
 }
 
+// Next returns the next Element of the .osc file.
+// Returns io.EOF and an empty Element if the parser
+// reached the end of the .osc file.
 func (p *Parser) Next() (Element, error) {
 	if !p.running {
 		p.running = true
@@ -67,13 +73,15 @@ func (p *Parser) Next() (Element, error) {
 	return Element{}, nil
 }
 
-func NewDecoder(r io.Reader) *Parser {
+// NewParser returns a parser from an io.Reader
+func NewParser(r io.Reader) *Parser {
 	elems := make(chan Element)
 	errc := make(chan error)
 	return &Parser{reader: r, elems: elems, errc: errc}
 }
 
-func NewOscGzDecoder(fname string) (*Parser, error) {
+// NewOscGzParser returns a parser from a .osc.gz file
+func NewOscGzParser(fname string) (*Parser, error) {
 	file, err := os.Open(fname)
 	if err != nil {
 		return nil, err

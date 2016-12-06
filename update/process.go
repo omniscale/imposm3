@@ -101,7 +101,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 
 	defer log.StopStep(log.StartStep(fmt.Sprintf("Processing %s", oscFile)))
 
-	parser, err := diff.NewOscGzDecoder(oscFile)
+	parser, err := diff.NewOscGzParser(oscFile)
 	if err != nil {
 		return err
 	}
