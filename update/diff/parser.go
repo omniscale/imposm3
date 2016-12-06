@@ -3,6 +3,7 @@ package diff
 import (
 	"compress/gzip"
 	"encoding/xml"
+	"io"
 	"os"
 	"strconv"
 	"time"
@@ -22,36 +23,76 @@ type DiffElem struct {
 	Rel  *element.Relation
 }
 
-func Parse(diff string) (chan DiffElem, chan error) {
-	elems := make(chan DiffElem)
-	errc := make(chan error)
-	go parse(diff, elems, errc, false)
-	return elems, errc
+type Parser struct {
+	reader   io.Reader
+	elems    chan DiffElem
+	errc     chan error
+	metadata bool
+	running  bool
+	onClose  func() error
 }
 
-func ParseFull(diff string) (chan DiffElem, chan error) {
-	elems := make(chan DiffElem)
-	errc := make(chan error)
-	go parse(diff, elems, errc, true)
-	return elems, errc
+func (p *Parser) SetWithMetadata(metadata bool) {
+	p.metadata = metadata
 }
 
-func parse(diff string, elems chan DiffElem, errc chan error, metadata bool) {
-	defer close(elems)
-	defer close(errc)
-
-	file, err := os.Open(diff)
-	if err != nil {
-		errc <- err
-		return
+func (p *Parser) Next() (DiffElem, error) {
+	if !p.running {
+		p.running = true
+		go parse(p.reader, p.elems, p.errc, p.metadata)
 	}
-	defer file.Close()
+	select {
+	case elem, ok := <-p.elems:
+		if !ok {
+			p.elems = nil
+		} else {
+			return elem, nil
+		}
+	case err, ok := <-p.errc:
+		if !ok {
+			p.errc = nil
+		} else {
+			if p.onClose != nil {
+				p.onClose()
+				p.onClose = nil
+			}
+			return DiffElem{}, err
+		}
+	}
+	if p.onClose != nil {
+		err := p.onClose()
+		p.onClose = nil
+		return DiffElem{}, err
+	}
+	return DiffElem{}, nil
+}
+
+func NewDecoder(r io.Reader) *Parser {
+	elems := make(chan DiffElem)
+	errc := make(chan error)
+	return &Parser{reader: r, elems: elems, errc: errc}
+}
+
+func NewOscGzDecoder(fname string) (*Parser, error) {
+	file, err := os.Open(fname)
+	if err != nil {
+		return nil, err
+	}
 
 	reader, err := gzip.NewReader(file)
 	if err != nil {
-		errc <- err
-		return
+		file.Close()
+		return nil, err
 	}
+
+	elems := make(chan DiffElem)
+	errc := make(chan error)
+	return &Parser{reader: reader, elems: elems, errc: errc, onClose: file.Close}, nil
+}
+
+func parse(reader io.Reader, elems chan DiffElem, errc chan error, metadata bool) {
+	defer close(elems)
+	defer close(errc)
 
 	decoder := xml.NewDecoder(reader)
 
@@ -190,6 +231,7 @@ NextToken:
 				rel = &element.Relation{}
 				newElem = true
 			case "osmChange":
+				errc <- io.EOF
 				return
 			}
 
