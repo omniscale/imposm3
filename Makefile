@@ -62,3 +62,25 @@ build-license-deps:
 		| fold -s -w 80 \
 		>> LICENSE.deps \
 	' _ {} \;
+
+
+
+comma:= ,
+empty:=
+space:= $(empty) $(empty)
+COVER_IGNORE:='/vendor|/cmd'
+COVER_PACKAGES:= $(shell $(GO) list ./... | grep -Ev $(COVER_IGNORE))
+COVER_PACKAGES_LIST:=$(subst $(space),$(comma),$(COVER_PACKAGES))
+
+test-coverage:
+	mkdir -p .coverprofile
+	rm -f .coverprofile/*
+	$(GO) list -f '{{if gt (len .TestGoFiles) 0}}"$(GO) test -covermode count -coverprofile ./.coverprofile/{{.Name}}-$$$$.coverprofile -coverpkg $(COVER_PACKAGES_LIST) {{.ImportPath}}"{{end}}' ./... \
+		| grep -Ev $(COVER_IGNORE) \
+		| xargs -n 1 bash -c
+	$(GOPATH)/bin/gocovmerge .coverprofile/*.coverprofile > overalls.coverprofile
+	rm -rf .coverprofile
+
+test-coverage-html: test-coverage
+	$(GO) tool cover -html overalls.coverprofile
+
