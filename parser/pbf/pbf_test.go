@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/omniscale/imposm3/parser/pbf/osmpbf"
+	"github.com/omniscale/imposm3/parser/pbf/internal/osmpbf"
 )
 
 func BenchmarkHello(b *testing.B) {
