@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/logging"
@@ -24,11 +25,18 @@ type DiffElem struct {
 func Parse(diff string) (chan DiffElem, chan error) {
 	elems := make(chan DiffElem)
 	errc := make(chan error)
-	go parse(diff, elems, errc)
+	go parse(diff, elems, errc, false)
 	return elems, errc
 }
 
-func parse(diff string, elems chan DiffElem, errc chan error) {
+func ParseFull(diff string) (chan DiffElem, chan error) {
+	elems := make(chan DiffElem)
+	errc := make(chan error)
+	go parse(diff, elems, errc, true)
+	return elems, errc
+}
+
+func parse(diff string, elems chan DiffElem, errc chan error, metadata bool) {
 	defer close(elems)
 	defer close(errc)
 
@@ -91,17 +99,26 @@ NextToken:
 						node.Long, _ = strconv.ParseFloat(attr.Value, 64)
 					}
 				}
+				if metadata {
+					setElemMetadata(tok.Attr, &node.OSMElem)
+				}
 			case "way":
 				for _, attr := range tok.Attr {
 					if attr.Name.Local == "id" {
 						way.Id, _ = strconv.ParseInt(attr.Value, 10, 64)
 					}
 				}
+				if metadata {
+					setElemMetadata(tok.Attr, &way.OSMElem)
+				}
 			case "relation":
 				for _, attr := range tok.Attr {
 					if attr.Name.Local == "id" {
 						rel.Id, _ = strconv.ParseInt(attr.Value, 10, 64)
 					}
+				}
+				if metadata {
+					setElemMetadata(tok.Attr, &rel.OSMElem)
 				}
 			case "nd":
 				for _, attr := range tok.Attr {
@@ -188,5 +205,25 @@ NextToken:
 			}
 		}
 	}
+}
 
+func setElemMetadata(attrs []xml.Attr, elem *element.OSMElem) {
+	elem.Metadata = &element.Metadata{}
+	for _, attr := range attrs {
+		switch attr.Name.Local {
+		case "version":
+			v, _ := strconv.ParseInt(attr.Value, 10, 64)
+			elem.Metadata.Version = int(v)
+		case "uid":
+			v, _ := strconv.ParseInt(attr.Value, 10, 64)
+			elem.Metadata.UserId = int(v)
+		case "user":
+			elem.Metadata.UserName = attr.Value
+		case "changeset":
+			v, _ := strconv.ParseInt(attr.Value, 10, 64)
+			elem.Metadata.Changeset = int(v)
+		case "timestamp":
+			elem.Metadata.Timestamp, _ = time.Parse(time.RFC3339, attr.Value)
+		}
+	}
 }
