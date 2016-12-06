@@ -17,7 +17,7 @@ import (
 	"github.com/omniscale/imposm3/logging"
 	"github.com/omniscale/imposm3/mapping"
 	"github.com/omniscale/imposm3/stats"
-	"github.com/omniscale/imposm3/update/parser"
+	"github.com/omniscale/imposm3/update/diff"
 	diffstate "github.com/omniscale/imposm3/update/state"
 	"github.com/omniscale/imposm3/writer"
 )
@@ -100,7 +100,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 
 	defer log.StopStep(log.StartStep(fmt.Sprintf("Processing %s", oscFile)))
 
-	elems, errc := parser.Parse(oscFile)
+	elems, errc := diff.Parse(oscFile)
 
 	tagmapping, err := mapping.NewMapping(config.BaseOptions.MappingFile)
 	if err != nil {

@@ -6,7 +6,7 @@ import (
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/expire"
 	"github.com/omniscale/imposm3/mapping"
-	"github.com/omniscale/imposm3/update/parser"
+	"github.com/omniscale/imposm3/update/diff"
 )
 
 type Deleter struct {
@@ -213,7 +213,7 @@ func (d *Deleter) deleteNode(id int64) error {
 	return nil
 }
 
-func (d *Deleter) Delete(delElem parser.DiffElem) error {
+func (d *Deleter) Delete(delElem diff.DiffElem) error {
 	if delElem.Rel != nil {
 		if err := d.deleteRelation(delElem.Rel.Id, true, true); err != nil {
 			return err

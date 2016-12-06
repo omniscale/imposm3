@@ -1,4 +1,4 @@
-package parser
+package diff
 
 import (
 	"compress/gzip"
