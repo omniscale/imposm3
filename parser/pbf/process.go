@@ -3,6 +3,7 @@ package pbf
 import (
 	"runtime"
 	"sync"
+	"sync/atomic"
 
 	"github.com/omniscale/imposm3/element"
 )
@@ -140,7 +141,7 @@ func (p *Parser) parseBlock(pos block) {
 // doneWait() blocks until the callback returns. doneWait() does not
 // block after all goroutines were blocked once.
 type barrier struct {
-	synced     bool
+	synced     int32
 	wg         sync.WaitGroup
 	once       sync.Once
 	callbackWg sync.WaitGroup
@@ -158,7 +159,7 @@ func (s *barrier) add(delta int) {
 }
 
 func (s *barrier) doneWait() {
-	if s.synced {
+	if atomic.LoadInt32(&s.synced) == 1 {
 		return
 	}
 	s.wg.Done()
@@ -169,6 +170,6 @@ func (s *barrier) doneWait() {
 
 func (s *barrier) call() {
 	s.callback()
-	s.synced = true
+	atomic.StoreInt32(&s.synced, 1)
 	s.callbackWg.Done()
 }
