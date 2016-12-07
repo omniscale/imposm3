@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
+	"sync"
 	"sync/atomic"
 
 	pq "github.com/lib/pq"
@@ -426,7 +427,9 @@ type PostGIS struct {
 	Prefix                  string
 	txRouter                *TxRouter
 	updateGeneralizedTables bool
-	updatedIds              map[string][]int64
+
+	updateIdsMu sync.Mutex
+	updatedIds  map[string][]int64
 }
 
 func (pg *PostGIS) Open() error {
@@ -462,8 +465,14 @@ func (pg *PostGIS) InsertLineString(elem element.OSMElem, geom geom.Geometry, ma
 		}
 	}
 	if pg.updateGeneralizedTables {
-		for _, generalizedTable := range pg.generalizedFromMatches(matches) {
-			pg.updatedIds[generalizedTable.Name] = append(pg.updatedIds[generalizedTable.Name], elem.Id)
+		genMatches := pg.generalizedFromMatches(matches)
+		if len(genMatches) > 0 {
+			pg.updateIdsMu.Lock()
+			for _, generalizedTable := range genMatches {
+				pg.updatedIds[generalizedTable.Name] = append(pg.updatedIds[generalizedTable.Name], elem.Id)
+
+			}
+			pg.updateIdsMu.Unlock()
 		}
 	}
 	return nil
@@ -477,8 +486,14 @@ func (pg *PostGIS) InsertPolygon(elem element.OSMElem, geom geom.Geometry, match
 		}
 	}
 	if pg.updateGeneralizedTables {
-		for _, generalizedTable := range pg.generalizedFromMatches(matches) {
-			pg.updatedIds[generalizedTable.Name] = append(pg.updatedIds[generalizedTable.Name], elem.Id)
+		genMatches := pg.generalizedFromMatches(matches)
+		if len(genMatches) > 0 {
+			pg.updateIdsMu.Lock()
+			for _, generalizedTable := range genMatches {
+				pg.updatedIds[generalizedTable.Name] = append(pg.updatedIds[generalizedTable.Name], elem.Id)
+
+			}
+			pg.updateIdsMu.Unlock()
 		}
 	}
 	return nil
