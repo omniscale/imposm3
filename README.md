@@ -135,7 +135,7 @@ Imposm3 uses the following Go libraries.
 - <https://github.com/lib/pq>
 - <https://gopkg.in/yaml.v2>
 
-These libraries are already vendorized (i.e. the source code is included in the Imposm repository).
+These libraries are already vendorized (i.e. the source code is included in the Imposm repository) and there is no need to install them separately.
 
 #### Compile
 
