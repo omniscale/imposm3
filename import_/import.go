@@ -5,7 +5,6 @@ package import_
 
 import (
 	"os"
-	"path"
 
 	"github.com/omniscale/imposm3/cache"
 	"github.com/omniscale/imposm3/config"
@@ -131,7 +130,7 @@ func Import() {
 				log.Print("error parsing diff state form PBF", err)
 			} else if diffstate != nil {
 				os.MkdirAll(config.BaseOptions.DiffDir, 0755)
-				err := diffstate.WriteToFile(path.Join(config.BaseOptions.DiffDir, "last.state.txt"))
+				err := state.WriteLastState(config.BaseOptions.DiffDir, diffstate)
 				if err != nil {
 					log.Print("error writing last.state.txt: ", err)
 				}

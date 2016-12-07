@@ -28,15 +28,7 @@ func (d DiffState) String() string {
 	return fmt.Sprintf("Diff #%d from %s", d.Sequence, d.Time.Local())
 }
 
-func (d DiffState) WriteToFile(file string) error {
-	f, err := os.Create(file)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	writer := bufio.NewWriter(f)
-
+func (d DiffState) Write(w io.Writer) error {
 	lines := []string{}
 	lines = append(lines, "timestamp="+d.Time.Format(timestampFormat))
 	if d.Sequence != 0 {
@@ -45,17 +37,22 @@ func (d DiffState) WriteToFile(file string) error {
 	lines = append(lines, "replicationUrl="+d.Url)
 
 	for _, line := range lines {
-		_, err = writer.WriteString(line + "\n")
+		_, err := w.Write([]byte(line + "\n"))
 		if err != nil {
 			return err
 		}
 	}
-	return writer.Flush()
+	return nil
 }
 
 func WriteLastState(cacheDir string, state *DiffState) error {
 	stateFile := path.Join(cacheDir, "last.state.txt")
-	return state.WriteToFile(stateFile)
+	f, err := os.Create(stateFile)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return state.Write(f)
 }
 
 func FromOscGz(oscFile string) (*DiffState, error) {
