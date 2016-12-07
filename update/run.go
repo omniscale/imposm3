@@ -12,7 +12,8 @@ import (
 	"github.com/omniscale/imposm3/expire"
 	"github.com/omniscale/imposm3/geom/limit"
 	"github.com/omniscale/imposm3/logging"
-	"github.com/omniscale/imposm3/update/download"
+	"github.com/omniscale/imposm3/replication"
+	"github.com/omniscale/imposm3/update/state"
 )
 
 var logger = logging.NewLogger("")
@@ -36,11 +37,27 @@ func Run() {
 		}
 		logger.StopStep(step)
 	}
-	downloader, err := download.NewDiffDownload(config.BaseOptions.DiffDir,
-		config.BaseOptions.ReplicationUrl, config.BaseOptions.ReplicationInterval)
+
+	s, err := state.ParseLastState(config.BaseOptions.DiffDir)
 	if err != nil {
-		logger.Fatal("unable to start diff downloader", err)
+		log.Fatal("unable to read last.state.txt", err)
 	}
+	replicationUrl := config.BaseOptions.ReplicationUrl
+	if replicationUrl == "" {
+		replicationUrl = s.Url
+	}
+	if replicationUrl == "" {
+		log.Fatal("no replicationUrl in last.state.txt " +
+			"or replication_url in -config file")
+	}
+
+	downloader := replication.NewDiffDownloader(
+		config.BaseOptions.DiffDir,
+		replicationUrl,
+		s.Sequence,
+		config.BaseOptions.ReplicationInterval,
+	)
+	nextSeq := downloader.Sequences()
 
 	osmCache := cache.NewOSMCache(config.BaseOptions.CacheDir)
 	err = osmCache.Open()
@@ -87,11 +104,12 @@ func Run() {
 		select {
 		case <-sigc:
 			shutdown()
-		case nextDiff := <-downloader.NextDiff:
-			fname := nextDiff.FileName
-			state := nextDiff.State
+		case seq := <-nextSeq:
+			fname := seq.Filename
+			seqId := seq.Sequence
+			seqTime := seq.Time
 			for {
-				p := logger.StartStep(fmt.Sprintf("importing #%d till %s", state.Sequence, state.Time))
+				p := logger.StartStep(fmt.Sprintf("importing #%d till %s", seqId, seqTime))
 
 				err := Update(fname, geometryLimiter, tileExpireor, osmCache, diffCache, false)
 

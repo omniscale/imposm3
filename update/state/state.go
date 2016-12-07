@@ -20,7 +20,7 @@ var log = logging.NewLogger("diff")
 
 type DiffState struct {
 	Time     time.Time
-	Sequence int32
+	Sequence int
 	Url      string
 }
 
@@ -100,7 +100,7 @@ func FromPbf(filename string, before time.Duration) (*DiffState, error) {
 	}
 
 	// start earlier
-	seq -= int32(before.Minutes())
+	seq -= int(before.Minutes())
 	return &DiffState{Time: timestamp, Url: replicationUrl, Sequence: seq}, nil
 }
 
@@ -171,13 +171,13 @@ func parseTimeStamp(value string) (time.Time, error) {
 	return time.Parse(timestampFormat, value)
 }
 
-func parseSequence(value string) (int32, error) {
+func parseSequence(value string) (int, error) {
 	if value == "" {
 		log.Warn("missing sequenceNumber in state file")
 		return 0, nil
 	}
 	val, err := strconv.ParseInt(value, 10, 32)
-	return int32(val), err
+	return int(val), err
 }
 
 func currentState(url string) (*DiffState, error) {
@@ -192,7 +192,7 @@ func currentState(url string) (*DiffState, error) {
 	return Parse(resp.Body)
 }
 
-func estimateSequence(url string, timestamp time.Time) int32 {
+func estimateSequence(url string, timestamp time.Time) int {
 	state, err := currentState(url)
 	if err != nil {
 		// try a second time befor failing
@@ -206,5 +206,5 @@ func estimateSequence(url string, timestamp time.Time) int32 {
 	}
 
 	behind := state.Time.Sub(timestamp)
-	return state.Sequence - int32(behind.Minutes())
+	return state.Sequence - int(behind.Minutes())
 }
