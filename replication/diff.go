@@ -22,3 +22,12 @@ func parseTxtTime(filename string) (time.Time, error) {
 	}
 	return ds.Time, nil
 }
+
+func NewDiffReader(dest string, seq int) *reader {
+	r := newReader(dest, seq)
+	r.fileExt = ".osc.gz"
+	r.stateExt = ".state.txt"
+	r.stateTime = parseTxtTime
+	go r.fetchNextLoop()
+	return r
+}

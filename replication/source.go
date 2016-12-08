@@ -3,6 +3,7 @@ package replication
 import (
 	"errors"
 	"fmt"
+	"gopkg.in/fsnotify.v1"
 	"io"
 	"net"
 	"net/http"
@@ -175,6 +176,77 @@ func (d *downloader) fetchNextLoop() {
 		d.lastSequence = nextSeq
 		base := path.Join(d.dest, seqPath(d.lastSequence))
 		lastTime, _ = d.stateTime(base + d.stateExt)
+		d.sequences <- Sequence{
+			Sequence:      d.lastSequence,
+			Filename:      base + d.fileExt,
+			StateFilename: base + d.stateExt,
+			Time:          lastTime,
+		}
+	}
+}
+
+var _ Source = &reader{}
+
+type reader struct {
+	dest         string
+	fileExt      string
+	stateExt     string
+	lastSequence int
+	stateTime    func(string) (time.Time, error)
+	sequences    chan Sequence
+}
+
+func newReader(dest string, seq int) *reader {
+	r := &reader{
+		dest:         dest,
+		lastSequence: seq,
+		sequences:    make(chan Sequence, 1),
+	}
+
+	return r
+}
+
+func (d *reader) Sequences() <-chan Sequence {
+	return d.sequences
+}
+
+func (d *reader) waitTillPresent(seq int, ext string) error {
+	filename := path.Join(d.dest, seqPath(seq)+ext)
+	if _, err := os.Stat(filename); err == nil {
+		return nil
+	}
+
+	w, err := fsnotify.NewWatcher()
+	if err != nil {
+		return err
+	}
+	defer w.Close()
+	w.Add(filename)
+
+	// check again, in case file was created before we added the file
+	if _, err := os.Stat(filename); err == nil {
+		return nil
+	}
+
+	for {
+		select {
+		case evt := <-w.Events:
+			if evt.Op == fsnotify.Create {
+				return nil
+			}
+		}
+	}
+	return nil
+}
+
+func (d *reader) fetchNextLoop() {
+	for {
+		nextSeq := d.lastSequence + 1
+		d.waitTillPresent(nextSeq, d.stateExt)
+		d.waitTillPresent(nextSeq, d.fileExt)
+		d.lastSequence = nextSeq
+		base := path.Join(d.dest, seqPath(d.lastSequence))
+		lastTime, _ := d.stateTime(base + d.stateExt)
 		d.sequences <- Sequence{
 			Sequence:      d.lastSequence,
 			Filename:      base + d.fileExt,
