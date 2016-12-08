@@ -17,15 +17,33 @@ func NewChangesetDownloader(dest, url string, seq int, interval time.Duration) *
 }
 
 type changesetState struct {
-	Time     time.Time `yaml:"last_run"`
-	Sequence int       `yaml:"sequence"`
+	Time     yamlStateTime `yaml:"last_run"`
+	Sequence int           `yaml:"sequence"`
 }
 
-func parseYamlState(filename string) (changesetState, error) {
+type yamlStateTime struct {
+	time.Time
+}
+
+func (y *yamlStateTime) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var ts string
+	if err := unmarshal(&ts); err != nil {
+		return err
+	}
+	t, err := time.Parse("2006-01-02 15:04:05.999999999 -07:00", ts)
+	y.Time = t
+	return err
+}
+
+func parseYamlStateFile(filename string) (changesetState, error) {
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return changesetState{}, err
 	}
+	return parseYamlState(b)
+}
+
+func parseYamlState(b []byte) (changesetState, error) {
 	state := changesetState{}
 	if err := yaml.Unmarshal(b, &state); err != nil {
 		return changesetState{}, err
@@ -34,9 +52,9 @@ func parseYamlState(filename string) (changesetState, error) {
 }
 
 func parseYamlTime(filename string) (time.Time, error) {
-	state, err := parseYamlState(filename)
+	state, err := parseYamlStateFile(filename)
 	if err != nil {
 		return time.Time{}, err
 	}
-	return state.Time, nil
+	return state.Time.Time, nil
 }
