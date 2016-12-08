@@ -15,8 +15,8 @@ type changeFile struct {
 
 type Changeset struct {
 	Id         int       `xml:"id,attr"`
-	CreatedAt  IsoTime   `xml:"created_at,attr"`
-	ClosedAt   IsoTime   `xml:"closed_at,attr"`
+	CreatedAt  time.Time `xml:"created_at,attr"`
+	ClosedAt   time.Time `xml:"closed_at,attr"`
 	Open       bool      `xml:"open,attr"`
 	User       string    `xml:"user,attr"`
 	UserId     int       `xml:"uid,attr"`
@@ -30,30 +30,15 @@ type Changeset struct {
 }
 
 type Comment struct {
-	UserId int     `xml:"uid,attr"`
-	User   string  `xml:"user,attr"`
-	Date   IsoTime `xml:"date,attr"`
-	Text   string  `xml:"text"`
-}
-
-type IsoTime struct {
-	time.Time
+	UserId int       `xml:"uid,attr"`
+	User   string    `xml:"user,attr"`
+	Date   time.Time `xml:"date,attr"`
+	Text   string    `xml:"text"`
 }
 
 type Tag struct {
 	Key   string `xml:"k,attr"`
 	Value string `xml:"v,attr"`
-}
-
-func (t *IsoTime) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
-	var v string
-	d.DecodeElement(&v, &start)
-	parse, err := time.Parse(time.RFC3339, v)
-	if err != nil {
-		return err
-	}
-	*t = IsoTime{parse}
-	return nil
 }
 
 // ParseAllOsmGz parses all changesets from a .osm.gz file.
