@@ -28,9 +28,11 @@
 			"revisionTime": "2015-05-02T14:36:36+03:00"
 		},
 		{
+			"checksumSHA1": "12GqsW8PiRPnezDDy0v4brZrndM=",
 			"path": "gopkg.in/yaml.v2",
-			"revision": "7ad95dd0798a40da1ccdff6dff35fd177b5edf40",
-			"revisionTime": "2015-06-24T11:29:02+01:00"
+			"revision": "a5b47d31c556af34a302ce5d659e6fea44d90de0",
+			"revisionTime": "2016-09-28T15:37:09Z"
 		}
-	]
+	],
+	"rootPath": "github.com/omniscale/imposm3"
 }
