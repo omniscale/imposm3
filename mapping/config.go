@@ -331,15 +331,37 @@ func (m *Mapping) ElementFilters() map[string][]ElementFilter {
 		}
 		if t.Filters.ExcludeTags != nil {
 			for _, filterKeyVal := range *t.Filters.ExcludeTags {
-				f := func(tags element.Tags, key Key, closed bool) bool {
-					if v, ok := tags[filterKeyVal[0]]; ok {
-						if filterKeyVal[1] == "__any__" || v == filterKeyVal[1] {
+
+				actual_filterKey := filterKeyVal[0]
+				actual_filterVal := filterKeyVal[1]
+
+				if actual_filterVal == "__any__" {
+					f__any__ := func(tags element.Tags, key Key, closed bool) bool {
+						if _, ok := tags[actual_filterKey]; ok {
 							return false
 						}
+						return true
 					}
-					return true
+					result[name] = append(result[name], f__any__)
+				} else if actual_filterVal == "__nil__" {
+					f__nil__ := func(tags element.Tags, key Key, closed bool) bool {
+						if _, ok := tags[actual_filterKey]; ok {
+							return true
+						}
+						return false
+					}
+					result[name] = append(result[name], f__nil__)
+				} else {
+					f_key_val := func(tags element.Tags, key Key, closed bool) bool {
+						if v, ok := tags[actual_filterKey]; ok {
+							if v == actual_filterVal {
+								return false
+							}
+						}
+						return true
+					}
+					result[name] = append(result[name], f_key_val)
 				}
-				result[name] = append(result[name], f)
 			}
 		}
 	}
