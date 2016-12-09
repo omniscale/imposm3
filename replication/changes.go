@@ -1,7 +1,12 @@
 package replication
 
 import (
+	"bytes"
+	"errors"
+	"fmt"
+	"io"
 	"io/ioutil"
+	"net/http"
 	"time"
 
 	"gopkg.in/yaml.v2"
@@ -14,6 +19,26 @@ func NewChangesetDownloader(dest, url string, seq int, interval time.Duration) *
 	dl.stateTime = parseYamlTime
 	go dl.fetchNextLoop()
 	return dl
+}
+
+func CurrentChangeset(url string) (int, error) {
+	resp, err := http.Get(url + "state.yaml")
+	if err != nil {
+		return 0, err
+	}
+	if resp.StatusCode != 200 {
+		return 0, errors.New(fmt.Sprintf("invalid repsonse: %v", resp))
+	}
+	defer resp.Body.Close()
+	b := &bytes.Buffer{}
+	if _, err := io.Copy(b, resp.Body); err != nil {
+		return 0, err
+	}
+	state, err := parseYamlState(b.Bytes())
+	if err != nil {
+		return 0, err
+	}
+	return state.Sequence, nil
 }
 
 type changesetState struct {

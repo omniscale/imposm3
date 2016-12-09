@@ -1,6 +1,9 @@
 package replication
 
 import (
+	"errors"
+	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/omniscale/imposm3/update/state"
@@ -13,6 +16,22 @@ func NewDiffDownloader(dest, url string, seq int, interval time.Duration) *downl
 	dl.stateTime = parseTxtTime
 	go dl.fetchNextLoop()
 	return dl
+}
+
+func CurrentDiff(url string) (int, error) {
+	resp, err := http.Get(url + "state.txt")
+	if err != nil {
+		return 0, err
+	}
+	if resp.StatusCode != 200 {
+		return 0, errors.New(fmt.Sprintf("invalid repsonse: %v", resp))
+	}
+	defer resp.Body.Close()
+	s, err := state.Parse(resp.Body)
+	if err != nil {
+		return 0, err
+	}
+	return s.Sequence, nil
 }
 
 func parseTxtTime(filename string) (time.Time, error) {
