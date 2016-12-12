@@ -1,7 +1,7 @@
 <!--- Is this a bug? -->
 <!--- This issue tracker is only used for tracking bugs. Please use the mailing
       list, if you have any question or need help.
-      See: https://imposm.org/docs/imposm3/3.0.0/#support -->
+      See: https://imposm.org/docs/imposm3/latest/#support -->
 
 <!--- It is a bug! -->
 <!--- Please provide a general summary of the issue in the Title above -->
