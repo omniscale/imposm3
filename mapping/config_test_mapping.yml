@@ -1,0 +1,112 @@
+
+# test mappings
+#
+# only `type: linestring` impemented in config_test.go
+#
+# Regexp Note: be careful because yaml interprets escape sequences inside double quoted strings!
+#       so use  single quoted string !
+
+
+tables:
+  config_test_t0:
+    fields:
+    - name: id
+      type: id
+    - key: admin_level
+      name: admin_level
+      type: integer
+    filters:
+      require:
+        boundary: ["administrative","maritime"]
+    mapping:
+      admin_level: ['2','4']
+    type: linestring
+
+  config_test_t1:
+    fields:
+    - name: id
+      type: id
+    - key: admin_level
+      name: admin_level
+      type: integer
+    filters:
+      require:
+        admin_level: ["2","4"]
+    mapping:
+      boundary:
+      - administrative
+      - maritime
+    type: linestring
+
+
+  config_test_t2_building:
+    fields:
+    - name: id
+      type: id
+    - key: building
+      name: building
+      type: string
+    filters:
+      reject:
+        building: ["no","none"]
+      require_regexp:
+        'addr:housenumber': '^\d+[a-zA-Z,]*$'
+        building: '^[a-z_]+$'
+    mapping:
+      building:
+      - __any__
+    type: linestring
+
+
+  config_test_t3_highway_with_name:
+    fields:
+    - name: id
+      type: id
+    - key: highway
+      name: highway
+      type: string
+    - key: name
+      name: name
+      type: string
+    filters:
+      require:
+        name: ["__any__"]
+      reject:
+        highway: ["no","none"]
+    mapping:
+      highway:
+      - __any__
+    type: linestring
+
+
+  config_test_t4_waterway_with_name:
+    fields:
+    - name: id
+      type: id
+    - key: waterway
+      name: waterway
+      type: string
+    - key: name
+      name: name
+      type: string
+    filters:
+      require:
+        name: ["__any__"]
+        waterway:
+        - stream
+        - river
+        - canal
+        - drain
+        - ditch
+      reject:
+        fixme: ['__any__']
+        amenity: ['__any__']
+        shop: ['__any__']
+        building: ['__any__']
+        tunnel: ['yes']
+      reject_regexp:
+        level: '^\D+.*$'
+    mapping:
+      waterway:
+      - __any__
+    type: linestring

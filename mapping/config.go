@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"regexp"
 
 	"github.com/omniscale/imposm3/element"
 
@@ -38,7 +39,11 @@ type GeneralizedTable struct {
 }
 
 type Filters struct {
-	ExcludeTags *[][]string `yaml:"exclude_tags"`
+	ExcludeTags   *[][]string    `yaml:"exclude_tags"`
+	Reject        KeyValues      `yaml:"reject"`
+	Require       KeyValues      `yaml:"require"`
+	RejectRegexp  KeyRegexpValue `yaml:"reject_regexp"`
+	RequireRegexp KeyRegexpValue `yaml:"require_regexp"`
 }
 
 type Tables map[string]*Table
@@ -71,6 +76,8 @@ type orderedValue struct {
 	order int
 }
 type KeyValues map[Key][]orderedValue
+
+type KeyRegexpValue map[Key]string
 
 func (kv *KeyValues) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if *kv == nil {
@@ -330,7 +337,13 @@ func (m *Mapping) ElementFilters() map[string][]ElementFilter {
 			continue
 		}
 		if t.Filters.ExcludeTags != nil {
+			if len(*t.Filters.ExcludeTags) > 1 {
+				log.Warnf("Multiple exclude_tags not supported! (tablename:" + name + ") Please use the filter:'require'/'reject' ")
+			}
 			for _, filterKeyVal := range *t.Filters.ExcludeTags {
+				if filterKeyVal[1] == "__nil__" {
+					log.Warnf("exclude_tags __nil__ is not implemented! (tablename:" + name + ") Please use the filter: 'require'/'reject' ")
+				}
 				f := func(tags element.Tags, key Key, closed bool) bool {
 					if v, ok := tags[filterKeyVal[0]]; ok {
 						if filterKeyVal[1] == "__any__" || v == filterKeyVal[1] {
@@ -342,6 +355,88 @@ func (m *Mapping) ElementFilters() map[string][]ElementFilter {
 				result[name] = append(result[name], f)
 			}
 		}
+
+		if t.Filters.Require != nil {
+			for keyname, vararr := range t.Filters.Require {
+				result[name] = append(result[name], makeFiltersFunction(name, true, false, string(keyname), vararr))
+			}
+		}
+
+		if t.Filters.Reject != nil {
+			for keyname, vararr := range t.Filters.Reject {
+				result[name] = append(result[name], makeFiltersFunction(name, false, true, string(keyname), vararr))
+			}
+		}
+
+		if t.Filters.RequireRegexp != nil {
+			for keyname, regexp := range t.Filters.RequireRegexp {
+				result[name] = append(result[name], makeRegexpFiltersFunction(name, true, false, string(keyname), regexp))
+			}
+		}
+
+		if t.Filters.RejectRegexp != nil {
+			for keyname, regexp := range t.Filters.RejectRegexp {
+				result[name] = append(result[name], makeRegexpFiltersFunction(name, false, true, string(keyname), regexp))
+			}
+		}
+
 	}
 	return result
+}
+
+func findValueInOrderedValue(v Value, list []orderedValue) bool {
+	for _, item := range list {
+		if item.value == v {
+			return true
+		}
+	}
+	return false
+}
+
+func makeRegexpFiltersFunction(tablename string, virtualTrue bool, virtualFalse bool, v_keyname string, v_regexp string) func(tags element.Tags, key Key, closed bool) bool {
+	// Compile regular expression
+	// if not valid regexp --> panic !
+
+	// log.Warnf("Regexp filter is experimental! (tablename:" + tablename + ")")
+	r := regexp.MustCompile(v_regexp)
+	return func(tags element.Tags, key Key, closed bool) bool {
+		if v, ok := tags[v_keyname]; ok {
+			if r.MatchString(v) {
+				return virtualTrue
+			}
+		}
+		return virtualFalse
+	}
+}
+
+func makeFiltersFunction(tablename string, virtualTrue bool, virtualFalse bool, v_keyname string, v_vararr []orderedValue) func(tags element.Tags, key Key, closed bool) bool {
+	if findValueInOrderedValue("__any__", v_vararr) { // check __any__
+		if len(v_vararr) > 1 {
+			log.Warnf("Multiple filter value with '__any__' keywords is probably not valid! (tablename:" + tablename + ")")
+		}
+		return func(tags element.Tags, key Key, closed bool) bool {
+			if _, ok := tags[v_keyname]; ok {
+				return virtualTrue
+			}
+			return virtualFalse
+		}
+	} else if len(v_vararr) == 1 { //  IF 1 parameter  THEN we can generate optimal code
+		return func(tags element.Tags, key Key, closed bool) bool {
+			if v, ok := tags[v_keyname]; ok {
+				if Value(v) == v_vararr[0].value {
+					return virtualTrue
+				}
+			}
+			return virtualFalse
+		}
+	} else {
+		return func(tags element.Tags, key Key, closed bool) bool {
+			if v, ok := tags[v_keyname]; ok {
+				if findValueInOrderedValue(Value(v), v_vararr) {
+					return virtualTrue
+				}
+			}
+			return virtualFalse
+		}
+	}
 }
