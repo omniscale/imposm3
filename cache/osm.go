@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/jmhodges/levigo"
+	"github.com/omniscale/imposm3/cache/rocksdb"
 	"github.com/omniscale/imposm3/element"
 )
 
@@ -159,40 +159,40 @@ func (c *OSMCache) FirstMemberIsCached(members []element.Member) (bool, error) {
 }
 
 type cache struct {
-	db      *levigo.DB
+	db      *rocksdb.DB
 	options *cacheOptions
-	cache   *levigo.Cache
-	wo      *levigo.WriteOptions
-	ro      *levigo.ReadOptions
+	cache   *rocksdb.Cache
+	wo      *rocksdb.WriteOptions
+	ro      *rocksdb.ReadOptions
 }
 
 func (c *cache) open(path string) error {
-	opts := levigo.NewOptions()
-	opts.SetCreateIfMissing(true)
+	cfg := rocksdb.DefaultConfig()
+
+	// opts.SetCreateIfMissing(true)
 	if c.options.CacheSizeM > 0 {
-		c.cache = levigo.NewLRUCache(c.options.CacheSizeM * 1024 * 1024)
-		opts.SetCache(c.cache)
+		cfg.CacheSize = c.options.CacheSizeM * 1024 * 1024
 	}
 	if c.options.MaxOpenFiles > 0 {
-		opts.SetMaxOpenFiles(c.options.MaxOpenFiles)
-	}
-	if c.options.BlockRestartInterval > 0 {
-		opts.SetBlockRestartInterval(c.options.BlockRestartInterval)
+		cfg.MaxOpenFiles = c.options.MaxOpenFiles
 	}
 	if c.options.WriteBufferSizeM > 0 {
-		opts.SetWriteBufferSize(c.options.WriteBufferSizeM * 1024 * 1024)
+		cfg.WriteBufferSize = c.options.WriteBufferSizeM * 1024 * 1024
 	}
 	if c.options.BlockSizeK > 0 {
-		opts.SetBlockSize(c.options.BlockSizeK * 1024)
+		cfg.BlockSize = c.options.BlockSizeK * 1024
 	}
 
-	db, err := levigo.Open(path, opts)
+	cfg.Compression = int(rocksdb.SnappyCompression)
+	cfg.StatsDumpPeriodSec = 10
+
+	db, err := rocksdb.Open(path, cfg)
 	if err != nil {
 		return err
 	}
 	c.db = db
-	c.wo = levigo.NewWriteOptions()
-	c.ro = levigo.NewReadOptions()
+	c.wo = rocksdb.NewWriteOptions()
+	c.ro = rocksdb.NewReadOptions()
 	return nil
 }
 
