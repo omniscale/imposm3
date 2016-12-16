@@ -132,7 +132,7 @@ if [ ! -e $PREFIX/lib/libprotobuf.so ]; then
     popd
 fi
 
-if [ ! -e $PREFIX/lib/libgeos.so ]; then
+if [ ! -e $PREFIX/lib/libgeos-$GEOS_VERSION.so ]; then
     echo "-> installing GEOS"
     pushd $SRC
         $CURL http://download.osgeo.org/geos/geos-$GEOS_VERSION.tar.bz2 -O
