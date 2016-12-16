@@ -1,5 +1,3 @@
-// +build rocksdb
-
 package rocksdb
 
 // #include <stdlib.h>

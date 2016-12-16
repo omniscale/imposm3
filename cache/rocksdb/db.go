@@ -1,5 +1,3 @@
-// +build rocksdb
-
 // Package rocksdb is a wrapper for c++ rocksdb
 package rocksdb
 
@@ -15,28 +13,18 @@ import (
 	"os"
 	"runtime"
 	"unsafe"
-
-	"github.com/siddontang/ledisdb/config"
-	"github.com/siddontang/ledisdb/store/driver"
 )
 
 const defaultFilterBits int = 10
 
-type Store struct {
-}
-
-func (s Store) String() string {
-	return DBName
-}
-
-func (s Store) Open(path string, cfg *config.Config) (driver.IDB, error) {
+func Open(path string, cfg *RocksDBConfig) (*DB, error) {
 	if err := os.MkdirAll(path, 0755); err != nil {
 		return nil, err
 	}
 
 	db := new(DB)
 	db.path = path
-	db.cfg = &cfg.RocksDB
+	db.cfg = cfg
 
 	if err := db.open(); err != nil {
 		return nil, err
@@ -45,10 +33,10 @@ func (s Store) Open(path string, cfg *config.Config) (driver.IDB, error) {
 	return db, nil
 }
 
-func (s Store) Repair(path string, cfg *config.Config) error {
+func Repair(path string, cfg *RocksDBConfig) error {
 	db := new(DB)
 	db.path = path
-	db.cfg = &cfg.RocksDB
+	db.cfg = cfg
 
 	err := db.open()
 	defer db.Close()
@@ -72,7 +60,7 @@ func (s Store) Repair(path string, cfg *config.Config) error {
 type DB struct {
 	path string
 
-	cfg *config.RocksDBConfig
+	cfg *RocksDBConfig
 
 	db *C.rocksdb_t
 
@@ -108,7 +96,7 @@ func (db *DB) open() error {
 	return nil
 }
 
-func (db *DB) initOptions(cfg *config.RocksDBConfig) {
+func (db *DB) initOptions(cfg *RocksDBConfig) {
 	opts := NewOptions()
 	blockOpts := NewBlockBasedTableOptions()
 
@@ -212,7 +200,7 @@ func (db *DB) SyncDelete(key []byte) error {
 	return db.delete(db.syncOpts, key)
 }
 
-func (db *DB) NewWriteBatch() driver.IWriteBatch {
+func (db *DB) NewWriteBatch() *WriteBatch {
 	wb := &WriteBatch{
 		db:     db,
 		wbatch: C.rocksdb_writebatch_create(),
@@ -225,7 +213,7 @@ func (db *DB) NewWriteBatch() driver.IWriteBatch {
 	return wb
 }
 
-func (db *DB) NewIterator() driver.IIterator {
+func (db *DB) NewIterator() *Iterator {
 	it := new(Iterator)
 
 	it.it = C.rocksdb_create_iterator(db.db, db.iteratorOpts.Opt)
@@ -233,7 +221,7 @@ func (db *DB) NewIterator() driver.IIterator {
 	return it
 }
 
-func (db *DB) NewSnapshot() (driver.ISnapshot, error) {
+func (db *DB) NewSnapshot() (*Snapshot, error) {
 	snap := &Snapshot{
 		db:           db,
 		snap:         C.rocksdb_create_snapshot(db.db),
@@ -291,7 +279,7 @@ func (db *DB) get(ro *ReadOptions, key []byte) ([]byte, error) {
 	return C.GoBytes(unsafe.Pointer(value), C.int(vallen)), nil
 }
 
-func (db *DB) getSlice(ro *ReadOptions, key []byte) (driver.ISlice, error) {
+func (db *DB) getSlice(ro *ReadOptions, key []byte) (*CSlice, error) {
 	var errStr *C.char
 	var vallen C.size_t
 	var k *C.char
@@ -329,19 +317,11 @@ func (db *DB) delete(wo *WriteOptions, key []byte) error {
 	return nil
 }
 
-func (db *DB) Begin() (driver.Tx, error) {
-	return nil, driver.ErrTxSupport
-}
-
 func (db *DB) Compact() error {
 	C.rocksdb_compact_range(db.db, nil, 0, nil, 0)
 	return nil
 }
 
-func (db *DB) GetSlice(key []byte) (driver.ISlice, error) {
+func (db *DB) GetSlice(key []byte) (*CSlice, error) {
 	return db.getSlice(db.readOpts, key)
-}
-
-func init() {
-	driver.Register(Store{})
 }

@@ -1,14 +1,8 @@
-// +build rocksdb
-
 package rocksdb
 
 // #cgo LDFLAGS: -lrocksdb
 // #include "rocksdb/c.h"
 import "C"
-
-import (
-	"github.com/siddontang/ledisdb/store/driver"
-)
 
 type Snapshot struct {
 	db           *DB
@@ -21,11 +15,11 @@ func (s *Snapshot) Get(key []byte) ([]byte, error) {
 	return s.db.get(s.readOpts, key)
 }
 
-func (s *Snapshot) GetSlice(key []byte) (driver.ISlice, error) {
+func (s *Snapshot) GetSlice(key []byte) (*CSlice, error) {
 	return s.db.getSlice(s.readOpts, key)
 }
 
-func (s *Snapshot) NewIterator() driver.IIterator {
+func (s *Snapshot) NewIterator() *Iterator {
 	it := new(Iterator)
 	it.it = C.rocksdb_create_iterator(s.db.db, s.db.iteratorOpts.Opt)
 	return it

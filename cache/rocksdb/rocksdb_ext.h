@@ -1,5 +1,3 @@
-// +build rocksdb
-
 #ifndef ROCKSDB_EXT_H
 #define ROCKSDB_EXT_H
 

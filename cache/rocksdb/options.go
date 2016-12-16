@@ -1,5 +1,3 @@
-// +build rocksdb
-
 package rocksdb
 
 // #cgo LDFLAGS: -lrocksdb

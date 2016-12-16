@@ -1,5 +1,3 @@
-// +build rocksdb
-
 #include "rocksdb_ext.h"
 
 #include <stdlib.h>
@@ -32,8 +30,8 @@ unsigned char rocksdb_iter_prev_ext(rocksdb_iterator_t* iter) {
     return rocksdb_iter_valid(iter);
 }
 
-void rocksdb_write_ext(rocksdb_t* db, 
-    const rocksdb_writeoptions_t* options, 
+void rocksdb_write_ext(rocksdb_t* db,
+    const rocksdb_writeoptions_t* options,
     rocksdb_writebatch_t* batch, char** errptr) {
     rocksdb_write(db, options, batch, errptr);
     if(*errptr == NULL) {
