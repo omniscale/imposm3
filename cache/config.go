@@ -63,11 +63,11 @@ const defaultConfig = `
         "BlockRestartInterval": 128
     },
     "InsertedWays": {
-        "CacheSizeM": 0,
-        "WriteBufferSizeM": 0,
+        "CacheSizeM": 16,
+        "WriteBufferSizeM": 64,
         "BlockSizeK": 0,
-        "MaxOpenFiles": 0,
-        "BlockRestartInterval": 0
+        "MaxOpenFiles": 64,
+        "BlockRestartInterval": 128
     },
     "CoordsIndex": {
         "CacheSizeM": 32,

@@ -56,9 +56,10 @@ IMPOSM_SRC=$GOPATH/src/github.com/omniscale/imposm3
 BUILD_TMP=$BUILD_BASE/imposm-build
 
 GEOS_VERSION=3.5.1
-
+ROCKSDB_VERSION=4.13
 export CGO_CFLAGS=-I$PREFIX/include
-export CGO_LDFLAGS=-L$PREFIX/lib
+export CGO_CPPFLAGS=-I$SRC/rocksdb-rocksdb-4.13/include
+export CGO_LDFLAGS="-L$PREFIX/lib -L$PREFIX/lib/librocksdb.4.13.a"
 export LD_LIBRARY_PATH=$PREFIX/lib
 
 CURL="curl --silent --show-error --location"
@@ -68,23 +69,17 @@ mkdir -p $PREFIX
 mkdir -p $GOPATH
 
 
-if ! grep --silent 'Debian GNU/Linux 6.0' /etc/issue; then
+if ! grep --silent 'Debian GNU/Linux 8' /etc/issue; then
     echo
-    echo "ERROR: This script only works for Debian 6.0 (Squeeze), see above."
+    echo "ERROR: This script only works for Debian 8 (Jessie), see above."
     exit 1
 fi
 
 if [ ! -e /usr/bin/git ]; then
     echo "-> installing dependencies"
 
-    # squeeze is EOL, use debian-archive
-    cat <<EOF | sudo tee /etc/apt/sources.list
-deb http://ftp.de.debian.org/debian-archive/debian squeeze main
-deb-src http://ftp.de.debian.org/debian-archive/debian squeeze main
-EOF
-
     sudo apt-get update -y
-    sudo apt-get install -y build-essential unzip autoconf libtool git-core chrpath
+    sudo apt-get install -y build-essential unzip autoconf libtool git-core chrpath curl libsnappy-dev
 fi
 
 if [ ! -e $BUILD_BASE/go/bin/go ]; then
@@ -95,28 +90,17 @@ if [ ! -e $BUILD_BASE/go/bin/go ]; then
     popd
 fi
 
-if [ ! -e $PREFIX/lib/libhyperleveldb.so ]; then
-    echo "-> installing hyperleveldb"
+if [ ! -e $PREFIX/lib/librocksdb.4.13.a ]; then
+    echo "-> installing rocksdb"
     pushd $SRC
-        $CURL https://github.com/rescrv/HyperLevelDB/archive/master.zip -O
-        unzip master.zip
-        pushd HyperLevelDB-master
-            autoreconf -i
-            ./configure --prefix=$PREFIX
-            make -j4
-            make install
+        $CURL https://github.com/facebook/rocksdb/archive/rocksdb-4.13.tar.gz -O
+        tar xzf rocksdb-4.13.tar.gz
+        pushd rocksdb-rocksdb-4.13
+            make static_lib
+            mkdir -p $PREFIX/lib
+            cp librocksdb.a $PREFIX/lib/librocksdb.4.13.a
         popd
     popd $SRC
-fi
-
-if [ ! -e $PREFIX/include/leveldb ]; then
-    echo "-> linking hyperleveldb as leveldb"
-    pushd $PREFIX/lib
-        for s in 'a', 'la', 'so'; do
-            ln -sf libhyperleveldb.$s libleveldb.$s
-        done
-    popd
-    ln -s $PREFIX/include/hyperleveldb $PREFIX/include/leveldb
 fi
 
 if [ ! -e $PREFIX/lib/libprotobuf.so ]; then
@@ -179,9 +163,7 @@ pushd $PREFIX/lib
     ln -s libgeos_c.so $BUILD_TMP/lib/libgeos_c.so.1
     cp libgeos.so $BUILD_TMP/lib
     ln -s libgeos.so $BUILD_TMP/lib/libgeos-$GEOS_VERSION.so
-    cp libhyperleveldb.so $BUILD_TMP/lib
-    ln -s libhyperleveldb.so $BUILD_TMP/lib/libhyperleveldb.so.0
-    ln -s libhyperleveldb.so $BUILD_TMP/lib/libleveldb.so.1
+    cp librocksdb.so* $BUILD_TMP/lib
 popd
 
 pushd $BUILD_TMP/lib
