@@ -195,6 +195,9 @@ func ReadPbf(
 					coordsSync.Wait()
 					continue
 				}
+				if skipCoords {
+					continue
+				}
 				if withLimiter {
 					for i, _ := range nds {
 						if !limiter.IntersectsBuffer(g, nds[i].Long, nds[i].Lat) {
@@ -223,6 +226,9 @@ func ReadPbf(
 				if nds == nil {
 					coordsSync.Done()
 					coordsSync.Wait()
+					continue
+				}
+				if skipNodes {
 					continue
 				}
 				numWithTags := 0
