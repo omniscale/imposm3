@@ -132,6 +132,9 @@ func (f *RelationTagFilter) Filter(tags *element.Tags) bool {
 	if tags == nil {
 		return false
 	}
+
+	// TODO improve filtering for relation/relation_member mappings
+	// right now this only works with tags.load_all:true
 	if t, ok := (*tags)["type"]; ok {
 		if t != "multipolygon" && t != "boundary" && t != "land_area" {
 			*tags = nil

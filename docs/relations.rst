@@ -72,6 +72,8 @@ These relations can not be mapped to `simple` linestrings or polygons as they ca
 
 The Imposm table types ``relation`` and ``relation_member`` allow you to import all relevant data for these relations.
 
+.. note:: ``relation`` and ``relation_member`` require :ref:`load_all<tags>` to have access to all keys.
+
 ``relation_member``
 ^^^^^^^^^^^^^^^^^^^
 
