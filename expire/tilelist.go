@@ -159,7 +159,7 @@ func (tl *TileList) Flush() error {
 
 	now := time.Now().UTC()
 	dir := filepath.Join(tl.out, now.Format("20060102"))
-	err := os.MkdirAll(dir, 0755)
+	err := os.MkdirAll(dir, 0775)
 	if err != nil {
 		return err
 	}
