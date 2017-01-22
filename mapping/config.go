@@ -337,22 +337,17 @@ func (m *Mapping) ElementFilters() map[string][]ElementFilter {
 			continue
 		}
 		if t.Filters.ExcludeTags != nil {
-			if len(*t.Filters.ExcludeTags) > 1 {
-				log.Warnf("Multiple exclude_tags not supported! (tablename:" + name + ") Please use the filter:'require'/'reject' ")
-			}
+			log.Print("warn: exclude_tags filter is deprecated and will be removed. See require and reject filter.")
 			for _, filterKeyVal := range *t.Filters.ExcludeTags {
-				if filterKeyVal[1] == "__nil__" {
-					log.Warnf("exclude_tags __nil__ is not implemented! (tablename:" + name + ") Please use the filter: 'require'/'reject' ")
+				// Convert `exclude_tags`` filter to `reject` filter !
+				keyname := string(filterKeyVal[0])
+				vararr := []orderedValue{
+					{
+						value: Value(filterKeyVal[1]),
+						order: 1,
+					},
 				}
-				f := func(tags element.Tags, key Key, closed bool) bool {
-					if v, ok := tags[filterKeyVal[0]]; ok {
-						if filterKeyVal[1] == "__any__" || v == filterKeyVal[1] {
-							return false
-						}
-					}
-					return true
-				}
-				result[name] = append(result[name], f)
+				result[name] = append(result[name], makeFiltersFunction(name, false, true, string(keyname), vararr))
 			}
 		}
 
@@ -394,10 +389,7 @@ func findValueInOrderedValue(v Value, list []orderedValue) bool {
 }
 
 func makeRegexpFiltersFunction(tablename string, virtualTrue bool, virtualFalse bool, v_keyname string, v_regexp string) func(tags element.Tags, key Key, closed bool) bool {
-	// Compile regular expression
-	// if not valid regexp --> panic !
-
-	// log.Warnf("Regexp filter is experimental! (tablename:" + tablename + ")")
+	// Compile regular expression,  if not valid regexp --> panic !
 	r := regexp.MustCompile(v_regexp)
 	return func(tags element.Tags, key Key, closed bool) bool {
 		if v, ok := tags[v_keyname]; ok {
@@ -410,9 +402,14 @@ func makeRegexpFiltersFunction(tablename string, virtualTrue bool, virtualFalse 
 }
 
 func makeFiltersFunction(tablename string, virtualTrue bool, virtualFalse bool, v_keyname string, v_vararr []orderedValue) func(tags element.Tags, key Key, closed bool) bool {
+
+	if findValueInOrderedValue("__nil__", v_vararr) { // check __nil__
+		log.Print("warn: Filter value '__nil__' is not supported ! (tablename:" + tablename + ")")
+	}
+
 	if findValueInOrderedValue("__any__", v_vararr) { // check __any__
 		if len(v_vararr) > 1 {
-			log.Warnf("Multiple filter value with '__any__' keywords is probably not valid! (tablename:" + tablename + ")")
+			log.Print("warn: Multiple filter value with '__any__' keywords is not valid! (tablename:" + tablename + ")")
 		}
 		return func(tags element.Tags, key Key, closed bool) bool {
 			if _, ok := tags[v_keyname]; ok {
@@ -429,7 +426,7 @@ func makeFiltersFunction(tablename string, virtualTrue bool, virtualFalse bool, 
 			}
 			return virtualFalse
 		}
-	} else {
+	} else { //  > 1 parameter  - less optimal code
 		return func(tags element.Tags, key Key, closed bool) bool {
 			if v, ok := tags[v_keyname]; ok {
 				if findValueInOrderedValue(Value(v), v_vararr) {

@@ -1,7 +1,6 @@
-
-# test mappings
+# test mappings for config_test.go
 #
-# only `type: linestring` impemented in config_test.go
+# only `type: linestring` impemented!
 #
 # Regexp Note: be careful because yaml interprets escape sequences inside double quoted strings!
 #       so use  single quoted string !
@@ -106,6 +105,39 @@ tables:
         tunnel: ['yes']
       reject_regexp:
         level: '^\D+.*$'
+    mapping:
+      waterway:
+      - __any__
+    type: linestring
+
+
+  config_test_t5_depricated_exclude_tags:
+    _comment:  Allways Empty !  
+    fields:
+    - name: id
+      type: id
+    - key: waterway
+      name: waterway
+      type: string
+    - key: name
+      name: name
+      type: string
+    filters:
+      require:
+        waterway:
+        - stream
+        - river
+        - canal
+        - drain
+        - ditch
+      # the `exclude_tags` will be converted to `reject` filter`  
+      # and  `require` and the  `reject` filter will be same!
+      exclude_tags:   
+      - ['waterway', 'stream']
+      - ['waterway', 'river'] 
+      - ['waterway', 'canal']   
+      - ['waterway', 'drain']   
+      - ['waterway', 'ditch']                          
     mapping:
       waterway:
       - __any__
