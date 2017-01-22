@@ -1,4 +1,17 @@
 {
+    "areas": {
+        "area_tags": [
+            "buildings", 
+            "landuse", 
+            "leisure", 
+            "natural", 
+            "aeroway"
+        ], 
+        "linear_tags": [
+            "highway", 
+            "barrier"
+        ]
+    },
     "generalized_tables": {
         "waterareas_gen1": {
             "source": "waterareas",
@@ -725,9 +738,9 @@
             ],
             "type": "linestring",
             "filters": {
-                "exclude_tags": [
-                    ["area", "yes"]
-                ]
+                "reject": {
+                    "area": [ "yes" ]
+                }
             },
             "mappings": {
                 "railway": {

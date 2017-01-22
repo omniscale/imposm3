@@ -420,9 +420,8 @@ tables:
     - name: class
       type: mapping_key
     filters:
-      exclude_tags:
-      - - area
-        - 'yes'
+      reject:
+        area: ["yes"]
     mappings:
       railway:
         mapping:
