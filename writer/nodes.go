@@ -6,6 +6,7 @@ import (
 	"github.com/omniscale/imposm3/cache"
 	"github.com/omniscale/imposm3/database"
 	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/expire"
 	geomp "github.com/omniscale/imposm3/geom"
 	"github.com/omniscale/imposm3/geom/geos"
 	"github.com/omniscale/imposm3/mapping"
@@ -49,9 +50,6 @@ func (nw *NodeWriter) loop() {
 	for n := range nw.nodes {
 		nw.progress.AddNodes(1)
 		if matches := nw.pointMatcher.MatchNode(n); len(matches) > 0 {
-			if nw.expireor != nil {
-				nw.expireor.Expire(n.Long, n.Lat)
-			}
 			nw.NodeToSrid(n)
 			point, err := geomp.Point(geos, *n)
 			if err != nil {
@@ -67,6 +65,7 @@ func (nw *NodeWriter) loop() {
 				continue
 			}
 
+			inserted := false
 			if nw.limiter != nil {
 				parts, err := nw.limiter.Clip(geom.Geom)
 				if err != nil {
@@ -78,14 +77,19 @@ func (nw *NodeWriter) loop() {
 						log.Warn(err)
 						continue
 					}
+					inserted = true
 				}
 			} else {
 				if err := nw.inserter.InsertPoint(n.OSMElem, geom, matches); err != nil {
 					log.Warn(err)
 					continue
 				}
+				inserted = true
 			}
 
+			if inserted && nw.expireor != nil {
+				expire.ExpireProjectedNode(nw.expireor, *n, nw.srid)
+			}
 		}
 	}
 	nw.wg.Done()

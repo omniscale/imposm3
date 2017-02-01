@@ -23,3 +23,14 @@ func ExpireProjectedNodes(expireor Expireor, nodes []element.Node, srid int, clo
 		panic("unsupported srid")
 	}
 }
+
+func ExpireProjectedNode(expireor Expireor, node element.Node, srid int) {
+	if srid == 4326 {
+		expireor.Expire(node.Long, node.Lat)
+	} else if srid == 3857 {
+		long, lat := proj.MercToWgs(node.Long, node.Lat)
+		expireor.Expire(long, lat)
+	} else {
+		panic("unsupported srid")
+	}
+}
