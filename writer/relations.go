@@ -172,6 +172,9 @@ func handleMultiPolygon(rw *RelationWriter, r *element.Relation, geos *geosp.Geo
 		if duration := time.Now().Sub(start); duration > time.Minute {
 			log.Warnf("clipping relation %d to -limitto took %s", r.Id, duration)
 		}
+		if len(parts) == 0 {
+			return false
+		}
 		for _, g := range parts {
 			rel := element.Relation(*r)
 			rel.Id = rw.relId(r.Id)
