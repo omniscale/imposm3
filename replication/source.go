@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"time"
 
 	"gopkg.in/fsnotify.v1"
@@ -213,31 +214,7 @@ func (d *reader) Sequences() <-chan Sequence {
 
 func (d *reader) waitTillPresent(seq int, ext string) error {
 	filename := path.Join(d.dest, seqPath(seq)+ext)
-	if _, err := os.Stat(filename); err == nil {
-		return nil
-	}
-
-	w, err := fsnotify.NewWatcher()
-	if err != nil {
-		return err
-	}
-	defer w.Close()
-	w.Add(path.Dir(filename))
-
-	// check again, in case file was created before we added the file
-	if _, err := os.Stat(filename); err == nil {
-		return nil
-	}
-
-	for {
-		select {
-		case evt := <-w.Events:
-			if evt.Op&fsnotify.Create == fsnotify.Create && evt.Name == filename {
-				return nil
-			}
-		}
-	}
-	return nil
+	return waitTillPresent(filename)
 }
 
 func (d *reader) fetchNextLoop() {
@@ -259,4 +236,40 @@ func (d *reader) fetchNextLoop() {
 			Time:          lastTime,
 		}
 	}
+}
+
+// waitTillPresent blocks till file is present.
+func waitTillPresent(filename string) error {
+	if _, err := os.Stat(filename); err == nil {
+		return nil
+	}
+
+	// fsnotify does not work recursive. wait for parent dirs first (e.g. 002/134)
+	parent := filepath.Dir(filename)
+	if err := waitTillPresent(parent); err != nil {
+		return err
+	}
+
+	w, err := fsnotify.NewWatcher()
+	if err != nil {
+		return err
+	}
+	defer w.Close()
+	// need to watch on parent if we want to get events for new file
+	w.Add(parent)
+
+	// check again, in case file was created before we added the file
+	if _, err := os.Stat(filename); err == nil {
+		return nil
+	}
+
+	for {
+		select {
+		case evt := <-w.Events:
+			if evt.Op&fsnotify.Create == fsnotify.Create && evt.Name == filename {
+				return nil
+			}
+		}
+	}
+	return nil
 }
