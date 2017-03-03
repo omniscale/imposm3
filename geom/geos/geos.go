@@ -322,6 +322,7 @@ func (this *Geom) Bounds() Bounds {
 	if geom == nil {
 		return NilBounds
 	}
+	defer C.GEOSGeom_destroy(geom)
 	extRing := C.GEOSGetExteriorRing(geom)
 	if extRing == nil {
 		return NilBounds
