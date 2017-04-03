@@ -332,9 +332,12 @@ func TestComplete_GeneralizedLinestringIsValid(t *testing.T) {
 }
 
 func TestComplete_RingWithGap(t *testing.T) {
-	// Multipolygon and way with gap (overlapping but different endpoints) gets closed
+	// Multipolygon with gap (overlapping but different endpoints) gets closed
 	assertGeomValid(t, checkElem{"osm_landusages", -7301, Missing, nil})
-	assertGeomValid(t, checkElem{"osm_landusages", 7311, Missing, nil})
+	// but not way
+	assertRecords(t, []checkElem{
+		checkElem{"osm_landusages", 7311, Missing, nil},
+	})
 }
 
 func TestComplete_MultipolygonWithOpenRing(t *testing.T) {
