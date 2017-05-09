@@ -276,9 +276,9 @@ func (m *Mapping) extraTags(tableType TableType, tags map[Key]bool) {
 	tags["area"] = true
 }
 
-func (m *Mapping) ElementFilters() map[string][]ElementFilter {
-	result := make(map[string][]ElementFilter)
+type tableFilters map[string][]ElementFilter
 
+func (m *Mapping) addTypedFilters(tableType TableType, filters tableFilters) {
 	var areaTags map[Key]struct{}
 	var linearTags map[Key]struct{}
 	if m.Areas.AreaTags != nil {
@@ -295,6 +295,9 @@ func (m *Mapping) ElementFilters() map[string][]ElementFilter {
 	}
 
 	for name, t := range m.Tables {
+		if t.Type != GeometryTable && t.Type != tableType {
+			continue
+		}
 		if t.Type == LineStringTable && areaTags != nil {
 			f := func(tags element.Tags, key Key, closed bool) bool {
 				if closed {
@@ -309,7 +312,7 @@ func (m *Mapping) ElementFilters() map[string][]ElementFilter {
 				}
 				return true
 			}
-			result[name] = append(result[name], f)
+			filters[name] = append(filters[name], f)
 		}
 		if t.Type == PolygonTable && linearTags != nil {
 			f := func(tags element.Tags, key Key, closed bool) bool {
@@ -323,9 +326,13 @@ func (m *Mapping) ElementFilters() map[string][]ElementFilter {
 				}
 				return true
 			}
-			result[name] = append(result[name], f)
+			filters[name] = append(filters[name], f)
 		}
+	}
+}
 
+func (m *Mapping) addFilters(filters tableFilters) {
+	for name, t := range m.Tables {
 		if t.Filters == nil {
 			continue
 		}
@@ -339,9 +346,8 @@ func (m *Mapping) ElementFilters() map[string][]ElementFilter {
 					}
 					return true
 				}
-				result[name] = append(result[name], f)
+				filters[name] = append(filters[name], f)
 			}
 		}
 	}
-	return result
 }

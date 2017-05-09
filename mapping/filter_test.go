@@ -19,18 +19,35 @@ func init() {
 
 func stringMapEquals(t *testing.T, expected, actual map[string]string) {
 	if len(expected) != len(actual) {
-		t.Fatalf("different length in %v and %v\n", expected, actual)
+		t.Errorf("different length in %v and %v\n", expected, actual)
 	}
 
 	for k, v := range expected {
 		if actualV, ok := actual[k]; ok {
 			if actualV != v {
-				t.Fatalf("%s != %s in %v and %v\n", v, actualV, expected, actual)
+				t.Errorf("%s != %s in %v and %v\n", v, actualV, expected, actual)
 			}
 		} else {
-			t.Fatalf("%s not in %v\n", k, actual)
+			t.Errorf("%s not in %v\n", k, actual)
 		}
 	}
+}
+
+func stringMapEqual(expected, actual map[string]string) bool {
+	if len(expected) != len(actual) {
+		return false
+	}
+
+	for k, v := range expected {
+		if actualV, ok := actual[k]; ok {
+			if actualV != v {
+				return false
+			}
+		} else {
+			return false
+		}
+	}
+	return true
 }
 
 func matchesEqual(t *testing.T, expected []Match, actual []Match) {
@@ -62,194 +79,78 @@ func matchesEqual(t *testing.T, expected []Match, actual []Match) {
 }
 
 func TestTagFilterNodes(t *testing.T) {
-	var tags element.Tags
+	tests := []struct {
+		tags     element.Tags
+		expected element.Tags
+	}{
+		{tags: element.Tags{}, expected: element.Tags{}},
+		{tags: element.Tags{"name": "foo"}, expected: element.Tags{"name": "foo"}},
+		{tags: element.Tags{"name": "foo", "unknown": "foo"}, expected: element.Tags{"name": "foo"}},
+		{tags: element.Tags{"name": "foo", "place": "unknown"}, expected: element.Tags{"name": "foo"}},
+		{tags: element.Tags{"name": "foo", "place": "unknown", "population": "1000"}, expected: element.Tags{"name": "foo", "population": "1000"}},
+		{tags: element.Tags{"name": "foo", "place": "village"}, expected: element.Tags{"name": "foo", "place": "village"}},
+		{tags: element.Tags{"name": "foo", "place": "village", "population": "1000"}, expected: element.Tags{"name": "foo", "place": "village", "population": "1000"}},
+		{tags: element.Tags{"name": "foo", "place": "village", "unknown": "foo"}, expected: element.Tags{"name": "foo", "place": "village"}},
+		{tags: element.Tags{"name": "foo", "place": "village", "highway": "bus_stop"}, expected: element.Tags{"name": "foo", "place": "village", "highway": "bus_stop"}},
+	}
+
 	nodes := mapping.NodeTagFilter()
-
-	tags = element.Tags{"name": "foo"}
-	if nodes.Filter(&tags) != false {
-		t.Fatal("unexpected filter response for", tags)
+	for i, test := range tests {
+		nodes.Filter(&test.tags)
+		if !stringMapEqual(test.tags, test.expected) {
+			t.Errorf("unexpected result for case %d: %v != %v", i+1, test.tags, test.expected)
+		}
 	}
-	stringMapEquals(t, element.Tags{}, tags)
-
-	tags = element.Tags{"name": "foo", "unknown": "baz"}
-	if nodes.Filter(&tags) != false {
-		t.Fatal("unexpected filter response for", tags)
-	}
-	stringMapEquals(t, element.Tags{}, tags)
-
-	tags = element.Tags{"name": "foo", "place": "unknown"}
-	if nodes.Filter(&tags) != false {
-		t.Fatal("unexpected filter response for", tags)
-	}
-	stringMapEquals(t, element.Tags{}, tags)
-
-	tags = element.Tags{"name": "foo", "place": "village"}
-	if nodes.Filter(&tags) != true {
-		t.Fatal("unexpected filter response for", tags)
-	}
-	stringMapEquals(t, element.Tags{"name": "foo", "place": "village"}, tags)
-
-	tags = element.Tags{"name": "foo", "place": "village", "population": "1000"}
-	if nodes.Filter(&tags) != true {
-		t.Fatal("unexpected filter response for", tags)
-	}
-	stringMapEquals(t, element.Tags{"name": "foo", "place": "village", "population": "1000"}, tags)
-
-	tags = element.Tags{"name": "foo", "place": "village", "highway": "unknown"}
-	if nodes.Filter(&tags) != true {
-		t.Fatal("unexpected filter response for", tags)
-	}
-	stringMapEquals(t, element.Tags{"name": "foo", "place": "village"}, tags)
-
-	tags = element.Tags{"name": "foo", "place": "village", "highway": "bus_stop"}
-	if nodes.Filter(&tags) != true {
-		t.Fatal("unexpected filter response for", tags)
-	}
-	stringMapEquals(t, element.Tags{"name": "foo", "place": "village", "highway": "bus_stop"}, tags)
 }
 
 func TestTagFilterWays(t *testing.T) {
-	var tags element.Tags
+	tests := []struct {
+		tags     element.Tags
+		expected element.Tags
+	}{
+		{tags: element.Tags{}, expected: element.Tags{}},
+		{tags: element.Tags{"name": "foo"}, expected: element.Tags{"name": "foo"}},
+		{tags: element.Tags{"name": "foo", "unknown": "foo"}, expected: element.Tags{"name": "foo"}},
+		{tags: element.Tags{"name": "foo", "highway": "unknown"}, expected: element.Tags{"name": "foo"}},
+		{tags: element.Tags{"name": "foo", "highway": "track"}, expected: element.Tags{"name": "foo", "highway": "track"}},
+		{tags: element.Tags{"name": "foo", "building": "whatever"}, expected: element.Tags{"name": "foo", "building": "whatever"}},
+		{tags: element.Tags{"name": "foo", "highway": "track", "unknown": "foo"}, expected: element.Tags{"name": "foo", "highway": "track"}},
+		{tags: element.Tags{"name": "foo", "place": "village", "highway": "track"}, expected: element.Tags{"name": "foo", "highway": "track"}},
+		{tags: element.Tags{"name": "foo", "highway": "track", "oneway": "yes", "tunnel": "1"}, expected: element.Tags{"name": "foo", "highway": "track", "oneway": "yes", "tunnel": "1"}},
+	}
+
 	ways := mapping.WayTagFilter()
-
-	tags = element.Tags{"name": "foo"}
-	if ways.Filter(&tags) != false {
-		t.Fatal("unexpected filter response for", tags)
+	for i, test := range tests {
+		ways.Filter(&test.tags)
+		if !stringMapEqual(test.tags, test.expected) {
+			t.Errorf("unexpected result for case %d: %v != %v", i+1, test.tags, test.expected)
+		}
 	}
-	stringMapEquals(t, element.Tags{}, tags)
-
-	tags = element.Tags{"name": "foo", "unknown": "baz"}
-	if ways.Filter(&tags) != false {
-		t.Fatal("unexpected filter response for", tags)
-	}
-	stringMapEquals(t, element.Tags{}, tags)
-
-	tags = element.Tags{"name": "foo", "highway": "unknown"}
-	if ways.Filter(&tags) != false {
-		t.Fatal("unexpected filter response for", tags)
-	}
-	stringMapEquals(t, element.Tags{}, tags)
-
-	tags = element.Tags{"name": "foo", "highway": "track"}
-	if ways.Filter(&tags) != true {
-		t.Fatal("unexpected filter response for", tags)
-	}
-	stringMapEquals(t, element.Tags{"name": "foo", "highway": "track"}, tags)
-
-	tags = element.Tags{"name": "foo", "highway": "track", "oneway": "yes", "tunnel": "1"}
-	if ways.Filter(&tags) != true {
-		t.Fatal("unexpected filter response for", tags)
-	}
-	stringMapEquals(t, element.Tags{"name": "foo", "highway": "track", "oneway": "yes", "tunnel": "1"}, tags)
-
-	tags = element.Tags{"name": "foo", "place": "village", "highway": "track"}
-	if ways.Filter(&tags) != true {
-		t.Fatal("unexpected filter response for", tags)
-	}
-	stringMapEquals(t, element.Tags{"name": "foo", "highway": "track"}, tags)
-
-	tags = element.Tags{"name": "foo", "railway": "tram", "highway": "secondary"}
-	if ways.Filter(&tags) != true {
-		t.Fatal("unexpected filter response for", tags)
-	}
-	stringMapEquals(t, element.Tags{"name": "foo", "railway": "tram", "highway": "secondary"}, tags)
-
-	// with __any__ value
-	tags = element.Tags{"name": "foo", "building": "yes"}
-	if ways.Filter(&tags) != true {
-		t.Fatal("unexpected filter response for", tags)
-	}
-	stringMapEquals(t, element.Tags{"name": "foo", "building": "yes"}, tags)
-
-	tags = element.Tags{"name": "foo", "building": "whatever"}
-	if ways.Filter(&tags) != true {
-		t.Fatal("unexpected filter response for", tags)
-	}
-	stringMapEquals(t, element.Tags{"name": "foo", "building": "whatever"}, tags)
 }
 
 func TestTagFilterRelations(t *testing.T) {
-	var tags element.Tags
+	tests := []struct {
+		tags     element.Tags
+		expected element.Tags
+	}{
+		{tags: element.Tags{}, expected: element.Tags{}},
+		{tags: element.Tags{"name": "foo"}, expected: element.Tags{"name": "foo"}},
+		{tags: element.Tags{"name": "foo", "unknown": "foo"}, expected: element.Tags{"name": "foo"}},
+		{tags: element.Tags{"name": "foo", "landuse": "unknown"}, expected: element.Tags{"name": "foo"}},
+		{tags: element.Tags{"name": "foo", "landuse": "farm"}, expected: element.Tags{"name": "foo", "landuse": "farm"}},
+		{tags: element.Tags{"name": "foo", "landuse": "farm", "type": "multipolygon"}, expected: element.Tags{"name": "foo", "landuse": "farm", "type": "multipolygon"}},
+		{tags: element.Tags{"name": "foo", "type": "multipolygon"}, expected: element.Tags{"name": "foo", "type": "multipolygon"}},
+		{tags: element.Tags{"name": "foo", "type": "boundary"}, expected: element.Tags{"name": "foo", "type": "boundary"}},
+		{tags: element.Tags{"name": "foo", "landuse": "farm", "type": "boundary"}, expected: element.Tags{"name": "foo", "landuse": "farm", "type": "boundary"}},
+	}
+
 	relations := mapping.RelationTagFilter()
-
-	tags = element.Tags{"name": "foo"}
-	if relations.Filter(&tags) != false {
-		t.Fatal("unexpected filter response for", tags)
+	for i, test := range tests {
+		relations.Filter(&test.tags)
+		if !stringMapEqual(test.tags, test.expected) {
+			t.Errorf("unexpected result for case %d: %v != %v", i+1, test.tags, test.expected)
+		}
 	}
-	stringMapEquals(t, element.Tags{}, tags)
-
-	tags = element.Tags{"name": "foo", "unknown": "baz"}
-	if relations.Filter(&tags) != false {
-		t.Fatal("unexpected filter response for", tags)
-	}
-	stringMapEquals(t, element.Tags{}, tags)
-
-	tags = element.Tags{"name": "foo", "landuse": "unknown"}
-	if relations.Filter(&tags) != false {
-		t.Fatal("unexpected filter response for", tags)
-	}
-	stringMapEquals(t, element.Tags{}, tags)
-
-	tags = element.Tags{"name": "foo", "landuse": "farm"}
-	if relations.Filter(&tags) != false {
-		t.Fatal("unexpected filter response for", tags)
-	}
-	stringMapEquals(t, element.Tags{}, tags)
-
-	tags = element.Tags{"name": "foo", "landuse": "farm", "type": "multipolygon"}
-	if relations.Filter(&tags) != true {
-		t.Fatal("unexpected filter response for", tags)
-	}
-	stringMapEquals(t, element.Tags{"name": "foo", "landuse": "farm", "type": "multipolygon"}, tags)
-
-	// skip multipolygon with filtered tags, otherwise tags from
-	// longest way would be used
-	tags = element.Tags{"name": "foo", "landuse": "unknown", "type": "multipolygon"}
-	if relations.Filter(&tags) != false {
-		t.Fatal("unexpected filter response for", tags)
-	}
-	stringMapEquals(t, element.Tags{}, tags)
-
-	tags = element.Tags{"name": "foo", "landuse": "park", "type": "multipolygon"}
-	if relations.Filter(&tags) != true {
-		t.Fatal("unexpected filter response for", tags)
-	}
-	stringMapEquals(t, element.Tags{"name": "foo", "type": "multipolygon", "landuse": "park"}, tags)
-
-	tags = element.Tags{"name": "foo", "landuse": "farm", "boundary": "administrative", "type": "multipolygon"}
-	if relations.Filter(&tags) != true {
-		t.Fatal("unexpected filter response for", tags)
-	}
-	stringMapEquals(t, element.Tags{"name": "foo", "landuse": "farm", "boundary": "administrative", "type": "multipolygon"}, tags)
-
-	// boundary relation for boundary
-	tags = element.Tags{"name": "foo", "landuse": "farm", "boundary": "administrative", "type": "boundary"}
-	if relations.Filter(&tags) != true {
-		t.Fatal("unexpected filter response for", tags)
-	}
-	stringMapEquals(t, element.Tags{"name": "foo", "landuse": "farm", "boundary": "administrative", "type": "boundary"}, tags)
-
-	// boundary relation for non boundary
-	tags = element.Tags{"name": "foo", "landuse": "farm", "type": "boundary"}
-	if relations.Filter(&tags) != false {
-		t.Fatal("unexpected filter response for", tags)
-	}
-	stringMapEquals(t, element.Tags{}, tags)
-
-	/* skip boundary with filtered tags, otherwise tags from longest way would
-	be used */
-	tags = element.Tags{"name": "foo", "boundary": "unknown", "type": "boundary"}
-	if relations.Filter(&tags) != false {
-		t.Fatal("unexpected filter response for", tags)
-	}
-	stringMapEquals(t, element.Tags{}, tags)
-
-	tags = element.Tags{"name": "foo", "boundary": "administrative", "type": "boundary"}
-	if relations.Filter(&tags) != true {
-		t.Fatal("unexpected filter response for", tags)
-	}
-	stringMapEquals(t, element.Tags{"name": "foo", "boundary": "administrative", "type": "boundary"}, tags)
-
 }
 
 func TestPointMatcher(t *testing.T) {
@@ -400,61 +301,6 @@ func TestMatcherMappingOrder(t *testing.T) {
 	matchesEqual(t, []Match{{"amenity", "university", DestTable{Name: "landusages"}, nil}}, polys.MatchRelation(&elem))
 }
 
-func TestFilterNodes(t *testing.T) {
-	var tags element.Tags
-
-	// test name only
-	tags = make(element.Tags)
-	tags["name"] = "foo"
-
-	points := mapping.NodeTagFilter()
-	if points.Filter(&tags) != false {
-		t.Fatal("Filter result not false")
-	}
-	if len(tags) != 0 {
-		t.Fatal("Filter result not empty")
-	}
-
-	// test name + unmapped tags
-	tags = make(element.Tags)
-	tags["name"] = "foo"
-	tags["boring"] = "true"
-
-	if points.Filter(&tags) != false {
-		t.Fatal("Filter result not false")
-	}
-	if len(tags) != 0 {
-		t.Fatal("Filter result not empty")
-	}
-
-	// test fields only, but no mapping
-	tags = make(element.Tags)
-	tags["population"] = "0"
-	tags["name"] = "foo"
-	tags["boring"] = "true"
-
-	if points.Filter(&tags) != false {
-		t.Fatal("Filter result true", tags)
-	}
-	if len(tags) != 0 {
-		t.Fatal("Filter result not empty", tags)
-	}
-
-	// ... not with mapped tag (place)
-	tags = make(element.Tags)
-	tags["population"] = "0"
-	tags["name"] = "foo"
-	tags["boring"] = "true"
-	tags["place"] = "village"
-
-	if points.Filter(&tags) != true {
-		t.Fatal("Filter result true", tags)
-	}
-	if len(tags) != 3 && tags["population"] == "0" && tags["name"] == "foo" && tags["place"] == "village" {
-		t.Fatal("Filter result not expected", tags)
-	}
-}
-
 func TestExcludeFilter(t *testing.T) {
 	var f TagFilterer
 	var tags element.Tags
@@ -495,9 +341,7 @@ func BenchmarkFilterNodes(b *testing.B) {
 		tags["boring"] = "true"
 
 		points := mapping.NodeTagFilter()
-		if points.Filter(&tags) != true {
-			b.Fatal("Filter result true", tags)
-		}
+		points.Filter(&tags)
 		if len(tags) != 2 && tags["population"] == "0" && tags["name"] == "foo" {
 			b.Fatal("Filter result not expected", tags)
 		}

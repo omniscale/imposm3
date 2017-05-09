@@ -8,7 +8,9 @@ import (
 func (m *Mapping) PointMatcher() NodeMatcher {
 	mappings := make(TagTables)
 	m.mappings(PointTable, mappings)
-	filters := m.ElementFilters()
+	filters := make(tableFilters)
+	m.addFilters(filters)
+	m.addTypedFilters(PointTable, filters)
 	return &tagMatcher{
 		mappings:   mappings,
 		tables:     m.tables(PointTable),
@@ -20,7 +22,9 @@ func (m *Mapping) PointMatcher() NodeMatcher {
 func (m *Mapping) LineStringMatcher() WayMatcher {
 	mappings := make(TagTables)
 	m.mappings(LineStringTable, mappings)
-	filters := m.ElementFilters()
+	filters := make(tableFilters)
+	m.addFilters(filters)
+	m.addTypedFilters(LineStringTable, filters)
 	return &tagMatcher{
 		mappings:   mappings,
 		tables:     m.tables(LineStringTable),
@@ -32,7 +36,9 @@ func (m *Mapping) LineStringMatcher() WayMatcher {
 func (m *Mapping) PolygonMatcher() RelWayMatcher {
 	mappings := make(TagTables)
 	m.mappings(PolygonTable, mappings)
-	filters := m.ElementFilters()
+	filters := make(tableFilters)
+	m.addFilters(filters)
+	m.addTypedFilters(PolygonTable, filters)
 	return &tagMatcher{
 		mappings:   mappings,
 		tables:     m.tables(PolygonTable),
@@ -44,7 +50,10 @@ func (m *Mapping) PolygonMatcher() RelWayMatcher {
 func (m *Mapping) RelationMatcher() RelationMatcher {
 	mappings := make(TagTables)
 	m.mappings(RelationTable, mappings)
-	filters := m.ElementFilters()
+	filters := make(tableFilters)
+	m.addFilters(filters)
+	m.addTypedFilters(PolygonTable, filters)
+	m.addTypedFilters(RelationTable, filters)
 	return &tagMatcher{
 		mappings:   mappings,
 		tables:     m.tables(RelationTable),
@@ -56,7 +65,9 @@ func (m *Mapping) RelationMatcher() RelationMatcher {
 func (m *Mapping) RelationMemberMatcher() RelationMatcher {
 	mappings := make(TagTables)
 	m.mappings(RelationMemberTable, mappings)
-	filters := m.ElementFilters()
+	filters := make(tableFilters)
+	m.addFilters(filters)
+	m.addTypedFilters(RelationMemberTable, filters)
 	return &tagMatcher{
 		mappings:   mappings,
 		tables:     m.tables(RelationMemberTable),
