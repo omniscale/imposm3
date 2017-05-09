@@ -35,15 +35,6 @@
       <tag k="name" v="way 11001"/>
       <tag k="natural" v="water"/>
     </way>
-    <way id="12001" version="2" timestamp="2011-11-11T00:11:11Z">
-      <nd ref="12001"/>
-      <nd ref="12002"/>
-      <nd ref="12003"/>
-      <nd ref="12004"/>
-      <nd ref="12001"/>
-      <tag k="name" v="way 12001"/>
-      <tag k="natural" v="water"/>
-    </way>
     <relation id="13001" version="2" timestamp="2011-11-11T00:11:11Z">
       <member type="way" ref="13001" role="outer"/>
       <tag k="natural" v="water"/>
@@ -71,6 +62,7 @@
       <tag k="natural" v="water"/>
     </way>
     <relation id="14001" version="2" timestamp="2011-11-11T00:11:11Z">
+      <!-- now a new style relation -->
       <member type="way" ref="14001" role="outer"/>
       <member type="way" ref="14011" role="inner"/>
       <tag k="type" v="multipolygon"/>

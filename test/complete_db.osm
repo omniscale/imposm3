@@ -94,7 +94,6 @@
     <nd ref="1005"/>
     <nd ref="1001"/>
     <tag k="name" v="way 1001"/>
-    <tag k="landuse" v="wood"/>
   </way>
   <way id="1002" version="1" timestamp="2011-11-11T00:11:11Z">
     <nd ref="1006"/>
@@ -267,6 +266,7 @@
   <relation id="1001" version="1" timestamp="2011-11-11T00:11:11Z">
     <member type="way" ref="1001" role="outer"/>
     <member type="way" ref="1002" role="inner"/>
+    <tag k="landuse" v="wood"/>
     <tag k="type" v="multipolygon"/>
   </relation>
   <relation id="2001" version="1" timestamp="2011-11-11T00:11:11Z">
@@ -524,7 +524,6 @@
     <nd ref="9201"/>
     <nd ref="9202"/>
     <nd ref="9203"/>
-    <tag k="landuse" v="park"/>
     <tag k="highway" v="secondary"/>
     <tag k="name" v="9209"/>
   </way>
@@ -540,35 +539,8 @@
     <member type="way" ref="9209" role="outer"/>
     <member type="way" ref="9210" role="outer"/>
     <tag k="type" v="multipolygon"/>
-  </relation>
-
-  <!-- test multipolygon ways were inserted (same as 92xx, but different tagging) -->
-  <node id="9301" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="80"/>
-  <node id="9302" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="82"/>
-  <node id="9303" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="82"/>
-  <node id="9304" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="80"/>
-  <way id="9309" version="1" timestamp="2011-11-11T00:11:11Z">
-    <nd ref="9301"/>
-    <nd ref="9302"/>
-    <nd ref="9303"/>
-    <tag k="landuse" v="park"/>
-    <tag k="highway" v="secondary"/>
-    <tag k="name" v="9309"/>
-  </way>
-  <way id="9310" version="1" timestamp="2011-11-11T00:11:11Z">
-    <nd ref="9303"/>
-    <nd ref="9304"/>
-    <nd ref="9301"/>
-    <tag k="highway" v="residential"/>
-    <tag k="name" v="9310"/>
-  </way>
-  <relation id="9301" version="1" timestamp="2011-11-11T00:11:11Z">
-    <member type="way" ref="9309" role="outer"/>
-    <member type="way" ref="9310" role="outer"/>
-    <tag k="type" v="multipolygon"/>
     <tag k="landuse" v="park"/>
   </relation>
-
 
 
   <!-- test multipolygon way was inserted -->
@@ -605,25 +577,6 @@
     <tag k="name" v="way 11001"/>
     <tag k="landuse" v="park"/>
   </way>
-
-  <!-- test for changed tags in way belonging to relation -->
-  <node id="12001" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="85"/>
-  <node id="12002" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="86"/>
-  <node id="12003" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="86"/>
-  <node id="12004" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="85"/>
-  <way id="12001" version="1" timestamp="2011-11-11T00:11:11Z">
-    <nd ref="12001"/>
-    <nd ref="12002"/>
-    <nd ref="12003"/>
-    <nd ref="12004"/>
-    <nd ref="12001"/>
-    <tag k="name" v="way 12001"/>
-    <tag k="landuse" v="park"/>
-  </way>
-  <relation id="12001" version="1" timestamp="2011-11-11T00:11:11Z">
-    <member type="way" ref="12001" role="outer"/>
-    <tag k="type" v="multipolygon"/>
-  </relation>
 
   <!-- test for changed tags in relation -->
   <node id="13001" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="87"/>
@@ -672,6 +625,7 @@
     <tag k="name" v="way 14011"/>
   </way>
   <relation id="14001" version="1" timestamp="2011-11-11T00:11:11Z">
+    <!-- old style relation not inserted -->
     <member type="way" ref="14001" role="outer"/>
     <member type="way" ref="14011" role="inner"/>
     <tag k="type" v="multipolygon"/>
@@ -694,7 +648,6 @@
     <nd ref="15004"/>
     <nd ref="15001"/>
     <tag k="name" v="way 15001"/>
-    <tag k="landuse" v="park"/>
   </way>
   <way id="15011" version="1" timestamp="2011-11-11T00:11:11Z">
     <nd ref="15011"/>
@@ -708,6 +661,7 @@
     <member type="way" ref="15001" role="outer"/>
     <member type="way" ref="15011" role="inner"/>
     <tag k="type" v="multipolygon"/>
+    <tag k="landuse" v="park"/>
   </relation>
 
 
@@ -947,7 +901,7 @@
     <tag k="landuse" v="park"/>
   </relation>
 
-  <!-- test removing of relation (r:50121) without tags -->
+  <!-- test old-style relation does not affect way -->
   <node id="50101" version="1" timestamp="2011-11-11T00:11:11Z" lat="42" lon="10"/>
   <node id="50102" version="1" timestamp="2011-11-11T00:11:11Z" lat="42" lon="11"/>
   <node id="50103" version="1" timestamp="2011-11-11T00:11:11Z" lat="44" lon="10"/>
@@ -1031,10 +985,10 @@
     <nd ref="52103"/>
     <nd ref="52104"/>
     <nd ref="52101"/>
-    <tag k="building" v="yes"/>
   </way>
   <relation id="52121" version="1" timestamp="2011-11-11T00:11:11Z">
     <member type="way" ref="52111" role="outer"/>
+    <tag k="building" v="yes"/>
     <tag k="type" v="multipolygon"/>
   </relation>
 
