@@ -38,10 +38,28 @@ To import all polygons with `tourism=zoo`, `natural=wood` or `natural=land` into
         …
 
 
+``relation_types``
+~~~~~~~~~~~~~~~~~~
+
+``relation_types`` restricts which relation types should be imported. It is a list with `type` values, e.g. ``[route, master_route]``.
+
+For tables of type ``relation`` and ``relation_member``: Only import relations which have this type value. You still need to have a mapping.
+For tables of type ``polygon``: Only build multi-polygons for relations which have this type value. You still need to have a mapping. Defaults to ``[multipolygon, boundary, land_area]``.
+
+.. code-block:: yaml
+
+    tables:
+      routes:
+        type: relation
+        relation_types: [route]
+        mapping:
+          route: [bus]
+
+
 ``columns``
 ~~~~~~~~~~~
 
-``columns`` is a list of columns that Imposm should create for this table. Each column is a YAML object with a ``type`` and a ``name`` and optionaly ``key``, ``args`` and ``from_member``.
+``columns`` is a list of columns that Imposm should create for this table. Each column is a YAML object with a ``type`` and a ``name`` and optionally ``key``, ``args`` and ``from_member``.
 
 ``name``
 ^^^^^^^^^
@@ -346,6 +364,16 @@ To load all tags except ``created_by``, ``source``, and ``tiger:county``, ``tige
     tags:
       load_all: true,
       exclude: [created_by, source, "tiger:*"]
+
+
+
+To load specific data about amenities for inclusion into an `hstore_tags` column:
+
+.. code-block:: yaml
+
+    tags:
+      include: [operator, opening_hours, wheelchair, website, phone, cuisine]
+
 
 
 
