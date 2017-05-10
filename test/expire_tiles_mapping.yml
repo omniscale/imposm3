@@ -1,7 +1,7 @@
 tables:
   roads:
     type: linestring
-    fields:
+    columns:
     - name: osm_id
       type: id
     - name: type
@@ -16,7 +16,7 @@ tables:
 
   pois:
     type: point
-    fields:
+    columns:
     - name: osm_id
       type: id
     - name: type
@@ -31,7 +31,7 @@ tables:
 
   buildings:
     type: polygon
-    fields:
+    columns:
     - name: osm_id
       type: id
     - name: type

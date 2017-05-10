@@ -1,7 +1,7 @@
 tables:
   master_routes:
     type: relation_member
-    fields:
+    columns:
     - name: osm_id
       type: id
     - name: member
@@ -26,7 +26,7 @@ tables:
       route_master: [bus]
   route_members:
     type: relation_member
-    fields:
+    columns:
     - name: osm_id
       type: id
     - key: ref
@@ -54,7 +54,7 @@ tables:
       route: [bus, tram, rail]
   routes:
     type: relation
-    fields:
+    columns:
     - name: osm_id
       type: id
     - key: ref
