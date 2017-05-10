@@ -86,10 +86,10 @@ func (m *Mapping) RelationMemberMatcher() RelationMatcher {
 }
 
 type Match struct {
-	Key         string
-	Value       string
-	Table       DestTable
-	tableFields *TableFields
+	Key       string
+	Value     string
+	Table     DestTable
+	tableSpec *TableSpec
 }
 
 type NodeMatcher interface {
@@ -111,18 +111,18 @@ type RelWayMatcher interface {
 
 type tagMatcher struct {
 	mappings   TagTables
-	tables     map[string]*TableFields
+	tables     map[string]*TableSpec
 	filters    map[string][]ElementFilter
 	relFilters map[string][]ElementFilter
 	matchAreas bool
 }
 
 func (m *Match) Row(elem *element.OSMElem, geom *geom.Geometry) []interface{} {
-	return m.tableFields.MakeRow(elem, geom, *m)
+	return m.tableSpec.MakeRow(elem, geom, *m)
 }
 
 func (m *Match) MemberRow(rel *element.Relation, member *element.Member, geom *geom.Geometry) []interface{} {
-	return m.tableFields.MakeMemberRow(rel, member, geom, *m)
+	return m.tableSpec.MakeMemberRow(rel, member, geom, *m)
 }
 
 func (tm *tagMatcher) MatchNode(node *element.Node) []Match {
@@ -165,10 +165,10 @@ func (tm *tagMatcher) match(tags element.Tags, closed bool, relation bool) []Mat
 		for _, t := range tbls {
 			this := orderedMatch{
 				Match: Match{
-					Key:         k,
-					Value:       v,
-					Table:       t.DestTable,
-					tableFields: tm.tables[t.Name],
+					Key:       k,
+					Value:     v,
+					Table:     t.DestTable,
+					tableSpec: tm.tables[t.Name],
 				},
 				order: t.order,
 			}

@@ -9,7 +9,7 @@ import (
 
 type ColumnSpec struct {
 	Name      string
-	FieldType mapping.FieldType
+	FieldType mapping.ColumnType
 	Type      ColumnType
 }
 type TableSpec struct {
@@ -140,17 +140,17 @@ func NewTableSpec(pg *PostGIS, t *mapping.Table) *TableSpec {
 		GeometryType: geomType,
 		Srid:         pg.Config.Srid,
 	}
-	for _, field := range t.Fields {
-		fieldType := field.FieldType()
-		if fieldType == nil {
+	for _, column := range t.Columns {
+		columnType := column.ColumnType()
+		if columnType == nil {
 			continue
 		}
-		pgType, ok := pgTypes[fieldType.GoType]
+		pgType, ok := pgTypes[columnType.GoType]
 		if !ok {
-			log.Errorf("unhandled field type %v, using string type", fieldType)
+			log.Errorf("unhandled column type %v, using string type", columnType)
 			pgType = pgTypes["string"]
 		}
-		col := ColumnSpec{field.Name, *fieldType, pgType}
+		col := ColumnSpec{column.Name, *columnType, pgType}
 		spec.Columns = append(spec.Columns, col)
 	}
 	return &spec

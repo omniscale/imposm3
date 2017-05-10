@@ -10,7 +10,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type Field struct {
+type Column struct {
 	Name       string                 `yaml:"name"`
 	Key        Key                    `yaml:"key"`
 	Keys       []Key                  `yaml:"keys"`
@@ -25,8 +25,8 @@ type Table struct {
 	Mapping       KeyValues             `yaml:"mapping"`
 	Mappings      map[string]SubMapping `yaml:"mappings"`
 	TypeMappings  TypeMappings          `yaml:"type_mappings"`
-	Fields        []*Field              `yaml:"columns"` // TODO rename Fields internaly to Columns
-	OldFields     []*Field              `yaml:"fields"`
+	Columns       []*Column             `yaml:"columns"`
+	OldFields     []*Column             `yaml:"fields"`
 	Filters       *Filters              `yaml:"filters"`
 	RelationTypes []string              `yaml:"relation_types"`
 }
@@ -185,7 +185,7 @@ func (m *Mapping) prepare() error {
 		t.Name = name
 		if t.OldFields != nil {
 			// todo deprecate 'fields'
-			t.Fields = t.OldFields
+			t.Columns = t.OldFields
 		}
 	}
 
@@ -232,11 +232,11 @@ func (m *Mapping) mappings(tableType TableType, mappings TagTables) {
 	}
 }
 
-func (m *Mapping) tables(tableType TableType) map[string]*TableFields {
-	result := make(map[string]*TableFields)
+func (m *Mapping) tables(tableType TableType) map[string]*TableSpec {
+	result := make(map[string]*TableSpec)
 	for name, t := range m.Tables {
 		if t.Type == tableType || t.Type == GeometryTable {
-			result[name] = t.TableFields()
+			result[name] = t.TableSpec()
 		}
 	}
 	return result
@@ -248,11 +248,11 @@ func (m *Mapping) extraTags(tableType TableType, tags map[Key]bool) {
 			continue
 		}
 
-		for _, field := range t.Fields {
-			if field.Key != "" {
-				tags[field.Key] = true
+		for _, col := range t.Columns {
+			if col.Key != "" {
+				tags[col.Key] = true
 			}
-			for _, k := range field.Keys {
+			for _, k := range col.Keys {
 				tags[k] = true
 			}
 		}
