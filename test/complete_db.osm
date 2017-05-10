@@ -94,6 +94,7 @@
     <nd ref="1005"/>
     <nd ref="1001"/>
     <tag k="name" v="way 1001"/>
+    <tag k="landuse" v="wood"/>
   </way>
   <way id="1002" version="1" timestamp="2011-11-11T00:11:11Z">
     <nd ref="1006"/>
@@ -268,6 +269,16 @@
     <member type="way" ref="1002" role="inner"/>
     <tag k="landuse" v="wood"/>
     <tag k="type" v="multipolygon"/>
+  </relation>
+  <relation id="1011" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="1001" role="outer"/>
+    <member type="way" ref="1002" role="inner"/>
+    <tag k="type" v="multipolygon"/>
+  </relation>
+  <relation id="1021" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="1001" role="outer"/>
+    <member type="way" ref="1002" role="inner"/>
+    <tag k="landuse" v="wood"/>
   </relation>
   <relation id="2001" version="1" timestamp="2011-11-11T00:11:11Z">
     <member type="way" ref="2001" role="outer"/>

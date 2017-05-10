@@ -61,6 +61,14 @@ func TestComplete_Deploy(t *testing.T) {
 	}
 }
 
+func TestComplete_OnlyNewStyleMultipolgon(t *testing.T) {
+	assertRecords(t, []checkElem{
+		{"osm_landusages", -1001, "wood", nil},
+		{"osm_landusages", -1011, Missing, nil},
+		{"osm_landusages", -1021, Missing, nil},
+	})
+}
+
 func TestComplete_LandusageToWaterarea1(t *testing.T) {
 	// Parks inserted into landusages
 	cache := ts.cache(t)

@@ -12,9 +12,10 @@ func (m *Mapping) NodeTagFilter() TagFilterer {
 		return newExcludeFilter(m.Tags.Exclude)
 	}
 	mappings := make(map[Key]map[Value][]OrderedDestTable)
-	m.mappings("point", mappings)
+	m.mappings(PointTable, mappings)
 	tags := make(map[Key]bool)
-	m.extraTags("point", tags)
+	m.extraTags(PointTable, tags)
+	m.extraTags(RelationMemberTable, tags)
 	return &TagFilter{mappings, tags}
 }
 
@@ -23,11 +24,12 @@ func (m *Mapping) WayTagFilter() TagFilterer {
 		return newExcludeFilter(m.Tags.Exclude)
 	}
 	mappings := make(map[Key]map[Value][]OrderedDestTable)
-	m.mappings("linestring", mappings)
-	m.mappings("polygon", mappings)
+	m.mappings(LineStringTable, mappings)
+	m.mappings(PolygonTable, mappings)
 	tags := make(map[Key]bool)
-	m.extraTags("linestring", tags)
-	m.extraTags("polygon", tags)
+	m.extraTags(LineStringTable, tags)
+	m.extraTags(PolygonTable, tags)
+	m.extraTags(RelationMemberTable, tags)
 	return &TagFilter{mappings, tags}
 }
 
@@ -42,11 +44,15 @@ func (m *Mapping) RelationTagFilter() TagFilterer {
 		"boundary":     []OrderedDestTable{},
 		"land_area":    []OrderedDestTable{},
 	}
-	m.mappings("linestring", mappings)
-	m.mappings("polygon", mappings)
+	m.mappings(LineStringTable, mappings)
+	m.mappings(PolygonTable, mappings)
+	m.mappings(RelationTable, mappings)
+	m.mappings(RelationMemberTable, mappings)
 	tags := make(map[Key]bool)
-	m.extraTags("linestring", tags)
-	m.extraTags("polygon", tags)
+	m.extraTags(LineStringTable, tags)
+	m.extraTags(PolygonTable, tags)
+	m.extraTags(RelationTable, tags)
+	m.extraTags(RelationMemberTable, tags)
 	return &TagFilter{mappings, tags}
 }
 

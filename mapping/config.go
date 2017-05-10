@@ -20,14 +20,15 @@ type Field struct {
 }
 
 type Table struct {
-	Name         string
-	Type         TableType             `yaml:"type"`
-	Mapping      KeyValues             `yaml:"mapping"`
-	Mappings     map[string]SubMapping `yaml:"mappings"`
-	TypeMappings TypeMappings          `yaml:"type_mappings"`
-	Fields       []*Field              `yaml:"columns"` // TODO rename Fields internaly to Columns
-	OldFields    []*Field              `yaml:"fields"`
-	Filters      *Filters              `yaml:"filters"`
+	Name          string
+	Type          TableType             `yaml:"type"`
+	Mapping       KeyValues             `yaml:"mapping"`
+	Mappings      map[string]SubMapping `yaml:"mappings"`
+	TypeMappings  TypeMappings          `yaml:"type_mappings"`
+	Fields        []*Field              `yaml:"columns"` // TODO rename Fields internaly to Columns
+	OldFields     []*Field              `yaml:"fields"`
+	Filters       *Filters              `yaml:"filters"`
+	RelationTypes []string              `yaml:"relation_types"`
 }
 
 type GeneralizedTable struct {
@@ -179,19 +180,6 @@ func NewMapping(filename string) (*Mapping, error) {
 	return &mapping, nil
 }
 
-func (t *Table) ExtraTags() map[Key]bool {
-	tags := make(map[Key]bool)
-	for _, field := range t.Fields {
-		if field.Key != "" {
-			tags[field.Key] = true
-		}
-		for _, k := range field.Keys {
-			tags[k] = true
-		}
-	}
-	return tags
-}
-
 func (m *Mapping) prepare() error {
 	for name, t := range m.Tables {
 		t.Name = name
@@ -247,7 +235,7 @@ func (m *Mapping) mappings(tableType TableType, mappings TagTables) {
 func (m *Mapping) tables(tableType TableType) map[string]*TableFields {
 	result := make(map[string]*TableFields)
 	for name, t := range m.Tables {
-		if t.Type == tableType || t.Type == "geometry" {
+		if t.Type == tableType || t.Type == GeometryTable {
 			result[name] = t.TableFields()
 		}
 	}
@@ -256,15 +244,28 @@ func (m *Mapping) tables(tableType TableType) map[string]*TableFields {
 
 func (m *Mapping) extraTags(tableType TableType, tags map[Key]bool) {
 	for _, t := range m.Tables {
-		if t.Type != tableType && t.Type != "geometry" {
+		if t.Type != tableType && t.Type != GeometryTable {
 			continue
 		}
-		for key, _ := range t.ExtraTags() {
-			tags[key] = true
+
+		for _, field := range t.Fields {
+			if field.Key != "" {
+				tags[field.Key] = true
+			}
+			for _, k := range field.Keys {
+				tags[k] = true
+			}
 		}
+
 		if t.Filters != nil && t.Filters.ExcludeTags != nil {
 			for _, keyVal := range *t.Filters.ExcludeTags {
 				tags[Key(keyVal[0])] = true
+			}
+		}
+
+		if tableType == PolygonTable || tableType == RelationTable || tableType == RelationMemberTable {
+			if t.RelationTypes != nil {
+				tags["type"] = true
 			}
 		}
 	}
@@ -327,6 +328,37 @@ func (m *Mapping) addTypedFilters(tableType TableType, filters tableFilters) {
 				return true
 			}
 			filters[name] = append(filters[name], f)
+		}
+	}
+}
+
+func (m *Mapping) addRelationFilters(tableType TableType, filters tableFilters) {
+	for name, t := range m.Tables {
+		if t.RelationTypes != nil {
+			f := func(tags element.Tags, key Key, closed bool) bool {
+				if v, ok := tags["type"]; ok {
+					for _, rtype := range t.RelationTypes {
+						if v == rtype {
+							return true
+						}
+					}
+				}
+				return false
+			}
+			filters[name] = append(filters[name], f)
+		} else {
+			if t.Type == PolygonTable {
+				// standard mulipolygon handling (boundary and land_area are for backwards compatibility)
+				f := func(tags element.Tags, key Key, closed bool) bool {
+					if v, ok := tags["type"]; ok {
+						if v == "multipolygon" || v == "boundary" || v == "land_area" {
+							return true
+						}
+					}
+					return false
+				}
+				filters[name] = append(filters[name], f)
+			}
 		}
 	}
 }

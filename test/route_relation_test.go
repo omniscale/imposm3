@@ -58,6 +58,23 @@ func TestRouteRelation_RelationData(t *testing.T) {
 	if r.tags["name"] != "Bus 301: A => B" {
 		t.Error(r)
 	}
+
+	// check tags of master relation
+	r = ts.queryTags(t, "osm_routes", -100911)
+	if r.tags["name"] != "Bus 301" {
+		t.Error(r)
+	}
+}
+
+func TestRouteRelation_MemberUpdatedByNode1(t *testing.T) {
+	// check that member is updated after node was modified
+	rows := ts.queryDynamic(t, "osm_route_members", "osm_id = -110901 AND member = 110101")
+	if len(rows) != 1 {
+		t.Fatal(rows)
+	}
+	if rows[0]["name"] != "Stop" {
+		t.Error(rows[0])
+	}
 }
 
 func TestRouteRelation_MemberGeomUpdated1(t *testing.T) {
@@ -131,7 +148,7 @@ func TestRouteRelation_MemberGeomUpdated2(t *testing.T) {
 
 }
 
-func TestRouteRelation_MemberUpdatedByNode(t *testing.T) {
+func TestRouteRelation_MemberUpdatedByNode2(t *testing.T) {
 	// check that member is updated after node was modified
 	rows := ts.queryDynamic(t, "osm_route_members", "osm_id = -110901 AND member = 110101")
 	if len(rows) != 1 {

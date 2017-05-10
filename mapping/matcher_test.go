@@ -43,7 +43,7 @@ func TestSelectRelationPolygonsSimple(t *testing.T) {
 		t.Fatal(err)
 	}
 	r := element.Relation{}
-	r.Tags = element.Tags{"landuse": "park"}
+	r.Tags = element.Tags{"landuse": "park", "type": "multipolygon"}
 	r.Members = []element.Member{
 		makeMember(0, element.Tags{"landuse": "forest"}),
 		makeMember(1, element.Tags{"landuse": "park"}),
@@ -68,7 +68,7 @@ func TestSelectRelationPolygonsUnrelatedTags(t *testing.T) {
 		t.Fatal(err)
 	}
 	r := element.Relation{}
-	r.Tags = element.Tags{"landuse": "park"}
+	r.Tags = element.Tags{"landuse": "park", "type": "multipolygon"}
 	r.Members = []element.Member{
 		makeMember(0, element.Tags{"landuse": "park", "layer": "2", "name": "foo"}),
 		makeMember(1, element.Tags{"landuse": "forest"}),
@@ -91,7 +91,7 @@ func TestSelectRelationPolygonsMultiple(t *testing.T) {
 		t.Fatal(err)
 	}
 	r := element.Relation{}
-	r.Tags = element.Tags{"landuse": "park"}
+	r.Tags = element.Tags{"landuse": "park", "type": "multipolygon"}
 	r.Members = []element.Member{
 		makeMember(0, element.Tags{"landuse": "park"}),
 		makeMember(1, element.Tags{"natural": "forest"}),
@@ -117,7 +117,7 @@ func TestSelectRelationPolygonsMultipleTags(t *testing.T) {
 		t.Fatal(err)
 	}
 	r := element.Relation{}
-	r.Tags = element.Tags{"landuse": "forest", "natural": "scrub"}
+	r.Tags = element.Tags{"landuse": "forest", "natural": "scrub", "type": "multipolygon"}
 	r.Members = []element.Member{
 		makeMember(0, element.Tags{"natural": "scrub"}),
 		makeMember(1, element.Tags{"landuse": "forest"}),
@@ -139,7 +139,7 @@ func TestSelectRelationPolygonsMultipleTagsOnWay(t *testing.T) {
 		t.Fatal(err)
 	}
 	r := element.Relation{}
-	r.Tags = element.Tags{"waterway": "riverbank"}
+	r.Tags = element.Tags{"waterway": "riverbank", "type": "multipolygon"}
 	r.Members = []element.Member{
 		makeMemberRole(0, element.Tags{"waterway": "riverbank", "natural": "water"}, "outer"),
 		makeMemberRole(1, element.Tags{"natural": "water"}, "inner"),

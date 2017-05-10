@@ -39,10 +39,13 @@ func (m *Mapping) PolygonMatcher() RelWayMatcher {
 	filters := make(tableFilters)
 	m.addFilters(filters)
 	m.addTypedFilters(PolygonTable, filters)
+	relFilters := make(tableFilters)
+	m.addRelationFilters(PolygonTable, relFilters)
 	return &tagMatcher{
 		mappings:   mappings,
 		tables:     m.tables(PolygonTable),
 		filters:    filters,
+		relFilters: relFilters,
 		matchAreas: true,
 	}
 }
@@ -54,10 +57,13 @@ func (m *Mapping) RelationMatcher() RelationMatcher {
 	m.addFilters(filters)
 	m.addTypedFilters(PolygonTable, filters)
 	m.addTypedFilters(RelationTable, filters)
+	relFilters := make(tableFilters)
+	m.addRelationFilters(RelationTable, relFilters)
 	return &tagMatcher{
 		mappings:   mappings,
 		tables:     m.tables(RelationTable),
 		filters:    filters,
+		relFilters: relFilters,
 		matchAreas: true,
 	}
 }
@@ -68,10 +74,13 @@ func (m *Mapping) RelationMemberMatcher() RelationMatcher {
 	filters := make(tableFilters)
 	m.addFilters(filters)
 	m.addTypedFilters(RelationMemberTable, filters)
+	relFilters := make(tableFilters)
+	m.addRelationFilters(RelationMemberTable, relFilters)
 	return &tagMatcher{
 		mappings:   mappings,
 		tables:     m.tables(RelationMemberTable),
 		filters:    filters,
+		relFilters: relFilters,
 		matchAreas: true,
 	}
 }
@@ -104,6 +113,7 @@ type tagMatcher struct {
 	mappings   TagTables
 	tables     map[string]*TableFields
 	filters    map[string][]ElementFilter
+	relFilters map[string][]ElementFilter
 	matchAreas bool
 }
 
@@ -116,7 +126,7 @@ func (m *Match) MemberRow(rel *element.Relation, member *element.Member, geom *g
 }
 
 func (tm *tagMatcher) MatchNode(node *element.Node) []Match {
-	return tm.match(node.Tags, false)
+	return tm.match(node.Tags, false, false)
 }
 
 func (tm *tagMatcher) MatchWay(way *element.Way) []Match {
@@ -125,22 +135,22 @@ func (tm *tagMatcher) MatchWay(way *element.Way) []Match {
 			if way.Tags["area"] == "no" {
 				return nil
 			}
-			return tm.match(way.Tags, true)
+			return tm.match(way.Tags, true, false)
 		}
 	} else { // match way as linestring
 		if way.IsClosed() {
 			if way.Tags["area"] == "yes" {
 				return nil
 			}
-			return tm.match(way.Tags, true)
+			return tm.match(way.Tags, true, false)
 		}
-		return tm.match(way.Tags, false)
+		return tm.match(way.Tags, false, false)
 	}
 	return nil
 }
 
 func (tm *tagMatcher) MatchRelation(rel *element.Relation) []Match {
-	return tm.match(rel.Tags, true)
+	return tm.match(rel.Tags, true, true)
 }
 
 type orderedMatch struct {
@@ -148,7 +158,7 @@ type orderedMatch struct {
 	order int
 }
 
-func (tm *tagMatcher) match(tags element.Tags, closed bool) []Match {
+func (tm *tagMatcher) match(tags element.Tags, closed bool, relation bool) []Match {
 	tables := make(map[DestTable]orderedMatch)
 
 	addTables := func(k, v string, tbls []OrderedDestTable) {
@@ -198,6 +208,18 @@ func (tm *tagMatcher) match(tags element.Tags, closed bool) []Match {
 				}
 			}
 		}
+		if relation && !filteredOut {
+			filters, ok := tm.relFilters[t.Name]
+			if ok {
+				for _, filter := range filters {
+					if !filter(tags, Key(match.Key), closed) {
+						filteredOut = true
+						break
+					}
+				}
+			}
+		}
+
 		if !filteredOut {
 			matches = append(matches, match.Match)
 		}
