@@ -335,9 +335,10 @@ func (m *Mapping) addTypedFilters(tableType TableType, filters tableFilters) {
 func (m *Mapping) addRelationFilters(tableType TableType, filters tableFilters) {
 	for name, t := range m.Tables {
 		if t.RelationTypes != nil {
+			relTypes := t.RelationTypes // copy loop var for closure
 			f := func(tags element.Tags, key Key, closed bool) bool {
 				if v, ok := tags["type"]; ok {
-					for _, rtype := range t.RelationTypes {
+					for _, rtype := range relTypes {
 						if v == rtype {
 							return true
 						}
