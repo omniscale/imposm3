@@ -6,9 +6,9 @@ import (
 )
 
 func (m *Mapping) PointMatcher() NodeMatcher {
-	mappings := make(TagTables)
+	mappings := make(TagTableMapping)
 	m.mappings(PointTable, mappings)
-	filters := make(tableFilters)
+	filters := make(tableElementFilters)
 	m.addFilters(filters)
 	m.addTypedFilters(PointTable, filters)
 	return &tagMatcher{
@@ -20,9 +20,9 @@ func (m *Mapping) PointMatcher() NodeMatcher {
 }
 
 func (m *Mapping) LineStringMatcher() WayMatcher {
-	mappings := make(TagTables)
+	mappings := make(TagTableMapping)
 	m.mappings(LineStringTable, mappings)
-	filters := make(tableFilters)
+	filters := make(tableElementFilters)
 	m.addFilters(filters)
 	m.addTypedFilters(LineStringTable, filters)
 	return &tagMatcher{
@@ -34,12 +34,12 @@ func (m *Mapping) LineStringMatcher() WayMatcher {
 }
 
 func (m *Mapping) PolygonMatcher() RelWayMatcher {
-	mappings := make(TagTables)
+	mappings := make(TagTableMapping)
 	m.mappings(PolygonTable, mappings)
-	filters := make(tableFilters)
+	filters := make(tableElementFilters)
 	m.addFilters(filters)
 	m.addTypedFilters(PolygonTable, filters)
-	relFilters := make(tableFilters)
+	relFilters := make(tableElementFilters)
 	m.addRelationFilters(PolygonTable, relFilters)
 	return &tagMatcher{
 		mappings:   mappings,
@@ -51,13 +51,13 @@ func (m *Mapping) PolygonMatcher() RelWayMatcher {
 }
 
 func (m *Mapping) RelationMatcher() RelationMatcher {
-	mappings := make(TagTables)
+	mappings := make(TagTableMapping)
 	m.mappings(RelationTable, mappings)
-	filters := make(tableFilters)
+	filters := make(tableElementFilters)
 	m.addFilters(filters)
 	m.addTypedFilters(PolygonTable, filters)
 	m.addTypedFilters(RelationTable, filters)
-	relFilters := make(tableFilters)
+	relFilters := make(tableElementFilters)
 	m.addRelationFilters(RelationTable, relFilters)
 	return &tagMatcher{
 		mappings:   mappings,
@@ -69,12 +69,12 @@ func (m *Mapping) RelationMatcher() RelationMatcher {
 }
 
 func (m *Mapping) RelationMemberMatcher() RelationMatcher {
-	mappings := make(TagTables)
+	mappings := make(TagTableMapping)
 	m.mappings(RelationMemberTable, mappings)
-	filters := make(tableFilters)
+	filters := make(tableElementFilters)
 	m.addFilters(filters)
 	m.addTypedFilters(RelationMemberTable, filters)
-	relFilters := make(tableFilters)
+	relFilters := make(tableElementFilters)
 	m.addRelationFilters(RelationMemberTable, relFilters)
 	return &tagMatcher{
 		mappings:   mappings,
@@ -83,13 +83,6 @@ func (m *Mapping) RelationMemberMatcher() RelationMatcher {
 		relFilters: relFilters,
 		matchAreas: true,
 	}
-}
-
-type Match struct {
-	Key       string
-	Value     string
-	Table     DestTable
-	tableSpec *TableSpec
 }
 
 type NodeMatcher interface {
@@ -109,12 +102,11 @@ type RelWayMatcher interface {
 	RelationMatcher
 }
 
-type tagMatcher struct {
-	mappings   TagTables
-	tables     map[string]*TableSpec
-	filters    map[string][]ElementFilter
-	relFilters map[string][]ElementFilter
-	matchAreas bool
+type Match struct {
+	Key       string
+	Value     string
+	Table     DestTable
+	tableSpec *TableSpec
 }
 
 func (m *Match) Row(elem *element.OSMElem, geom *geom.Geometry) []interface{} {
@@ -123,6 +115,14 @@ func (m *Match) Row(elem *element.OSMElem, geom *geom.Geometry) []interface{} {
 
 func (m *Match) MemberRow(rel *element.Relation, member *element.Member, geom *geom.Geometry) []interface{} {
 	return m.tableSpec.MakeMemberRow(rel, member, geom, *m)
+}
+
+type tagMatcher struct {
+	mappings   TagTableMapping
+	tables     map[string]*TableSpec
+	filters    tableElementFilters
+	relFilters tableElementFilters
+	matchAreas bool
 }
 
 func (tm *tagMatcher) MatchNode(node *element.Node) []Match {
@@ -161,7 +161,7 @@ type orderedMatch struct {
 func (tm *tagMatcher) match(tags element.Tags, closed bool, relation bool) []Match {
 	tables := make(map[DestTable]orderedMatch)
 
-	addTables := func(k, v string, tbls []OrderedDestTable) {
+	addTables := func(k, v string, tbls []orderedDestTable) {
 		for _, t := range tbls {
 			this := orderedMatch{
 				Match: Match{

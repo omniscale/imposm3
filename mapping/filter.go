@@ -7,42 +7,46 @@ import (
 	"github.com/omniscale/imposm3/element"
 )
 
+type TagFilterer interface {
+	Filter(tags *element.Tags)
+}
+
 func (m *Mapping) NodeTagFilter() TagFilterer {
 	if m.Tags.LoadAll {
 		return newExcludeFilter(m.Tags.Exclude)
 	}
-	mappings := make(map[Key]map[Value][]OrderedDestTable)
+	mappings := make(TagTableMapping)
 	m.mappings(PointTable, mappings)
 	tags := make(map[Key]bool)
 	m.extraTags(PointTable, tags)
 	m.extraTags(RelationMemberTable, tags)
-	return &TagFilter{mappings, tags}
+	return &tagFilter{mappings.asTagMap(), tags}
 }
 
 func (m *Mapping) WayTagFilter() TagFilterer {
 	if m.Tags.LoadAll {
 		return newExcludeFilter(m.Tags.Exclude)
 	}
-	mappings := make(map[Key]map[Value][]OrderedDestTable)
+	mappings := make(TagTableMapping)
 	m.mappings(LineStringTable, mappings)
 	m.mappings(PolygonTable, mappings)
 	tags := make(map[Key]bool)
 	m.extraTags(LineStringTable, tags)
 	m.extraTags(PolygonTable, tags)
 	m.extraTags(RelationMemberTable, tags)
-	return &TagFilter{mappings, tags}
+	return &tagFilter{mappings.asTagMap(), tags}
 }
 
 func (m *Mapping) RelationTagFilter() TagFilterer {
 	if m.Tags.LoadAll {
 		return newExcludeFilter(m.Tags.Exclude)
 	}
-	mappings := make(map[Key]map[Value][]OrderedDestTable)
+	mappings := make(TagTableMapping)
 	// do not filter out type tag for common relations
-	mappings["type"] = map[Value][]OrderedDestTable{
-		"multipolygon": []OrderedDestTable{},
-		"boundary":     []OrderedDestTable{},
-		"land_area":    []OrderedDestTable{},
+	mappings["type"] = map[Value][]orderedDestTable{
+		"multipolygon": []orderedDestTable{},
+		"boundary":     []orderedDestTable{},
+		"land_area":    []orderedDestTable{},
 	}
 	m.mappings(LineStringTable, mappings)
 	m.mappings(PolygonTable, mappings)
@@ -53,54 +57,17 @@ func (m *Mapping) RelationTagFilter() TagFilterer {
 	m.extraTags(PolygonTable, tags)
 	m.extraTags(RelationTable, tags)
 	m.extraTags(RelationMemberTable, tags)
-	return &TagFilter{mappings, tags}
+	return &tagFilter{mappings.asTagMap(), tags}
 }
 
-type TagFilter struct {
-	mappings  map[Key]map[Value][]OrderedDestTable
+type tagMap map[Key]map[Value]struct{}
+
+type tagFilter struct {
+	mappings  tagMap
 	extraTags map[Key]bool
 }
 
-type ExcludeFilter struct {
-	keys    map[Key]struct{}
-	matches []string
-}
-
-func newExcludeFilter(tags []Key) *ExcludeFilter {
-	f := ExcludeFilter{
-		keys:    make(map[Key]struct{}),
-		matches: make([]string, 0),
-	}
-	for _, t := range tags {
-		if strings.ContainsAny(string(t), "?*[") {
-			f.matches = append(f.matches, string(t))
-		} else {
-			f.keys[t] = struct{}{}
-		}
-	}
-	return &f
-}
-
-func (f *ExcludeFilter) Filter(tags *element.Tags) {
-	for k := range *tags {
-		if _, ok := f.keys[Key(k)]; ok {
-			delete(*tags, k)
-		} else if f.matches != nil {
-			for _, exkey := range f.matches {
-				if ok, _ := path.Match(exkey, k); ok {
-					delete(*tags, k)
-					break
-				}
-			}
-		}
-	}
-}
-
-type TagFilterer interface {
-	Filter(tags *element.Tags)
-}
-
-func (f *TagFilter) Filter(tags *element.Tags) {
+func (f *tagFilter) Filter(tags *element.Tags) {
 	if tags == nil {
 		return
 	}
@@ -116,6 +83,41 @@ func (f *TagFilter) Filter(tags *element.Tags) {
 			}
 		} else if _, ok := f.extraTags[Key(k)]; !ok {
 			delete(*tags, k)
+		}
+	}
+}
+
+type excludeFilter struct {
+	keys    map[Key]struct{}
+	matches []string
+}
+
+func newExcludeFilter(tags []Key) *excludeFilter {
+	f := excludeFilter{
+		keys:    make(map[Key]struct{}),
+		matches: make([]string, 0),
+	}
+	for _, t := range tags {
+		if strings.ContainsAny(string(t), "?*[") {
+			f.matches = append(f.matches, string(t))
+		} else {
+			f.keys[t] = struct{}{}
+		}
+	}
+	return &f
+}
+
+func (f *excludeFilter) Filter(tags *element.Tags) {
+	for k := range *tags {
+		if _, ok := f.keys[Key(k)]; ok {
+			delete(*tags, k)
+		} else if f.matches != nil {
+			for _, exkey := range f.matches {
+				if ok, _ := path.Match(exkey, k); ok {
+					delete(*tags, k)
+					break
+				}
+			}
 		}
 	}
 }

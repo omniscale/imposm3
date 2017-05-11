@@ -100,22 +100,6 @@ func (t *TableSpec) MakeMemberRow(rel *element.Relation, member *element.Member,
 	return row
 }
 
-func (c *Column) ColumnType() *ColumnType {
-	if columnType, ok := AvailableColumnTypes[c.Type]; ok {
-		if columnType.MakeFunc != nil {
-			makeValue, err := columnType.MakeFunc(c.Name, columnType, *c)
-			if err != nil {
-				log.Print(err)
-				return nil
-			}
-			columnType = ColumnType{columnType.Name, columnType.GoType, makeValue, nil, nil, columnType.FromMember}
-		}
-		columnType.FromMember = c.FromMember
-		return &columnType
-	}
-	return nil
-}
-
 func (t *Table) TableSpec() *TableSpec {
 	result := TableSpec{}
 

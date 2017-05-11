@@ -10,6 +10,16 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type Mapping struct {
+	Tables            Tables            `yaml:"tables"`
+	GeneralizedTables GeneralizedTables `yaml:"generalized_tables"`
+	Tags              Tags              `yaml:"tags"`
+	Areas             Areas             `yaml:"areas"`
+	// SingleIdSpace mangles the overlapping node/way/relation IDs
+	// to be unique (nodes positive, ways negative, relations negative -1e17)
+	SingleIdSpace bool `yaml:"use_single_id_space"`
+}
+
 type Column struct {
 	Name       string                 `yaml:"name"`
 	Key        Key                    `yaml:"key"`
@@ -19,6 +29,23 @@ type Column struct {
 	FromMember bool                   `yaml:"from_member"`
 }
 
+func (c *Column) ColumnType() *ColumnType {
+	if columnType, ok := AvailableColumnTypes[c.Type]; ok {
+		if columnType.MakeFunc != nil {
+			makeValue, err := columnType.MakeFunc(c.Name, columnType, *c)
+			if err != nil {
+				log.Print(err)
+				return nil
+			}
+			columnType = ColumnType{columnType.Name, columnType.GoType, makeValue, nil, nil, columnType.FromMember}
+		}
+		columnType.FromMember = c.FromMember
+		return &columnType
+	}
+	return nil
+}
+
+type Tables map[string]*Table
 type Table struct {
 	Name          string
 	Type          TableType             `yaml:"type"`
@@ -31,6 +58,7 @@ type Table struct {
 	RelationTypes []string              `yaml:"relation_types"`
 }
 
+type GeneralizedTables map[string]*GeneralizedTable
 type GeneralizedTable struct {
 	Name            string
 	SourceTableName string  `yaml:"source"`
@@ -40,20 +68,6 @@ type GeneralizedTable struct {
 
 type Filters struct {
 	ExcludeTags *[][]string `yaml:"exclude_tags"`
-}
-
-type Tables map[string]*Table
-
-type GeneralizedTables map[string]*GeneralizedTable
-
-type Mapping struct {
-	Tables            Tables            `yaml:"tables"`
-	GeneralizedTables GeneralizedTables `yaml:"generalized_tables"`
-	Tags              Tags              `yaml:"tags"`
-	Areas             Areas             `yaml:"areas"`
-	// SingleIdSpace mangles the overlapping node/way/relation IDs
-	// to be unique (nodes positive, ways negative, relations negative -1e17)
-	SingleIdSpace bool `yaml:"use_single_id_space"`
 }
 
 type Areas struct {
@@ -71,6 +85,7 @@ type orderedValue struct {
 	value Value
 	order int
 }
+
 type KeyValues map[Key][]orderedValue
 
 func (kv *KeyValues) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -116,16 +131,42 @@ type TypeMappings struct {
 
 type ElementFilter func(tags element.Tags, key Key, closed bool) bool
 
-type TagTables map[Key]map[Value][]OrderedDestTable
+type orderedDestTable struct {
+	DestTable
+	order int
+}
+
+type TagTableMapping map[Key]map[Value][]orderedDestTable
+
+func (tt TagTableMapping) addFromMapping(mapping KeyValues, table DestTable) {
+	for key, vals := range mapping {
+		for _, v := range vals {
+			vals, ok := tt[key]
+			tbl := orderedDestTable{DestTable: table, order: v.order}
+			if ok {
+				vals[v.value] = append(vals[v.value], tbl)
+			} else {
+				tt[key] = make(map[Value][]orderedDestTable)
+				tt[key][v.value] = append(tt[key][v.value], tbl)
+			}
+		}
+	}
+}
+
+func (tt TagTableMapping) asTagMap() tagMap {
+	result := make(tagMap)
+	for k, vals := range tt {
+		result[k] = make(map[Value]struct{})
+		for v := range vals {
+			result[k][v] = struct{}{}
+		}
+	}
+	return result
+}
 
 type DestTable struct {
 	Name       string
 	SubMapping string
-}
-
-type OrderedDestTable struct {
-	DestTable
-	order int
 }
 
 type TableType string
@@ -195,22 +236,7 @@ func (m *Mapping) prepare() error {
 	return nil
 }
 
-func (tt TagTables) addFromMapping(mapping KeyValues, table DestTable) {
-	for key, vals := range mapping {
-		for _, v := range vals {
-			vals, ok := tt[key]
-			tbl := OrderedDestTable{DestTable: table, order: v.order}
-			if ok {
-				vals[v.value] = append(vals[v.value], tbl)
-			} else {
-				tt[key] = make(map[Value][]OrderedDestTable)
-				tt[key][v.value] = append(tt[key][v.value], tbl)
-			}
-		}
-	}
-}
-
-func (m *Mapping) mappings(tableType TableType, mappings TagTables) {
+func (m *Mapping) mappings(tableType TableType, mappings TagTableMapping) {
 	for name, t := range m.Tables {
 		if t.Type != GeometryTable && t.Type != tableType {
 			continue
@@ -277,9 +303,9 @@ func (m *Mapping) extraTags(tableType TableType, tags map[Key]bool) {
 	tags["area"] = true
 }
 
-type tableFilters map[string][]ElementFilter
+type tableElementFilters map[string][]ElementFilter
 
-func (m *Mapping) addTypedFilters(tableType TableType, filters tableFilters) {
+func (m *Mapping) addTypedFilters(tableType TableType, filters tableElementFilters) {
 	var areaTags map[Key]struct{}
 	var linearTags map[Key]struct{}
 	if m.Areas.AreaTags != nil {
@@ -332,7 +358,7 @@ func (m *Mapping) addTypedFilters(tableType TableType, filters tableFilters) {
 	}
 }
 
-func (m *Mapping) addRelationFilters(tableType TableType, filters tableFilters) {
+func (m *Mapping) addRelationFilters(tableType TableType, filters tableElementFilters) {
 	for name, t := range m.Tables {
 		if t.RelationTypes != nil {
 			relTypes := t.RelationTypes // copy loop var for closure
@@ -364,7 +390,7 @@ func (m *Mapping) addRelationFilters(tableType TableType, filters tableFilters) 
 	}
 }
 
-func (m *Mapping) addFilters(filters tableFilters) {
+func (m *Mapping) addFilters(filters tableElementFilters) {
 	for name, t := range m.Tables {
 		if t.Filters == nil {
 			continue
