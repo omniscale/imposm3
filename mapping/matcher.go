@@ -103,23 +103,23 @@ type RelWayMatcher interface {
 }
 
 type Match struct {
-	Key       string
-	Value     string
-	Table     DestTable
-	tableSpec *TableSpec
+	Key     string
+	Value   string
+	Table   DestTable
+	builder *rowBuilder
 }
 
 func (m *Match) Row(elem *element.OSMElem, geom *geom.Geometry) []interface{} {
-	return m.tableSpec.MakeRow(elem, geom, *m)
+	return m.builder.MakeRow(elem, geom, *m)
 }
 
 func (m *Match) MemberRow(rel *element.Relation, member *element.Member, geom *geom.Geometry) []interface{} {
-	return m.tableSpec.MakeMemberRow(rel, member, geom, *m)
+	return m.builder.MakeMemberRow(rel, member, geom, *m)
 }
 
 type tagMatcher struct {
 	mappings   TagTableMapping
-	tables     map[string]*TableSpec
+	tables     map[string]*rowBuilder
 	filters    tableElementFilters
 	relFilters tableElementFilters
 	matchAreas bool
@@ -165,10 +165,10 @@ func (tm *tagMatcher) match(tags element.Tags, closed bool, relation bool) []Mat
 		for _, t := range tbls {
 			this := orderedMatch{
 				Match: Match{
-					Key:       k,
-					Value:     v,
-					Table:     t.DestTable,
-					tableSpec: tm.tables[t.Name],
+					Key:     k,
+					Value:   v,
+					Table:   t.DestTable,
+					builder: tm.tables[t.Name],
 				},
 				order: t.order,
 			}
@@ -225,6 +225,54 @@ func (tm *tagMatcher) match(tags element.Tags, closed bool, relation bool) []Mat
 		}
 	}
 	return matches
+}
+
+type valueBuilder struct {
+	key     Key
+	colType ColumnType
+}
+
+func (v *valueBuilder) Value(elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
+	if v.colType.Func != nil {
+		return v.colType.Func(elem.Tags[string(v.key)], elem, geom, match)
+	}
+	return nil
+}
+
+func (v *valueBuilder) MemberValue(rel *element.Relation, member *element.Member, geom *geom.Geometry, match Match) interface{} {
+	if v.colType.Func != nil {
+		if v.colType.FromMember {
+			if member.Elem == nil {
+				return nil
+			}
+			return v.colType.Func(member.Elem.Tags[string(v.key)], member.Elem, geom, match)
+		}
+		return v.colType.Func(rel.Tags[string(v.key)], &rel.OSMElem, geom, match)
+	}
+	if v.colType.MemberFunc != nil {
+		return v.colType.MemberFunc(rel, member, match)
+	}
+	return nil
+}
+
+type rowBuilder struct {
+	columns []valueBuilder
+}
+
+func (r *rowBuilder) MakeRow(elem *element.OSMElem, geom *geom.Geometry, match Match) []interface{} {
+	var row []interface{}
+	for _, column := range r.columns {
+		row = append(row, column.Value(elem, geom, match))
+	}
+	return row
+}
+
+func (r *rowBuilder) MakeMemberRow(rel *element.Relation, member *element.Member, geom *geom.Geometry, match Match) []interface{} {
+	var row []interface{}
+	for _, column := range r.columns {
+		row = append(row, column.MemberValue(rel, member, geom, match))
+	}
+	return row
 }
 
 // SelectRelationPolygons returns a slice of all members that are already

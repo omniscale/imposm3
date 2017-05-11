@@ -53,54 +53,6 @@ type MakeMakeValue func(string, ColumnType, config.Column) (MakeValue, error)
 type Key string
 type Value string
 
-type ColumnSpec struct {
-	Key  Key
-	Type ColumnType
-}
-
-func (f *ColumnSpec) Value(elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
-	if f.Type.Func != nil {
-		return f.Type.Func(elem.Tags[string(f.Key)], elem, geom, match)
-	}
-	return nil
-}
-
-func (f *ColumnSpec) MemberValue(rel *element.Relation, member *element.Member, geom *geom.Geometry, match Match) interface{} {
-	if f.Type.Func != nil {
-		if f.Type.FromMember {
-			if member.Elem == nil {
-				return nil
-			}
-			return f.Type.Func(member.Elem.Tags[string(f.Key)], member.Elem, geom, match)
-		}
-		return f.Type.Func(rel.Tags[string(f.Key)], &rel.OSMElem, geom, match)
-	}
-	if f.Type.MemberFunc != nil {
-		return f.Type.MemberFunc(rel, member, match)
-	}
-	return nil
-}
-
-type TableSpec struct {
-	columns []ColumnSpec
-}
-
-func (t *TableSpec) MakeRow(elem *element.OSMElem, geom *geom.Geometry, match Match) []interface{} {
-	var row []interface{}
-	for _, column := range t.columns {
-		row = append(row, column.Value(elem, geom, match))
-	}
-	return row
-}
-
-func (t *TableSpec) MakeMemberRow(rel *element.Relation, member *element.Member, geom *geom.Geometry, match Match) []interface{} {
-	var row []interface{}
-	for _, column := range t.columns {
-		row = append(row, column.MemberValue(rel, member, geom, match))
-	}
-	return row
-}
-
 type ColumnType struct {
 	Name       string
 	GoType     string

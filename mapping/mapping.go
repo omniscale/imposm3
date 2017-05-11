@@ -10,8 +10,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type ElementFilter func(tags element.Tags, key Key, closed bool) bool
-
 type orderedDestTable struct {
 	DestTable
 	order int
@@ -143,26 +141,26 @@ func (m *Mapping) mappings(tableType TableType, mappings TagTableMapping) {
 	}
 }
 
-func (m *Mapping) tables(tableType TableType) map[string]*TableSpec {
-	result := make(map[string]*TableSpec)
+func (m *Mapping) tables(tableType TableType) map[string]*rowBuilder {
+	result := make(map[string]*rowBuilder)
 	for name, t := range m.Conf.Tables {
 		if TableType(t.Type) == tableType || TableType(t.Type) == GeometryTable {
-			result[name] = makeTableSpec(t)
+			result[name] = makeRowBuilder(t)
 		}
 	}
 	return result
 }
 
-func makeTableSpec(tbl *config.Table) *TableSpec {
-	result := TableSpec{}
+func makeRowBuilder(tbl *config.Table) *rowBuilder {
+	result := rowBuilder{}
 
 	for _, mappingColumn := range tbl.Columns {
-		column := ColumnSpec{}
-		column.Key = Key(mappingColumn.Key)
+		column := valueBuilder{}
+		column.key = Key(mappingColumn.Key)
 
 		columnType := MakeColumnType(mappingColumn)
 		if columnType != nil {
-			column.Type = *columnType
+			column.colType = *columnType
 		} else {
 			log.Warn("unhandled type: ", mappingColumn.Type)
 		}
@@ -222,7 +220,9 @@ func (m *Mapping) extraTags(tableType TableType, tags map[Key]bool) {
 	tags["area"] = true
 }
 
-type tableElementFilters map[string][]ElementFilter
+type elementFilter func(tags element.Tags, key Key, closed bool) bool
+
+type tableElementFilters map[string][]elementFilter
 
 func (m *Mapping) addTypedFilters(tableType TableType, filters tableElementFilters) {
 	var areaTags map[Key]struct{}
