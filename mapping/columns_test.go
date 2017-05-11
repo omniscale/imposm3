@@ -6,6 +6,7 @@ import (
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/geom"
 	"github.com/omniscale/imposm3/geom/geos"
+	"github.com/omniscale/imposm3/mapping/config"
 )
 
 func TestBool(t *testing.T) {
@@ -75,7 +76,7 @@ func TestZOrder(t *testing.T) {
 
 	zOrder, err := MakeZOrder("z_order",
 		AvailableColumnTypes["z_order"],
-		Column{
+		config.Column{
 			Name: "z_order",
 			Key:  "",
 			Type: "z_order",
@@ -114,7 +115,7 @@ func TestEnumerate_Match(t *testing.T) {
 
 	zOrder, err := MakeEnumerate("enumerate",
 		AvailableColumnTypes["enumerate"],
-		Column{
+		config.Column{
 			Name: "enumerate",
 			Key:  "",
 			Type: "enumerate",
@@ -149,7 +150,7 @@ func TestEnumerate_Key(t *testing.T) {
 
 	zOrder, err := MakeEnumerate("enumerate",
 		AvailableColumnTypes["enumerate"],
-		Column{
+		config.Column{
 			Name: "enumerate",
 			Key:  "fips",
 			Type: "enumerate",
@@ -183,7 +184,7 @@ func TestEnumerate_Key(t *testing.T) {
 func TestWayZOrder(t *testing.T) {
 	zOrder, err := MakeWayZOrder("z_order",
 		AvailableColumnTypes["wayzorder"],
-		Column{
+		config.Column{
 			Name: "zorder",
 			Type: "wayzorder",
 			Args: map[string]interface{}{
@@ -277,7 +278,7 @@ func TestAreaColumn(t *testing.T) {
 }
 
 func TestMakeSuffixReplace(t *testing.T) {
-	column := Column{
+	column := config.Column{
 		Name: "name", Key: "name", Type: "string_suffixreplace",
 		Args: map[string]interface{}{"suffixes": map[interface{}]interface{}{"Straße": "Str.", "straße": "str."}}}
 	suffixReplace, err := MakeSuffixReplace("name", ColumnType{}, column)
@@ -298,7 +299,7 @@ func TestMakeSuffixReplace(t *testing.T) {
 }
 
 func TestHstoreString(t *testing.T) {
-	column := Column{
+	column := config.Column{
 		Name: "tags",
 		Type: "hstore_tags",
 	}
@@ -307,7 +308,7 @@ func TestHstoreString(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	column = Column{
+	column = config.Column{
 		Name: "tags",
 		Type: "hstore_tags",
 		Args: map[string]interface{}{"include": []interface{}{"key1", "key2"}},

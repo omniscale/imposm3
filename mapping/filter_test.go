@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/mapping/config"
 )
 
 var mapping *Mapping
@@ -349,7 +350,7 @@ func TestExcludeFilter(t *testing.T) {
 	var tags element.Tags
 
 	// no matches
-	f = newExcludeFilter([]Key{})
+	f = newExcludeFilter([]config.Key{})
 	tags = element.Tags{"source": "1", "tiger:foo": "1", "source:foo": "1"}
 	f.Filter(&tags)
 	if !reflect.DeepEqual(tags, element.Tags{"source": "1", "tiger:foo": "1", "source:foo": "1"}) {
@@ -357,7 +358,7 @@ func TestExcludeFilter(t *testing.T) {
 	}
 
 	// match all
-	f = newExcludeFilter([]Key{"*"})
+	f = newExcludeFilter([]config.Key{"*"})
 	tags = element.Tags{"source": "1", "tiger:foo": "1", "source:foo": "1"}
 	f.Filter(&tags)
 	if !reflect.DeepEqual(tags, element.Tags{}) {
@@ -365,7 +366,7 @@ func TestExcludeFilter(t *testing.T) {
 	}
 
 	// fixed string and wildcard match
-	f = newExcludeFilter([]Key{"source", "tiger:*"})
+	f = newExcludeFilter([]config.Key{"source", "tiger:*"})
 	tags = element.Tags{"source": "1", "tiger:foo": "1", "source:foo": "1"}
 	f.Filter(&tags)
 	if !reflect.DeepEqual(tags, element.Tags{"source:foo": "1"}) {

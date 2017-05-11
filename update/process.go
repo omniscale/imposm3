@@ -119,7 +119,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 		ProductionSchema: config.BaseOptions.Schemas.Production,
 		BackupSchema:     config.BaseOptions.Schemas.Backup,
 	}
-	db, err := database.Open(dbConf, tagmapping)
+	db, err := database.Open(dbConf, &tagmapping.Conf)
 	if err != nil {
 		return errors.New("database open: " + err.Error())
 	}
@@ -144,7 +144,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 		delDb,
 		osmCache,
 		diffCache,
-		tagmapping.SingleIdSpace,
+		tagmapping.Conf.SingleIdSpace,
 		tagmapping.PointMatcher(),
 		tagmapping.LineStringMatcher(),
 		tagmapping.PolygonMatcher(),
@@ -162,7 +162,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 	nodes := make(chan *element.Node)
 
 	relWriter := writer.NewRelationWriter(osmCache, diffCache,
-		tagmapping.SingleIdSpace,
+		tagmapping.Conf.SingleIdSpace,
 		relations,
 		db, progress,
 		tagmapping.PolygonMatcher(),
@@ -174,7 +174,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 	relWriter.Start()
 
 	wayWriter := writer.NewWayWriter(osmCache, diffCache,
-		tagmapping.SingleIdSpace,
+		tagmapping.Conf.SingleIdSpace,
 		ways, db,
 		progress,
 		tagmapping.PolygonMatcher(),

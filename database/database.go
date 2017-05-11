@@ -7,6 +7,7 @@ import (
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/geom"
 	"github.com/omniscale/imposm3/mapping"
+	"github.com/omniscale/imposm3/mapping/config"
 )
 
 type Config struct {
@@ -67,17 +68,17 @@ type Optimizer interface {
 	Optimize() error
 }
 
-var databases map[string]func(Config, *mapping.Mapping) (DB, error)
+var databases map[string]func(Config, *config.Mapping) (DB, error)
 
 func init() {
-	databases = make(map[string]func(Config, *mapping.Mapping) (DB, error))
+	databases = make(map[string]func(Config, *config.Mapping) (DB, error))
 }
 
-func Register(name string, f func(Config, *mapping.Mapping) (DB, error)) {
+func Register(name string, f func(Config, *config.Mapping) (DB, error)) {
 	databases[name] = f
 }
 
-func Open(conf Config, m *mapping.Mapping) (DB, error) {
+func Open(conf Config, m *config.Mapping) (DB, error) {
 	parts := strings.SplitN(conf.ConnectionParams, ":", 2)
 	connectionType := parts[0]
 
@@ -108,7 +109,7 @@ func (n *nullDb) InsertRelationMember(element.Relation, element.Member, geom.Geo
 	return nil
 }
 
-func newNullDb(conf Config, m *mapping.Mapping) (DB, error) {
+func newNullDb(conf Config, m *config.Mapping) (DB, error) {
 	return &nullDb{}, nil
 }
 

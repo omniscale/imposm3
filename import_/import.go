@@ -67,7 +67,7 @@ func Import() {
 			ProductionSchema: config.BaseOptions.Schemas.Production,
 			BackupSchema:     config.BaseOptions.Schemas.Backup,
 		}
-		db, err = database.Open(conf, tagmapping)
+		db, err = database.Open(conf, &tagmapping.Conf)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -181,7 +181,7 @@ func Import() {
 
 		relations := osmCache.Relations.Iter()
 		relWriter := writer.NewRelationWriter(osmCache, diffCache,
-			tagmapping.SingleIdSpace,
+			tagmapping.Conf.SingleIdSpace,
 			relations,
 			db, progress,
 			tagmapping.PolygonMatcher(),
@@ -196,7 +196,7 @@ func Import() {
 
 		ways := osmCache.Ways.Iter()
 		wayWriter := writer.NewWayWriter(osmCache, diffCache,
-			tagmapping.SingleIdSpace,
+			tagmapping.Conf.SingleIdSpace,
 			ways, db,
 			progress,
 			tagmapping.PolygonMatcher(), tagmapping.LineStringMatcher(),

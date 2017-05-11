@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/omniscale/imposm3/mapping"
+	"github.com/omniscale/imposm3/mapping/config"
 )
 
 type ColumnSpec struct {
@@ -124,12 +125,11 @@ func (spec *TableSpec) DeleteSQL() string {
 	)
 }
 
-func NewTableSpec(pg *PostGIS, t *mapping.Table) *TableSpec {
+func NewTableSpec(pg *PostGIS, t *config.Table) *TableSpec {
 	var geomType string
-	switch t.Type {
-	case mapping.RelationMemberTable:
+	if mapping.TableType(t.Type) == mapping.RelationMemberTable {
 		geomType = "geometry"
-	default:
+	} else {
 		geomType = string(t.Type)
 	}
 
@@ -141,7 +141,7 @@ func NewTableSpec(pg *PostGIS, t *mapping.Table) *TableSpec {
 		Srid:         pg.Config.Srid,
 	}
 	for _, column := range t.Columns {
-		columnType := column.ColumnType()
+		columnType := mapping.MakeColumnType(column)
 		if columnType == nil {
 			continue
 		}
@@ -156,7 +156,7 @@ func NewTableSpec(pg *PostGIS, t *mapping.Table) *TableSpec {
 	return &spec
 }
 
-func NewGeneralizedTableSpec(pg *PostGIS, t *mapping.GeneralizedTable) *GeneralizedTableSpec {
+func NewGeneralizedTableSpec(pg *PostGIS, t *config.GeneralizedTable) *GeneralizedTableSpec {
 	spec := GeneralizedTableSpec{
 		Name:       t.Name,
 		FullName:   pg.Prefix + t.Name,

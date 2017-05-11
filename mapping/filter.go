@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/mapping/config"
 )
 
 type TagFilterer interface {
@@ -12,8 +13,8 @@ type TagFilterer interface {
 }
 
 func (m *Mapping) NodeTagFilter() TagFilterer {
-	if m.Tags.LoadAll {
-		return newExcludeFilter(m.Tags.Exclude)
+	if m.Conf.Tags.LoadAll {
+		return newExcludeFilter(m.Conf.Tags.Exclude)
 	}
 	mappings := make(TagTableMapping)
 	m.mappings(PointTable, mappings)
@@ -24,8 +25,8 @@ func (m *Mapping) NodeTagFilter() TagFilterer {
 }
 
 func (m *Mapping) WayTagFilter() TagFilterer {
-	if m.Tags.LoadAll {
-		return newExcludeFilter(m.Tags.Exclude)
+	if m.Conf.Tags.LoadAll {
+		return newExcludeFilter(m.Conf.Tags.Exclude)
 	}
 	mappings := make(TagTableMapping)
 	m.mappings(LineStringTable, mappings)
@@ -38,8 +39,8 @@ func (m *Mapping) WayTagFilter() TagFilterer {
 }
 
 func (m *Mapping) RelationTagFilter() TagFilterer {
-	if m.Tags.LoadAll {
-		return newExcludeFilter(m.Tags.Exclude)
+	if m.Conf.Tags.LoadAll {
+		return newExcludeFilter(m.Conf.Tags.Exclude)
 	}
 	mappings := make(TagTableMapping)
 	// do not filter out type tag for common relations
@@ -92,7 +93,7 @@ type excludeFilter struct {
 	matches []string
 }
 
-func newExcludeFilter(tags []Key) *excludeFilter {
+func newExcludeFilter(tags []config.Key) *excludeFilter {
 	f := excludeFilter{
 		keys:    make(map[Key]struct{}),
 		matches: make([]string, 0),
@@ -101,7 +102,7 @@ func newExcludeFilter(tags []Key) *excludeFilter {
 		if strings.ContainsAny(string(t), "?*[") {
 			f.matches = append(f.matches, string(t))
 		} else {
-			f.keys[t] = struct{}{}
+			f.keys[Key(t)] = struct{}{}
 		}
 	}
 	return &f

@@ -11,6 +11,7 @@ import (
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/geom"
 	"github.com/omniscale/imposm3/logging"
+	"github.com/omniscale/imposm3/mapping/config"
 )
 
 var log = logging.NewLogger("mapping")
@@ -47,7 +48,7 @@ func init() {
 type MakeValue func(string, *element.OSMElem, *geom.Geometry, Match) interface{}
 type MakeMemberValue func(*element.Relation, *element.Member, Match) interface{}
 
-type MakeMakeValue func(string, ColumnType, Column) (MakeValue, error)
+type MakeMakeValue func(string, ColumnType, config.Column) (MakeValue, error)
 
 type Key string
 type Value string
@@ -98,24 +99,6 @@ func (t *TableSpec) MakeMemberRow(rel *element.Relation, member *element.Member,
 		row = append(row, column.MemberValue(rel, member, geom, match))
 	}
 	return row
-}
-
-func (t *Table) TableSpec() *TableSpec {
-	result := TableSpec{}
-
-	for _, mappingColumn := range t.Columns {
-		column := ColumnSpec{}
-		column.Key = mappingColumn.Key
-
-		columnType := mappingColumn.ColumnType()
-		if columnType != nil {
-			column.Type = *columnType
-		} else {
-			log.Warn("unhandled type: ", mappingColumn.Type)
-		}
-		result.columns = append(result.columns, column)
-	}
-	return &result
 }
 
 type ColumnType struct {
@@ -200,7 +183,7 @@ func Geometry(val string, elem *element.OSMElem, geom *geom.Geometry, match Matc
 	return string(geom.Wkb)
 }
 
-func MakePseudoArea(columnName string, columnType ColumnType, column Column) (MakeValue, error) {
+func MakePseudoArea(columnName string, columnType ColumnType, column config.Column) (MakeValue, error) {
 	log.Print("warn: pseudoarea type is deprecated and will be removed. See area and webmercarea type.")
 	return Area, nil
 }
@@ -232,7 +215,7 @@ func WebmercArea(val string, elem *element.OSMElem, geom *geom.Geometry, match M
 
 var hstoreReplacer = strings.NewReplacer("\\", "\\\\", "\"", "\\\"")
 
-func MakeHStoreString(columnName string, columnType ColumnType, column Column) (MakeValue, error) {
+func MakeHStoreString(columnName string, columnType ColumnType, column config.Column) (MakeValue, error) {
 	var includeAll bool
 	var err error
 	var include map[string]int
@@ -257,7 +240,7 @@ func MakeHStoreString(columnName string, columnType ColumnType, column Column) (
 	return hstoreString, nil
 }
 
-func MakeWayZOrder(columnName string, columnType ColumnType, column Column) (MakeValue, error) {
+func MakeWayZOrder(columnName string, columnType ColumnType, column config.Column) (MakeValue, error) {
 	if _, ok := column.Args["ranks"]; !ok {
 		return DefaultWayZOrder, nil
 	}
@@ -345,7 +328,7 @@ func DefaultWayZOrder(val string, elem *element.OSMElem, geom *geom.Geometry, ma
 	return z
 }
 
-func MakeZOrder(columnName string, columnType ColumnType, column Column) (MakeValue, error) {
+func MakeZOrder(columnName string, columnType ColumnType, column config.Column) (MakeValue, error) {
 	log.Print("warn: zorder type is deprecated and will be removed. See enumerate type.")
 	_rankList, ok := column.Args["ranks"]
 	if !ok {
@@ -392,7 +375,7 @@ func MakeZOrder(columnName string, columnType ColumnType, column Column) (MakeVa
 	return zOrder, nil
 }
 
-func MakeEnumerate(columnName string, columnType ColumnType, column Column) (MakeValue, error) {
+func MakeEnumerate(columnName string, columnType ColumnType, column config.Column) (MakeValue, error) {
 	values, err := decodeEnumArg(column, "values")
 	if err != nil {
 		return nil, err
@@ -413,7 +396,7 @@ func MakeEnumerate(columnName string, columnType ColumnType, column Column) (Mak
 	return enumerate, nil
 }
 
-func decodeEnumArg(column Column, key string) (map[string]int, error) {
+func decodeEnumArg(column config.Column, key string) (map[string]int, error) {
 	_valuesList, ok := column.Args[key]
 	if !ok {
 		return nil, fmt.Errorf("missing '%v' in args for %s", key, column.Type)
@@ -436,7 +419,7 @@ func decodeEnumArg(column Column, key string) (map[string]int, error) {
 	return values, nil
 }
 
-func MakeSuffixReplace(columnName string, columnType ColumnType, column Column) (MakeValue, error) {
+func MakeSuffixReplace(columnName string, columnType ColumnType, column config.Column) (MakeValue, error) {
 	_changes, ok := column.Args["suffixes"]
 	if !ok {
 		return nil, errors.New("missing suffixes in args for string_suffixreplace")

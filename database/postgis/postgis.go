@@ -14,6 +14,7 @@ import (
 	"github.com/omniscale/imposm3/geom"
 	"github.com/omniscale/imposm3/logging"
 	"github.com/omniscale/imposm3/mapping"
+	"github.com/omniscale/imposm3/mapping/config"
 )
 
 var log = logging.NewLogger("PostGIS")
@@ -599,7 +600,7 @@ func (pg *PostGIS) Close() error {
 	return pg.Db.Close()
 }
 
-func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
+func New(conf database.Config, m *config.Mapping) (database.DB, error) {
 	db := &PostGIS{}
 
 	db.Tables = make(map[string]*TableSpec)
