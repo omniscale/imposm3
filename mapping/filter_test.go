@@ -155,7 +155,7 @@ func TestPointMatcher(t *testing.T) {
 	}
 
 	elem := element.Node{}
-	m := mapping.PointMatcher()
+	m := mapping.PointMatcher
 	for i, test := range tests {
 		elem.Tags = test.tags
 		actual := m.MatchNode(&elem)
@@ -205,7 +205,7 @@ func TestLineStringMatcher(t *testing.T) {
 	if !elem.IsClosed() {
 		t.Fatal("way not closed")
 	}
-	m := mapping.LineStringMatcher()
+	m := mapping.LineStringMatcher
 	for i, test := range tests {
 		elem.Tags = test.tags
 		actual := m.MatchWay(&elem)
@@ -276,7 +276,7 @@ func TestPolygonMatcher_MatchWay(t *testing.T) {
 	if !elem.IsClosed() {
 		t.Fatal("way not closed")
 	}
-	m := mapping.PolygonMatcher()
+	m := mapping.PolygonMatcher
 	for i, test := range tests {
 		elem.Tags = test.tags
 		actual := m.MatchWay(&elem)
@@ -335,7 +335,7 @@ func TestPolygonMatcher_MatchRelation(t *testing.T) {
 	}
 
 	elem := element.Relation{}
-	m := mapping.PolygonMatcher()
+	m := mapping.PolygonMatcher
 	for i, test := range tests {
 		elem.Tags = test.tags
 		actual := m.MatchRelation(&elem)

@@ -1,12 +1,12 @@
 package mapping
 
 import (
-	"errors"
 	"io/ioutil"
 
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/mapping/config"
 
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
 
@@ -66,10 +66,8 @@ func (tt *TableType) UnmarshalJSON(data []byte) error {
 		*tt = RelationTable
 	case `"relation_member"`:
 		*tt = RelationMemberTable
-	default:
-		return errors.New("unknown type " + string(data))
 	}
-	return nil
+	return errors.New("unknown type " + string(data))
 }
 
 const (
@@ -82,7 +80,12 @@ const (
 )
 
 type Mapping struct {
-	Conf config.Mapping
+	Conf                  config.Mapping
+	PointMatcher          NodeMatcher
+	LineStringMatcher     WayMatcher
+	PolygonMatcher        RelWayMatcher
+	RelationMatcher       RelationMatcher
+	RelationMemberMatcher RelationMatcher
 }
 
 func NewMapping(filename string) (*Mapping, error) {
@@ -101,6 +104,11 @@ func NewMapping(filename string) (*Mapping, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	err = mapping.createMatcher()
+	if err != nil {
+		return nil, err
+	}
 	return &mapping, nil
 }
 
@@ -111,10 +119,38 @@ func (m *Mapping) prepare() error {
 			// todo deprecate 'fields'
 			t.Columns = t.OldFields
 		}
+		if t.Type == "" {
+			return errors.Errorf("missing type for table %s", name)
+		}
 	}
 
 	for name, t := range m.Conf.GeneralizedTables {
 		t.Name = name
+	}
+	return nil
+}
+
+func (m *Mapping) createMatcher() error {
+	var err error
+	m.PointMatcher, err = m.pointMatcher()
+	if err != nil {
+		return err
+	}
+	m.LineStringMatcher, err = m.lineStringMatcher()
+	if err != nil {
+		return err
+	}
+	m.PolygonMatcher, err = m.polygonMatcher()
+	if err != nil {
+		return err
+	}
+	m.RelationMatcher, err = m.relationMatcher()
+	if err != nil {
+		return err
+	}
+	m.RelationMemberMatcher, err = m.relationMemberMatcher()
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -141,48 +177,53 @@ func (m *Mapping) mappings(tableType TableType, mappings TagTableMapping) {
 	}
 }
 
-func (m *Mapping) tables(tableType TableType) map[string]*rowBuilder {
+func (m *Mapping) tables(tableType TableType) (map[string]*rowBuilder, error) {
+	var err error
 	result := make(map[string]*rowBuilder)
 	for name, t := range m.Conf.Tables {
 		if TableType(t.Type) == tableType || TableType(t.Type) == GeometryTable {
-			result[name] = makeRowBuilder(t)
+			result[name], err = makeRowBuilder(t)
+			if err != nil {
+				return nil, errors.Wrapf(err, "creating row builder for %s", name)
+			}
+
 		}
 	}
-	return result
+	return result, nil
 }
 
-func makeRowBuilder(tbl *config.Table) *rowBuilder {
+func makeRowBuilder(tbl *config.Table) (*rowBuilder, error) {
 	result := rowBuilder{}
 
 	for _, mappingColumn := range tbl.Columns {
 		column := valueBuilder{}
 		column.key = Key(mappingColumn.Key)
 
-		columnType := MakeColumnType(mappingColumn)
-		if columnType != nil {
-			column.colType = *columnType
-		} else {
-			log.Warn("unhandled type: ", mappingColumn.Type)
+		columnType, err := MakeColumnType(mappingColumn)
+		if err != nil {
+			return nil, errors.Wrapf(err, "creating column %s", mappingColumn.Name)
 		}
+		column.colType = *columnType
 		result.columns = append(result.columns, column)
 	}
-	return &result
+	return &result, nil
 }
 
-func MakeColumnType(c *config.Column) *ColumnType {
-	if columnType, ok := AvailableColumnTypes[c.Type]; ok {
-		if columnType.MakeFunc != nil {
-			makeValue, err := columnType.MakeFunc(c.Name, columnType, *c)
-			if err != nil {
-				log.Print(err)
-				return nil
-			}
-			columnType = ColumnType{columnType.Name, columnType.GoType, makeValue, nil, nil, columnType.FromMember}
-		}
-		columnType.FromMember = c.FromMember
-		return &columnType
+func MakeColumnType(c *config.Column) (*ColumnType, error) {
+	columnType, ok := AvailableColumnTypes[c.Type]
+	if !ok {
+		return nil, errors.Errorf("unhandled type %s", c.Type)
 	}
-	return nil
+
+	if columnType.MakeFunc != nil {
+		makeValue, err := columnType.MakeFunc(c.Name, columnType, *c)
+		if err != nil {
+			return nil, err
+		}
+		columnType = ColumnType{columnType.Name, columnType.GoType, makeValue, nil, nil, columnType.FromMember}
+	}
+	columnType.FromMember = c.FromMember
+	return &columnType, nil
 }
 
 func (m *Mapping) extraTags(tableType TableType, tags map[Key]bool) {

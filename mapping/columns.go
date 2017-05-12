@@ -1,8 +1,6 @@
 package mapping
 
 import (
-	"errors"
-	"fmt"
 	"math"
 	"regexp"
 	"strconv"
@@ -12,6 +10,7 @@ import (
 	"github.com/omniscale/imposm3/geom"
 	"github.com/omniscale/imposm3/logging"
 	"github.com/omniscale/imposm3/mapping/config"
+	"github.com/pkg/errors"
 )
 
 var log = logging.NewLogger("mapping")
@@ -351,19 +350,19 @@ func MakeEnumerate(columnName string, columnType ColumnType, column config.Colum
 func decodeEnumArg(column config.Column, key string) (map[string]int, error) {
 	_valuesList, ok := column.Args[key]
 	if !ok {
-		return nil, fmt.Errorf("missing '%v' in args for %s", key, column.Type)
+		return nil, errors.Errorf("missing '%v' in args for %s", key, column.Type)
 	}
 
 	valuesList, ok := _valuesList.([]interface{})
 	if !ok {
-		return nil, fmt.Errorf("'%v' in args for %s not a list", key, column.Type)
+		return nil, errors.Errorf("'%v' in args for %s not a list", key, column.Type)
 	}
 
 	values := make(map[string]int)
 	for i, value := range valuesList {
 		valueName, ok := value.(string)
 		if !ok {
-			return nil, fmt.Errorf("value in '%v' not a string", key)
+			return nil, errors.Errorf("value in '%v' not a string", key)
 		}
 
 		values[valueName] = i + 1
