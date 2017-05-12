@@ -122,6 +122,12 @@ func (m *Mapping) prepare() error {
 		if t.Type == "" {
 			return errors.Errorf("missing type for table %s", name)
 		}
+
+		if TableType(t.Type) == GeometryTable {
+			if t.Mapping != nil || t.Mappings != nil {
+				return errors.Errorf("table with type:geometry requires type_mapping for table %s", name)
+			}
+		}
 	}
 
 	for name, t := range m.Conf.GeneralizedTables {
