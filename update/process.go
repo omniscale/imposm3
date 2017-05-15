@@ -145,9 +145,9 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 		osmCache,
 		diffCache,
 		tagmapping.Conf.SingleIdSpace,
-		tagmapping.PointMatcher(),
-		tagmapping.LineStringMatcher(),
-		tagmapping.PolygonMatcher(),
+		tagmapping.PointMatcher,
+		tagmapping.LineStringMatcher,
+		tagmapping.PolygonMatcher,
 	)
 	deleter.SetExpireor(expireor)
 
@@ -165,9 +165,9 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 		tagmapping.Conf.SingleIdSpace,
 		relations,
 		db, progress,
-		tagmapping.PolygonMatcher(),
-		tagmapping.RelationMatcher(),
-		tagmapping.RelationMemberMatcher(),
+		tagmapping.PolygonMatcher,
+		tagmapping.RelationMatcher,
+		tagmapping.RelationMemberMatcher,
 		config.BaseOptions.Srid)
 	relWriter.SetLimiter(geometryLimiter)
 	relWriter.SetExpireor(expireor)
@@ -177,8 +177,8 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 		tagmapping.Conf.SingleIdSpace,
 		ways, db,
 		progress,
-		tagmapping.PolygonMatcher(),
-		tagmapping.LineStringMatcher(),
+		tagmapping.PolygonMatcher,
+		tagmapping.LineStringMatcher,
 		config.BaseOptions.Srid)
 	wayWriter.SetLimiter(geometryLimiter)
 	wayWriter.SetExpireor(expireor)
@@ -186,7 +186,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 
 	nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
 		progress,
-		tagmapping.PointMatcher(),
+		tagmapping.PointMatcher,
 		config.BaseOptions.Srid)
 	nodeWriter.SetLimiter(geometryLimiter)
 	nodeWriter.SetExpireor(expireor)

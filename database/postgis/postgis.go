@@ -623,7 +623,10 @@ func New(conf database.Config, m *config.Mapping) (database.DB, error) {
 	params, db.Prefix = stripPrefixFromConnectionParams(params)
 
 	for name, table := range m.Tables {
-		db.Tables[name] = NewTableSpec(db, table)
+		db.Tables[name], err = NewTableSpec(db, table)
+		if err != nil {
+			return nil, err
+		}
 	}
 	for name, table := range m.GeneralizedTables {
 		db.GeneralizedTables[name] = NewGeneralizedTableSpec(db, table)

@@ -6,6 +6,7 @@ import (
 
 	"github.com/omniscale/imposm3/mapping"
 	"github.com/omniscale/imposm3/mapping/config"
+	"github.com/pkg/errors"
 )
 
 type ColumnSpec struct {
@@ -125,7 +126,7 @@ func (spec *TableSpec) DeleteSQL() string {
 	)
 }
 
-func NewTableSpec(pg *PostGIS, t *config.Table) *TableSpec {
+func NewTableSpec(pg *PostGIS, t *config.Table) (*TableSpec, error) {
 	var geomType string
 	if mapping.TableType(t.Type) == mapping.RelationMemberTable {
 		geomType = "geometry"
@@ -141,19 +142,19 @@ func NewTableSpec(pg *PostGIS, t *config.Table) *TableSpec {
 		Srid:         pg.Config.Srid,
 	}
 	for _, column := range t.Columns {
-		columnType := mapping.MakeColumnType(column)
-		if columnType == nil {
-			continue
+		columnType, err := mapping.MakeColumnType(column)
+		if err != nil {
+			return nil, err
 		}
 		pgType, ok := pgTypes[columnType.GoType]
 		if !ok {
-			log.Errorf("unhandled column type %v, using string type", columnType)
+			return nil, errors.Errorf("unhandled column type %v, using string type", columnType)
 			pgType = pgTypes["string"]
 		}
 		col := ColumnSpec{column.Name, *columnType, pgType}
 		spec.Columns = append(spec.Columns, col)
 	}
-	return &spec
+	return &spec, nil
 }
 
 func NewGeneralizedTableSpec(pg *PostGIS, t *config.GeneralizedTable) *GeneralizedTableSpec {

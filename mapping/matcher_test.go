@@ -11,7 +11,7 @@ func BenchmarkTagMatch(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	matcher := m.PolygonMatcher()
+	matcher := m.PolygonMatcher
 	for i := 0; i < b.N; i++ {
 		e := element.Relation{}
 		e.Tags = element.Tags{"landuse": "forest", "name": "Forest", "source": "bling", "tourism": "zoo"}
@@ -51,7 +51,7 @@ func TestSelectRelationPolygonsSimple(t *testing.T) {
 		makeMember(4, element.Tags{"foo": "bar"}),
 	}
 	filtered := SelectRelationPolygons(
-		mapping.PolygonMatcher(),
+		mapping.PolygonMatcher,
 		&r,
 	)
 	if len(filtered) != 1 {
@@ -74,7 +74,7 @@ func TestSelectRelationPolygonsUnrelatedTags(t *testing.T) {
 		makeMember(1, element.Tags{"landuse": "forest"}),
 	}
 	filtered := SelectRelationPolygons(
-		mapping.PolygonMatcher(),
+		mapping.PolygonMatcher,
 		&r,
 	)
 	if len(filtered) != 1 {
@@ -100,7 +100,7 @@ func TestSelectRelationPolygonsMultiple(t *testing.T) {
 		makeMember(4, element.Tags{"landuse": "park", "layer": "2", "name": "foo"}),
 	}
 	filtered := SelectRelationPolygons(
-		mapping.PolygonMatcher(),
+		mapping.PolygonMatcher,
 		&r,
 	)
 	if len(filtered) != 3 {
@@ -123,7 +123,7 @@ func TestSelectRelationPolygonsMultipleTags(t *testing.T) {
 		makeMember(1, element.Tags{"landuse": "forest"}),
 	}
 	filtered := SelectRelationPolygons(
-		mapping.PolygonMatcher(),
+		mapping.PolygonMatcher,
 		&r,
 	)
 	// TODO both should be filterd out, but we only get one,
@@ -146,7 +146,7 @@ func TestSelectRelationPolygonsMultipleTagsOnWay(t *testing.T) {
 		makeMemberRole(2, element.Tags{"place": "islet"}, "inner"),
 	}
 	filtered := SelectRelationPolygons(
-		mapping.PolygonMatcher(),
+		mapping.PolygonMatcher,
 		&r,
 	)
 

@@ -51,7 +51,7 @@ func Import() {
 
 	tagmapping, err := mapping.NewMapping(config.BaseOptions.MappingFile)
 	if err != nil {
-		log.Fatal("mapping file: ", err)
+		log.Fatal("error in mapping file: ", err)
 	}
 
 	var db database.DB
@@ -184,9 +184,9 @@ func Import() {
 			tagmapping.Conf.SingleIdSpace,
 			relations,
 			db, progress,
-			tagmapping.PolygonMatcher(),
-			tagmapping.RelationMatcher(),
-			tagmapping.RelationMemberMatcher(),
+			tagmapping.PolygonMatcher,
+			tagmapping.RelationMatcher,
+			tagmapping.RelationMemberMatcher,
 			config.BaseOptions.Srid)
 		relWriter.SetLimiter(geometryLimiter)
 		relWriter.EnableConcurrent()
@@ -199,7 +199,7 @@ func Import() {
 			tagmapping.Conf.SingleIdSpace,
 			ways, db,
 			progress,
-			tagmapping.PolygonMatcher(), tagmapping.LineStringMatcher(),
+			tagmapping.PolygonMatcher, tagmapping.LineStringMatcher,
 			config.BaseOptions.Srid)
 		wayWriter.SetLimiter(geometryLimiter)
 		wayWriter.EnableConcurrent()
@@ -210,7 +210,7 @@ func Import() {
 		nodes := osmCache.Nodes.Iter()
 		nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
 			progress,
-			tagmapping.PointMatcher(),
+			tagmapping.PointMatcher,
 			config.BaseOptions.Srid)
 		nodeWriter.SetLimiter(geometryLimiter)
 		nodeWriter.EnableConcurrent()

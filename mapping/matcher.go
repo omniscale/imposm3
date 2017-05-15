@@ -5,35 +5,37 @@ import (
 	"github.com/omniscale/imposm3/geom"
 )
 
-func (m *Mapping) PointMatcher() NodeMatcher {
+func (m *Mapping) pointMatcher() (NodeMatcher, error) {
 	mappings := make(TagTableMapping)
 	m.mappings(PointTable, mappings)
 	filters := make(tableElementFilters)
 	m.addFilters(filters)
 	m.addTypedFilters(PointTable, filters)
+	tables, err := m.tables(PointTable)
 	return &tagMatcher{
 		mappings:   mappings,
-		tables:     m.tables(PointTable),
 		filters:    filters,
+		tables:     tables,
 		matchAreas: false,
-	}
+	}, err
 }
 
-func (m *Mapping) LineStringMatcher() WayMatcher {
+func (m *Mapping) lineStringMatcher() (WayMatcher, error) {
 	mappings := make(TagTableMapping)
 	m.mappings(LineStringTable, mappings)
 	filters := make(tableElementFilters)
 	m.addFilters(filters)
 	m.addTypedFilters(LineStringTable, filters)
+	tables, err := m.tables(LineStringTable)
 	return &tagMatcher{
 		mappings:   mappings,
-		tables:     m.tables(LineStringTable),
 		filters:    filters,
+		tables:     tables,
 		matchAreas: false,
-	}
+	}, err
 }
 
-func (m *Mapping) PolygonMatcher() RelWayMatcher {
+func (m *Mapping) polygonMatcher() (RelWayMatcher, error) {
 	mappings := make(TagTableMapping)
 	m.mappings(PolygonTable, mappings)
 	filters := make(tableElementFilters)
@@ -41,16 +43,17 @@ func (m *Mapping) PolygonMatcher() RelWayMatcher {
 	m.addTypedFilters(PolygonTable, filters)
 	relFilters := make(tableElementFilters)
 	m.addRelationFilters(PolygonTable, relFilters)
+	tables, err := m.tables(PolygonTable)
 	return &tagMatcher{
 		mappings:   mappings,
-		tables:     m.tables(PolygonTable),
 		filters:    filters,
+		tables:     tables,
 		relFilters: relFilters,
 		matchAreas: true,
-	}
+	}, err
 }
 
-func (m *Mapping) RelationMatcher() RelationMatcher {
+func (m *Mapping) relationMatcher() (RelationMatcher, error) {
 	mappings := make(TagTableMapping)
 	m.mappings(RelationTable, mappings)
 	filters := make(tableElementFilters)
@@ -59,16 +62,17 @@ func (m *Mapping) RelationMatcher() RelationMatcher {
 	m.addTypedFilters(RelationTable, filters)
 	relFilters := make(tableElementFilters)
 	m.addRelationFilters(RelationTable, relFilters)
+	tables, err := m.tables(RelationTable)
 	return &tagMatcher{
 		mappings:   mappings,
-		tables:     m.tables(RelationTable),
 		filters:    filters,
+		tables:     tables,
 		relFilters: relFilters,
 		matchAreas: true,
-	}
+	}, err
 }
 
-func (m *Mapping) RelationMemberMatcher() RelationMatcher {
+func (m *Mapping) relationMemberMatcher() (RelationMatcher, error) {
 	mappings := make(TagTableMapping)
 	m.mappings(RelationMemberTable, mappings)
 	filters := make(tableElementFilters)
@@ -76,13 +80,14 @@ func (m *Mapping) RelationMemberMatcher() RelationMatcher {
 	m.addTypedFilters(RelationMemberTable, filters)
 	relFilters := make(tableElementFilters)
 	m.addRelationFilters(RelationMemberTable, relFilters)
+	tables, err := m.tables(RelationMemberTable)
 	return &tagMatcher{
 		mappings:   mappings,
-		tables:     m.tables(RelationMemberTable),
 		filters:    filters,
+		tables:     tables,
 		relFilters: relFilters,
 		matchAreas: true,
-	}
+	}, err
 }
 
 type NodeMatcher interface {
