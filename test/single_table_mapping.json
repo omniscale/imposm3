@@ -9,7 +9,7 @@
     "use_single_id_space": true,
     "tables": {
         "all": {
-            "fields": [
+            "columns": [
                 {
                     "type": "id",
                     "name": "osm_id",

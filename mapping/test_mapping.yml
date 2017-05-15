@@ -35,7 +35,7 @@ generalized_tables:
     tolerance: 50.0
 tables:
   admin:
-    fields:
+    columns:
     - name: osm_id
       type: id
     - name: geometry
@@ -53,7 +53,7 @@ tables:
       - administrative
     type: polygon
   aeroways:
-    fields:
+    columns:
     - name: osm_id
       type: id
     - name: geometry
@@ -69,7 +69,7 @@ tables:
       - taxiway
     type: linestring
   amenities:
-    fields:
+    columns:
     - name: osm_id
       type: id
     - name: geometry
@@ -92,7 +92,7 @@ tables:
     type: point
   amenity_areas:
     _comment: for testing duplicate inserts with __any__ and exact match
-    fields:
+    columns:
     - name: osm_id
       type: id
     - name: geometry
@@ -107,7 +107,7 @@ tables:
       - shop
     type: polygon
   barrierpoints:
-    fields:
+    columns:
     - name: osm_id
       type: id
     - name: geometry
@@ -137,7 +137,7 @@ tables:
       - stile
     type: point
   barrierways:
-    fields:
+    columns:
     - name: osm_id
       type: id
     - name: geometry
@@ -164,7 +164,7 @@ tables:
       - wire_fence
     type: linestring
   buildings:
-    fields:
+    columns:
     - name: osm_id
       type: id
     - name: geometry
@@ -179,7 +179,7 @@ tables:
       - __any__
     type: polygon
   housenumbers:
-    fields:
+    columns:
     - name: osm_id
       type: id
     - name: geometry
@@ -203,7 +203,7 @@ tables:
       - __any__
     type: point
   housenumbers_interpolated:
-    fields:
+    columns:
     - name: osm_id
       type: id
     - name: geometry
@@ -230,7 +230,7 @@ tables:
       - __any__
     type: linestring
   landusages:
-    fields:
+    columns:
     - name: osm_id
       type: id
     - name: geometry
@@ -363,7 +363,7 @@ tables:
       - riverbank
     type: polygon
   places:
-    fields:
+    columns:
     - name: osm_id
       type: id
     - name: geometry
@@ -404,7 +404,7 @@ tables:
       - locality
     type: point
   roads:
-    fields:
+    columns:
     - name: osm_id
       type: id
     - name: geometry
@@ -524,7 +524,7 @@ tables:
           - groyne
     type: linestring
   transport_areas:
-    fields:
+    columns:
     - name: osm_id
       type: id
     - name: geometry
@@ -545,7 +545,7 @@ tables:
       - platform
     type: polygon
   transport_points:
-    fields:
+    columns:
     - name: osm_id
       type: id
     - name: geometry
@@ -577,7 +577,7 @@ tables:
       - subway_entrance
     type: point
   waterways:
-    fields:
+    columns:
     - name: osm_id
       type: id
     - name: geometry

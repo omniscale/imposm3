@@ -94,7 +94,7 @@ func TestMultiPolygonWithHoleAndRelName(t *testing.T) {
 	})
 
 	rel := element.Relation{
-		OSMElem: element.OSMElem{Id: 1, Tags: element.Tags{"name": "rel"}}}
+		OSMElem: element.OSMElem{Id: 1, Tags: element.Tags{"name": "Relation", "natural": "forest", "type": "multipolygon"}}}
 	rel.Members = []element.Member{
 		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
 		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
@@ -107,10 +107,11 @@ func TestMultiPolygonWithHoleAndRelName(t *testing.T) {
 	g := geos.NewGeos()
 	defer g.Finish()
 
-	if len(rel.Tags) != 2 {
+	if len(rel.Tags) != 3 {
 		t.Fatal("wrong rel tags", rel.Tags)
 	}
-	if rel.Tags["natural"] != "forest" || rel.Tags["name"] != "Blackwood" {
+	// name from way is ignored
+	if rel.Tags["natural"] != "forest" || rel.Tags["name"] != "Relation" {
 		t.Fatal("wrong rel tags", rel.Tags)
 	}
 
@@ -147,7 +148,7 @@ func TestMultiPolygonWithMultipleHoles(t *testing.T) {
 	})
 
 	rel := element.Relation{
-		OSMElem: element.OSMElem{Id: 1, Tags: element.Tags{"landusage": "forest"}}}
+		OSMElem: element.OSMElem{Id: 1, Tags: element.Tags{"landusage": "forest", "type": "multipolygon"}}}
 	rel.Members = []element.Member{
 		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
 		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
@@ -161,7 +162,7 @@ func TestMultiPolygonWithMultipleHoles(t *testing.T) {
 	g := geos.NewGeos()
 	defer g.Finish()
 
-	if len(rel.Tags) != 1 {
+	if len(rel.Tags) != 2 {
 		t.Fatal("wrong rel tags", rel.Tags)
 	}
 	if rel.Tags["landusage"] != "forest" {
@@ -214,7 +215,7 @@ func TestMultiPolygonWithNeastedHoles(t *testing.T) {
 		{1, 4, 4},
 	})
 
-	rel := element.Relation{OSMElem: element.OSMElem{Id: 1}}
+	rel := element.Relation{OSMElem: element.OSMElem{Id: 1, Tags: element.Tags{"landusage": "forest", "type": "multipolygon"}}}
 	rel.Members = []element.Member{
 		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
 		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
@@ -230,7 +231,7 @@ func TestMultiPolygonWithNeastedHoles(t *testing.T) {
 	g := geos.NewGeos()
 	defer g.Finish()
 
-	if len(rel.Tags) != 1 {
+	if len(rel.Tags) != 2 {
 		t.Fatal("wrong rel tags", rel.Tags)
 	}
 	if rel.Tags["landusage"] != "forest" {
@@ -261,7 +262,7 @@ func TestPolygonFromThreeWays(t *testing.T) {
 		{1, 0, 0},
 	})
 
-	rel := element.Relation{OSMElem: element.OSMElem{Id: 1}}
+	rel := element.Relation{OSMElem: element.OSMElem{Id: 1, Tags: element.Tags{"landusage": "forest", "type": "multipolygon"}}}
 	rel.Members = []element.Member{
 		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
 		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
@@ -275,7 +276,7 @@ func TestPolygonFromThreeWays(t *testing.T) {
 	g := geos.NewGeos()
 	defer g.Finish()
 
-	if len(rel.Tags) != 1 {
+	if len(rel.Tags) != 2 {
 		t.Fatal("wrong rel tags", rel.Tags)
 	}
 	if rel.Tags["landusage"] != "forest" {

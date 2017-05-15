@@ -42,21 +42,7 @@ It will also insert relations of the type ``multipolygon`` with a ``building`` t
 
 The roles are ignored by Imposm as not all holes are correctly tagged as ``inner``. Imposm uses geometry operations to verify if a member of a multipolygon is a hole, or if it is a separate polygon.
 
-
-For compatibility, multipolygon relations without tags will use the tags from the (longest) outer way. Imposm will insert the following relation as well::
-
-  <way id="18101" version="1" timestamp="2011-11-11T00:11:11Z">
-    <nd ref="1001"/>
-    ...
-    <nd ref="1001"/>
-    <tag k="building" v="yes"/>
-  </way>
-  <relation id="18901" version="1" timestamp="2011-11-11T00:11:11Z">
-    <member type="way" ref="18101" role="outer"/>
-    <member type="way" ref="18102" role="outer"/>
-    <tag k="type" v="multipolygon"/>
-  </relation>
-
+Old-style multipolygon relations with tags on the outer way, instead of the relation are no longer supported.
 
 
 Other relations
@@ -72,7 +58,6 @@ These relations can not be mapped to `simple` linestrings or polygons as they ca
 
 The Imposm table types ``relation`` and ``relation_member`` allow you to import all relevant data for these relations.
 
-.. note:: ``relation`` and ``relation_member`` require :ref:`load_all<tags>` to have access to all keys.
 
 ``relation_member``
 ^^^^^^^^^^^^^^^^^^^
@@ -109,6 +94,7 @@ You can use the following mapping::
     - key: ref
       name: ref
       type: string
+    relation_type: [route]
     mapping:
       route: [bus]
 
@@ -171,6 +157,7 @@ The following mapping imports the bus route relation from above::
     - name: network
       key: network
       type: string
+    relation_type: [route]
     mapping:
       route: [bus]
 

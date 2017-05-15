@@ -61,37 +61,38 @@ func TestComplete_Deploy(t *testing.T) {
 	}
 }
 
+func TestComplete_OnlyNewStyleMultipolgon(t *testing.T) {
+	assertRecords(t, []checkElem{
+		{"osm_landusages", -1001, "wood", nil},
+		{"osm_landusages", -1011, Missing, nil},
+		{"osm_landusages", -1021, Missing, nil},
+	})
+}
+
 func TestComplete_LandusageToWaterarea1(t *testing.T) {
 	// Parks inserted into landusages
 	cache := ts.cache(t)
 	defer cache.Close()
 	assertCachedWay(t, cache, 11001)
-	assertCachedWay(t, cache, 12001)
 	assertCachedWay(t, cache, 13001)
 
 	assertRecords(t, []checkElem{
 		{"osm_waterareas", 11001, Missing, nil},
-		{"osm_waterareas", -12001, Missing, nil},
 		{"osm_waterareas", -13001, Missing, nil},
 
 		{"osm_waterareas_gen0", 11001, Missing, nil},
-		{"osm_waterareas_gen0", -12001, Missing, nil},
 		{"osm_waterareas_gen0", -13001, Missing, nil},
 
 		{"osm_waterareas_gen1", 11001, Missing, nil},
-		{"osm_waterareas_gen1", -12001, Missing, nil},
 		{"osm_waterareas_gen1", -13001, Missing, nil},
 
 		{"osm_landusages", 11001, "park", nil},
-		{"osm_landusages", -12001, "park", nil},
 		{"osm_landusages", -13001, "park", nil},
 
 		{"osm_landusages_gen0", 11001, "park", nil},
-		{"osm_landusages_gen0", -12001, "park", nil},
 		{"osm_landusages_gen0", -13001, "park", nil},
 
 		{"osm_landusages_gen1", 11001, "park", nil},
-		{"osm_landusages_gen1", -12001, "park", nil},
 		{"osm_landusages_gen1", -13001, "park", nil},
 	})
 }
@@ -106,7 +107,8 @@ func TestComplete_ChangedHoleTags1(t *testing.T) {
 	assertRecords(t, []checkElem{
 		{"osm_waterareas", 14011, Missing, nil},
 		{"osm_waterareas", -14011, Missing, nil},
-		{"osm_landusages", -14001, "park", nil},
+		{"osm_landusages", 14001, "park", nil},
+		{"osm_landusages", -14001, Missing, nil},
 	})
 }
 
@@ -218,19 +220,15 @@ func TestComplete_RelationWayNotInserted(t *testing.T) {
 func TestComplete_RelationWaysInserted(t *testing.T) {
 	// Outer ways of multipolygon are inserted.
 	assertRecords(t, []checkElem{
-		{"osm_landusages", -9201, "park", map[string]string{"name": "9209"}},
+		// no name on relation
+		{"osm_landusages", -9201, "park", map[string]string{"name": ""}},
 		{"osm_landusages", 9201, Missing, nil},
+		{"osm_landusages", 9209, Missing, nil},
+		{"osm_landusages", 9210, Missing, nil},
 		// outer ways of multipolygon stand for their own
 		{"osm_roads", 9209, "secondary", map[string]string{"name": "9209"}},
 		{"osm_roads", 9210, "residential", map[string]string{"name": "9210"}},
-
-		// no name on relation
-		{"osm_landusages", -9301, "park", map[string]string{"name": ""}},
-		// outer ways of multipolygon stand for their own
-		{"osm_roads", 9309, "secondary", map[string]string{"name": "9309"}},
-		{"osm_roads", 9310, "residential", map[string]string{"name": "9310"}},
 	})
-
 }
 
 func TestComplete_RelationWayInserted(t *testing.T) {
@@ -283,12 +281,12 @@ func TestComplete_RelationBeforeRemove(t *testing.T) {
 	})
 }
 
-func TestComplete_RelationWithoutTags(t *testing.T) {
-	// Relation without tags is inserted.
+func TestComplete_OldStyleRelationIsIgnored(t *testing.T) {
+	// Relation without tags is not inserted.
 
 	assertRecords(t, []checkElem{
-		{"osm_buildings", 50111, Missing, nil},
-		{"osm_buildings", -50121, "yes", nil},
+		{"osm_buildings", 50111, "yes", nil},
+		{"osm_buildings", -50121, Missing, nil},
 	})
 }
 
@@ -483,27 +481,21 @@ func TestComplete_LandusageToWaterarea2(t *testing.T) {
 
 	assertRecords(t, []checkElem{
 		{"osm_waterareas", 11001, "water", nil},
-		{"osm_waterareas", -12001, "water", nil},
 		{"osm_waterareas", -13001, "water", nil},
 
 		{"osm_waterareas_gen0", 11001, "water", nil},
-		{"osm_waterareas_gen0", -12001, "water", nil},
 		{"osm_waterareas_gen0", -13001, "water", nil},
 
 		{"osm_waterareas_gen1", 11001, "water", nil},
-		{"osm_waterareas_gen1", -12001, "water", nil},
 		{"osm_waterareas_gen1", -13001, "water", nil},
 
 		{"osm_landusages", 11001, Missing, nil},
-		{"osm_landusages", -12001, Missing, nil},
 		{"osm_landusages", -13001, Missing, nil},
 
 		{"osm_landusages_gen0", 11001, Missing, nil},
-		{"osm_landusages_gen0", -12001, Missing, nil},
 		{"osm_landusages_gen0", -13001, Missing, nil},
 
 		{"osm_landusages_gen1", 11001, Missing, nil},
-		{"osm_landusages_gen1", -12001, Missing, nil},
 		{"osm_landusages_gen1", -13001, Missing, nil},
 	})
 }
@@ -518,6 +510,11 @@ func TestComplete_ChangedHoleTags2(t *testing.T) {
 
 	assertGeomArea(t, checkElem{"osm_waterareas", 14011, "water", nil}, 26672019779)
 	assertGeomArea(t, checkElem{"osm_landusages", -14001, "park", nil}, 10373697182)
+
+	assertRecords(t, []checkElem{
+		{"osm_waterareas", -14011, Missing, nil},
+		{"osm_landusages", -14001, "park", nil},
+	})
 }
 
 func TestComplete_SplitOuterMultipolygonWay2(t *testing.T) {

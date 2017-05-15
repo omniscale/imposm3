@@ -159,7 +159,7 @@ func TestSingleTable_DuplicateIds1(t *testing.T) {
 	}
 
 	assertHstore(t, []checkElem{
-		{"osm_all", RelOffset - 31101, "*", map[string]string{"building": "yes"}},
+		{"osm_all", RelOffset - 31101, "*", map[string]string{"building": "yes", "type": "multipolygon"}},
 	})
 	assertGeomType(t, checkElem{"osm_all", RelOffset - 31101, "*", nil}, "Polygon")
 }
@@ -185,7 +185,7 @@ func TestSingleTable_DuplicateIds2(t *testing.T) {
 	}
 
 	assertHstore(t, []checkElem{
-		{"osm_all", RelOffset - 31101, "*", map[string]string{"building": "yes"}},
+		{"osm_all", RelOffset - 31101, "*", map[string]string{"building": "yes", "type": "multipolygon"}},
 	})
 	assertGeomType(t, checkElem{"osm_all", RelOffset - 31101, "*", nil}, "Polygon")
 }

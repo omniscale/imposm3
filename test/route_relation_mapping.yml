@@ -1,13 +1,7 @@
-tags:
-  load_all: true
-  exclude:
-  - created_by
-  - source
-
 tables:
   master_routes:
     type: relation_member
-    fields:
+    columns:
     - name: osm_id
       type: id
     - name: member
@@ -27,11 +21,12 @@ tables:
     - key: name
       name: name
       type: string
+    relation_types: [route_master]
     mapping:
       route_master: [bus]
   route_members:
     type: relation_member
-    fields:
+    columns:
     - name: osm_id
       type: id
     - key: ref
@@ -54,11 +49,12 @@ tables:
       key: name
       type: string
       from_member: true
+    relation_types: [route]
     mapping:
       route: [bus, tram, rail]
   routes:
     type: relation
-    fields:
+    columns:
     - name: osm_id
       type: id
     - key: ref
@@ -66,5 +62,7 @@ tables:
       type: string
     - name: tags
       type: hstore_tags
+    relation_types: [route, route_master]
     mapping:
+      route_master: [bus, tram, rail]
       route: [bus, tram, rail]

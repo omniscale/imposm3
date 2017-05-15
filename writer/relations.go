@@ -134,19 +134,17 @@ NextRel:
 }
 
 func handleMultiPolygon(rw *RelationWriter, r *element.Relation, geos *geosp.Geos) bool {
-	// prepare relation first (build rings and compute actual
-	// relation tags)
+	matches := rw.polygonMatcher.MatchRelation(r)
+	if matches == nil {
+		return false
+	}
+
+	// prepare relation (build rings)
 	prepedRel, err := geomp.PrepareRelation(r, rw.srid, rw.maxGap)
 	if err != nil {
 		if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
 			log.Warn(err)
 		}
-		return false
-	}
-
-	// check for matches befor building the geometry
-	matches := rw.polygonMatcher.MatchRelation(r)
-	if matches == nil {
 		return false
 	}
 
