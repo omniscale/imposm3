@@ -510,36 +510,13 @@ func (pg *PostGIS) InsertRelationMember(rel element.Relation, m element.Member, 
 	return nil
 }
 
-func (pg *PostGIS) Delete(id int64, matches interface{}) error {
-	if matches, ok := matches.([]mapping.Match); ok {
-		for _, match := range matches {
-			pg.txRouter.Delete(match.Table.Name, id)
-		}
-		if pg.updateGeneralizedTables {
-			for _, generalizedTable := range pg.generalizedFromMatches(matches) {
-				pg.txRouter.Delete(generalizedTable.Name, id)
-			}
-		}
+func (pg *PostGIS) Delete(id int64, matches []mapping.Match) error {
+	for _, match := range matches {
+		pg.txRouter.Delete(match.Table.Name, id)
 	}
-	return nil
-}
-
-func (pg *PostGIS) DeleteElem(elem element.OSMElem) error {
-	// handle deletes of geometries that did not match in ProbeXxx.
-	// we have to handle multipolygon relations that took the tags of the
-	// main-member. those tags are not avail. during delete. just try to
-	// delete from each polygon/relation table.
-	if _, ok := elem.Tags["type"]; ok {
-		for _, tableSpec := range pg.Tables {
-			if tableSpec.GeometryType != "polygon" && tableSpec.GeometryType != "geometry" && tableSpec.GeometryType != "relation" {
-				continue
-			}
-			pg.txRouter.Delete(tableSpec.Name, elem.Id)
-			if pg.updateGeneralizedTables {
-				for _, genTable := range tableSpec.Generalizations {
-					pg.txRouter.Delete(genTable.Name, elem.Id)
-				}
-			}
+	if pg.updateGeneralizedTables {
+		for _, generalizedTable := range pg.generalizedFromMatches(matches) {
+			pg.txRouter.Delete(generalizedTable.Name, id)
 		}
 	}
 	return nil

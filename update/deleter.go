@@ -16,6 +16,8 @@ type Deleter struct {
 	tmPoints         mapping.NodeMatcher
 	tmLineStrings    mapping.WayMatcher
 	tmPolygons       mapping.RelWayMatcher
+	tmRelation       mapping.RelationMatcher
+	tmRelationMember mapping.RelationMatcher
 	expireor         expire.Expireor
 	singleIdSpace    bool
 	deletedRelations map[int64]struct{}
@@ -28,6 +30,8 @@ func NewDeleter(db database.Deleter, osmCache *cache.OSMCache, diffCache *cache.
 	tmPoints mapping.NodeMatcher,
 	tmLineStrings mapping.WayMatcher,
 	tmPolygons mapping.RelWayMatcher,
+	tmRelation mapping.RelationMatcher,
+	tmRelationMember mapping.RelationMatcher,
 ) *Deleter {
 	return &Deleter{
 		delDb:            db,
@@ -36,6 +40,8 @@ func NewDeleter(db database.Deleter, osmCache *cache.OSMCache, diffCache *cache.
 		tmPoints:         tmPoints,
 		tmLineStrings:    tmLineStrings,
 		tmPolygons:       tmPolygons,
+		tmRelation:       tmRelation,
+		tmRelationMember: tmRelationMember,
 		singleIdSpace:    singleIdSpace,
 		deletedRelations: make(map[int64]struct{}),
 		deletedWays:      make(map[int64]struct{}),
@@ -82,12 +88,27 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 	if elem.Tags == nil {
 		return nil
 	}
-	// delete from all tables to handle relations with tags from members
-	// and relation_members
-	e := element.OSMElem(elem.OSMElem)
-	e.Id = d.RelId(e.Id)
-	if err := d.delDb.DeleteElem(e); err != nil {
-		return err
+
+	deleted := false
+	deletedPolygon := false
+	if matches := d.tmPolygons.MatchRelation(elem); len(matches) > 0 {
+		if err := d.delDb.Delete(d.RelId(elem.Id), matches); err != nil {
+			return err
+		}
+		deleted = true
+		deletedPolygon = true
+	}
+	if matches := d.tmRelation.MatchRelation(elem); len(matches) > 0 {
+		if err := d.delDb.Delete(d.RelId(elem.Id), matches); err != nil {
+			return err
+		}
+		deleted = true
+	}
+	if matches := d.tmRelationMember.MatchRelation(elem); len(matches) > 0 {
+		if err := d.delDb.Delete(d.RelId(elem.Id), matches); err != nil {
+			return err
+		}
+		deleted = true
 	}
 
 	if deleteRefs {
@@ -96,13 +117,19 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 				if err := d.diffCache.Ways.DeleteRef(m.Id, id); err != nil {
 					return err
 				}
+			} else if m.Type == element.NODE {
+				if err := d.diffCache.CoordsRel.DeleteRef(m.Id, id); err != nil {
+					return err
+				}
 			}
 		}
 	}
 
-	if deleteMembers {
+	if deleteMembers && deletedPolygon {
 		// delete members from db and force reinsert of members
 		// use case: relation is deleted and member now stands for its own
+
+		// TODO: still needed after old-style mp removal, remove when #148 is closed
 		for _, member := range elem.Members {
 			if member.Type == element.WAY {
 				d.deletedMembers[member.Id] = struct{}{}
@@ -124,7 +151,7 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 	if err := d.osmCache.InsertedWays.DeleteMembers(elem.Members); err != nil {
 		return err
 	}
-	if d.expireor != nil {
+	if deleted && d.expireor != nil {
 		if err := d.osmCache.Ways.FillMembers(elem.Members); err != nil {
 			return err
 		}
@@ -136,7 +163,7 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 			if err != nil {
 				continue
 			}
-			expire.ExpireProjectedNodes(d.expireor, m.Way.Nodes, 4326, true)
+			expire.ExpireProjectedNodes(d.expireor, m.Way.Nodes, 4326, deletedPolygon)
 		}
 	}
 	return nil

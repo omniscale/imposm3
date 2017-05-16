@@ -58,10 +58,7 @@ type Finisher interface {
 
 type Deleter interface {
 	Inserter
-	// Delete deletes ID from tables that matched ProbeXxx
-	Delete(int64, interface{}) error
-	// DeleteElem deletes element from all tables
-	DeleteElem(element.OSMElem) error
+	Delete(int64, []mapping.Match) error
 }
 
 type Optimizer interface {
