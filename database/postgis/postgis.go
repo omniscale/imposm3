@@ -585,17 +585,29 @@ func New(conf database.Config, m *config.Mapping) (database.DB, error) {
 
 	db.Config = conf
 
-	if strings.HasPrefix(db.Config.ConnectionParams, "postgis://") {
-		db.Config.ConnectionParams = strings.Replace(
-			db.Config.ConnectionParams,
+	connStr := db.Config.ConnectionParams
+
+	// we accept postgis as an alias, replace for pq.ParseURL
+	if strings.HasPrefix(connStr, "postgis:") {
+		connStr = strings.Replace(
+			connStr,
 			"postgis", "postgres", 1,
 		)
 	}
 
-	params, err := pq.ParseURL(db.Config.ConnectionParams)
-	if err != nil {
-		return nil, err
+	var err error
+	var params string
+	if strings.HasPrefix(connStr, "postgres://") {
+		// connStr is a URL
+		params, err = pq.ParseURL(connStr)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// connStr is already a params list (postgres: host=localhost ...)
+		params = strings.TrimSpace(strings.TrimPrefix(connStr, "postgres:"))
 	}
+
 	params = disableDefaultSsl(params)
 	params, db.Prefix = stripPrefixFromConnectionParams(params)
 
