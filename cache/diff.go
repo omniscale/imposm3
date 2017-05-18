@@ -8,8 +8,6 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/jmhodges/levigo"
-
 	"github.com/omniscale/imposm3/cache/binary"
 	"github.com/omniscale/imposm3/element"
 )
@@ -276,7 +274,7 @@ func (index *bunchRefCache) Get(id int64) []int64 {
 	}
 	keyBuf := idToKeyBuf(index.getBunchId(id))
 
-	data, err := index.db.Get(index.ro, keyBuf)
+	data, err := index.db.Get(keyBuf)
 	if err != nil {
 		panic(err)
 	}
@@ -296,7 +294,7 @@ func (index *bunchRefCache) Get(id int64) []int64 {
 func (index *bunchRefCache) Add(id, ref int64) error {
 	keyBuf := idToKeyBuf(index.getBunchId(id))
 
-	data, err := index.db.Get(index.ro, keyBuf)
+	data, err := index.db.Get(keyBuf)
 	if err != nil {
 		return err
 	}
@@ -316,7 +314,7 @@ func (index *bunchRefCache) Add(id, ref int64) error {
 	defer bytePool.release(data)
 	data = binary.MarshalIdRefsBunch2(idRefBunch.idRefs, data)
 
-	return index.db.Put(index.wo, keyBuf, data)
+	return index.db.Put(keyBuf, data)
 }
 
 func (index *bunchRefCache) DeleteRef(id, ref int64) error {
@@ -326,7 +324,7 @@ func (index *bunchRefCache) DeleteRef(id, ref int64) error {
 
 	keyBuf := idToKeyBuf(index.getBunchId(id))
 
-	data, err := index.db.Get(index.ro, keyBuf)
+	data, err := index.db.Get(keyBuf)
 	if err != nil {
 		return err
 	}
@@ -342,7 +340,7 @@ func (index *bunchRefCache) DeleteRef(id, ref int64) error {
 			data := bytePool.get()
 			defer bytePool.release(data)
 			data = binary.MarshalIdRefsBunch2(idRefs, data)
-			return index.db.Put(index.wo, keyBuf, data)
+			return index.db.Put(keyBuf, data)
 		}
 	}
 	return nil
@@ -355,7 +353,7 @@ func (index *bunchRefCache) Delete(id int64) error {
 
 	keyBuf := idToKeyBuf(index.getBunchId(id))
 
-	data, err := index.db.Get(index.ro, keyBuf)
+	data, err := index.db.Get(keyBuf)
 	if err != nil {
 		return err
 	}
@@ -371,7 +369,7 @@ func (index *bunchRefCache) Delete(id int64) error {
 			data := bytePool.get()
 			defer bytePool.release(data)
 			data = binary.MarshalIdRefsBunch2(idRefs, data)
-			return index.db.Put(index.wo, keyBuf, data)
+			return index.db.Put(keyBuf, data)
 		}
 	}
 	return nil
@@ -484,7 +482,7 @@ type writeBunchItem struct {
 }
 
 func (index *bunchRefCache) writeRefs(idRefs idRefBunches) error {
-	batch := levigo.NewWriteBatch()
+	batch := index.db.NewWriteBatch()
 	defer batch.Close()
 
 	wg := sync.WaitGroup{}
@@ -527,7 +525,7 @@ func (index *bunchRefCache) writeRefs(idRefs idRefBunches) error {
 		case idRefBunchesPool <- idRefs:
 		}
 	}()
-	return index.db.Write(index.wo, batch)
+	return batch.Commit()
 }
 
 func mergeBunch(bunch, newBunch []element.IdRefs) []element.IdRefs {
@@ -574,7 +572,7 @@ NextIdRef:
 // loadMergeMarshal loads an existing bunch, merges the IdRefs and
 // marshals the result again.
 func (index *bunchRefCache) loadMergeMarshal(keyBuf []byte, newBunch []element.IdRefs) []byte {
-	data, err := index.db.Get(index.ro, keyBuf)
+	data, err := index.db.Get(keyBuf)
 	if err != nil {
 		panic(err)
 	}

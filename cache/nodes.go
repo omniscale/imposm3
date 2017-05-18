@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"github.com/jmhodges/levigo"
 	"github.com/omniscale/imposm3/cache/binary"
 	"github.com/omniscale/imposm3/element"
 )
@@ -32,11 +31,11 @@ func (p *NodesCache) PutNode(node *element.Node) error {
 	if err != nil {
 		return err
 	}
-	return p.db.Put(p.wo, keyBuf, data)
+	return p.db.Put(keyBuf, data)
 }
 
 func (p *NodesCache) PutNodes(nodes []element.Node) (int, error) {
-	batch := levigo.NewWriteBatch()
+	batch := p.db.NewWriteBatch()
 	defer batch.Close()
 
 	var n int
@@ -55,12 +54,12 @@ func (p *NodesCache) PutNodes(nodes []element.Node) (int, error) {
 		batch.Put(keyBuf, data)
 		n += 1
 	}
-	return n, p.db.Write(p.wo, batch)
+	return n, batch.Commit()
 }
 
 func (p *NodesCache) GetNode(id int64) (*element.Node, error) {
 	keyBuf := idToKeyBuf(id)
-	data, err := p.db.Get(p.ro, keyBuf)
+	data, err := p.db.Get(keyBuf)
 	if err != nil {
 		return nil, err
 	}
@@ -77,21 +76,20 @@ func (p *NodesCache) GetNode(id int64) (*element.Node, error) {
 
 func (p *NodesCache) DeleteNode(id int64) error {
 	keyBuf := idToKeyBuf(id)
-	return p.db.Delete(p.wo, keyBuf)
+	return p.db.Delete(keyBuf)
 }
 
 func (p *NodesCache) Iter() chan *element.Node {
 	nodes := make(chan *element.Node)
 	go func() {
-		ro := levigo.NewReadOptions()
-		ro.SetFillCache(false)
-		it := p.db.NewIterator(ro)
+		// TODO setfill cache?
+		it := p.db.NewIterator()
 		// we need to Close the iter before closing the
 		// chan (and thus signaling that we are done)
 		// to avoid race where db is closed before the iterator
 		defer close(nodes)
 		defer it.Close()
-		it.SeekToFirst()
+		it.First()
 		for ; it.Valid(); it.Next() {
 			node, err := binary.UnmarshalNode(it.Value())
 			if err != nil {

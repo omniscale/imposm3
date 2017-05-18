@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"github.com/jmhodges/levigo"
 	"github.com/omniscale/imposm3/cache/binary"
 	"github.com/omniscale/imposm3/element"
 )
@@ -29,11 +28,11 @@ func (p *WaysCache) PutWay(way *element.Way) error {
 	if err != nil {
 		return err
 	}
-	return p.db.Put(p.wo, keyBuf, data)
+	return p.db.Put(keyBuf, data)
 }
 
 func (p *WaysCache) PutWays(ways []element.Way) error {
-	batch := levigo.NewWriteBatch()
+	batch := p.db.NewWriteBatch()
 	defer batch.Close()
 
 	for _, way := range ways {
@@ -47,12 +46,12 @@ func (p *WaysCache) PutWays(ways []element.Way) error {
 		}
 		batch.Put(keyBuf, data)
 	}
-	return p.db.Write(p.wo, batch)
+	return batch.Commit()
 }
 
 func (p *WaysCache) GetWay(id int64) (*element.Way, error) {
 	keyBuf := idToKeyBuf(id)
-	data, err := p.db.Get(p.ro, keyBuf)
+	data, err := p.db.Get(keyBuf)
 	if err != nil {
 		return nil, err
 	}
@@ -69,21 +68,20 @@ func (p *WaysCache) GetWay(id int64) (*element.Way, error) {
 
 func (p *WaysCache) DeleteWay(id int64) error {
 	keyBuf := idToKeyBuf(id)
-	return p.db.Delete(p.wo, keyBuf)
+	return p.db.Delete(keyBuf)
 }
 
 func (p *WaysCache) Iter() chan *element.Way {
 	ways := make(chan *element.Way, 1024)
 	go func() {
-		ro := levigo.NewReadOptions()
-		ro.SetFillCache(false)
-		it := p.db.NewIterator(ro)
+		// TODO setfill cache?
+		it := p.db.NewIterator()
 		// we need to Close the iter before closing the
 		// chan (and thus signaling that we are done)
 		// to avoid race where db is closed before the iterator
 		defer close(ways)
 		defer it.Close()
-		it.SeekToFirst()
+		it.First()
 		for ; it.Valid(); it.Next() {
 			way, err := binary.UnmarshalWay(it.Value())
 			if err != nil {
@@ -130,11 +128,11 @@ func newInsertedWaysCache(path string) (*InsertedWaysCache, error) {
 
 func (p *InsertedWaysCache) PutWay(way *element.Way) error {
 	keyBuf := idToKeyBuf(way.Id)
-	return p.db.Put(p.wo, keyBuf, []byte{})
+	return p.db.Put(keyBuf, []byte{})
 }
 
 func (p *InsertedWaysCache) PutMembers(members []element.Member) error {
-	batch := levigo.NewWriteBatch()
+	batch := p.db.NewWriteBatch()
 	defer batch.Close()
 
 	for _, m := range members {
@@ -144,11 +142,11 @@ func (p *InsertedWaysCache) PutMembers(members []element.Member) error {
 		keyBuf := idToKeyBuf(m.Id)
 		batch.Put(keyBuf, []byte{})
 	}
-	return p.db.Write(p.wo, batch)
+	return batch.Commit()
 }
 
 func (p *InsertedWaysCache) DeleteMembers(members []element.Member) error {
-	batch := levigo.NewWriteBatch()
+	batch := p.db.NewWriteBatch()
 	defer batch.Close()
 
 	for _, m := range members {
@@ -158,12 +156,12 @@ func (p *InsertedWaysCache) DeleteMembers(members []element.Member) error {
 		keyBuf := idToKeyBuf(m.Id)
 		batch.Delete(keyBuf)
 	}
-	return p.db.Write(p.wo, batch)
+	return batch.Commit()
 }
 
 func (p *InsertedWaysCache) IsInserted(id int64) (bool, error) {
 	keyBuf := idToKeyBuf(id)
-	data, err := p.db.Get(p.ro, keyBuf)
+	data, err := p.db.Get(keyBuf)
 	if err != nil {
 		return false, err
 	}

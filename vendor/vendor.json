@@ -8,11 +8,6 @@
 			"revisionTime": "2015-05-15T11:32:44+10:00"
 		},
 		{
-			"path": "github.com/jmhodges/levigo",
-			"revision": "1ddad808d437abb2b8a55a950ec2616caa88969b",
-			"revisionTime": "2015-02-15T19:43:19-08:00"
-		},
-		{
 			"path": "github.com/lib/pq",
 			"revision": "93e9980741c9e593411b94e07d5bad8cfb4809db",
 			"revisionTime": "2015-05-02T14:36:36+03:00"
