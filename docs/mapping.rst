@@ -44,6 +44,7 @@ To import all polygons with `tourism=zoo`, `natural=wood` or `natural=land` into
 ``relation_types`` restricts which relation types should be imported. It is a list with `type` values, e.g. ``[route, master_route]``.
 
 For tables of type ``relation`` and ``relation_member``: Only import relations which have this type value. You still need to have a mapping.
+
 For tables of type ``polygon``: Only build multi-polygons for relations which have this type value. You still need to have a mapping. Defaults to ``[multipolygon, boundary, land_area]``.
 
 .. code-block:: yaml
