@@ -125,7 +125,7 @@ func Import() {
 		osmCache.Close()
 		log.StopStep(step)
 		if config.ImportOptions.Diff {
-			diffstate, err := state.FromPbf(config.ImportOptions.Read, config.ImportOptions.DiffStateBefore)
+			diffstate, err := state.FromPbf(config.ImportOptions.Read, config.BaseOptions.DiffStateBefore)
 			if err != nil {
 				log.Print("error parsing diff state form PBF", err)
 			} else if diffstate != nil {
