@@ -1,0 +1,59 @@
+{
+    "tags": {
+        "load_all": true,
+        "exclude": [
+            "created_by"
+        ]
+    },
+    "use_single_id_space": true,
+    "tables": {
+        "all_osm2osc": {
+            "fields": [
+                {
+                    "type": "id",
+                    "name": "osm_id",
+                    "key": null
+                },
+                {
+                    "type": "validated_geometry",
+                    "name": "geometry",
+                    "key": null
+                },
+                {
+                    "type": "hstore_tags",
+                    "name": "tags",
+                    "key": null
+                }
+            ],
+            "type": "geometry",
+            "type_mappings": {
+                "points": {
+                     "name": ["__any__"],
+                     "created_by": ["__any__"],
+                     "source": ["__any__"],
+                     "amenity": ["__any__"],
+                     "poi": ["__any__"],
+                     "shop": ["__any__"]
+                },
+                "linestrings": {
+                     "name": ["__any__"],
+                     "building": ["__any__"],
+                     "created_by": ["__any__"],
+                     "source": ["__any__"],
+                     "highway": ["__any__"]
+                },
+                "polygons": {
+                     "type": ["__any__"],
+                     "name": ["__any__"],
+                     "created_by": ["__any__"],
+                     "source": ["__any__"],
+                     "admin_level": ["__any__"],
+                     "landuse": ["__any__"],
+                     "building": ["__any__"],
+                     "amenity": ["__any__"],
+                     "shop": ["__any__"]
+                }
+            }
+        }
+    }
+}
