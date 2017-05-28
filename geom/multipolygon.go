@@ -73,7 +73,9 @@ func buildRings(rel *element.Relation, maxRingGap float64) ([]*ring, error) {
 		if member.Way == nil {
 			continue
 		}
-		rings = append(rings, newRing(member.Way))
+		if member.Role == "inner" || member.Role == "outer" {
+			rings = append(rings, newRing(member.Way))
+		}
 	}
 
 	// create geometries for closed rings, collect incomplete rings
