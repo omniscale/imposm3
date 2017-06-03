@@ -342,7 +342,7 @@ func (m *Mapping) addRelationFilters(tableType TableType, filters tableElementFi
 			filters[name] = append(filters[name], f)
 		} else {
 			if TableType(t.Type) == PolygonTable {
-				// standard mulipolygon handling (boundary and land_area are for backwards compatibility)
+				// standard multipolygon handling (boundary and land_area are for backwards compatibility)
 				f := func(tags element.Tags, key Key, closed bool) bool {
 					if v, ok := tags["type"]; ok {
 						if v == "multipolygon" || v == "boundary" || v == "land_area" {
@@ -365,18 +365,6 @@ func (m *Mapping) addFilters(filters tableElementFilters) {
 		if t.Filters.ExcludeTags != nil {
 			log.Print("warn: exclude_tags filter is deprecated and will be removed. See require and reject filter.")
 			for _, filterKeyVal := range *t.Filters.ExcludeTags {
-				/*
-					f := func(tags element.Tags, key Key, closed bool) bool {
-						if v, ok := tags[filterKeyVal[0]]; ok {
-							if filterKeyVal[1] == "__any__" || v == filterKeyVal[1] {
-								return false
-							}
-						}
-						return true
-					}
-					filters[name] = append(filters[name], f)
-				*/
-
 				// Convert `exclude_tags`` filter to `reject` filter !
 				keyname := string(filterKeyVal[0])
 				vararr := []config.OrderedValue{
@@ -426,11 +414,11 @@ func findValueInOrderedValue(v config.Value, list []config.OrderedValue) bool {
 	return false
 }
 
-func makeRegexpFiltersFunction(tablename string, virtualTrue bool, virtualFalse bool, v_keyname string, v_regexp string) func(tags element.Tags, key Key, closed bool) bool {
+func makeRegexpFiltersFunction(tablename string, virtualTrue bool, virtualFalse bool, vKeyname string, vRegexp string) func(tags element.Tags, key Key, closed bool) bool {
 	// Compile regular expression,  if not valid regexp --> panic !
-	r := regexp.MustCompile(v_regexp)
+	r := regexp.MustCompile(vRegexp)
 	return func(tags element.Tags, key Key, closed bool) bool {
-		if v, ok := tags[v_keyname]; ok {
+		if v, ok := tags[vKeyname]; ok {
 			if r.MatchString(v) {
 				return virtualTrue
 			}
@@ -439,26 +427,26 @@ func makeRegexpFiltersFunction(tablename string, virtualTrue bool, virtualFalse 
 	}
 }
 
-func makeFiltersFunction(tablename string, virtualTrue bool, virtualFalse bool, v_keyname string, v_vararr []config.OrderedValue) func(tags element.Tags, key Key, closed bool) bool {
+func makeFiltersFunction(tablename string, virtualTrue bool, virtualFalse bool, vKeyname string, vVararr []config.OrderedValue) func(tags element.Tags, key Key, closed bool) bool {
 
-	if findValueInOrderedValue("__nil__", v_vararr) { // check __nil__
+	if findValueInOrderedValue("__nil__", vVararr) { // check __nil__
 		log.Print("warn: Filter value '__nil__' is not supported ! (tablename:" + tablename + ")")
 	}
 
-	if findValueInOrderedValue("__any__", v_vararr) { // check __any__
-		if len(v_vararr) > 1 {
+	if findValueInOrderedValue("__any__", vVararr) { // check __any__
+		if len(vVararr) > 1 {
 			log.Print("warn: Multiple filter value with '__any__' keywords is not valid! (tablename:" + tablename + ")")
 		}
 		return func(tags element.Tags, key Key, closed bool) bool {
-			if _, ok := tags[v_keyname]; ok {
+			if _, ok := tags[vKeyname]; ok {
 				return virtualTrue
 			}
 			return virtualFalse
 		}
-	} else if len(v_vararr) == 1 { //  IF 1 parameter  THEN we can generate optimal code
+	} else if len(vVararr) == 1 { //  IF 1 parameter  THEN we can generate optimal code
 		return func(tags element.Tags, key Key, closed bool) bool {
-			if v, ok := tags[v_keyname]; ok {
-				if config.Value(v) == v_vararr[0].Value {
+			if v, ok := tags[vKeyname]; ok {
+				if config.Value(v) == vVararr[0].Value {
 					return virtualTrue
 				}
 			}
@@ -466,8 +454,8 @@ func makeFiltersFunction(tablename string, virtualTrue bool, virtualFalse bool, 
 		}
 	} else { //  > 1 parameter  - less optimal code
 		return func(tags element.Tags, key Key, closed bool) bool {
-			if v, ok := tags[v_keyname]; ok {
-				if findValueInOrderedValue(config.Value(v), v_vararr) {
+			if v, ok := tags[vKeyname]; ok {
+				if findValueInOrderedValue(config.Value(v), vVararr) {
 					return virtualTrue
 				}
 			}
