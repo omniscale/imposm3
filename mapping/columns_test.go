@@ -6,6 +6,7 @@ import (
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/geom"
 	"github.com/omniscale/imposm3/geom/geos"
+	"github.com/omniscale/imposm3/mapping/config"
 )
 
 func TestBool(t *testing.T) {
@@ -74,8 +75,8 @@ func TestZOrder(t *testing.T) {
 	match := Match{}
 
 	zOrder, err := MakeZOrder("z_order",
-		AvailableFieldTypes["z_order"],
-		Field{
+		AvailableColumnTypes["z_order"],
+		config.Column{
 			Name: "z_order",
 			Key:  "",
 			Type: "z_order",
@@ -113,8 +114,8 @@ func TestEnumerate_Match(t *testing.T) {
 	// test enumerate by matched mapping key
 
 	zOrder, err := MakeEnumerate("enumerate",
-		AvailableFieldTypes["enumerate"],
-		Field{
+		AvailableColumnTypes["enumerate"],
+		config.Column{
 			Name: "enumerate",
 			Key:  "",
 			Type: "enumerate",
@@ -148,8 +149,8 @@ func TestEnumerate_Key(t *testing.T) {
 	// test enumerate by key
 
 	zOrder, err := MakeEnumerate("enumerate",
-		AvailableFieldTypes["enumerate"],
-		Field{
+		AvailableColumnTypes["enumerate"],
+		config.Column{
 			Name: "enumerate",
 			Key:  "fips",
 			Type: "enumerate",
@@ -182,8 +183,8 @@ func TestEnumerate_Key(t *testing.T) {
 
 func TestWayZOrder(t *testing.T) {
 	zOrder, err := MakeWayZOrder("z_order",
-		AvailableFieldTypes["wayzorder"],
-		Field{
+		AvailableColumnTypes["wayzorder"],
+		config.Column{
 			Name: "zorder",
 			Type: "wayzorder",
 			Args: map[string]interface{}{
@@ -233,7 +234,7 @@ func TestWayZOrder(t *testing.T) {
 	}
 }
 
-func TestAreaFields(t *testing.T) {
+func TestAreaColumn(t *testing.T) {
 	tests := []struct {
 		wkt      string
 		expected float32
@@ -277,10 +278,10 @@ func TestAreaFields(t *testing.T) {
 }
 
 func TestMakeSuffixReplace(t *testing.T) {
-	field := Field{
+	column := config.Column{
 		Name: "name", Key: "name", Type: "string_suffixreplace",
 		Args: map[string]interface{}{"suffixes": map[interface{}]interface{}{"Straße": "Str.", "straße": "str."}}}
-	suffixReplace, err := MakeSuffixReplace("name", FieldType{}, field)
+	suffixReplace, err := MakeSuffixReplace("name", ColumnType{}, column)
 
 	if err != nil {
 		t.Fatal(err)
@@ -298,27 +299,27 @@ func TestMakeSuffixReplace(t *testing.T) {
 }
 
 func TestHstoreString(t *testing.T) {
-	field := Field{
+	column := config.Column{
 		Name: "tags",
 		Type: "hstore_tags",
 	}
-	hstoreAll, err := MakeHStoreString("tags", FieldType{}, field)
+	hstoreAll, err := MakeHStoreString("tags", ColumnType{}, column)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	field = Field{
+	column = config.Column{
 		Name: "tags",
 		Type: "hstore_tags",
 		Args: map[string]interface{}{"include": []interface{}{"key1", "key2"}},
 	}
-	hstoreInclude, err := MakeHStoreString("tags", FieldType{}, field)
+	hstoreInclude, err := MakeHStoreString("tags", ColumnType{}, column)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	for _, test := range []struct {
-		field    MakeValue
+		column   MakeValue
 		tags     element.Tags
 		expected interface{}
 	}{
@@ -331,7 +332,7 @@ func TestHstoreString(t *testing.T) {
 		{hstoreInclude, element.Tags{"key1": "value"}, `"key1"=>"value"`},
 		{hstoreInclude, element.Tags{"key": "value", "key2": "value"}, `"key2"=>"value"`},
 	} {
-		actual := test.field("", &element.OSMElem{Tags: test.tags}, nil, Match{})
+		actual := test.column("", &element.OSMElem{Tags: test.tags}, nil, Match{})
 		if actual.(string) != test.expected {
 			t.Errorf("%#v != %#v for %#v", actual, test.expected, test.tags)
 		}

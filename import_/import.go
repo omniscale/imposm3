@@ -51,7 +51,7 @@ func Import() {
 
 	tagmapping, err := mapping.NewMapping(config.BaseOptions.MappingFile)
 	if err != nil {
-		log.Fatal("mapping file: ", err)
+		log.Fatal("error in mapping file: ", err)
 	}
 
 	var db database.DB
@@ -67,7 +67,7 @@ func Import() {
 			ProductionSchema: config.BaseOptions.Schemas.Production,
 			BackupSchema:     config.BaseOptions.Schemas.Backup,
 		}
-		db, err = database.Open(conf, tagmapping)
+		db, err = database.Open(conf, &tagmapping.Conf)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -125,7 +125,7 @@ func Import() {
 		osmCache.Close()
 		log.StopStep(step)
 		if config.ImportOptions.Diff {
-			diffstate, err := state.FromPbf(config.ImportOptions.Read, config.ImportOptions.DiffStateBefore)
+			diffstate, err := state.FromPbf(config.ImportOptions.Read, config.BaseOptions.DiffStateBefore)
 			if err != nil {
 				log.Print("error parsing diff state form PBF", err)
 			} else if diffstate != nil {
@@ -181,12 +181,12 @@ func Import() {
 
 		relations := osmCache.Relations.Iter()
 		relWriter := writer.NewRelationWriter(osmCache, diffCache,
-			tagmapping.SingleIdSpace,
+			tagmapping.Conf.SingleIdSpace,
 			relations,
 			db, progress,
-			tagmapping.PolygonMatcher(),
-			tagmapping.RelationMatcher(),
-			tagmapping.RelationMemberMatcher(),
+			tagmapping.PolygonMatcher,
+			tagmapping.RelationMatcher,
+			tagmapping.RelationMemberMatcher,
 			config.BaseOptions.Srid)
 		relWriter.SetLimiter(geometryLimiter)
 		relWriter.EnableConcurrent()
@@ -196,10 +196,10 @@ func Import() {
 
 		ways := osmCache.Ways.Iter()
 		wayWriter := writer.NewWayWriter(osmCache, diffCache,
-			tagmapping.SingleIdSpace,
+			tagmapping.Conf.SingleIdSpace,
 			ways, db,
 			progress,
-			tagmapping.PolygonMatcher(), tagmapping.LineStringMatcher(),
+			tagmapping.PolygonMatcher, tagmapping.LineStringMatcher,
 			config.BaseOptions.Srid)
 		wayWriter.SetLimiter(geometryLimiter)
 		wayWriter.EnableConcurrent()
@@ -210,7 +210,7 @@ func Import() {
 		nodes := osmCache.Nodes.Iter()
 		nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
 			progress,
-			tagmapping.PointMatcher(),
+			tagmapping.PointMatcher,
 			config.BaseOptions.Srid)
 		nodeWriter.SetLimiter(geometryLimiter)
 		nodeWriter.EnableConcurrent()

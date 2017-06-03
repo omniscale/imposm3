@@ -6,10 +6,10 @@ import (
 	"github.com/omniscale/imposm3/element"
 )
 
-// go test  ./mapping -run TestFilter_t0  -v
-func TestFilter_t0(t *testing.T) {
+// go test  ./mapping -run TestFilters_test_t0  -v
+func TestFilters_test_t0(t *testing.T) {
 
-	/* ./config_test_mapping.yml ..
+	/* ./testfilters_test_mapping.yml ..
 
 	   filters:
 	     require:
@@ -23,7 +23,7 @@ func TestFilter_t0(t *testing.T) {
 		// *testing.T
 		t,
 		// tablename
-		"config_test_t0",
+		"testfilters_test_t0",
 		// Accept
 		[]element.Tags{
 			element.Tags{"admin_level": "2", "boundary": "administrative"},
@@ -51,10 +51,10 @@ func TestFilter_t0(t *testing.T) {
 	)
 }
 
-// go test  ./mapping -run TestFilter_t1  -v
-func TestFilter_t1(t *testing.T) {
+// go test  ./mapping -run TestFilters_test_t1  -v
+func TestFilters_test_t1(t *testing.T) {
 
-	/* ./config_test_mapping.yml ..
+	/* ./testfilters_test_mapping.yml ..
 
 	filters:
 		require:
@@ -71,7 +71,7 @@ func TestFilter_t1(t *testing.T) {
 		// *testing.T
 		t,
 		// tablename
-		"config_test_t1",
+		"testfilters_test_t1",
 		// Accept
 		[]element.Tags{
 			element.Tags{"admin_level": "2", "boundary": "administrative"},
@@ -99,10 +99,10 @@ func TestFilter_t1(t *testing.T) {
 	)
 }
 
-// go test  ./mapping -run TestFilter_t2_building  -v
-func TestFilter_t2_building(t *testing.T) {
+// go test  ./mapping -run TestFilters_test_t2_building  -v
+func TestFilters_test_t2_building(t *testing.T) {
 
-	/* ./config_test_mapping.yml ..
+	/* ./testfilters_test_mapping.yml ..
 	   filters:
 	     reject:
 	       building: ["no","none"]
@@ -120,7 +120,7 @@ func TestFilter_t2_building(t *testing.T) {
 		// *testing.T
 		t,
 		// tablename
-		"config_test_t2_building",
+		"testfilters_test_t2_building",
 		// Accept
 		[]element.Tags{
 			element.Tags{"building": "yes", "addr:housenumber": "1a"},
@@ -175,10 +175,10 @@ func TestFilter_t2_building(t *testing.T) {
 	)
 }
 
-// go test  ./mapping -run TestFilter_t3_highway_with_name  -v
-func TestFilter_t3_highway_with_name(t *testing.T) {
+// go test  ./mapping -run TestFilters_test_t3_highway_with_name  -v
+func TestFilters_testt3_highway_with_name(t *testing.T) {
 
-	/* ./config_test_mapping.yml ..
+	/* ./testfilters_test_mapping.yml ..
 		filters:
 	      require:
 	        name: ["__any__"]
@@ -194,7 +194,7 @@ func TestFilter_t3_highway_with_name(t *testing.T) {
 		// *testing.T
 		t,
 		// tablename
-		"config_test_t3_highway_with_name",
+		"testfilters_test_t3_highway_with_name",
 		// Accept
 		[]element.Tags{
 			element.Tags{"highway": "residential", "name": "N1"},
@@ -240,10 +240,10 @@ func TestFilter_t3_highway_with_name(t *testing.T) {
 	)
 }
 
-// go test  ./mapping -run TestFilter_t4_waterway_with_name  -v
-func TestFilter_t4_waterway_with_name(t *testing.T) {
+// go test  ./mapping -run TestFilters_test_t4_waterway_with_name  -v
+func TestFilters_test_t4_waterway_with_name(t *testing.T) {
 
-	/* ./config_test_mapping.yml ..
+	/* ./testfilters_test_mapping.yml ..
 
 	   filters:
 	     require:
@@ -273,7 +273,7 @@ func TestFilter_t4_waterway_with_name(t *testing.T) {
 		// *testing.T
 		t,
 		// tablename
-		"config_test_t4_waterway_with_name",
+		"testfilters_test_t4_waterway_with_name",
 		// Accept
 		[]element.Tags{
 			element.Tags{"waterway": "stream", "name": "N1"},
@@ -346,10 +346,10 @@ func TestFilter_t4_waterway_with_name(t *testing.T) {
 	)
 }
 
-// go test  ./mapping -run TestFilter_t5_depricated_exclude_tags  -v
-func TestFilter_t5_depricated_exclude_tags(t *testing.T) {
+// go test  ./mapping -run TestFilters_test_t5_depricated_exclude_tags  -v
+func TestFilters_test_t5_depricated_exclude_tags(t *testing.T) {
 
-	/* ./config_test_mapping.yml ..
+	/* ./testfilters_test_mapping.yml ..
 
 	   filters:
 	     require:
@@ -379,7 +379,7 @@ func TestFilter_t5_depricated_exclude_tags(t *testing.T) {
 		// *testing.T
 		t,
 		// tablename
-		"config_test_t5_depricated_exclude_tags",
+		"testfilters_test_t5_depricated_exclude_tags",
 		// Accept - in this case Must be EMPTY !
 		[]element.Tags{},
 		// Reject
@@ -439,7 +439,7 @@ func filterTest(t *testing.T, tablename string, accept []element.Tags, reject []
 	var configTestMapping *Mapping
 	var err error
 
-	configTestMapping, err = NewMapping("./config_test_mapping.yml")
+	configTestMapping, err = NewMapping("./testfilters_mapping.yml")
 	if err != nil {
 		panic(err)
 	}
@@ -447,7 +447,7 @@ func filterTest(t *testing.T, tablename string, accept []element.Tags, reject []
 	var actualMatch []Match
 
 	elem := element.Way{}
-	ls := configTestMapping.LineStringMatcher()
+	ls := configTestMapping.LineStringMatcher
 
 	for _, et := range accept {
 		elem.Tags = et

@@ -14,6 +14,7 @@ import (
 	"github.com/omniscale/imposm3/geom"
 	"github.com/omniscale/imposm3/logging"
 	"github.com/omniscale/imposm3/mapping"
+	"github.com/omniscale/imposm3/mapping/config"
 )
 
 var log = logging.NewLogger("PostGIS")
@@ -509,36 +510,13 @@ func (pg *PostGIS) InsertRelationMember(rel element.Relation, m element.Member, 
 	return nil
 }
 
-func (pg *PostGIS) Delete(id int64, matches interface{}) error {
-	if matches, ok := matches.([]mapping.Match); ok {
-		for _, match := range matches {
-			pg.txRouter.Delete(match.Table.Name, id)
-		}
-		if pg.updateGeneralizedTables {
-			for _, generalizedTable := range pg.generalizedFromMatches(matches) {
-				pg.txRouter.Delete(generalizedTable.Name, id)
-			}
-		}
+func (pg *PostGIS) Delete(id int64, matches []mapping.Match) error {
+	for _, match := range matches {
+		pg.txRouter.Delete(match.Table.Name, id)
 	}
-	return nil
-}
-
-func (pg *PostGIS) DeleteElem(elem element.OSMElem) error {
-	// handle deletes of geometries that did not match in ProbeXxx.
-	// we have to handle multipolygon relations that took the tags of the
-	// main-member. those tags are not avail. during delete. just try to
-	// delete from each polygon/relation table.
-	if _, ok := elem.Tags["type"]; ok {
-		for _, tableSpec := range pg.Tables {
-			if tableSpec.GeometryType != "polygon" && tableSpec.GeometryType != "geometry" && tableSpec.GeometryType != "relation" {
-				continue
-			}
-			pg.txRouter.Delete(tableSpec.Name, elem.Id)
-			if pg.updateGeneralizedTables {
-				for _, genTable := range tableSpec.Generalizations {
-					pg.txRouter.Delete(genTable.Name, elem.Id)
-				}
-			}
+	if pg.updateGeneralizedTables {
+		for _, generalizedTable := range pg.generalizedFromMatches(matches) {
+			pg.txRouter.Delete(generalizedTable.Name, id)
 		}
 	}
 	return nil
@@ -599,7 +577,7 @@ func (pg *PostGIS) Close() error {
 	return pg.Db.Close()
 }
 
-func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
+func New(conf database.Config, m *config.Mapping) (database.DB, error) {
 	db := &PostGIS{}
 
 	db.Tables = make(map[string]*TableSpec)
@@ -607,22 +585,37 @@ func New(conf database.Config, m *mapping.Mapping) (database.DB, error) {
 
 	db.Config = conf
 
-	if strings.HasPrefix(db.Config.ConnectionParams, "postgis://") {
-		db.Config.ConnectionParams = strings.Replace(
-			db.Config.ConnectionParams,
+	connStr := db.Config.ConnectionParams
+
+	// we accept postgis as an alias, replace for pq.ParseURL
+	if strings.HasPrefix(connStr, "postgis:") {
+		connStr = strings.Replace(
+			connStr,
 			"postgis", "postgres", 1,
 		)
 	}
 
-	params, err := pq.ParseURL(db.Config.ConnectionParams)
-	if err != nil {
-		return nil, err
+	var err error
+	var params string
+	if strings.HasPrefix(connStr, "postgres://") {
+		// connStr is a URL
+		params, err = pq.ParseURL(connStr)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// connStr is already a params list (postgres: host=localhost ...)
+		params = strings.TrimSpace(strings.TrimPrefix(connStr, "postgres:"))
 	}
+
 	params = disableDefaultSsl(params)
 	params, db.Prefix = stripPrefixFromConnectionParams(params)
 
 	for name, table := range m.Tables {
-		db.Tables[name] = NewTableSpec(db, table)
+		db.Tables[name], err = NewTableSpec(db, table)
+		if err != nil {
+			return nil, err
+		}
 	}
 	for name, table := range m.GeneralizedTables {
 		db.GeneralizedTables[name] = NewGeneralizedTableSpec(db, table)

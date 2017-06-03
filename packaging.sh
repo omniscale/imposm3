@@ -90,8 +90,9 @@ fi
 if [ ! -e $BUILD_BASE/go/bin/go ]; then
     echo "-> installing go"
     pushd $SRC
-        $CURL https://storage.googleapis.com/golang/go1.7.3.linux-amd64.tar.gz -O
-        tar xzf go1.7.3.linux-amd64.tar.gz -C $BUILD_BASE/
+        rm -rf $BUILD_BASE/go
+        $CURL https://storage.googleapis.com/golang/go1.8.linux-amd64.tar.gz -O
+        tar xzf go1.8.linux-amd64.tar.gz -C $BUILD_BASE/
     popd
 fi
 

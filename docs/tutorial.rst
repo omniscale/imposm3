@@ -75,7 +75,7 @@ The second step is the writing of OpenStreetMap features into the database. It r
 
 After the import, it creates the generalized tables and indicies.
 
-You need to tell Imposm the connection parameters of your database. The ``-connection`` option takes a URL in the format ``postgis://username:password@host:port/databasename``.
+You need to tell Imposm the connection parameters of your database. The ``-connection`` option takes a URL in the format ``postgis://username:password@host:port/databasename`` or a list of parameters like ``postgis: host=/tmp dbname=osm``.
 
 In our example:
 ::

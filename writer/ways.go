@@ -78,52 +78,66 @@ func (ww *WayWriter) loop() {
 			continue
 		}
 
-		err = ww.osmCache.Coords.FillWay(w)
-		if err != nil {
-			continue
+		filled := false
+		// fill loads all coords. call only if we have a match
+		fill := func(w *element.Way) bool {
+			if filled {
+				return true
+			}
+			err := ww.osmCache.Coords.FillWay(w)
+			if err != nil {
+				return false
+			}
+			ww.NodesToSrid(w.Nodes)
+			filled = true
+			return true
 		}
-		ww.NodesToSrid(w.Nodes)
 
 		w.Id = ww.wayId(w.Id)
 
 		inserted := false
 		insertedPolygon := false
 		if matches := ww.lineMatcher.MatchWay(w); len(matches) > 0 {
-			err := ww.buildAndInsert(geos, w, matches, false)
+			if !fill(w) {
+				continue
+			}
+			err, inserted = ww.buildAndInsert(geos, w, matches, false)
 			if err != nil {
 				if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
 					log.Warn(err)
 				}
 				continue
 			}
-			inserted = true
 		}
-		if !insertedAsRelation && (w.IsClosed() || w.TryClose(ww.maxGap)) {
+		if !insertedAsRelation {
 			// only add polygons that were not inserted as a MultiPolygon relation
 			if matches := ww.polygonMatcher.MatchWay(w); len(matches) > 0 {
-				err := ww.buildAndInsert(geos, w, matches, true)
-				if err != nil {
-					if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
-						log.Warn(err)
-					}
+				if !fill(w) {
 					continue
 				}
-				inserted = true
-				insertedPolygon = true
+				if w.IsClosed() {
+					err, insertedPolygon = ww.buildAndInsert(geos, w, matches, true)
+					if err != nil {
+						if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
+							log.Warn(err)
+						}
+						continue
+					}
+				}
 			}
 		}
 
-		if inserted && ww.expireor != nil {
+		if (inserted || insertedPolygon) && ww.expireor != nil {
 			expire.ExpireProjectedNodes(ww.expireor, w.Nodes, ww.srid, insertedPolygon)
 		}
-		if ww.diffCache != nil {
+		if (inserted || insertedPolygon) && ww.diffCache != nil {
 			ww.diffCache.Coords.AddFromWay(w)
 		}
 	}
 	ww.wg.Done()
 }
 
-func (ww *WayWriter) buildAndInsert(g *geos.Geos, w *element.Way, matches []mapping.Match, isPolygon bool) error {
+func (ww *WayWriter) buildAndInsert(g *geos.Geos, w *element.Way, matches []mapping.Match, isPolygon bool) (error, bool) {
 	var err error
 	var geosgeom *geos.Geom
 	// make copy to avoid interference with polygon/linestring matches
@@ -138,42 +152,47 @@ func (ww *WayWriter) buildAndInsert(g *geos.Geos, w *element.Way, matches []mapp
 		geosgeom, err = geomp.LineString(g, way.Nodes)
 	}
 	if err != nil {
-		return err
+		return err, false
 	}
 
 	geom, err := geomp.AsGeomElement(g, geosgeom)
 	if err != nil {
-		return err
+		return err, false
 	}
 
+	inserted := true
 	if ww.limiter != nil {
 		parts, err := ww.limiter.Clip(geom.Geom)
 		if err != nil {
-			return err
+			return err, false
+		}
+		if len(parts) == 0 {
+			// outside of limitto
+			inserted = false
 		}
 		for _, p := range parts {
 			way := element.Way(*w)
 			geom = geomp.Geometry{Geom: p, Wkb: g.AsEwkbHex(p)}
 			if isPolygon {
 				if err := ww.inserter.InsertPolygon(way.OSMElem, geom, matches); err != nil {
-					return err
+					return err, false
 				}
 			} else {
 				if err := ww.inserter.InsertLineString(way.OSMElem, geom, matches); err != nil {
-					return err
+					return err, false
 				}
 			}
 		}
 	} else {
 		if isPolygon {
 			if err := ww.inserter.InsertPolygon(way.OSMElem, geom, matches); err != nil {
-				return err
+				return err, false
 			}
 		} else {
 			if err := ww.inserter.InsertLineString(way.OSMElem, geom, matches); err != nil {
-				return err
+				return err, false
 			}
 		}
 	}
-	return nil
+	return nil, inserted
 }

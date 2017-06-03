@@ -119,7 +119,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 		ProductionSchema: config.BaseOptions.Schemas.Production,
 		BackupSchema:     config.BaseOptions.Schemas.Backup,
 	}
-	db, err := database.Open(dbConf, tagmapping)
+	db, err := database.Open(dbConf, &tagmapping.Conf)
 	if err != nil {
 		return errors.New("database open: " + err.Error())
 	}
@@ -144,10 +144,12 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 		delDb,
 		osmCache,
 		diffCache,
-		tagmapping.SingleIdSpace,
-		tagmapping.PointMatcher(),
-		tagmapping.LineStringMatcher(),
-		tagmapping.PolygonMatcher(),
+		tagmapping.Conf.SingleIdSpace,
+		tagmapping.PointMatcher,
+		tagmapping.LineStringMatcher,
+		tagmapping.PolygonMatcher,
+		tagmapping.RelationMatcher,
+		tagmapping.RelationMemberMatcher,
 	)
 	deleter.SetExpireor(expireor)
 
@@ -162,23 +164,23 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 	nodes := make(chan *element.Node)
 
 	relWriter := writer.NewRelationWriter(osmCache, diffCache,
-		tagmapping.SingleIdSpace,
+		tagmapping.Conf.SingleIdSpace,
 		relations,
 		db, progress,
-		tagmapping.PolygonMatcher(),
-		tagmapping.RelationMatcher(),
-		tagmapping.RelationMemberMatcher(),
+		tagmapping.PolygonMatcher,
+		tagmapping.RelationMatcher,
+		tagmapping.RelationMemberMatcher,
 		config.BaseOptions.Srid)
 	relWriter.SetLimiter(geometryLimiter)
 	relWriter.SetExpireor(expireor)
 	relWriter.Start()
 
 	wayWriter := writer.NewWayWriter(osmCache, diffCache,
-		tagmapping.SingleIdSpace,
+		tagmapping.Conf.SingleIdSpace,
 		ways, db,
 		progress,
-		tagmapping.PolygonMatcher(),
-		tagmapping.LineStringMatcher(),
+		tagmapping.PolygonMatcher,
+		tagmapping.LineStringMatcher,
 		config.BaseOptions.Srid)
 	wayWriter.SetLimiter(geometryLimiter)
 	wayWriter.SetExpireor(expireor)
@@ -186,7 +188,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 
 	nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
 		progress,
-		tagmapping.PointMatcher(),
+		tagmapping.PointMatcher,
 		config.BaseOptions.Srid)
 	nodeWriter.SetLimiter(geometryLimiter)
 	nodeWriter.SetExpireor(expireor)
@@ -350,11 +352,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 		}
 		// insert new relation
 		progress.AddRelations(1)
-		// filter out unsupported relation types, otherwise they might
-		// get inserted with the tags from an outer way
-		if relTagFilter.Filter(&rel.Tags) {
-			relations <- rel
-		}
+		relations <- rel
 	}
 
 	for wayId, _ := range wayIds {

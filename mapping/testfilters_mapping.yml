@@ -1,4 +1,4 @@
-# test mappings for config_test.go
+# test mappings 
 #
 # only `type: linestring` impemented!
 #
@@ -7,7 +7,7 @@
 
 
 tables:
-  config_test_t0:
+  testfilters_test_t0:
     fields:
     - name: id
       type: id
@@ -21,7 +21,7 @@ tables:
       admin_level: ['2','4']
     type: linestring
 
-  config_test_t1:
+  testfilters_test_t1:
     fields:
     - name: id
       type: id
@@ -38,7 +38,7 @@ tables:
     type: linestring
 
 
-  config_test_t2_building:
+  testfilters_test_t2_building:
     fields:
     - name: id
       type: id
@@ -57,7 +57,7 @@ tables:
     type: linestring
 
 
-  config_test_t3_highway_with_name:
+  testfilters_test_t3_highway_with_name:
     fields:
     - name: id
       type: id
@@ -78,7 +78,7 @@ tables:
     type: linestring
 
 
-  config_test_t4_waterway_with_name:
+  testfilters_test_t4_waterway_with_name:
     fields:
     - name: id
       type: id
@@ -111,7 +111,7 @@ tables:
     type: linestring
 
 
-  config_test_t5_depricated_exclude_tags:
+  testfilters_test_t5_depricated_exclude_tags:
     _comment:  Allways Empty !  
     fields:
     - name: id

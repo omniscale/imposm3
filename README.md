@@ -152,7 +152,7 @@ Then you need to enable GO15VENDOREXPERIMENT, if you are using Go 1.5. You can s
 Get the code and install Imposm 3:
 
     go get github.com/omniscale/imposm3
-    go install github.com/omniscale/imposm3
+    go install github.com/omniscale/imposm3/cmd/imposm3
 
 Done. You should now have an imposm3 binary in `$GOPATH/bin`.
 

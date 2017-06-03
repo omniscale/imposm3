@@ -8,7 +8,7 @@
     },
     "tables": {
         "all": {
-            "fields": [
+            "columns": [
                 {
                     "type": "id",
                     "name": "osm_id"
@@ -28,7 +28,7 @@
             }
         },
         "amenities": {
-            "fields": [
+            "columns": [
                 {
                     "type": "id",
                     "name": "osm_id"

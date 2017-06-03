@@ -13,9 +13,10 @@
 			"revisionTime": "2015-02-15T19:43:19-08:00"
 		},
 		{
+			"checksumSHA1": "uTUsjF7bymOuKvXbW2BpkK/w4Vg=",
 			"path": "github.com/lib/pq",
-			"revision": "93e9980741c9e593411b94e07d5bad8cfb4809db",
-			"revisionTime": "2015-05-02T14:36:36+03:00"
+			"revision": "2704adc878c21e1329f46f6e56a1c387d788ff94",
+			"revisionTime": "2017-03-24T20:46:54Z"
 		},
 		{
 			"path": "github.com/lib/pq/hstore",
@@ -26,6 +27,12 @@
 			"path": "github.com/lib/pq/oid",
 			"revision": "93e9980741c9e593411b94e07d5bad8cfb4809db",
 			"revisionTime": "2015-05-02T14:36:36+03:00"
+		},
+		{
+			"checksumSHA1": "ynJSWoF6v+3zMnh9R0QmmG6iGV8=",
+			"path": "github.com/pkg/errors",
+			"revision": "248dadf4e9068a0b3e79f02ed0a610d935de5302",
+			"revisionTime": "2016-10-29T09:36:37Z"
 		},
 		{
 			"checksumSHA1": "8SH0adTcQlA+W5dzqiQ3Hft2VXg=",

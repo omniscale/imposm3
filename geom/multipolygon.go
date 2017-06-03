@@ -16,14 +16,11 @@ type PreparedRelation struct {
 
 // PrepareRelation is the first step in building a (multi-)polygon of a Relation.
 // It builds rings from all ways and returns an error if there are unclosed rings.
-// It also merges the Relation.Tags with the Tags of the outer way.
 func PrepareRelation(rel *element.Relation, srid int, maxRingGap float64) (PreparedRelation, error) {
 	rings, err := buildRings(rel, maxRingGap)
 	if err != nil {
 		return PreparedRelation{}, err
 	}
-
-	rel.Tags = relationTags(rel.Tags, rings[0].ways[0].Tags)
 
 	return PreparedRelation{rings, rel, srid}, nil
 }
@@ -222,29 +219,6 @@ func buildRelGeometry(g *geos.Geos, rel *element.Relation, rings []*ring) (*geos
 	}
 
 	return result, nil
-}
-
-func relationTags(relTags, wayTags element.Tags) element.Tags {
-	result := make(element.Tags)
-	for k, v := range relTags {
-		if k == "name" || k == "type" {
-			continue
-		}
-		result[k] = v
-	}
-
-	if len(result) == 0 {
-		// relation does not have tags? use way tags
-		for k, v := range wayTags {
-			result[k] = v
-		}
-	} else {
-		// add back name (if present)
-		if name, ok := relTags["name"]; ok {
-			result["name"] = name
-		}
-	}
-	return result
 }
 
 // ringIsHole returns true if rings[idx] is a hole, False if it is a

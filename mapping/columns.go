@@ -1,8 +1,6 @@
 package mapping
 
 import (
-	"errors"
-	"fmt"
 	"math"
 	"regexp"
 	"strconv"
@@ -11,14 +9,16 @@ import (
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/geom"
 	"github.com/omniscale/imposm3/logging"
+	"github.com/omniscale/imposm3/mapping/config"
+	"github.com/pkg/errors"
 )
 
 var log = logging.NewLogger("mapping")
 
-var AvailableFieldTypes map[string]FieldType
+var AvailableColumnTypes map[string]ColumnType
 
 func init() {
-	AvailableFieldTypes = map[string]FieldType{
+	AvailableColumnTypes = map[string]ColumnType{
 		"bool":                 {"bool", "bool", Bool, nil, nil, false},
 		"boolint":              {"boolint", "int8", BoolInt, nil, nil, false},
 		"id":                   {"id", "int64", Id, nil, nil, false},
@@ -47,94 +47,12 @@ func init() {
 type MakeValue func(string, *element.OSMElem, *geom.Geometry, Match) interface{}
 type MakeMemberValue func(*element.Relation, *element.Member, Match) interface{}
 
-type MakeMakeValue func(string, FieldType, Field) (MakeValue, error)
+type MakeMakeValue func(string, ColumnType, config.Column) (MakeValue, error)
 
 type Key string
 type Value string
 
-type FieldSpec struct {
-	Key  Key
-	Type FieldType
-}
-
-func (f *FieldSpec) Value(elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
-	if f.Type.Func != nil {
-		return f.Type.Func(elem.Tags[string(f.Key)], elem, geom, match)
-	}
-	return nil
-}
-
-func (f *FieldSpec) MemberValue(rel *element.Relation, member *element.Member, geom *geom.Geometry, match Match) interface{} {
-	if f.Type.Func != nil {
-		if f.Type.FromMember {
-			if member.Elem == nil {
-				return nil
-			}
-			return f.Type.Func(member.Elem.Tags[string(f.Key)], member.Elem, geom, match)
-		}
-		return f.Type.Func(rel.Tags[string(f.Key)], &rel.OSMElem, geom, match)
-	}
-	if f.Type.MemberFunc != nil {
-		return f.Type.MemberFunc(rel, member, match)
-	}
-	return nil
-}
-
-type TableFields struct {
-	fields []FieldSpec
-}
-
-func (t *TableFields) MakeRow(elem *element.OSMElem, geom *geom.Geometry, match Match) []interface{} {
-	var row []interface{}
-	for _, field := range t.fields {
-		row = append(row, field.Value(elem, geom, match))
-	}
-	return row
-}
-
-func (t *TableFields) MakeMemberRow(rel *element.Relation, member *element.Member, geom *geom.Geometry, match Match) []interface{} {
-	var row []interface{}
-	for _, field := range t.fields {
-		row = append(row, field.MemberValue(rel, member, geom, match))
-	}
-	return row
-}
-
-func (field *Field) FieldType() *FieldType {
-	if fieldType, ok := AvailableFieldTypes[field.Type]; ok {
-		if fieldType.MakeFunc != nil {
-			makeValue, err := fieldType.MakeFunc(field.Name, fieldType, *field)
-			if err != nil {
-				log.Print(err)
-				return nil
-			}
-			fieldType = FieldType{fieldType.Name, fieldType.GoType, makeValue, nil, nil, fieldType.FromMember}
-		}
-		fieldType.FromMember = field.FromMember
-		return &fieldType
-	}
-	return nil
-}
-
-func (t *Table) TableFields() *TableFields {
-	result := TableFields{}
-
-	for _, mappingField := range t.Fields {
-		field := FieldSpec{}
-		field.Key = mappingField.Key
-
-		fieldType := mappingField.FieldType()
-		if fieldType != nil {
-			field.Type = *fieldType
-		} else {
-			log.Warn("unhandled type: ", mappingField.Type)
-		}
-		result.fields = append(result.fields, field)
-	}
-	return &result
-}
-
-type FieldType struct {
+type ColumnType struct {
 	Name       string
 	GoType     string
 	Func       MakeValue
@@ -216,7 +134,7 @@ func Geometry(val string, elem *element.OSMElem, geom *geom.Geometry, match Matc
 	return string(geom.Wkb)
 }
 
-func MakePseudoArea(fieldName string, fieldType FieldType, field Field) (MakeValue, error) {
+func MakePseudoArea(columnName string, columnType ColumnType, column config.Column) (MakeValue, error) {
 	log.Print("warn: pseudoarea type is deprecated and will be removed. See area and webmercarea type.")
 	return Area, nil
 }
@@ -248,14 +166,14 @@ func WebmercArea(val string, elem *element.OSMElem, geom *geom.Geometry, match M
 
 var hstoreReplacer = strings.NewReplacer("\\", "\\\\", "\"", "\\\"")
 
-func MakeHStoreString(fieldName string, fieldType FieldType, field Field) (MakeValue, error) {
+func MakeHStoreString(columnName string, columnType ColumnType, column config.Column) (MakeValue, error) {
 	var includeAll bool
 	var err error
 	var include map[string]int
-	if _, ok := field.Args["include"]; !ok {
+	if _, ok := column.Args["include"]; !ok {
 		includeAll = true
 	} else {
-		include, err = decodeEnumArg(field, "include")
+		include, err = decodeEnumArg(column, "include")
 		if err != nil {
 			return nil, err
 		}
@@ -273,18 +191,18 @@ func MakeHStoreString(fieldName string, fieldType FieldType, field Field) (MakeV
 	return hstoreString, nil
 }
 
-func MakeWayZOrder(fieldName string, fieldType FieldType, field Field) (MakeValue, error) {
-	if _, ok := field.Args["ranks"]; !ok {
+func MakeWayZOrder(columnName string, columnType ColumnType, column config.Column) (MakeValue, error) {
+	if _, ok := column.Args["ranks"]; !ok {
 		return DefaultWayZOrder, nil
 	}
-	ranks, err := decodeEnumArg(field, "ranks")
+	ranks, err := decodeEnumArg(column, "ranks")
 	if err != nil {
 		return nil, err
 	}
 	levelOffset := len(ranks)
 
 	defaultRank := 0
-	if val, ok := field.Args["default"].(float64); ok {
+	if val, ok := column.Args["default"].(float64); ok {
 		defaultRank = int(val)
 	}
 
@@ -361,9 +279,9 @@ func DefaultWayZOrder(val string, elem *element.OSMElem, geom *geom.Geometry, ma
 	return z
 }
 
-func MakeZOrder(fieldName string, fieldType FieldType, field Field) (MakeValue, error) {
+func MakeZOrder(columnName string, columnType ColumnType, column config.Column) (MakeValue, error) {
 	log.Print("warn: zorder type is deprecated and will be removed. See enumerate type.")
-	_rankList, ok := field.Args["ranks"]
+	_rankList, ok := column.Args["ranks"]
 	if !ok {
 		return nil, errors.New("missing ranks in args for zorder")
 	}
@@ -374,7 +292,7 @@ func MakeZOrder(fieldName string, fieldType FieldType, field Field) (MakeValue, 
 	}
 
 	var key string
-	_key, ok := field.Args["key"]
+	_key, ok := column.Args["key"]
 	if ok {
 		key, ok = _key.(string)
 		if !ok {
@@ -408,13 +326,13 @@ func MakeZOrder(fieldName string, fieldType FieldType, field Field) (MakeValue, 
 	return zOrder, nil
 }
 
-func MakeEnumerate(fieldName string, fieldType FieldType, field Field) (MakeValue, error) {
-	values, err := decodeEnumArg(field, "values")
+func MakeEnumerate(columnName string, columnType ColumnType, column config.Column) (MakeValue, error) {
+	values, err := decodeEnumArg(column, "values")
 	if err != nil {
 		return nil, err
 	}
 	enumerate := func(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
-		if field.Key != "" {
+		if column.Key != "" {
 			if r, ok := values[val]; ok {
 				return r
 			}
@@ -429,22 +347,22 @@ func MakeEnumerate(fieldName string, fieldType FieldType, field Field) (MakeValu
 	return enumerate, nil
 }
 
-func decodeEnumArg(field Field, key string) (map[string]int, error) {
-	_valuesList, ok := field.Args[key]
+func decodeEnumArg(column config.Column, key string) (map[string]int, error) {
+	_valuesList, ok := column.Args[key]
 	if !ok {
-		return nil, fmt.Errorf("missing '%v' in args for %s", key, field.Type)
+		return nil, errors.Errorf("missing '%v' in args for %s", key, column.Type)
 	}
 
 	valuesList, ok := _valuesList.([]interface{})
 	if !ok {
-		return nil, fmt.Errorf("'%v' in args for %s not a list", key, field.Type)
+		return nil, errors.Errorf("'%v' in args for %s not a list", key, column.Type)
 	}
 
 	values := make(map[string]int)
 	for i, value := range valuesList {
 		valueName, ok := value.(string)
 		if !ok {
-			return nil, fmt.Errorf("value in '%v' not a string", key)
+			return nil, errors.Errorf("value in '%v' not a string", key)
 		}
 
 		values[valueName] = i + 1
@@ -452,8 +370,8 @@ func decodeEnumArg(field Field, key string) (map[string]int, error) {
 	return values, nil
 }
 
-func MakeSuffixReplace(fieldName string, fieldType FieldType, field Field) (MakeValue, error) {
-	_changes, ok := field.Args["suffixes"]
+func MakeSuffixReplace(columnName string, columnType ColumnType, column config.Column) (MakeValue, error) {
+	_changes, ok := column.Args["suffixes"]
 	if !ok {
 		return nil, errors.New("missing suffixes in args for string_suffixreplace")
 	}
