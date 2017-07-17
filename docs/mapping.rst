@@ -92,6 +92,38 @@ Some column types require additional arguments. Refer to the documentation of th
 ``from_member`` is only valid for tables of the type ``relation_member``. If this is set to ``true``, then tags will be used from the member instead of the relation.
 
 
+``filter``
+~~~~~~~~~~
+
+You can limit which elements should be inserted into a table with filters.
+You can ``require`` specific tags or ``reject`` elements that have specific tags.
+``require`` and ``reject`` accept keys and a list of values, similar to a ``mapping``. You can use ``__any__`` to require or reject all values (e.g. ``amenity: [__any__]``).
+
+``require_regexp`` and ``reject_regexp`` can be used to filter values based on a regular expression.
+
+The following mapping only imports buildings with a `name` tag. Buildings with ``building=no`` or ``building=none`` or buildings with a non-numeric level are not imported.
+
+.. code-block:: yaml
+
+    tables:
+      buildings:
+        type: polygon
+        filter:
+          require:
+            name: [__any__]
+          reject:
+            building: [no, none]
+          reject_regexp:
+            level: '^\D+.*$'
+        mapping:
+          building: [__any__]
+        columns:
+          ...
+
+.. note::
+
+  Regular expressions in ``require_regexp`` and ``reject_regexp`` should be enclosed in single quotes (``'``). Otherwise YAML will interpret backslashes as escape sequences.
+
 Example
 ~~~~~~~
 
