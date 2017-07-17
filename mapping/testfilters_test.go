@@ -1,29 +1,32 @@
 package mapping
 
 import (
+	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/omniscale/imposm3/element"
 )
 
-// go test  ./mapping -run TestFilters_test_t0  -v
 func TestFilters_test_t0(t *testing.T) {
-
-	/* ./testfilters_test_mapping.yml ..
-
-	   filters:
-	     require:
-	       boundary: ["administrative","maritime"]
-	   mapping:
-	     admin_level: ['2','4']
-	   type: linestring
-
-	*/
 	filterTest(
-		// *testing.T
 		t,
-		// tablename
-		"testfilters_test_t0",
+		`
+tables:
+  testfilters_test_t0:
+    fields:
+    - name: id
+      type: id
+    - key: admin_level
+      name: admin_level
+      type: integer
+    filters:
+      require:
+        boundary: ["administrative","maritime"]
+    mapping:
+      admin_level: ['2','4']
+    type: linestring
+`,
 		// Accept
 		[]element.Tags{
 			element.Tags{"admin_level": "2", "boundary": "administrative"},
@@ -51,27 +54,27 @@ func TestFilters_test_t0(t *testing.T) {
 	)
 }
 
-// go test  ./mapping -run TestFilters_test_t1  -v
 func TestFilters_test_t1(t *testing.T) {
-
-	/* ./testfilters_test_mapping.yml ..
-
-	filters:
-		require:
-			admin_level: ["2","4"]
-	mapping:
-		boundary:
-		- administrative
-		- maritime
-	type: linestring
-
-	*/
-
 	filterTest(
-		// *testing.T
 		t,
-		// tablename
-		"testfilters_test_t1",
+		`
+tables:
+  testfilters_test_t1:
+    fields:
+    - name: id
+      type: id
+    - key: admin_level
+      name: admin_level
+      type: integer
+    filters:
+      require:
+        admin_level: ["2","4"]
+    mapping:
+      boundary:
+      - administrative
+      - maritime
+    type: linestring
+`,
 		// Accept
 		[]element.Tags{
 			element.Tags{"admin_level": "2", "boundary": "administrative"},
@@ -98,29 +101,30 @@ func TestFilters_test_t1(t *testing.T) {
 		},
 	)
 }
-
-// go test  ./mapping -run TestFilters_test_t2_building  -v
 func TestFilters_test_t2_building(t *testing.T) {
 
-	/* ./testfilters_test_mapping.yml ..
-	   filters:
-	     reject:
-	       building: ["no","none"]
-	     require_regexp:
-	       'addr:housenumber': '^\d+[a-zA-Z,]*$'
-	       building: '^[a-z_]+$'
-	   mapping:
-	     building:
-	     - __any__
-	   type: linestring
-
-	*/
-
 	filterTest(
-		// *testing.T
 		t,
-		// tablename
-		"testfilters_test_t2_building",
+		`
+tables:
+  testfilters_test_t2_building:
+    fields:
+    - name: id
+      type: id
+    - key: building
+      name: building
+      type: string
+    filters:
+      reject:
+        building: ["no","none"]
+      require_regexp:
+        'addr:housenumber': '^\d+[a-zA-Z,]*$'
+        building: '^[a-z_]+$'
+    mapping:
+      building:
+      - __any__
+    type: linestring
+`,
 		// Accept
 		[]element.Tags{
 			element.Tags{"building": "yes", "addr:housenumber": "1a"},
@@ -175,26 +179,31 @@ func TestFilters_test_t2_building(t *testing.T) {
 	)
 }
 
-// go test  ./mapping -run TestFilters_test_t3_highway_with_name  -v
 func TestFilters_testt3_highway_with_name(t *testing.T) {
-
-	/* ./testfilters_test_mapping.yml ..
-		filters:
-	      require:
-	        name: ["__any__"]
-	      reject:
-	        highway: ["no","none"]
-	    mapping:
-	      highway:
-	      - __any__
-	    type: linestring
-	*/
-
 	filterTest(
-		// *testing.T
 		t,
-		// tablename
-		"testfilters_test_t3_highway_with_name",
+		`
+tables:
+  testfilters_test_t3_highway_with_name:
+    fields:
+    - name: id
+      type: id
+    - key: highway
+      name: highway
+      type: string
+    - key: name
+      name: name
+      type: string
+    filters:
+      require:
+        name: ["__any__"]
+      reject:
+        highway: ["no","none"]
+    mapping:
+      highway:
+      - __any__
+    type: linestring
+`,
 		// Accept
 		[]element.Tags{
 			element.Tags{"highway": "residential", "name": "N1"},
@@ -240,40 +249,43 @@ func TestFilters_testt3_highway_with_name(t *testing.T) {
 	)
 }
 
-// go test  ./mapping -run TestFilters_test_t4_waterway_with_name  -v
 func TestFilters_test_t4_waterway_with_name(t *testing.T) {
-
-	/* ./testfilters_test_mapping.yml ..
-
-	   filters:
-	     require:
-	       name: ["__any__"]
-	       waterway:
-	       - stream
-	       - river
-	       - canal
-	       - drain
-	       - ditch
-	     reject:
-	       fixme: ['__any__']
-	       amenity: ['__any__']
-	       shop: ['__any__']
-	       building: ['__any__']
-	       tunnel: ['yes']
-	     reject_regexp:
-	       level: '^\D+.*$'
-	   mapping:
-	     waterway:
-	     - __any__
-	   type: linestring
-
-	*/
-
 	filterTest(
-		// *testing.T
 		t,
-		// tablename
-		"testfilters_test_t4_waterway_with_name",
+		`
+tables:
+  testfilters_test_t4_waterway_with_name:
+    fields:
+    - name: id
+      type: id
+    - key: waterway
+      name: waterway
+      type: string
+    - key: name
+      name: name
+      type: string
+    filters:
+      require:
+        name: ["__any__"]
+        waterway:
+        - stream
+        - river
+        - canal
+        - drain
+        - ditch
+      reject:
+        fixme: ['__any__']
+        amenity: ['__any__']
+        shop: ['__any__']
+        building: ['__any__']
+        tunnel: ['yes']
+      reject_regexp:
+        level: '^\D+.*$'
+    mapping:
+      waterway:
+      - __any__
+    type: linestring
+`,
 		// Accept
 		[]element.Tags{
 			element.Tags{"waterway": "stream", "name": "N1"},
@@ -346,40 +358,43 @@ func TestFilters_test_t4_waterway_with_name(t *testing.T) {
 	)
 }
 
-// go test  ./mapping -run TestFilters_test_t5_depricated_exclude_tags  -v
 func TestFilters_test_t5_depricated_exclude_tags(t *testing.T) {
-
-	/* ./testfilters_test_mapping.yml ..
-
-	   filters:
-	     require:
-	       waterway:
-	       - stream
-	       - river
-	       - canal
-	       - drain
-	       - ditch
-	     exclude_tags:
-	     - ['waterway', 'stream']
-	     - ['waterway', 'river']
-	     - ['waterway', 'canal']
-	     - ['waterway', 'drain']
-	     - ['waterway', 'ditch']
-	   mapping:
-	     waterway:
-	     - __any__
-	   type: linestring
-
-	comment:
-		the `exclude_tags` will be converted to `reject` filter`
-
-	*/
-
 	filterTest(
-		// *testing.T
 		t,
-		// tablename
-		"testfilters_test_t5_depricated_exclude_tags",
+		`
+tables:
+  testfilters_test_t5_depricated_exclude_tags:
+    _comment:  Allways Empty !
+    fields:
+    - name: id
+      type: id
+    - key: waterway
+      name: waterway
+      type: string
+    - key: name
+      name: name
+      type: string
+    filters:
+      require:
+        waterway:
+        - stream
+        - river
+        - canal
+        - drain
+        - ditch
+      # the exclude_tags will be converted to reject filter
+      # and  require and the reject filter will be same!
+      exclude_tags:
+      - ['waterway', 'stream']
+      - ['waterway', 'river']
+      - ['waterway', 'canal']
+      - ['waterway', 'drain']
+      - ['waterway', 'ditch']
+    mapping:
+      waterway:
+      - __any__
+    type: linestring
+`,
 		// Accept - in this case Must be EMPTY !
 		[]element.Tags{},
 		// Reject
@@ -434,14 +449,27 @@ func TestFilters_test_t5_depricated_exclude_tags(t *testing.T) {
 	)
 }
 
-func filterTest(t *testing.T, tablename string, accept []element.Tags, reject []element.Tags) {
-
+func filterTest(t *testing.T, mapping string, accept []element.Tags, reject []element.Tags) {
 	var configTestMapping *Mapping
 	var err error
 
-	configTestMapping, err = NewMapping("./testfilters_mapping.yml")
+	tmpfile, err := ioutil.TempFile("", "filter_test_mapping.yml")
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
+	}
+
+	defer os.Remove(tmpfile.Name())
+
+	if _, err := tmpfile.Write([]byte(mapping)); err != nil {
+		t.Fatal(err)
+	}
+	if err := tmpfile.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	configTestMapping, err = NewMapping(tmpfile.Name())
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	var actualMatch []Match
@@ -452,16 +480,8 @@ func filterTest(t *testing.T, tablename string, accept []element.Tags, reject []
 	for _, et := range accept {
 		elem.Tags = et
 		actualMatch = ls.MatchWay(&elem)
-
-		included := false
-		for _, mt := range actualMatch {
-			if tablename == mt.Table.Name {
-				included = true
-				break
-			}
-		}
-		if included == false {
-			t.Errorf("TestFilter - Not Accepted : (%s) (%+v)  ", tablename, et)
+		if len(actualMatch) == 0 {
+			t.Errorf("TestFilter - Not Accepted : (%+v)  ", et)
 		}
 	}
 
@@ -469,15 +489,8 @@ func filterTest(t *testing.T, tablename string, accept []element.Tags, reject []
 		elem.Tags = et
 		actualMatch = ls.MatchWay(&elem)
 
-		included := false
-		for _, mt := range actualMatch {
-			if tablename == mt.Table.Name {
-				included = true
-				break
-			}
-		}
-		if included == true {
-			t.Errorf("TestFilter - Not Rejected : (%s) (%+v)  ", tablename, et)
+		if len(actualMatch) != 0 {
+			t.Errorf("TestFilter - Not Rejected : (%+v)  ", et)
 		}
 	}
 
