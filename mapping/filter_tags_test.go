@@ -8,12 +8,12 @@ import (
 	"github.com/omniscale/imposm3/element"
 )
 
-func TestFilters_test_t0(t *testing.T) {
+func TestFilters_require(t *testing.T) {
 	filterTest(
 		t,
 		`
 tables:
-  testfilters_test_t0:
+  admin:
     fields:
     - name: id
       type: id
@@ -54,12 +54,13 @@ tables:
 	)
 }
 
-func TestFilters_test_t1(t *testing.T) {
+func TestFilters_require2(t *testing.T) {
+	// same as above, but mapping and filters are swapped
 	filterTest(
 		t,
 		`
 tables:
-  testfilters_test_t1:
+  admin:
     fields:
     - name: id
       type: id
@@ -101,13 +102,13 @@ tables:
 		},
 	)
 }
-func TestFilters_test_t2_building(t *testing.T) {
+func TestFilters_building(t *testing.T) {
 
 	filterTest(
 		t,
 		`
 tables:
-  testfilters_test_t2_building:
+  buildings:
     fields:
     - name: id
       type: id
@@ -179,12 +180,12 @@ tables:
 	)
 }
 
-func TestFilters_testt3_highway_with_name(t *testing.T) {
+func TestFilters_highway_with_name(t *testing.T) {
 	filterTest(
 		t,
 		`
 tables:
-  testfilters_test_t3_highway_with_name:
+  highway:
     fields:
     - name: id
       type: id
@@ -249,12 +250,12 @@ tables:
 	)
 }
 
-func TestFilters_test_t4_waterway_with_name(t *testing.T) {
+func TestFilters_waterway_with_name(t *testing.T) {
 	filterTest(
 		t,
 		`
 tables:
-  testfilters_test_t4_waterway_with_name:
+  waterway:
     fields:
     - name: id
       type: id
@@ -358,12 +359,12 @@ tables:
 	)
 }
 
-func TestFilters_test_t5_depricated_exclude_tags(t *testing.T) {
+func TestFilters_exclude_tags(t *testing.T) {
 	filterTest(
 		t,
 		`
 tables:
-  testfilters_test_t5_depricated_exclude_tags:
+  exclude_tags:
     _comment:  Allways Empty !
     fields:
     - name: id
@@ -377,15 +378,8 @@ tables:
     filters:
       require:
         waterway:
-        - stream
-        - river
-        - canal
-        - drain
-        - ditch
-      # the exclude_tags will be converted to reject filter
-      # and  require and the reject filter will be same!
+         - stream
       exclude_tags:
-      - ['waterway', 'stream']
       - ['waterway', 'river']
       - ['waterway', 'canal']
       - ['waterway', 'drain']
@@ -395,23 +389,24 @@ tables:
       - __any__
     type: linestring
 `,
-		// Accept - in this case Must be EMPTY !
-		[]element.Tags{},
-		// Reject
+		// Accept
 		[]element.Tags{
 			element.Tags{"waterway": "stream", "name": "N1"},
+			element.Tags{"waterway": "stream", "name": "N1", "tunnel": "no"},
+			element.Tags{"waterway": "stream", "name": "N1", "amenity": "parking"},
+		},
+		// Reject
+		[]element.Tags{
 			element.Tags{"waterway": "river", "name": "N2"},
 			element.Tags{"waterway": "canal", "name": "N3"},
 			element.Tags{"waterway": "drain", "name": "N4"},
 			element.Tags{"waterway": "ditch", "name": "N5"},
 
-			element.Tags{"waterway": "stream", "name": "N1", "tunnel": "no"},
 			element.Tags{"waterway": "river", "name": "N2", "boat": "no"},
 			element.Tags{"waterway": "canal", "name": "N3"},
 			element.Tags{"waterway": "ditch", "name": "N4", "level": "3"},
 
 			element.Tags{"waterway": "ditch", "name": "N1", "fixme": "incomplete"},
-			element.Tags{"waterway": "stream", "name": "N1", "amenity": "parking"},
 			element.Tags{"waterway": "river", "name": "N2", "shop": "hairdresser"},
 			element.Tags{"waterway": "canal", "name": "N3", "building": "house"},
 			element.Tags{"waterway": "drain", "name": "N1 tunnel", "tunnel": "yes"},
