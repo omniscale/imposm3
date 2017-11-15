@@ -68,19 +68,10 @@ Imposm 3 is much faster than Imposm 2 and osm2pgsql:
 * Efficient intermediate cache for reduced IO load during ways and relations building
 
 
-Some import times from a Hetzner EX 4S server (Intel i7-2600 CPU @ 3.40GHz, 32GB RAM and 2TB software RAID1 (2x2TB 7200rpm SATA disks)) for imports of a 20.5GB planet PBF (2013-06-14) with generalized tables:
+An import in diff-mode on a Hetzner PX121-SSD server (Intel Xeon E5-1650 v3 Hexa-Core, 256GB RAM and SSD RAID 1) of a 36GB planet PBF (2017-08-10) with generalized tables and spatial indices, etc. takes around 6:30h. This is for an import that is ready for minutely updates. The non-diff mode is even faster.
 
-* 6:30h in normal-mode
-* 13h in diff-mode
-
-osm2pgsql required between 2-8 days in a [similar benchmark (slide 7)](http://www.geofabrik.de/media/2012-09-08-osm2pgsql-performance.pdf) with a smaller planet PBF file (~15GB).
-
-Benchmarks with SSD are TBD.
-
-Import of Europe 11GB PBF with generalized tables:
-
-* 2:20h in normal-mode
-
+It's recommended that the memory size of the server is roughly twice the size of the PBF extract you are importing. For example: You should have 64GB RAM or more for a current (2017) 36GB planet file, 8GB for a 4GB regional extract, etc.
+Imports without SSDs will take longer.
 
 Current status
 --------------
@@ -111,7 +102,7 @@ There are some dependencies:
 
 #### Compiler
 
-You need [Go >=1.5](http://golang.org).
+You need [Go >=1.6](http://golang.org).
 
 #### C/C++ libraries
 
@@ -126,17 +117,6 @@ For best performance use [HyperLevelDB][libhyperleveldb] as an in-place replacem
 [libgeos]: http://trac.osgeo.org/geos/
 [protobuf]: https://code.google.com/p/protobuf/
 
-#### Go libraries
-
-Imposm3 uses the following Go libraries.
-
-- <https://github.com/jmhodges/levigo>
-- <https://github.com/golang/protobuf/proto>
-- <https://github.com/lib/pq>
-- <https://gopkg.in/yaml.v2>
-
-These libraries are already vendorized (i.e. the source code is included in the Imposm repository) and there is no need to install them separately.
-
 #### Compile
 
 Create a [Go workspace](http://golang.org/doc/code.html) by creating the `GOPATH` directory for all your Go code, if you don't have one already:
@@ -144,10 +124,6 @@ Create a [Go workspace](http://golang.org/doc/code.html) by creating the `GOPATH
     mkdir -p go
     cd go
     export GOPATH=`pwd`
-
-Then you need to enable GO15VENDOREXPERIMENT, if you are using Go 1.5. You can skip this if you are using 1.6 or higher:
-
-    export GO15VENDOREXPERIMENT=1
 
 Get the code and install Imposm 3:
 
