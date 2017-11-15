@@ -3,7 +3,6 @@ package binary
 import (
 	"math"
 	"math/rand"
-	"runtime"
 	"testing"
 
 	"github.com/omniscale/imposm3/element"
@@ -49,6 +48,7 @@ func TestMarshalDeltaCoords(t *testing.T) {
 }
 
 func BenchmarkMarshalDeltaCoords(b *testing.B) {
+	b.ReportAllocs()
 	var buf []byte
 
 	for n := 0; n < b.N; n++ {
@@ -57,10 +57,10 @@ func BenchmarkMarshalDeltaCoords(b *testing.B) {
 	nodes2, _ := UnmarshalDeltaNodes(buf, nil)
 
 	compareNodes(b, nodes, nodes2)
-	runtime.GC()
 }
 
 func BenchmarkUnmarshalDeltaCoords(b *testing.B) {
+	b.ReportAllocs()
 	buf := MarshalDeltaNodes(nodes, nil)
 
 	var nodes2 []element.Node
@@ -69,6 +69,5 @@ func BenchmarkUnmarshalDeltaCoords(b *testing.B) {
 	}
 
 	compareNodes(b, nodes, nodes2)
-	runtime.GC()
 
 }

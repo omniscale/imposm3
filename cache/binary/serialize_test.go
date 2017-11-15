@@ -69,6 +69,35 @@ func TestMarshalWay(t *testing.T) {
 
 }
 
+func BenchmarkMarshalWay(b *testing.B) {
+	b.ReportAllocs()
+	way := &element.Way{}
+	way.Id = 12345
+	way.Tags = make(element.Tags)
+	way.Tags["name"] = "test"
+	way.Tags["highway"] = "trunk"
+	way.Refs = append(way.Refs, 1, 2, 3, 4)
+
+	for i := 0; i < b.N; i++ {
+		_, _ = MarshalWay(way)
+	}
+}
+
+func BenchmarkUnmarshalWay(b *testing.B) {
+	b.ReportAllocs()
+	way := &element.Way{}
+	way.Id = 12345
+	way.Tags = make(element.Tags)
+	way.Tags["name"] = "test"
+	way.Tags["highway"] = "trunk"
+	way.Refs = append(way.Refs, 1, 2, 3, 4)
+
+	data, _ := MarshalWay(way)
+	for i := 0; i < b.N; i++ {
+		_, _ = UnmarshalWay(data)
+	}
+}
+
 func TestMarshalRelation(t *testing.T) {
 	rel := &element.Relation{}
 	rel.Id = 12345

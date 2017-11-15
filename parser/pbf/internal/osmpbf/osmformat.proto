@@ -19,6 +19,7 @@ option optimize_for = LITE_RUNTIME;
 option java_package = "crosby.binary";
 package osmpbf;
 
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 /* OSM Binary file format
 
 This is the master schema file of the OSM binary file format. This
@@ -114,11 +115,11 @@ message PrimitiveBlock {
 
 // Group of OSMPrimitives. All primitives in a group must be the same type.
 message PrimitiveGroup {
-  repeated Node     nodes = 1;
+  repeated Node     nodes = 1 [(gogoproto.nullable) = false];
   optional DenseNodes dense = 2;
-  repeated Way      ways = 3;
-  repeated Relation relations = 4;
-  repeated ChangeSet changesets = 5;
+  repeated Way      ways = 3 [(gogoproto.nullable) = false];
+  repeated Relation relations = 4 [(gogoproto.nullable) = false];
+  repeated ChangeSet changesets = 5 [(gogoproto.nullable) = false];
 }
 
 
@@ -195,7 +196,7 @@ message Node {
    repeated uint32 keys = 2 [packed = true]; // String IDs.
    repeated uint32 vals = 3 [packed = true]; // String IDs.
 
-   optional Info info = 4; // May be omitted in omitmeta
+   optional Info info = 4 [(gogoproto.nullable) = false]; // May be omitted in omitmeta
 
    required sint64 lat = 8;
    required sint64 lon = 9;
@@ -233,7 +234,7 @@ message Way {
    repeated uint32 keys = 2 [packed = true];
    repeated uint32 vals = 3 [packed = true];
 
-   optional Info info = 4;
+   optional Info info = 4 [(gogoproto.nullable) = false];
 
    repeated sint64 refs = 8 [packed = true];  // DELTA coded
 }
@@ -250,7 +251,7 @@ message Relation {
    repeated uint32 keys = 2 [packed = true];
    repeated uint32 vals = 3 [packed = true];
 
-   optional Info info = 4;
+   optional Info info = 4 [(gogoproto.nullable) = false];
 
    // Parallel arrays
    repeated int32 roles_sid = 8 [packed = true];

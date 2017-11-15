@@ -1,7 +1,6 @@
 package binary
 
 import (
-	"github.com/golang/protobuf/proto"
 	"github.com/omniscale/imposm3/element"
 )
 
@@ -15,25 +14,16 @@ func IntToCoord(coord uint32) float64 {
 	return float64((float64(coord) / COORD_FACTOR) - 180.0)
 }
 
-func Marshal(elem interface{}) ([]byte, error) {
-	switch typedElem := elem.(type) {
-	case element.Node:
-		return MarshalNode(&typedElem)
-	default:
-		panic("invalid elem to marshal")
-	}
-}
-
 func MarshalNode(node *element.Node) ([]byte, error) {
 	pbfNode := &Node{}
 	pbfNode.fromWgsCoord(node.Long, node.Lat)
 	pbfNode.Tags = tagsAsArray(node.Tags)
-	return proto.Marshal(pbfNode)
+	return pbfNode.Marshal()
 }
 
 func UnmarshalNode(data []byte) (node *element.Node, err error) {
 	pbfNode := &Node{}
-	err = proto.Unmarshal(data, pbfNode)
+	err = pbfNode.Unmarshal(data)
 	if err != nil {
 		return nil, err
 	}
@@ -69,12 +59,12 @@ func MarshalWay(way *element.Way) ([]byte, error) {
 	deltaPack(way.Refs)
 	pbfWay.Refs = way.Refs
 	pbfWay.Tags = tagsAsArray(way.Tags)
-	return proto.Marshal(pbfWay)
+	return pbfWay.Marshal()
 }
 
 func UnmarshalWay(data []byte) (way *element.Way, err error) {
 	pbfWay := &Way{}
-	err = proto.Unmarshal(data, pbfWay)
+	err = pbfWay.Unmarshal(data)
 	if err != nil {
 		return nil, err
 	}
@@ -97,12 +87,12 @@ func MarshalRelation(relation *element.Relation) ([]byte, error) {
 		pbfRelation.MemberRoles[i] = m.Role
 	}
 	pbfRelation.Tags = tagsAsArray(relation.Tags)
-	return proto.Marshal(pbfRelation)
+	return pbfRelation.Marshal()
 }
 
 func UnmarshalRelation(data []byte) (relation *element.Relation, err error) {
 	pbfRelation := &Relation{}
-	err = proto.Unmarshal(data, pbfRelation)
+	err = pbfRelation.Unmarshal(data)
 	if err != nil {
 		return nil, err
 	}

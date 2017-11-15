@@ -8,7 +8,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
+	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/parser/pbf/internal/osmpbf"
 )
 
@@ -36,6 +37,44 @@ func BenchmarkHello(b *testing.B) {
 		// return
 	}
 
+}
+
+func BenchmarkParser(b *testing.B) {
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		p, err := NewParser("./monaco-20150428.osm.pbf")
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		coords := make(chan []element.Node)
+		nodes := make(chan []element.Node)
+		ways := make(chan []element.Way)
+		relations := make(chan []element.Relation)
+		go func() {
+			for _ = range coords {
+			}
+		}()
+		go func() {
+			for _ = range nodes {
+			}
+		}()
+		go func() {
+			for _ = range ways {
+			}
+		}()
+		go func() {
+			for _ = range relations {
+			}
+		}()
+
+		p.Parse(coords, nodes, ways, relations)
+
+		close(coords)
+		close(nodes)
+		close(ways)
+		close(relations)
+	}
 }
 
 func BenchmarkPrimitiveBlock(b *testing.B) {

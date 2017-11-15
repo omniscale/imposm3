@@ -93,7 +93,7 @@ func parseTags(stringtable stringTable, keys []uint32, vals []uint32) map[string
 }
 
 func readNodes(
-	nodes []*osmpbf.Node,
+	nodes []osmpbf.Node,
 	block *osmpbf.PrimitiveBlock,
 	stringtable stringTable) ([]element.Node, []element.Node) {
 
@@ -105,9 +105,9 @@ func readNodes(
 	coordScale := 0.000000001
 
 	for i := range nodes {
-		id := *nodes[i].Id
-		lon := *nodes[i].Lon
-		lat := *nodes[i].Lat
+		id := nodes[i].Id
+		lon := nodes[i].Lon
+		lat := nodes[i].Lat
 		coords[i].Id = id
 		coords[i].Long = (coordScale * float64(lonOffset+(granularity*lon)))
 		coords[i].Lat = (coordScale * float64(latOffset+(granularity*lat)))
@@ -139,14 +139,14 @@ func parseDeltaRefs(refs []int64) []int64 {
 }
 
 func readWays(
-	ways []*osmpbf.Way,
+	ways []osmpbf.Way,
 	block *osmpbf.PrimitiveBlock,
 	stringtable stringTable) []element.Way {
 
 	result := make([]element.Way, len(ways))
 
 	for i := range ways {
-		id := *ways[i].Id
+		id := ways[i].Id
 		result[i].Id = id
 		result[i].Tags = parseTags(stringtable, ways[i].Keys, ways[i].Vals)
 		result[i].Refs = parseDeltaRefs(ways[i].Refs)
@@ -154,7 +154,7 @@ func readWays(
 	return result
 }
 
-func parseRelationMembers(rel *osmpbf.Relation, stringtable stringTable) []element.Member {
+func parseRelationMembers(rel osmpbf.Relation, stringtable stringTable) []element.Member {
 	result := make([]element.Member, len(rel.Memids))
 
 	var lastId int64
@@ -168,14 +168,14 @@ func parseRelationMembers(rel *osmpbf.Relation, stringtable stringTable) []eleme
 }
 
 func readRelations(
-	relations []*osmpbf.Relation,
+	relations []osmpbf.Relation,
 	block *osmpbf.PrimitiveBlock,
 	stringtable stringTable) []element.Relation {
 
 	result := make([]element.Relation, len(relations))
 
 	for i := range relations {
-		id := *relations[i].Id
+		id := relations[i].Id
 		result[i].Id = id
 		result[i].Tags = parseTags(stringtable, relations[i].Keys, relations[i].Vals)
 		result[i].Members = parseRelationMembers(relations[i], stringtable)
