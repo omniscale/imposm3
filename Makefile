@@ -1,6 +1,6 @@
 .PHONY: test all build clean test test-system test-unit update_version docs
 
-PROTOFILES=$(shell find . -name \*.proto)
+PROTOFILES=$(shell find . -name \*.proto -not -path ./vendor/\*)
 PBGOFILES=$(patsubst %.proto,%.pb.go,$(PROTOFILES))
 GOFILES=$(shell find . \( -name \*.go ! -name version.go \) )
 
