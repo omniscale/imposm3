@@ -1,12 +1,18 @@
 language: go
 
 go:
- - 1.6.3
- - 1.7.1
+ - 1.8.5
+ - 1.9.2
  - tip
 
 addons:
-    postgresql: "9.3"
+    postgresql: "9.5"
+    apt:
+      packages:
+        - postgresql-9.5-postgis-2.3
+        - libgeos-dev
+        - libprotobuf-dev
+        - osmosis
 
 before_script:
   - psql -U postgres -c 'create database travis' || true
@@ -18,13 +24,10 @@ env:
     - PGUSER=postgres
 
 install:
-  - sudo apt-get update -y
-  - sudo apt-get install -y libgeos-dev libprotobuf-dev osmosis
   - LEVELDB_VER=1.18
   - curl -fsSL https://github.com/google/leveldb/archive/v${LEVELDB_VER}.tar.gz | tar -C ${HOME} -xzf -
   - make -C ${HOME}/leveldb-${LEVELDB_VER} -j2
   - sudo mv ${HOME}/leveldb-${LEVELDB_VER}/libleveldb* /usr/lib
   - sudo cp -a ${HOME}/leveldb-${LEVELDB_VER}/include/leveldb /usr/include
-  - go get github.com/tools/godep
 
 script: make
