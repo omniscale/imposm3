@@ -19,7 +19,7 @@ func TestLineString(t *testing.T) {
 	}
 
 	if geom.Length() != 10.0 {
-		t.Fatal(geom.Length)
+		t.Fatal(geom.Length())
 	}
 }
 
