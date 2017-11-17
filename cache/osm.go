@@ -17,13 +17,12 @@ var (
 const SKIP int64 = -1
 
 type OSMCache struct {
-	dir          string
-	Coords       *DeltaCoordsCache
-	Ways         *WaysCache
-	Nodes        *NodesCache
-	Relations    *RelationsCache
-	InsertedWays *InsertedWaysCache
-	opened       bool
+	dir       string
+	Coords    *DeltaCoordsCache
+	Ways      *WaysCache
+	Nodes     *NodesCache
+	Relations *RelationsCache
+	opened    bool
 }
 
 func (c *OSMCache) Close() {
@@ -42,10 +41,6 @@ func (c *OSMCache) Close() {
 	if c.Relations != nil {
 		c.Relations.Close()
 		c.Relations = nil
-	}
-	if c.InsertedWays != nil {
-		c.InsertedWays.Close()
-		c.InsertedWays = nil
 	}
 }
 
@@ -74,11 +69,6 @@ func (c *OSMCache) Open() error {
 		return err
 	}
 	c.Relations, err = newRelationsCache(filepath.Join(c.dir, "relations"))
-	if err != nil {
-		c.Close()
-		return err
-	}
-	c.InsertedWays, err = newInsertedWaysCache(filepath.Join(c.dir, "inserted_ways"))
 	if err != nil {
 		c.Close()
 		return err

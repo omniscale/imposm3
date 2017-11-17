@@ -125,32 +125,6 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 		}
 	}
 
-	if deleteMembers && deletedPolygon {
-		// delete members from db and force reinsert of members
-		// use case: relation is deleted and member now stands for its own
-
-		// TODO: still needed after old-style mp removal, remove when #148 is closed
-		for _, member := range elem.Members {
-			if member.Type == element.WAY {
-				d.deletedMembers[member.Id] = struct{}{}
-				if _, ok := d.deletedWays[member.Id]; ok {
-					continue
-				}
-				for _, r := range d.diffCache.Ways.Get(member.Id) {
-					if err := d.deleteRelation(r, false, false); err != nil {
-						return err
-					}
-				}
-				if err := d.deleteWay(member.Id, false); err != nil {
-					return err
-				}
-			}
-		}
-	}
-
-	if err := d.osmCache.InsertedWays.DeleteMembers(elem.Members); err != nil {
-		return err
-	}
 	if deleted && d.expireor != nil {
 		if err := d.osmCache.Ways.FillMembers(elem.Members); err != nil {
 			return err

@@ -471,7 +471,7 @@
   </way>
 
 
-  <!-- test multipolygon way was _not_ inserted -->
+  <!-- Old-style-mp: test multipolygon way is now inserted -->
   <node id="9001" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="80"/>
   <node id="9002" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="82"/>
   <node id="9003" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="82"/>
@@ -484,6 +484,7 @@
     <nd ref="9001"/>
     <tag k="landuse" v="park"/>
     <tag k="ref" v="42"/> <!-- unrelated tag -->
+    <tag k="name" v="way 9009"/>
   </way>
   <relation id="9001" version="1" timestamp="2011-11-11T00:11:11Z">
     <member type="way" ref="9009" role="outer"/>
@@ -492,7 +493,7 @@
     <tag k="type" v="multipolygon"/>
   </relation>
 
-  <!-- test multipolygon way was _not_ inserted, but hole is -->
+  <!-- Old-style-mp: test multipolygon way is now inserted -->
   <node id="9101" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="80"/>
   <node id="9102" version="1" timestamp="2011-11-11T00:11:11Z" lat="47" lon="82"/>
   <node id="9103" version="1" timestamp="2011-11-11T00:11:11Z" lat="49" lon="82"/>
@@ -509,6 +510,7 @@
     <nd ref="9101"/>
     <tag k="landuse" v="park"/>
     <tag k="ref" v="42"/> <!-- unrelated tag -->
+    <tag k="name" v="way 9109"/>
   </way>
   <way id="9110" version="1" timestamp="2011-11-11T00:11:11Z">
     <nd ref="9111"/>
@@ -775,7 +777,7 @@
     <tag k="railway" v="tram"/>
   </way>
 
-  <!-- test outer way not inserted (different tag but same table) -->
+  <!-- Old-style-mp: test outer/inner way are now inserted -->
   <node id="19001" version="1" timestamp="2011-11-11T00:11:11Z" lat="21" lon="89"/>
   <node id="19002" version="1" timestamp="2011-11-11T00:11:11Z" lat="21" lon="90"/>
   <node id="19003" version="1" timestamp="2011-11-11T00:11:11Z" lat="24" lon="90"/>

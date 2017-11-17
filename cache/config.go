@@ -21,13 +21,12 @@ type coordsCacheOptions struct {
 	BunchCacheCapacity int
 }
 type osmCacheOptions struct {
-	Coords       coordsCacheOptions
-	Ways         cacheOptions
-	Nodes        cacheOptions
-	Relations    cacheOptions
-	InsertedWays cacheOptions
-	CoordsIndex  cacheOptions
-	WaysIndex    cacheOptions
+	Coords      coordsCacheOptions
+	Ways        cacheOptions
+	Nodes       cacheOptions
+	Relations   cacheOptions
+	CoordsIndex cacheOptions
+	WaysIndex   cacheOptions
 }
 
 const defaultConfig = `
@@ -61,13 +60,6 @@ const defaultConfig = `
         "BlockSizeK": 0,
         "MaxOpenFiles": 64,
         "BlockRestartInterval": 128
-    },
-    "InsertedWays": {
-        "CacheSizeM": 0,
-        "WriteBufferSizeM": 0,
-        "BlockSizeK": 0,
-        "MaxOpenFiles": 0,
-        "BlockRestartInterval": 0
     },
     "CoordsIndex": {
         "CacheSizeM": 32,

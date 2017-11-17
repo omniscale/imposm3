@@ -72,11 +72,6 @@ func (ww *WayWriter) loop() {
 		if len(w.Tags) == 0 {
 			continue
 		}
-		insertedAsRelation, err := ww.osmCache.InsertedWays.IsInserted(w.Id)
-		if err != nil {
-			log.Warn(err)
-			continue
-		}
 
 		filled := false
 		// fill loads all coords. call only if we have a match
@@ -95,6 +90,7 @@ func (ww *WayWriter) loop() {
 
 		w.Id = ww.wayId(w.Id)
 
+		var err error
 		inserted := false
 		insertedPolygon := false
 		if matches := ww.lineMatcher.MatchWay(w); len(matches) > 0 {
@@ -109,20 +105,17 @@ func (ww *WayWriter) loop() {
 				continue
 			}
 		}
-		if !insertedAsRelation {
-			// only add polygons that were not inserted as a MultiPolygon relation
-			if matches := ww.polygonMatcher.MatchWay(w); len(matches) > 0 {
-				if !fill(w) {
-					continue
-				}
-				if w.IsClosed() {
-					err, insertedPolygon = ww.buildAndInsert(geos, w, matches, true)
-					if err != nil {
-						if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
-							log.Warn(err)
-						}
-						continue
+		if matches := ww.polygonMatcher.MatchWay(w); len(matches) > 0 {
+			if !fill(w) {
+				continue
+			}
+			if w.IsClosed() {
+				err, insertedPolygon = ww.buildAndInsert(geos, w, matches, true)
+				if err != nil {
+					if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
+						log.Warn(err)
 					}
+					continue
 				}
 			}
 		}

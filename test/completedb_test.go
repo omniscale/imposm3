@@ -155,12 +155,14 @@ func TestComplete_NodeWayInsertedTwice(t *testing.T) {
 	}
 }
 
-func TestComplete_OuterWayNotInserted(t *testing.T) {
-	// Outer way with different tag is not inserted twice into same table
+func TestComplete_OuterWayInsertedTwice(t *testing.T) {
+	// Outer way with different tag value is inserted twice into same table
+	// behavior changed from pre-old-style-mp-removal:
+	//    test outer way not inserted (different tag but same table)
 	assertRecords(t, []checkElem{
 		{"osm_landusages", -19001, "farmland", nil},
 		{"osm_landusages", 19002, "farmyard", nil},
-		{"osm_landusages", 19001, Missing, nil},
+		{"osm_landusages", 19001, "farm", nil},
 	})
 }
 
@@ -206,13 +208,13 @@ func TestComplete_WayRelRefAfterDelete1(t *testing.T) {
 	})
 }
 
-func TestComplete_RelationWayNotInserted(t *testing.T) {
-	// Part of relation was inserted only once.
+func TestComplete_OldStyleMpRelationWayInserted(t *testing.T) {
+	// Old-style-mp: Part of relation is now inserted.
 	assertRecords(t, []checkElem{
 		{"osm_landusages", -9001, "park", map[string]string{"name": "rel 9001"}},
-		{"osm_landusages", 9009, Missing, nil},
+		{"osm_landusages", 9009, "park", map[string]string{"name": "way 9009"}},
 		{"osm_landusages", -9101, "park", map[string]string{"name": "rel 9101"}},
-		{"osm_landusages", 9109, Missing, nil},
+		{"osm_landusages", 9109, "park", map[string]string{"name": "way 9109"}},
 		{"osm_landusages", 9110, "scrub", nil},
 	})
 }

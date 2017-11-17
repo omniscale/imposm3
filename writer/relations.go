@@ -197,12 +197,6 @@ func handleMultiPolygon(rw *RelationWriter, r *element.Relation, geos *geosp.Geo
 		}
 	}
 
-	for _, m := range mapping.SelectRelationPolygons(rw.polygonMatcher, r) {
-		err = rw.osmCache.InsertedWays.PutWay(m.Way)
-		if err != nil {
-			log.Warn(err)
-		}
-	}
 	return true
 }
 
