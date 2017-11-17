@@ -14,12 +14,6 @@ import (
 	"github.com/omniscale/imposm3/element"
 )
 
-type byInt64 []int64
-
-func (a byInt64) Len() int           { return len(a) }
-func (a byInt64) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a byInt64) Less(i, j int) bool { return a[i] < a[j] }
-
 type DiffCache struct {
 	Dir       string
 	Coords    *CoordsRefIndex    // Stores which ways a coord references

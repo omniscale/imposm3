@@ -366,14 +366,14 @@ func (m *Mapping) addFilters(filters tableElementFilters) {
 			log.Print("warn: exclude_tags filter is deprecated and will be removed. See require and reject filter.")
 			for _, filterKeyVal := range *t.Filters.ExcludeTags {
 				// Convert `exclude_tags`` filter to `reject` filter !
-				keyname := string(filterKeyVal[0])
+				keyname := filterKeyVal[0]
 				vararr := []config.OrderedValue{
 					{
 						Value: config.Value(filterKeyVal[1]),
 						Order: 1,
 					},
 				}
-				filters[name] = append(filters[name], makeFiltersFunction(name, false, true, string(keyname), vararr))
+				filters[name] = append(filters[name], makeFiltersFunction(name, false, true, keyname, vararr))
 
 			}
 		}

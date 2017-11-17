@@ -409,15 +409,3 @@ func MakeSuffixReplace(columnName string, columnType ColumnType, column config.C
 
 	return suffixReplace, nil
 }
-
-func asHex(b []byte) string {
-	digits := "0123456789ABCDEF"
-	buf := make([]byte, 0, len(b)*2)
-	n := len(b)
-
-	for i := 0; i < n; i++ {
-		c := b[i]
-		buf = append(buf, digits[c>>4], digits[c&0xF])
-	}
-	return string(buf)
-}

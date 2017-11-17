@@ -19,11 +19,6 @@ type object struct {
 	Properties  map[string]interface{} `json:"properties"`
 }
 
-type geometry struct {
-	Type        string        `json:"type"`
-	Coordinates []interface{} `json:"coordinates"`
-}
-
 type Point struct {
 	Long float64
 	Lat  float64
@@ -71,11 +66,6 @@ func newLineStringFromCoords(coords []interface{}) (LineString, error) {
 }
 
 type Polygon []LineString
-
-type polygonFeature struct {
-	polygon    Polygon
-	properties map[string]string
-}
 
 type Feature struct {
 	Polygon    Polygon

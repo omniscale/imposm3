@@ -54,12 +54,6 @@ type tileKey struct {
 	Y uint32
 }
 
-type tile struct {
-	x uint32
-	y uint32
-	z uint32
-}
-
 func NewTileList(zoom int, out string) *TileList {
 	return &TileList{
 		tiles: make(map[tileKey]struct{}),

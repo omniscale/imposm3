@@ -27,14 +27,6 @@ func (t *simpleColumnType) GeneralizeSql(colSpec *ColumnSpec, spec *GeneralizedT
 	return "\"" + colSpec.Name + "\""
 }
 
-type hstoreColumnType struct {
-	simpleColumnType
-}
-
-func (t *hstoreColumnType) PrepareInsertSql(i int, spec *TableSpec) string {
-	return fmt.Sprintf("$%d::hstore", i)
-}
-
 type geometryType struct {
 	name string
 }
