@@ -14,7 +14,11 @@ func TestFromPBF(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if state.Sequence != 1368231 || !state.Time.Equal(expected) {
-		t.Error(state)
+	if state.Sequence > 1368233 || state.Sequence < 1360000 {
+		// sequence is only estimated
+		t.Error("unexpected sequence", state)
+	}
+	if !state.Time.Equal(expected) {
+		t.Error("unexpected timestamp", state)
 	}
 }
