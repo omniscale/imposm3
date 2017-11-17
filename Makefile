@@ -1,8 +1,8 @@
 .PHONY: test all build clean test test-system test-unit update_version docs
 
-PROTOFILES=$(shell find . -name \*.proto -not -path ./vendor/\*)
+PROTOFILES=$(shell find . -name \*.proto | grep -v vendor/ )
 PBGOFILES=$(patsubst %.proto,%.pb.go,$(PROTOFILES))
-GOFILES=$(shell find . \( -name \*.go ! -name version.go \) )
+GOFILES=$(shell find . \( -name \*.go ! -name version.go \) | grep -v .pb.go )
 
 # for protoc-gen-go
 export PATH := $(GOPATH)/bin:$(PATH)
