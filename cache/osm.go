@@ -175,6 +175,11 @@ func (c *cache) open(path string) error {
 	if c.options.BlockSizeK > 0 {
 		opts.SetBlockSize(c.options.BlockSizeK * 1024)
 	}
+	if c.options.MaxFileSizeM > 0 {
+		// max file size option is only available with LevelDB 1.21 and higher
+		// build with -tags="ldppost121" to enable this option.
+		setMaxFileSize(opts, c.options.MaxFileSizeM*1024*1024)
+	}
 
 	db, err := levigo.Open(path, opts)
 	if err != nil {
@@ -183,6 +188,7 @@ func (c *cache) open(path string) error {
 	c.db = db
 	c.wo = levigo.NewWriteOptions()
 	c.ro = levigo.NewReadOptions()
+
 	return nil
 }
 
@@ -213,5 +219,4 @@ func (c *cache) Close() {
 		c.cache.Close()
 		c.cache = nil
 	}
-
 }

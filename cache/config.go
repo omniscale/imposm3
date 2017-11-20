@@ -13,6 +13,7 @@ type cacheOptions struct {
 	BlockRestartInterval int
 	WriteBufferSizeM     int
 	BlockSizeK           int
+	MaxFileSizeM         int
 }
 
 type coordsCacheOptions struct {
@@ -36,6 +37,7 @@ const defaultConfig = `
         "WriteBufferSizeM": 64,
         "BlockSizeK": 0,
         "MaxOpenFiles": 64,
+        "MaxFileSizeM": 32,
         "BlockRestartInterval": 256,
         "BunchSize": 32,
         "BunchCacheCapacity": 8096
@@ -45,6 +47,7 @@ const defaultConfig = `
         "WriteBufferSizeM": 64,
         "BlockSizeK": 0,
         "MaxOpenFiles": 64,
+        "MaxFileSizeM": 32,
         "BlockRestartInterval": 128
     },
     "Ways": {
@@ -52,6 +55,7 @@ const defaultConfig = `
         "WriteBufferSizeM": 64,
         "BlockSizeK": 0,
         "MaxOpenFiles": 64,
+        "MaxFileSizeM": 32,
         "BlockRestartInterval": 128
     },
     "Relations": {
@@ -59,6 +63,7 @@ const defaultConfig = `
         "WriteBufferSizeM": 64,
         "BlockSizeK": 0,
         "MaxOpenFiles": 64,
+        "MaxFileSizeM": 32,
         "BlockRestartInterval": 128
     },
     "CoordsIndex": {
@@ -66,6 +71,7 @@ const defaultConfig = `
         "WriteBufferSizeM": 128,
         "BlockSizeK": 0,
         "MaxOpenFiles": 256,
+        "MaxFileSizeM": 8,
         "BlockRestartInterval": 256
     },
     "WaysIndex": {
@@ -73,6 +79,7 @@ const defaultConfig = `
         "WriteBufferSizeM": 64,
         "BlockSizeK": 0,
         "MaxOpenFiles": 64,
+        "MaxFileSizeM": 8,
         "BlockRestartInterval": 128
     }
 }
