@@ -28,8 +28,9 @@ func goLogString(msg *C.char) {
 }
 
 type Geos struct {
-	v    C.GEOSContextHandle_t
-	srid int
+	v         C.GEOSContextHandle_t
+	srid      int
+	wkbwriter *C.GEOSWKBWriter
 }
 
 type Geom struct {

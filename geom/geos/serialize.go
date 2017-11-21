@@ -54,24 +54,28 @@ func (this *Geos) AsWkb(geom *Geom) []byte {
 }
 
 func (this *Geos) AsEwkbHex(geom *Geom) []byte {
-	writer := C.GEOSWKBWriter_create_r(this.v)
-	if writer == nil {
-		return nil
+	if this.wkbwriter == nil {
+		this.wkbwriter = C.GEOSWKBWriter_create_r(this.v)
+		if this.wkbwriter == nil {
+			return nil
+		}
+		if this.srid != 0 {
+			C.GEOSWKBWriter_setIncludeSRID_r(this.v, this.wkbwriter, C.char(1))
+		}
 	}
-	defer C.GEOSWKBWriter_destroy_r(this.v, writer)
 
 	if this.srid != 0 {
-		C.GEOSWKBWriter_setIncludeSRID_r(this.v, writer, C.char(1))
 		C.GEOSSetSRID_r(this.v, geom.v, C.int(this.srid))
 	}
 
 	var size C.size_t
-	buf := C.GEOSWKBWriter_writeHEX_r(this.v, writer, geom.v, &size)
+	buf := C.GEOSWKBWriter_writeHEX_r(this.v, this.wkbwriter, geom.v, &size)
 	if buf == nil {
 		return nil
 	}
 	result := C.GoBytes(unsafe.Pointer(buf), C.int(size))
 	C.free(unsafe.Pointer(buf))
+
 	return result
 
 }
