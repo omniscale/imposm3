@@ -139,7 +139,10 @@ func (ww *WayWriter) buildAndInsert(g *geos.Geos, w *element.Way, matches []mapp
 	if isPolygon {
 		geosgeom, err = geomp.Polygon(g, way.Nodes)
 		if err == nil {
-			geosgeom, err = g.MakeValid(geosgeom)
+			if g.NumCoordinates(geosgeom) > 5 {
+				// only check for valididty for non-simple geometries
+				geosgeom, err = g.MakeValid(geosgeom)
+			}
 		}
 	} else {
 		geosgeom, err = geomp.LineString(g, way.Nodes)

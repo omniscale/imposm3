@@ -112,6 +112,11 @@ func (this *Geos) NumGeoms(geom *Geom) int32 {
 	return count
 }
 
+func (this *Geos) NumCoordinates(geom *Geom) int32 {
+	count := int32(C.GEOSGetNumCoordinates_r(this.v, geom.v))
+	return count
+}
+
 func (this *Geos) Geoms(geom *Geom) []*Geom {
 	count := this.NumGeoms(geom)
 	var result []*Geom
