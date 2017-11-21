@@ -43,7 +43,10 @@ EOF
 set -e
 # set -x
 
-REVISION=${1:-master}
+REVISION=${REVISION:-master}
+if [[ -z "$IMPOSM_BUILD_RELEASE" ]]; then
+    unset IMPOSM_BUILD_RELEASE
+fi
 
 BUILD_BASE=$HOME/imposm
 PREFIX=$BUILD_BASE/local
