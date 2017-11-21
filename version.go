@@ -7,6 +7,6 @@ var Version string
 var buildVersion string
 
 func init() {
-	Version = "0.4.0"
+	Version = "0.5.0"
 	Version += buildVersion
 }
