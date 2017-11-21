@@ -140,6 +140,9 @@ func MakePseudoArea(columnName string, columnType ColumnType, column config.Colu
 }
 
 func Area(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
+	if geom.Geom == nil {
+		return nil
+	}
 	area := geom.Geom.Area()
 	if area == 0.0 {
 		return nil
@@ -148,6 +151,9 @@ func Area(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) i
 }
 
 func WebmercArea(val string, elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
+	if geom.Geom == nil {
+		return nil
+	}
 	area := geom.Geom.Area()
 	if area == 0.0 {
 		return nil
