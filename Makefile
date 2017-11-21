@@ -11,6 +11,10 @@ GOLDFLAGS=-ldflags '-r $${ORIGIN}/lib $(VERSION_LDFLAGS)'
 
 GO:=go
 
+ifdef LEVELDB_POST_121
+GOTAGS=-tags="ldbpost121"
+endif
+
 BUILD_DATE=$(shell date +%Y%m%d)
 BUILD_REV=$(shell git rev-parse --short HEAD)
 BUILD_VERSION=dev-$(BUILD_DATE)-$(BUILD_REV)
@@ -19,7 +23,7 @@ VERSION_LDFLAGS=-X github.com/omniscale/imposm3.buildVersion=$(BUILD_VERSION)
 all: build test
 
 imposm3: $(PBGOFILES) $(GOFILES)
-	$(GO) build $(GOLDFLAGS) ./cmd/imposm3
+	$(GO) build $(GOTAGS) $(GOLDFLAGS) ./cmd/imposm3
 
 build: imposm3
 
@@ -28,12 +32,12 @@ clean:
 	(cd test && make clean)
 
 test: imposm3 system-test-files
-	$(GO) test -i `$(GO) list ./... | grep -Ev '/vendor'`
-	$(GO) test `$(GO) list ./... | grep -Ev '/vendor'`
+	$(GO) test $(GOTAGS) -i `$(GO) list ./... | grep -Ev '/vendor'`
+	$(GO) test $(GOTAGS) `$(GO) list ./... | grep -Ev '/vendor'`
 
 test-unit: imposm3
-	$(GO) test -i `$(GO) list ./... | grep -Ev '/test|/vendor'`
-	$(GO) test `$(GO) list ./... | grep -Ev '/test|/vendor'`
+	$(GO) test $(GOTAGS) -i `$(GO) list ./... | grep -Ev '/test|/vendor'`
+	$(GO) test $(GOTAGS) `$(GO) list ./... | grep -Ev '/test|/vendor'`
 
 test-system: imposm3
 	(cd test && make test)

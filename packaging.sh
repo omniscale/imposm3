@@ -55,7 +55,10 @@ export GOROOT=$BUILD_BASE/go
 IMPOSM_SRC=$GOPATH/src/github.com/omniscale/imposm3
 BUILD_TMP=$BUILD_BASE/imposm-build
 
-GEOS_VERSION=3.5.1
+GEOS_VERSION=3.6.2
+
+# If set, build with HyperLevelDB instead of LevelDB
+#WITH_HYPERLEVELDB=1
 
 export CGO_CFLAGS=-I$PREFIX/include
 export CGO_LDFLAGS=-L$PREFIX/lib
@@ -64,7 +67,8 @@ export LD_LIBRARY_PATH=$PREFIX/lib
 CURL="curl --silent --show-error --location"
 
 mkdir -p $SRC
-mkdir -p $PREFIX
+mkdir -p $PREFIX/lib
+mkdir -p $PREFIX/include
 mkdir -p $GOPATH
 
 
@@ -90,13 +94,25 @@ fi
 if [ ! -e $BUILD_BASE/go/bin/go ]; then
     echo "-> installing go"
     pushd $SRC
-        rm -rf $BUILD_BASE/go
-        $CURL https://storage.googleapis.com/golang/go1.8.linux-amd64.tar.gz -O
-        tar xzf go1.8.linux-amd64.tar.gz -C $BUILD_BASE/
+        $CURL https://storage.googleapis.com/golang/go1.9.2.linux-amd64.tar.gz -O
+        tar xzf go1.9.2.linux-amd64.tar.gz -C $BUILD_BASE/
     popd
 fi
 
-if [ ! -e $PREFIX/lib/libhyperleveldb.so ]; then
+if [[ -z "$WITH_HYPERLEVELDB" && ! -e $PREFIX/lib/libleveldb.so ]]; then
+    echo "-> installing leveldb"
+    pushd $SRC
+        $CURL https://github.com/google/leveldb/archive/master.zip -L -O
+        tar zxf master.zip
+        pushd leveldb-master
+            make -j4
+            cp -R out-shared/liblevel* $PREFIX/lib/
+            cp -R include/leveldb $PREFIX/include/
+        popd
+    popd $SRC
+fi
+
+if [[ -n "$WITH_HYPERLEVELDB" && ! -e $PREFIX/lib/libhyperleveldb.so ]]; then
     echo "-> installing hyperleveldb"
     pushd $SRC
         $CURL https://github.com/rescrv/HyperLevelDB/archive/master.zip -O
@@ -110,7 +126,7 @@ if [ ! -e $PREFIX/lib/libhyperleveldb.so ]; then
     popd $SRC
 fi
 
-if [ ! -e $PREFIX/include/leveldb ]; then
+if [[ -n "$WITH_HYPERLEVELDB" && ! -e $PREFIX/include/leveldb ]]; then
     echo "-> linking hyperleveldb as leveldb"
     pushd $PREFIX/lib
         for s in 'a', 'la', 'so'; do
@@ -162,7 +178,11 @@ pushd $IMPOSM_SRC
 
     echo '-> compiling imposm'
     make clean
-    make build
+    if [[ -n "$WITH_HYPERLEVELDB" ]]; then
+        make build
+    else
+        LEVELDB_POST_121=1 make build
+    fi
 popd
 
 
@@ -180,9 +200,13 @@ pushd $PREFIX/lib
     ln -s libgeos_c.so $BUILD_TMP/lib/libgeos_c.so.1
     cp libgeos.so $BUILD_TMP/lib
     ln -s libgeos.so $BUILD_TMP/lib/libgeos-$GEOS_VERSION.so
-    cp libhyperleveldb.so $BUILD_TMP/lib
-    ln -s libhyperleveldb.so $BUILD_TMP/lib/libhyperleveldb.so.0
-    ln -s libhyperleveldb.so $BUILD_TMP/lib/libleveldb.so.1
+    if [ -n "$WITH_HYPERLEVELDB" ]; then
+        cp libhyperleveldb.so $BUILD_TMP/lib
+        ln -s libhyperleveldb.so $BUILD_TMP/lib/libhyperleveldb.so.0
+        ln -s libhyperleveldb.so $BUILD_TMP/lib/libleveldb.so.1
+    else
+        cp -R libleveldb.so* $BUILD_TMP/lib
+    fi
 popd
 
 pushd $BUILD_TMP/lib
