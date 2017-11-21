@@ -95,6 +95,7 @@ Installation
 
 There are no official releases, but you find development builds at <http://imposm.org/static/rel/>.
 These builds are for x86 64bit Linux and require *no* further dependencies. Download, untar and start `imposm3`.
+Imposm 0.5 binaries are compatible with Debian 8, Ubuntu 14.04 and SLES 12 (and newer versions). Older Imposm binaries also support Debian 6, RHEL 6 and SLES 11.
 
 ### Source
 
@@ -109,13 +110,11 @@ You need [Go >=1.6](http://golang.org).
 Other dependencies are [libleveldb][], [libgeos][] and [protobuf][].
 Imposm 3 was tested with recent versions of these libraries, but you might succeed with older versions.
 GEOS >=3.2 is recommended, since it became much more robust when handling invalid geometries.
-For best performance use [HyperLevelDB][libhyperleveldb] as an in-place replacement for libleveldb.
 
 
-[libleveldb]: https://code.google.com/p/leveldb/
-[libhyperleveldb]: https://github.com/rescrv/HyperLevelDB
+[libleveldb]: https://github.com/google/leveldb/
 [libgeos]: http://trac.osgeo.org/geos/
-[protobuf]: https://code.google.com/p/protobuf/
+[protobuf]: https://github.com/google/protobuf
 
 #### Compile
 
@@ -136,6 +135,12 @@ Go compiles to static binaries and so Imposm 3 has no runtime dependencies to Go
 Just copy the `imposm3` binary to your server for deployment. The C/C++ libraries listed above are still required though.
 
 See `packaging.sh` for instruction on how to build binary packages for Linux.
+
+#### LevelDB
+
+For better performance you can either use [HyperLevelDB][libhyperleveldb] as an in-place replacement for libleveldb or you can use LevelDB >1.21. You need to build Imposm with ``go build -tags="ldbpost121"`` or ``LEVELDB_POST_121=1 make build`` to enable optimizations available with LevelDB 1.21 and higher.
+
+[libhyperleveldb]: https://github.com/rescrv/HyperLevelDB
 
 Usage
 -----

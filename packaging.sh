@@ -8,9 +8,8 @@ It installs and builds all dependencies, compiles the master
 branch of this local repository and creates a .tar.gz with
 the imposm3 binary and all 3rd party dependencies.
 
-This script is made for Debian 6, so that the resulting binaries
-are compatible with older Linux distributions, namely SLES 11, RHEL 6,
-Ubuntu 10.04 and Debian 6.
+This script is made for Debian 8. The resulting binaries
+are compatible with Ubuntu 14.04, SLES 12, Fedora 21.
 
 'Vagrantfile' defines a working Debian VM that will call this script
 during the provision phase. Please install Vagrant and Virtualbox first:
@@ -72,23 +71,17 @@ mkdir -p $PREFIX/include
 mkdir -p $GOPATH
 
 
-if ! grep --silent 'Debian GNU/Linux 6.0' /etc/issue; then
+if ! grep --silent 'Debian GNU/Linux 8' /etc/issue; then
     echo
-    echo "ERROR: This script only works for Debian 6.0 (Squeeze), see above."
+    echo "ERROR: This script only works for Debian 8.0 (Jessie), see above."
     exit 1
 fi
 
 if [ ! -e /usr/bin/git ]; then
     echo "-> installing dependencies"
 
-    # squeeze is EOL, use debian-archive
-    cat <<EOF | sudo tee /etc/apt/sources.list
-deb http://ftp.de.debian.org/debian-archive/debian squeeze main
-deb-src http://ftp.de.debian.org/debian-archive/debian squeeze main
-EOF
-
     sudo apt-get update -y
-    sudo apt-get install -y build-essential unzip autoconf libtool git-core chrpath
+    sudo apt-get install -y build-essential unzip autoconf libtool git chrpath curl
 fi
 
 if [ ! -e $BUILD_BASE/go/bin/go ]; then
@@ -103,13 +96,13 @@ if [[ -z "$WITH_HYPERLEVELDB" && ! -e $PREFIX/lib/libleveldb.so ]]; then
     echo "-> installing leveldb"
     pushd $SRC
         $CURL https://github.com/google/leveldb/archive/master.zip -L -O
-        tar zxf master.zip
+        unzip master.zip
         pushd leveldb-master
             make -j4
             cp -R out-shared/liblevel* $PREFIX/lib/
             cp -R include/leveldb $PREFIX/include/
         popd
-    popd $SRC
+    popd 
 fi
 
 if [[ -n "$WITH_HYPERLEVELDB" && ! -e $PREFIX/lib/libhyperleveldb.so ]]; then
@@ -123,7 +116,7 @@ if [[ -n "$WITH_HYPERLEVELDB" && ! -e $PREFIX/lib/libhyperleveldb.so ]]; then
             make -j4
             make install
         popd
-    popd $SRC
+    popd
 fi
 
 if [[ -n "$WITH_HYPERLEVELDB" && ! -e $PREFIX/include/leveldb ]]; then
@@ -221,5 +214,11 @@ pushd $BUILD_BASE
     tar zcvf imposm3-$VERSION.tar.gz imposm3-$VERSION
     mkdir -p /vagrant/dist
     mv imposm3-$VERSION.tar.gz /vagrant/dist/
-    echo "placed final package in: ./dist/imposm3-$VERSION.tar.gz"
+
+    echo "###########################################################################"
+    echo " Call the following commands to download the created binary packages:"
+    echo
+    echo "vagrant ssh-config > .vagrant_ssh_conf"
+    echo "rsync -a -v -P -e 'ssh -F .vagrant_ssh_conf' default:/vagrant/dist ./dist"
+    echo "###########################################################################"
 popd
