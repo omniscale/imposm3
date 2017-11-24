@@ -135,7 +135,7 @@ func Geometry(val string, elem *element.OSMElem, geom *geom.Geometry, match Matc
 }
 
 func MakePseudoArea(columnName string, columnType ColumnType, column config.Column) (MakeValue, error) {
-	log.Print("warn: pseudoarea type is deprecated and will be removed. See area and webmercarea type.")
+	log.Print("warn: pseudoarea type is deprecated and will be removed. See area and webmerc_area type.")
 	return Area, nil
 }
 

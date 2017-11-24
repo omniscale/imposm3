@@ -78,7 +78,7 @@
                     "key": null
                 },
                 {
-                    "type": "pseudoarea",
+                    "type": "webmerc_area",
                     "name": "area",
                     "key": null
                 },
@@ -861,7 +861,7 @@
                     "key": null
                 },
                 {
-                    "type": "pseudoarea",
+                    "type": "webmerc_area",
                     "name": "area",
                     "key": null
                 }

@@ -299,15 +299,10 @@ The geometry of the OSM element.
 Like `geometry`, but the geometries will be validated and repaired when this table is used as a source for a generalized table. Must only be used for `polygon` tables.
 
 
-``pseudoarea``
-^^^^^^^^^^^^^^
-
-Area of polygon geometries in square meters. This area is calculated in the webmercator projection, so it is only accurate at the equator and gets off the more the geometry moves to the poles. It's still good enough to sort features by area for rendering purposes.
-
 ``area``
 ^^^^^^^^
 
-Area of polygon geometries in the unit of the selected projection (m² or degrees²). Note that a `meter` in the webmercator projection is only accurate at the equator and gets off the more the geometry moves to the poles. It's still good enough to sort features by area for rendering purposes.
+Area of polygon geometries in the unit of the selected projection (m² or degrees²). Note that the area is only accurate at the equator for EPSG:4326 and EPSG:3857 and gets off the more the geometry moves to the poles. It's still good enough to sort features by area for rendering purposes.
 
 ``webmerc_area``
 ^^^^^^^^^^^^^^^^
