@@ -94,7 +94,7 @@ You can use the following mapping::
     - key: ref
       name: ref
       type: string
-    relation_type: [route]
+    relation_types: [route]
     mapping:
       route: [bus]
 
@@ -157,7 +157,7 @@ The following mapping imports the bus route relation from above::
     - name: network
       key: network
       type: string
-    relation_type: [route]
+    relation_types: [route]
     mapping:
       route: [bus]
 
