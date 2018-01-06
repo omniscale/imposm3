@@ -92,7 +92,7 @@ func FromPbf(filename string, before time.Duration) (*DiffState, error) {
 		timestamp = fstat.ModTime()
 	}
 
-	replicationUrl := "http://planet.openstreetmap.org/replication/minute/"
+	replicationUrl := "https://planet.openstreetmap.org/replication/minute/"
 
 	seq := estimateSequence(replicationUrl, timestamp)
 	if seq == 0 {

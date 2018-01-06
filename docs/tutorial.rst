@@ -210,7 +210,7 @@ To start the update process::
 
 You can stop processing new diff files SIGTERM (``crtl-c``), SIGKILL or SIGHUP. You should create systemd/upstart/init.d service for ``imposm3 run`` to always run in background.
 
-You can change to hourly updates by adding `replication_url: "http://planet.openstreetmap.org/replication/hour/"` and `replication_interval: "1h"` to the Imposm configuration.
+You can change to hourly updates by adding `replication_url: "https://planet.openstreetmap.org/replication/hour/"` and `replication_interval: "1h"` to the Imposm configuration.
 
 
 One-time update
