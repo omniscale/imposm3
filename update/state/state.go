@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"os"
 	"path"
@@ -209,6 +210,7 @@ func estimateSequence(url string, timestamp time.Time) int {
 		}
 	}
 
-	behind := state.Time.Sub(timestamp)
-	return state.Sequence - int(behind.Minutes())
+    behind := state.Time.Sub(timestamp)
+    // Sequence unit depends on replication interval (minute, hour, day).
+    return state.Sequence - int(math.Ceil(behind.Minutes() / config.BaseOptions.ReplicationInterval.Minutes()))
 }
