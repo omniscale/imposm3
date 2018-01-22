@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/omniscale/imposm3/config"
 	"github.com/omniscale/imposm3/logging"
 	"github.com/omniscale/imposm3/parser/pbf"
 )
@@ -92,7 +93,10 @@ func FromPbf(filename string, before time.Duration) (*DiffState, error) {
 		timestamp = fstat.ModTime()
 	}
 
-	replicationUrl := "https://planet.openstreetmap.org/replication/minute/"
+	replicationUrl := config.BaseOptions.ReplicationUrl
+	if replicationUrl == "" {
+		replicationUrl = "https://planet.openstreetmap.org/replication/minute/"
+	}
 
 	seq := estimateSequence(replicationUrl, timestamp)
 	if seq == 0 {
