@@ -126,7 +126,7 @@ func (o *_BaseOptions) updateFromConfig() error {
 		o.ExpireTilesZoom = 14
 	}
 
-	if conf.ReplicationInterval.Duration != 0 && o.ReplicationInterval != time.Minute {
+	if conf.ReplicationInterval.Duration != 0 && o.ReplicationInterval == time.Minute {
 		o.ReplicationInterval = conf.ReplicationInterval.Duration
 	}
 	if o.ReplicationInterval < time.Minute {
