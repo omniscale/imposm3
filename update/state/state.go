@@ -186,7 +186,7 @@ func currentState(url string) (*DiffState, error) {
 		return nil, err
 	}
 	if resp.StatusCode != 200 {
-		return nil, errors.New(fmt.Sprintf("invalid repsonse: %v", resp))
+		return nil, errors.New(fmt.Sprintf("invalid response: %v", resp))
 	}
 	defer resp.Body.Close()
 	return Parse(resp.Body)
@@ -195,7 +195,7 @@ func currentState(url string) (*DiffState, error) {
 func estimateSequence(url string, timestamp time.Time) int {
 	state, err := currentState(url)
 	if err != nil {
-		// try a second time befor failing
+		// try a second time before failing
 		log.Warn("unable to fetch current state from ", url, ":", err, ", retry in 30s")
 		time.Sleep(time.Second * 30)
 		state, err = currentState(url)

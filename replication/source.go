@@ -92,6 +92,7 @@ func (d *downloader) Sequences() <-chan Sequence {
 func (d *downloader) download(seq int, ext string) error {
 	dest := path.Join(d.dest, seqPath(seq)+ext)
 	url := d.baseUrl + seqPath(seq) + ext
+	log.Print("Downloading diff file from ", url)
 
 	if _, err := os.Stat(dest); err == nil {
 		return nil
@@ -121,11 +122,12 @@ func (d *downloader) download(seq int, ext string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == 404 {
+		log.Print("Remote file does not exist ", url)
 		return NotAvailable
 	}
 
 	if resp.StatusCode != 200 {
-		return errors.New(fmt.Sprintf("invalid repsonse: %v", resp))
+		return errors.New(fmt.Sprintf("invalid response: %v", resp))
 	}
 
 	_, err = io.Copy(out, resp.Body)
@@ -161,17 +163,19 @@ func (d *downloader) fetchNextLoop() {
 	stateFile := path.Join(d.dest, seqPath(d.lastSequence)+d.stateExt)
 	lastTime, err := d.stateTime(stateFile)
 	for {
+		nextSeq := d.lastSequence + 1
+		log.Print("Processing sequence ", nextSeq, err)
 		if err == nil {
 			nextDiffTime := lastTime.Add(d.interval)
 			if nextDiffTime.After(time.Now()) {
 				// we catched up and the next diff file is in the future.
 				// wait till last diff time + interval, before fetching next
-				nextDiffTime = lastTime.Add(d.interval + 2*time.Second /* allow small time diff between server*/)
+				nextDiffTime = lastTime.Add(d.interval + 2*time.Second /* allow small time diff between servers */)
 				waitFor := nextDiffTime.Sub(time.Now())
+				log.Print("Next process in ", waitFor)
 				time.Sleep(waitFor)
 			}
 		}
-		nextSeq := d.lastSequence + 1
 		// download will retry until they succeed
 		d.downloadTillSuccess(nextSeq, d.stateExt)
 		d.downloadTillSuccess(nextSeq, d.fileExt)

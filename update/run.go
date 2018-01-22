@@ -50,6 +50,8 @@ func Run() {
 		log.Fatal("no replicationUrl in last.state.txt " +
 			"or replication_url in -config file")
 	}
+	logger.Print("Replication URL: " + replicationUrl)
+	logger.Print("Replication interval: ", config.BaseOptions.ReplicationInterval)
 
 	downloader := replication.NewDiffDownloader(
 		config.BaseOptions.DiffDir,
