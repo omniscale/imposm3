@@ -174,7 +174,7 @@ func (d *downloader) fetchNextLoop() {
 	lastTime, err := d.stateTime(stateFile)
 	for {
 		nextSeq := d.lastSequence + 1
-		log.Print("Processing sequence ", nextSeq, err)
+		log.Print("Processing sequence ", nextSeq)
 		if err == nil {
 			nextDiffTime := lastTime.Add(d.interval)
 			if nextDiffTime.After(time.Now()) {

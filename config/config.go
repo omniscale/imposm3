@@ -143,7 +143,7 @@ func (o *_BaseOptions) updateFromConfig() error {
 		}
 	}
 
-	if conf.DiffStateBefore.Duration != 0 && o.DiffStateBefore == 2*time.Hour {
+	if conf.DiffStateBefore.Duration != 0 && o.DiffStateBefore == 0 {
 		o.DiffStateBefore = conf.DiffStateBefore.Duration
 	}
 	return nil
@@ -226,7 +226,7 @@ func init() {
 	ImportFlags.BoolVar(&ImportOptions.DeployProduction, "deployproduction", false, "deploy production")
 	ImportFlags.BoolVar(&ImportOptions.RevertDeploy, "revertdeploy", false, "revert deploy to production")
 	ImportFlags.BoolVar(&ImportOptions.RemoveBackup, "removebackup", false, "remove backups from deploy")
-	ImportFlags.DurationVar(&BaseOptions.DiffStateBefore, "diff-state-before", 2*time.Hour, "set initial diff sequence before")
+	ImportFlags.DurationVar(&BaseOptions.DiffStateBefore, "diff-state-before", 0, "set initial diff sequence before")
 
 	DiffFlags.StringVar(&BaseOptions.ExpireTilesDir, "expiretiles-dir", "", "write expire tiles into dir")
 	DiffFlags.IntVar(&BaseOptions.ExpireTilesZoom, "expiretiles-zoom", 14, "write expire tiles in this zoom level")

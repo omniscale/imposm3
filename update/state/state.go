@@ -105,7 +105,7 @@ func FromPbf(filename string, before time.Duration) (*DiffState, error) {
 	}
 
 	// start earlier
-	seq -= int(before.Minutes())
+	seq -= int(before.Minutes() / config.BaseOptions.ReplicationInterval.Minutes())
 	return &DiffState{Time: timestamp, Url: replicationUrl, Sequence: seq}, nil
 }
 
