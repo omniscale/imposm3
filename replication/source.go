@@ -71,13 +71,23 @@ func newDownloader(dest, url string, seq int, interval time.Duration) *downloade
 		},
 	}
 
+	var naWaittime time.Duration
+	switch interval {
+	case 24 * time.Hour:
+		naWaittime = 5 * time.Minute
+	case time.Hour:
+		naWaittime = 60 * time.Second
+	default:
+		naWaittime = 10 * time.Second
+	}
+
 	dl := &downloader{
 		baseUrl:      url,
 		dest:         dest,
 		lastSequence: seq,
 		interval:     interval,
 		errWaittime:  60 * time.Second,
-		naWaittime:   10 * time.Second,
+		naWaittime:   naWaittime,
 		sequences:    make(chan Sequence, 1),
 		client:       client,
 	}
