@@ -19,7 +19,13 @@ import (
 
 var log = logging.NewLogger("replication")
 
-var NotAvailable = errors.New("file not available")
+type NotAvailable struct {
+    url    string
+}
+
+func (e *NotAvailable) Error() string {
+    return fmt.Sprintf("File not available: %s", e.url)
+}
 
 type Sequence struct {
 	Filename      string
@@ -132,8 +138,7 @@ func (d *downloader) download(seq int, ext string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == 404 {
-		log.Print("Remote file does not exist ", url)
-		return NotAvailable
+		return &NotAvailable{url}
 	}
 
 	if resp.StatusCode != 200 {
@@ -160,7 +165,8 @@ func (d *downloader) downloadTillSuccess(seq int, ext string) {
 		if err == nil {
 			break
 		}
-		if err == NotAvailable {
+		if err, ok := err.(*NotAvailable); ok {
+			log.Print(err)
 			time.Sleep(d.naWaittime)
 		} else {
 			log.Warn(err)
