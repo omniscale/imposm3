@@ -139,7 +139,7 @@ Both ``osm_id`` and ``member_id`` columns are indexed in PostgreSQL by default t
 ``relation``
 ^^^^^^^^^^^^
 
-The ``relation`` table type inserts the mapped element regardless of the resulting geometry. For example, this allows you to create a table with the metadata (name, reference, operator, etc.) of all available route relations. The actual geometries need to be `joined` form the members.
+The ``relation`` table type inserts the mapped element regardless of the resulting geometry. For example, this allows you to create a table with the metadata (name, reference, operator, etc.) of all available route relations. The actual geometries need to be `joined` from the members.
 
 Example
 ~~~~~~~
