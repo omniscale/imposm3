@@ -1,7 +1,7 @@
 package binary
 
 import (
-	"github.com/omniscale/imposm3/element"
+	"github.com/gregtzar/imposm3/element"
 )
 
 const COORD_FACTOR float64 = 11930464.7083 // ((2<<31)-1)/360.0

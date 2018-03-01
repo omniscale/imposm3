@@ -11,19 +11,19 @@ import (
 )
 
 type Config struct {
-	CacheDir            string          `json:"cachedir"`
-	DiffDir             string          `json:"diffdir"`
-	Connection          string          `json:"connection"`
-	MappingFile         string          `json:"mapping"`
-	LimitTo             string          `json:"limitto"`
-	LimitToCacheBuffer  float64         `json:"limitto_cache_buffer"`
-	Srid                int             `json:"srid"`
-	Schemas             Schemas         `json:"schemas"`
-	ExpireTilesDir      string          `json:"expiretiles_dir"`
-	ExpireTilesZoom     int             `json:"expiretiles_zoom"`
-	ReplicationUrl      string          `json:"replication_url"`
-	ReplicationInterval MinutesInterval `json:"replication_interval"`
-	DiffStateBefore     MinutesInterval `json:"diff_state_before"`
+	CacheDir            string       `json:"cachedir"`
+	DiffDir             string       `json:"diffdir"`
+	Connection          string       `json:"connection"`
+	MappingFile         string       `json:"mapping"`
+	LimitTo             string       `json:"limitto"`
+	LimitToCacheBuffer  float64      `json:"limitto_cache_buffer"`
+	Srid                int          `json:"srid"`
+	Schemas             Schemas      `json:"schemas"`
+	ExpireTilesDir      string       `json:"expiretiles_dir"`
+	ExpireTilesZoom     int          `json:"expiretiles_zoom"`
+	ReplicationUrl      string       `json:"replication_url"`
+	ReplicationInterval TimeDuration `json:"replication_interval"`
+	DiffStateBefore     TimeDuration `json:"diff_state_before"`
 }
 
 type Schemas struct {
@@ -126,7 +126,7 @@ func (o *_BaseOptions) updateFromConfig() error {
 		o.ExpireTilesZoom = 14
 	}
 
-	if conf.ReplicationInterval.Duration != 0 && o.ReplicationInterval != time.Minute {
+	if conf.ReplicationInterval.Duration != 0 {
 		o.ReplicationInterval = conf.ReplicationInterval.Duration
 	}
 	if o.ReplicationInterval < time.Minute {
@@ -305,11 +305,11 @@ func reportErrors(errs []error) {
 	os.Exit(1)
 }
 
-type MinutesInterval struct {
+type TimeDuration struct {
 	time.Duration
 }
 
-func (d *MinutesInterval) UnmarshalJSON(b []byte) (err error) {
+func (d *TimeDuration) UnmarshalJSON(b []byte) (err error) {
 	if b[0] == '"' {
 		sd := string(b[1 : len(b)-1])
 		d.Duration, err = time.ParseDuration(sd)

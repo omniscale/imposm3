@@ -4,8 +4,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/omniscale/imposm3/element"
-	"github.com/omniscale/imposm3/mapping/config"
+	"github.com/gregtzar/imposm3/element"
+	"github.com/gregtzar/imposm3/mapping/config"
 )
 
 type TagFilterer interface {

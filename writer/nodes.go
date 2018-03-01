@@ -3,14 +3,14 @@ package writer
 import (
 	"sync"
 
-	"github.com/omniscale/imposm3/cache"
-	"github.com/omniscale/imposm3/database"
-	"github.com/omniscale/imposm3/element"
-	"github.com/omniscale/imposm3/expire"
-	geomp "github.com/omniscale/imposm3/geom"
-	"github.com/omniscale/imposm3/geom/geos"
-	"github.com/omniscale/imposm3/mapping"
-	"github.com/omniscale/imposm3/stats"
+	"github.com/gregtzar/imposm3/cache"
+	"github.com/gregtzar/imposm3/database"
+	"github.com/gregtzar/imposm3/element"
+	"github.com/gregtzar/imposm3/expire"
+	geomp "github.com/gregtzar/imposm3/geom"
+	"github.com/gregtzar/imposm3/geom/geos"
+	"github.com/gregtzar/imposm3/mapping"
+	"github.com/gregtzar/imposm3/stats"
 )
 
 type NodeWriter struct {

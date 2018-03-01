@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/omniscale/imposm3/logging"
+	"github.com/gregtzar/imposm3/logging"
 )
 
 var log = logging.NewLogger("geojson")

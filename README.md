@@ -126,8 +126,8 @@ Create a [Go workspace](http://golang.org/doc/code.html) by creating the `GOPATH
 
 Get the code and install Imposm 3:
 
-    go get github.com/omniscale/imposm3
-    go install github.com/omniscale/imposm3/cmd/imposm3
+    go get github.com/gregtzar/imposm3
+    go install github.com/gregtzar/imposm3/cmd/imposm3
 
 Done. You should now have an imposm3 binary in `$GOPATH/bin`.
 
@@ -195,9 +195,9 @@ For commercial support [contact Omniscale](http://omniscale.com/contact).
 Development
 -----------
 
-The source code is available at: <https://github.com/omniscale/imposm3/>
+The source code is available at: <https://github.com/gregtzar/imposm3/>
 
-You can report any issues at: <https://github.com/omniscale/imposm3/issues>
+You can report any issues at: <https://github.com/gregtzar/imposm3/issues>
 
 License
 -------

@@ -5,7 +5,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/omniscale/imposm3/element"
+	"github.com/gregtzar/imposm3/element"
 )
 
 type Parser struct {

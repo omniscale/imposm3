@@ -20,7 +20,7 @@ BUILD_REV=$(shell git rev-parse --short HEAD)
 ifndef IMPOSM_BUILD_RELEASE
 BUILD_VERSION=dev-$(BUILD_DATE)-$(BUILD_REV)
 endif
-VERSION_LDFLAGS=-X github.com/omniscale/imposm3.buildVersion=$(BUILD_VERSION)
+VERSION_LDFLAGS=-X github.com/gregtzar/imposm3.buildVersion=$(BUILD_VERSION)
 
 all: build test
 
@@ -48,7 +48,7 @@ system-test-files:
 	(cd test && make files)
 
 %.pb.go: %.proto
-	protoc --proto_path=$(GOPATH)/src:$(GOPATH)/src/github.com/omniscale/imposm3/vendor/github.com/gogo/protobuf/protobuf:. --gogofaster_out=. $^
+	protoc --proto_path=$(GOPATH)/src:$(GOPATH)/src/github.com/gregtzar/imposm3/vendor/github.com/gogo/protobuf/protobuf:. --gogofaster_out=. $^
 
 docs:
 	(cd docs && make html)

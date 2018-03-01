@@ -1,9 +1,9 @@
 package cache
 
 import (
+	"github.com/gregtzar/imposm3/cache/binary"
+	"github.com/gregtzar/imposm3/element"
 	"github.com/jmhodges/levigo"
-	"github.com/omniscale/imposm3/cache/binary"
-	"github.com/omniscale/imposm3/element"
 )
 
 type NodesCache struct {

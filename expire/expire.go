@@ -1,8 +1,8 @@
 package expire
 
 import (
-	"github.com/omniscale/imposm3/element"
-	"github.com/omniscale/imposm3/proj"
+	"github.com/gregtzar/imposm3/element"
+	"github.com/gregtzar/imposm3/proj"
 )
 
 type Expireor interface {

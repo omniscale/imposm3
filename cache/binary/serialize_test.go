@@ -3,7 +3,7 @@ package binary
 import (
 	"testing"
 
-	"github.com/omniscale/imposm3/element"
+	"github.com/gregtzar/imposm3/element"
 )
 
 func compareRefs(a []int64, b []int64) bool {
