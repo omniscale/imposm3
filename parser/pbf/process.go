@@ -18,6 +18,7 @@ type Parser struct {
 	wg        sync.WaitGroup
 	waySync   *barrier
 	relSync   *barrier
+	stop      int32
 }
 
 func NewParser(
@@ -52,7 +53,11 @@ func (p *Parser) Parse(
 	for i := 0; i < p.nParser; i++ {
 		p.wg.Add(1)
 		go func() {
+			defer p.wg.Done()
 			for block := range blocks {
+				if atomic.LoadInt32(&p.stop) == 1 {
+					return
+				}
 				p.parseBlock(block)
 			}
 			if p.waySync != nil {
@@ -61,9 +66,13 @@ func (p *Parser) Parse(
 			if p.relSync != nil {
 				p.relSync.doneWait()
 			}
-			p.wg.Done()
 		}()
 	}
+	p.wg.Wait()
+}
+
+func (p *Parser) Stop() {
+	atomic.StoreInt32(&p.stop, 1)
 	p.wg.Wait()
 }
 
