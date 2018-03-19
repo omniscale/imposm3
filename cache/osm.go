@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/jmhodges/levigo"
 	"github.com/omniscale/imposm3/element"
+	"github.com/jmhodges/levigo"
 )
 
 var (

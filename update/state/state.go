@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"os"
 	"path"
@@ -76,7 +77,7 @@ func FromOscGz(oscFile string) (*DiffState, error) {
 	return ParseFile(stateFile)
 }
 
-func FromPbf(filename string, before time.Duration) (*DiffState, error) {
+func FromPbf(filename string, before time.Duration, replicationUrl string, replicationInterval time.Duration) (*DiffState, error) {
 	pbfFile, err := pbf.NewParser(filename)
 	if err != nil {
 		return nil, err
@@ -92,15 +93,18 @@ func FromPbf(filename string, before time.Duration) (*DiffState, error) {
 		timestamp = fstat.ModTime()
 	}
 
-	replicationUrl := "https://planet.openstreetmap.org/replication/minute/"
+	if replicationUrl == "" {
+		replicationUrl = "https://planet.openstreetmap.org/replication/minute/"
+	}
 
-	seq := estimateSequence(replicationUrl, timestamp)
+	seq := estimateSequence(replicationUrl, replicationInterval, timestamp)
 	if seq == 0 {
 		return nil, nil
 	}
 
 	// start earlier
-	seq -= int(before.Minutes())
+	intervalCount := int(math.Ceil(before.Minutes() / replicationInterval.Minutes()))
+	seq -= intervalCount
 	return &DiffState{Time: timestamp, Url: replicationUrl, Sequence: seq}, nil
 }
 
@@ -192,7 +196,7 @@ func currentState(url string) (*DiffState, error) {
 	return Parse(resp.Body)
 }
 
-func estimateSequence(url string, timestamp time.Time) int {
+func estimateSequence(url string, interval time.Duration, timestamp time.Time) int {
 	state, err := currentState(url)
 	if err != nil {
 		// try a second time befor failing
@@ -206,5 +210,6 @@ func estimateSequence(url string, timestamp time.Time) int {
 	}
 
 	behind := state.Time.Sub(timestamp)
-	return state.Sequence - int(behind.Minutes())
+	intervalCount := int(math.Ceil(behind.Minutes() / interval.Minutes()))
+	return state.Sequence - intervalCount
 }
