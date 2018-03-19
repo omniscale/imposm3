@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gregtzar/imposm3/update/state"
+	"github.com/omniscale/imposm3/update/state"
 )
 
 func NewDiffDownloader(dest, url string, seq int, interval time.Duration) *downloader {

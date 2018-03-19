@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/gregtzar/imposm3/element"
+	"github.com/omniscale/imposm3/element"
 )
 
 type fataler interface {

@@ -10,4 +10,4 @@ These builds are for x86 64bit Linux and require *no* further dependencies. Down
 Source
 ------
 
-Please see `the README for build instructions <https://github.com/gregtzar/imposm3/#installation>`_.
+Please see `the README for build instructions <https://github.com/omniscale/imposm3/#installation>`_.

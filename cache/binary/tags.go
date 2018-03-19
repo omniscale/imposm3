@@ -17,7 +17,7 @@ package binary
 import (
 	"unicode/utf8"
 
-	"github.com/gregtzar/imposm3/element"
+	"github.com/omniscale/imposm3/element"
 )
 
 type codepoint rune
@@ -97,7 +97,7 @@ func tagsFromArray(arr []string) element.Tags {
 			// notify users affected by #112
 			// TODO remove check in the future to avoid misleading message
 			// if a similar issue shows up
-			panic("Internal cache corrupt, see: https://github.com/gregtzar/imposm3/issues/122")
+			panic("Internal cache corrupt, see: https://github.com/omniscale/imposm3/issues/122")
 		}
 		result[arr[i]] = arr[i+1]
 		i++

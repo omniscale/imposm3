@@ -7,12 +7,12 @@ import (
 	"runtime"
 
 	"github.com/gregtzar/imposm3"
-	"github.com/gregtzar/imposm3/cache/query"
-	"github.com/gregtzar/imposm3/config"
-	"github.com/gregtzar/imposm3/import_"
-	"github.com/gregtzar/imposm3/logging"
-	"github.com/gregtzar/imposm3/stats"
-	"github.com/gregtzar/imposm3/update"
+	"github.com/omniscale/imposm3/cache/query"
+	"github.com/omniscale/imposm3/config"
+	"github.com/omniscale/imposm3/import_"
+	"github.com/omniscale/imposm3/logging"
+	"github.com/omniscale/imposm3/stats"
+	"github.com/omniscale/imposm3/update"
 )
 
 var log = logging.NewLogger("")

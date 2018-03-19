@@ -48,7 +48,7 @@ system-test-files:
 	(cd test && make files)
 
 %.pb.go: %.proto
-	protoc --proto_path=$(GOPATH)/src:$(GOPATH)/src/github.com/gregtzar/imposm3/vendor/github.com/gogo/protobuf/protobuf:. --gogofaster_out=. $^
+	protoc --proto_path=$(GOPATH)/src:$(GOPATH)/src/github.com/omniscale/imposm3/vendor/github.com/gogo/protobuf/protobuf:. --gogofaster_out=. $^
 
 docs:
 	(cd docs && make html)

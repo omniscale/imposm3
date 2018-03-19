@@ -5,8 +5,8 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/gregtzar/imposm3/cache/binary"
-	"github.com/gregtzar/imposm3/element"
+	"github.com/omniscale/imposm3/cache/binary"
+	"github.com/omniscale/imposm3/element"
 )
 
 type byId []element.Node

@@ -7,13 +7,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/gregtzar/imposm3/cache"
-	"github.com/gregtzar/imposm3/config"
-	"github.com/gregtzar/imposm3/expire"
-	"github.com/gregtzar/imposm3/geom/limit"
-	"github.com/gregtzar/imposm3/logging"
-	"github.com/gregtzar/imposm3/replication"
-	"github.com/gregtzar/imposm3/update/state"
+	"github.com/omniscale/imposm3/cache"
+	"github.com/omniscale/imposm3/config"
+	"github.com/omniscale/imposm3/expire"
+	"github.com/omniscale/imposm3/geom/limit"
+	"github.com/omniscale/imposm3/logging"
+	"github.com/omniscale/imposm3/replication"
+	"github.com/omniscale/imposm3/update/state"
 )
 
 var logger = logging.NewLogger("")

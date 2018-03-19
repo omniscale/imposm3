@@ -4,8 +4,8 @@ import (
 	"io/ioutil"
 	"regexp"
 
-	"github.com/gregtzar/imposm3/element"
-	"github.com/gregtzar/imposm3/mapping/config"
+	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/mapping/config"
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"

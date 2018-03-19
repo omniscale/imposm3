@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/gregtzar/imposm3/parser/pbf/internal/osmpbf"
+	"github.com/omniscale/imposm3/parser/pbf/internal/osmpbf"
 )
 
 type block struct {

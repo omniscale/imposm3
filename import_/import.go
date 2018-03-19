@@ -6,17 +6,17 @@ package import_
 import (
 	"os"
 
-	"github.com/gregtzar/imposm3/cache"
-	"github.com/gregtzar/imposm3/config"
-	"github.com/gregtzar/imposm3/database"
-	_ "github.com/gregtzar/imposm3/database/postgis"
-	"github.com/gregtzar/imposm3/geom/limit"
-	"github.com/gregtzar/imposm3/logging"
-	"github.com/gregtzar/imposm3/mapping"
-	"github.com/gregtzar/imposm3/reader"
-	"github.com/gregtzar/imposm3/stats"
-	"github.com/gregtzar/imposm3/update/state"
-	"github.com/gregtzar/imposm3/writer"
+	"github.com/omniscale/imposm3/cache"
+	"github.com/omniscale/imposm3/config"
+	"github.com/omniscale/imposm3/database"
+	_ "github.com/omniscale/imposm3/database/postgis"
+	"github.com/omniscale/imposm3/geom/limit"
+	"github.com/omniscale/imposm3/logging"
+	"github.com/omniscale/imposm3/mapping"
+	"github.com/omniscale/imposm3/reader"
+	"github.com/omniscale/imposm3/stats"
+	"github.com/omniscale/imposm3/update/state"
+	"github.com/omniscale/imposm3/writer"
 )
 
 var log = logging.NewLogger("")

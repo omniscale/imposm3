@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gregtzar/imposm3/logging"
-	"github.com/gregtzar/imposm3/parser/pbf"
+	"github.com/omniscale/imposm3/logging"
+	"github.com/omniscale/imposm3/parser/pbf"
 )
 
 var log = logging.NewLogger("diff")

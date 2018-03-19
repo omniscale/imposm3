@@ -45,9 +45,9 @@ For commercial support `contact Omniscale <http://omniscale.com/contact>`_.
 Development
 -----------
 
-The source code is available at: https://github.com/gregtzar/imposm3/
+The source code is available at: https://github.com/omniscale/imposm3/
 
-You can report any issues at: https://github.com/gregtzar/imposm3/issues
+You can report any issues at: https://github.com/omniscale/imposm3/issues
 
 Contents
 --------

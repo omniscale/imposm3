@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/gregtzar/imposm3/element"
+	"github.com/omniscale/imposm3/element"
 	"github.com/jmhodges/levigo"
 )
 

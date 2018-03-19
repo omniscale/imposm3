@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gregtzar/imposm3/cache"
-	"github.com/gregtzar/imposm3/element"
+	"github.com/omniscale/imposm3/cache"
+	"github.com/omniscale/imposm3/element"
 )
 
 var flags = flag.NewFlagSet("query-cache", flag.ExitOnError)

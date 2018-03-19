@@ -3,7 +3,7 @@ package mapping
 import (
 	"testing"
 
-	"github.com/gregtzar/imposm3/element"
+	"github.com/omniscale/imposm3/element"
 )
 
 func BenchmarkTagMatch(b *testing.B) {

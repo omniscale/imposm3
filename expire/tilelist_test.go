@@ -3,7 +3,7 @@ package expire
 import (
 	"testing"
 
-	"github.com/gregtzar/imposm3/element"
+	"github.com/omniscale/imposm3/element"
 )
 
 func TestTileList_ExpireNodes(t *testing.T) {

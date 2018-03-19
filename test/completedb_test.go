@@ -6,15 +6,15 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/gregtzar/imposm3/cache"
+	"github.com/omniscale/imposm3/cache"
 
-	"github.com/gregtzar/imposm3/element"
-	"github.com/gregtzar/imposm3/geom"
-	"github.com/gregtzar/imposm3/proj"
+	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/geom"
+	"github.com/omniscale/imposm3/proj"
 
 	"testing"
 
-	"github.com/gregtzar/imposm3/geom/geos"
+	"github.com/omniscale/imposm3/geom/geos"
 )
 
 var ts importTestSuite

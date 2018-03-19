@@ -14,7 +14,7 @@ import (
 	"gopkg.in/fsnotify.v1"
 
 	"github.com/gregtzar/imposm3"
-	"github.com/gregtzar/imposm3/logging"
+	"github.com/omniscale/imposm3/logging"
 )
 
 var log = logging.NewLogger("replication")
