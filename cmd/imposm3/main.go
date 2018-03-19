@@ -6,7 +6,7 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/gregtzar/imposm3"
+	"github.com/omniscale/imposm3"
 	"github.com/omniscale/imposm3/cache/query"
 	"github.com/omniscale/imposm3/config"
 	"github.com/omniscale/imposm3/import_"

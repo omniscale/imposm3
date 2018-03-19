@@ -54,7 +54,7 @@ SRC=$BUILD_BASE/src
 export GOPATH=$BUILD_BASE/gopath
 export PATH=$PATH:$BUILD_BASE/go/bin
 export GOROOT=$BUILD_BASE/go
-IMPOSM_SRC=$GOPATH/src/github.com/gregtzar/imposm3
+IMPOSM_SRC=$GOPATH/src/github.com/omniscale/imposm3
 BUILD_TMP=$BUILD_BASE/imposm-build
 
 GEOS_VERSION=3.6.2

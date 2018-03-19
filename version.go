@@ -3,7 +3,7 @@ package imposm3
 var Version string
 
 // buidVersion gets replaced while building with
-// go build -ldflags "-X github.com/gregtzar/imposm3.buildVersion 1234"
+// go build -ldflags "-X github.com/omniscale/imposm3.buildVersion 1234"
 var buildVersion string
 
 func init() {

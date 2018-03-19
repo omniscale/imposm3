@@ -20,7 +20,7 @@ BUILD_REV=$(shell git rev-parse --short HEAD)
 ifndef IMPOSM_BUILD_RELEASE
 BUILD_VERSION=dev-$(BUILD_DATE)-$(BUILD_REV)
 endif
-VERSION_LDFLAGS=-X github.com/gregtzar/imposm3.buildVersion=$(BUILD_VERSION)
+VERSION_LDFLAGS=-X github.com/omniscale/imposm3.buildVersion=$(BUILD_VERSION)
 
 all: build test
 
