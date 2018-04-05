@@ -1,34 +1,132 @@
+dist: trusty
+sudo: false
+
 language: go
 
 go:
- - 1.8.5
- - 1.9.2
- - tip
+  - "1.7.x"
+  - "1.9.x"
+  - "1.10.x" # we use this for releases, see deploy.on.condition below
+  - tip
+
+matrix:
+  allow_failures:
+    - go: tip
+      fast_finish: true
+
+env:
+  global:
+    - GEOS_VERSION=3.6.2
+    - PROTOBUF_VERSION=3.5.1
+    - LEVELDB_VERSION=1.21 # TODO: update before_script when 1.21 is released
+    # NOTE increase DEPS_REVISION everytime one of the compiled deps changes!
+    - DEPS_REVISION=1
+    # PREFIX is where we install our compiled deps
+    - PREFIX=${HOME}/local-${DEPS_REVISION}
+
+    # tell Go to find our compiled deps
+    - CGO_CFLAGS=-I${PREFIX}/include
+    - CGO_LDFLAGS=-L${PREFIX}/lib
+    - LD_LIBRARY_PATH=${PREFIX}/lib
+
+    # PKG_DIR is where we assemble the final package for releases
+    - PKG_DIR=/tmp/imposm_packaging
+
+    - PGUSER=postgres
+
+    # enable ccache by updating PATH
+    - PATH=/usr/lib/ccache:$PATH
+    - CCACHE_TEMPDIR=/tmp/.ccache-temp
+
+cache:
+  directories:
+    - ${HOME}/.ccache
+    - ${PREFIX}
 
 addons:
     postgresql: "9.5"
     apt:
+      # List of whitelisted in travis packages for ubuntu-trusty can be found here:
+      #   https://github.com/travis-ci/apt-package-whitelist/blob/master/ubuntu-trusty
       packages:
         - postgresql-9.5-postgis-2.3
-        - libgeos-dev
-        - libprotobuf-dev
-        - protobuf-compiler
-        - osmosis
+        - chrpath
 
 before_script:
   - psql -U postgres -c 'create database travis' || true
   - psql -U postgres -c "create extension if not exists postgis"
   - psql -U postgres -c "create extension if not exists hstore"
 
-env:
-  global:
-    - PGUSER=postgres
 
-install:
-  - LEVELDB_VER=1.18
-  - curl -fsSL https://github.com/google/leveldb/archive/v${LEVELDB_VER}.tar.gz | tar -C ${HOME} -xzf -
-  - make -C ${HOME}/leveldb-${LEVELDB_VER} -j2
-  - sudo mv ${HOME}/leveldb-${LEVELDB_VER}/libleveldb* /usr/lib
-  - sudo cp -a ${HOME}/leveldb-${LEVELDB_VER}/include/leveldb /usr/include
+before_install:
+  - ccache --show-stats
 
-script: make
+  # build GEOS
+  - |
+    if [[ ! -e ${PREFIX}/lib/libgeos_c.so ]]; then
+      curl -fsSL http://download.osgeo.org/geos/geos-${GEOS_VERSION}.tar.bz2 | \
+        tar -jxf - -C ${HOME}/build
+      cd ${HOME}/build/geos-${GEOS_VERSION}
+      ./configure --prefix=$PREFIX
+      make -j2
+      make install
+    fi
+
+  # build LevelDB
+  - |
+    if [[ ! -e ${PREFIX}/lib/libleveldb.so ]]; then
+      mkdir -p ${HOME}/build/leveldb
+      curl -fsSL https://github.com/google/leveldb/archive/master.tar.gz | \
+        tar -zxf - --strip-components 1 -C ${HOME}/build/leveldb
+      mkdir -p ${HOME}/build/leveldb/build
+      cd ${HOME}/build/leveldb/build
+      cmake .. -DBUILD_SHARED_LIBS=1 && make -j 2
+      mkdir -p ${PREFIX}/{lib,include}
+      cp -R ${HOME}/build/leveldb/build/liblevel* ${PREFIX}/lib/
+      cp -R ${HOME}/build/leveldb/include/leveldb ${PREFIX}/include/
+    fi
+
+  - ccache --show-stats
+
+script:
+  - cd ${TRAVIS_BUILD_DIR}
+  - LEVELDB_POST_121=1 make
+
+before_deploy:
+  - cd ${TRAVIS_BUILD_DIR}
+  - mkdir -p ${PKG_DIR}/lib
+
+  # copy files
+  - cp imposm3 ${PKG_DIR}
+  - cp example-mapping.json ${PKG_DIR}/mapping.json
+
+  # copy/link libs
+  - cd ${PREFIX}/lib
+  - cp libgeos_c.so ${PKG_DIR}/lib
+  - ln -s libgeos_c.so ${PKG_DIR}/lib/libgeos_c.so.1
+  - cp libgeos.so ${PKG_DIR}/lib
+  - ln -s libgeos.so ${PKG_DIR}/lib/libgeos-${GEOS_VERSION}.so
+  - cp -R libleveldb.so* ${PKG_DIR}/lib
+
+  # update RPATH of libgeos_c.so so that is points to our libgeos.so
+  - chrpath ${PKG_DIR}/lib/libgeos_c.so -r '${ORIGIN}'
+
+  # create tar.gz
+  - BUILD_VERSION=`${PKG_DIR}/imposm3 version`-linux-x86-64
+  - mv ${PKG_DIR} /tmp/imposm3-${BUILD_VERSION}
+  - cd /tmp && tar zcvf imposm3-${BUILD_VERSION}.tar.gz imposm3-${BUILD_VERSION}
+
+  # move back to build dir for deploy
+  - cd ${TRAVIS_BUILD_DIR}
+
+deploy:
+  provider: releases
+  api_key:
+    secure: fBhtCy6vdxxxuLYuJWXeTHJb3SAZCCbUJncIvR9ZOLCDWMJAPBnzPoqJFbByWzl6XghVRwhy9fe/82vzqByKiB/AQpqGqBxlwA9dSsqvSQcQxomAoHKKfZVdOuxM2bLDW3v5pJpmFtCMwhWjgwIOb9WxnBVeLxBbsq2Ox49tgHw=
+  file: /tmp/imposm3-${BUILD_VERSION}.tar.gz
+  skip_cleanup: true
+  on:
+    repo: omniscale/imposm3
+    tags: true
+    condition: $TRAVIS_GO_VERSION =~ ^1\.10(\.[0-9]+)?$
+

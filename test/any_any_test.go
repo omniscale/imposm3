@@ -20,7 +20,7 @@ func TestAnyAny_Prepare(t *testing.T) {
 	ts.config = importConfig{
 		connection:      "postgis://",
 		cacheDir:        ts.dir,
-		osmFileName:     "build/any_any.pbf",
+		osmFileName:     "generated/any_any.pbf",
 		mappingFileName: "any_any_mapping.json",
 	}
 	ts.g = geos.NewGeos()

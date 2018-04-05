@@ -17,10 +17,15 @@ endif
 
 BUILD_DATE=$(shell date +%Y%m%d)
 BUILD_REV=$(shell git rev-parse --short HEAD)
-ifndef IMPOSM_BUILD_RELEASE
-BUILD_VERSION=dev-$(BUILD_DATE)-$(BUILD_REV)
+BUILD_BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
+TAG=$(shell git name-rev --tags --name-only $(BUILD_REV))
+ifeq ($(TAG),undefined)
+	BUILD_VERSION=$(BUILD_BRANCH)-$(BUILD_DATE)-$(BUILD_REV)
+else
+	# use TAG but strip v of v1.2.3
+	BUILD_VERSION=$(TAG:v%=%)
 endif
-VERSION_LDFLAGS=-X github.com/omniscale/imposm3.buildVersion=$(BUILD_VERSION)
+VERSION_LDFLAGS=-X github.com/omniscale/imposm3.Version=$(BUILD_VERSION)
 
 all: build test
 
