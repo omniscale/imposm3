@@ -1,34 +1,74 @@
+dist: trusty
+sudo: false
+
 language: go
 
 go:
- - 1.8.5
- - 1.9.2
- - tip
+#  - "1.8.5"
+#  - "1.9.x"
+ - "1.10.x"
+#  - tip
+
+env:
+  global:
+    - PREFIX=${HOME}/local
+    - CGO_CFLAGS=-I${PREFIX}/include
+    - CGO_LDFLAGS=-L${PREFIX}/lib
+    - LD_LIBRARY_PATH=${PREFIX}/lib
+    - PGUSER=postgres
 
 addons:
-    postgresql: "9.5"
+    # postgresql: "9.5"
     apt:
+      # List of whitelisted in travis packages for ubuntu-trusty can be found here:
+      #   https://github.com/travis-ci/apt-package-whitelist/blob/master/ubuntu-trusty
+      # List of whitelisted in travis apt-sources:
+      #   https://github.com/travis-ci/apt-source-whitelist/blob/master/ubuntu.json
+      sources:
+        - ubuntu-toolchain-r-test
       packages:
         - postgresql-9.5-postgis-2.3
         - libgeos-dev
         - libprotobuf-dev
         - protobuf-compiler
         - osmosis
+        - cmake
+        - gcc-7
+        - g++-7
 
 before_script:
   - psql -U postgres -c 'create database travis' || true
   - psql -U postgres -c "create extension if not exists postgis"
   - psql -U postgres -c "create extension if not exists hstore"
 
-env:
-  global:
-    - PGUSER=postgres
 
-install:
-  - LEVELDB_VER=1.18
-  - curl -fsSL https://github.com/google/leveldb/archive/v${LEVELDB_VER}.tar.gz | tar -C ${HOME} -xzf -
-  - make -C ${HOME}/leveldb-${LEVELDB_VER} -j2
-  - sudo mv ${HOME}/leveldb-${LEVELDB_VER}/libleveldb* /usr/lib
-  - sudo cp -a ${HOME}/leveldb-${LEVELDB_VER}/include/leveldb /usr/include
+before_install:
+  # /usr/bin/gcc is stuck to old versions on both Linux and OSX.
+  - export CXX="g++-7"
+  - export CC="gcc-7"
+  - echo ${CC}
+  - echo ${CXX}
+  - ${CXX} --version
+  - cmake --version
 
-script: make
+  - mkdir -p ${HOME}/build
+  - curl -fsSL https://github.com/google/leveldb/archive/master.tar.gz | tar -zxf - -C ${HOME}/build
+  - find ${HOME}/build
+  - mkdir -p ${HOME}/build/leveldb-master/build
+  - cd ${HOME}/build/leveldb-master/build
+  - cmake .. -DBUILD_SHARED_LIBS=1
+  - cat include/port/port_config.h
+  - cmake --build .
+  - find .
+
+  - mkdir -p ${HOME}/local/{lib,include}
+  - cp -R ${HOME}/build/leveldb-master/build/liblevel* ${HOME}/local/lib/
+  - cp -R ${HOME}/build/leveldb-master/include/leveldb ${HOME}/local/include/
+
+  - curl -fsSL https://github.com/google/protobuf/releases/download/v2.6.1/protobuf-2.6.1.tar.bz2 | tar -jxf - -C ${HOME}/build
+  - cd ${HOME}/build/protobuf-2.6.1/ && ./configure --prefix=${PREFIX} && make -j2 && make install
+
+
+script:
+  - cd $TRAVIS_BUILD_DIR
+  - make
