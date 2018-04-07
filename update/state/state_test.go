@@ -6,7 +6,7 @@ import (
 )
 
 func TestFromPBF(t *testing.T) {
-	state, err := FromPbf("../../parser/pbf/monaco-20150428.osm.pbf", time.Hour*1)
+	state, err := FromPbf("../../parser/pbf/monaco-20150428.osm.pbf", time.Hour*1, "", time.Minute*1)
 	if err != nil {
 		t.Fatal(err)
 	}
