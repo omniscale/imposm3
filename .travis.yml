@@ -6,8 +6,12 @@ language: go
 go:
 #  - "1.8.5"
 #  - "1.9.x"
- - "1.10.x"
+ - stable
 #  - tip
+
+cache:
+  directories:
+    - $HOME/.ccache
 
 env:
   global:
@@ -16,25 +20,28 @@ env:
     - CGO_LDFLAGS=-L${PREFIX}/lib
     - LD_LIBRARY_PATH=${PREFIX}/lib
     - PGUSER=postgres
+    - GEOS_VERSION=3.6.2
+    - PROTOBUF_VERSION=3.5.1
+    - PKG_DIR=/tmp/imposm_packaging
+    - CCACHE_TEMPDIR=/tmp/.ccache-temp
+    - PATH=/usr/lib/ccache:$PATH
 
 addons:
-    # postgresql: "9.5"
+    postgresql: "9.5"
     apt:
       # List of whitelisted in travis packages for ubuntu-trusty can be found here:
       #   https://github.com/travis-ci/apt-package-whitelist/blob/master/ubuntu-trusty
       # List of whitelisted in travis apt-sources:
       #   https://github.com/travis-ci/apt-source-whitelist/blob/master/ubuntu.json
-      sources:
-        - ubuntu-toolchain-r-test
+      # sources:
+        # - ubuntu-toolchain-r-test
       packages:
         - postgresql-9.5-postgis-2.3
-        - libgeos-dev
-        - libprotobuf-dev
-        - protobuf-compiler
+        # - libgeos-dev
+        # - libprotobuf-dev
+        # - protobuf-compiler
         - osmosis
-        - cmake
-        - gcc-7
-        - g++-7
+        - chrpath
 
 before_script:
   - psql -U postgres -c 'create database travis' || true
@@ -43,32 +50,62 @@ before_script:
 
 
 before_install:
-  # /usr/bin/gcc is stuck to old versions on both Linux and OSX.
-  - export CXX="g++-7"
-  - export CC="gcc-7"
-  - echo ${CC}
-  - echo ${CXX}
-  - ${CXX} --version
-  - cmake --version
+  - ccache --show-stats
+  - curl -fsSL http://download.osgeo.org/geos/geos-${GEOS_VERSION}.tar.bz2 | tar -jxf - -C ${HOME}/build
+  - cd ${HOME}/build/geos-${GEOS_VERSION} && ./configure --prefix=$PREFIX && make -j2 && make install
 
-  - mkdir -p ${HOME}/build
-  - curl -fsSL https://github.com/google/leveldb/archive/master.tar.gz | tar -zxf - -C ${HOME}/build
-  - find ${HOME}/build
-  - mkdir -p ${HOME}/build/leveldb-master/build
-  - cd ${HOME}/build/leveldb-master/build
+  - mkdir -p ${HOME}/build/leveldb
+  - curl -fsSL https://github.com/pwnall/leveldb/archive/no-has-include.tar.gz | tar -zxf - --strip-components 1 -C ${HOME}/build/leveldb
+  - mkdir -p ${HOME}/build/leveldb/build
+  - cd ${HOME}/build/leveldb/build
   - cmake .. -DBUILD_SHARED_LIBS=1
   - cat include/port/port_config.h
   - cmake --build .
-  - find .
 
   - mkdir -p ${HOME}/local/{lib,include}
-  - cp -R ${HOME}/build/leveldb-master/build/liblevel* ${HOME}/local/lib/
-  - cp -R ${HOME}/build/leveldb-master/include/leveldb ${HOME}/local/include/
+  - cp -R ${HOME}/build/leveldb/build/liblevel* ${HOME}/local/lib/
+  - cp -R ${HOME}/build/leveldb/include/leveldb ${HOME}/local/include/
 
-  - curl -fsSL https://github.com/google/protobuf/releases/download/v2.6.1/protobuf-2.6.1.tar.bz2 | tar -jxf - -C ${HOME}/build
-  - cd ${HOME}/build/protobuf-2.6.1/ && ./configure --prefix=${PREFIX} && make -j2 && make install
+  - curl -fsSL https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protobuf-all-${PROTOBUF_VERSION}.tar.gz | tar -zxf - -C ${HOME}/build
+  - cd ${HOME}/build/protobuf-${PROTOBUF_VERSION}/ && ./configure --prefix=${PREFIX} && make -j2 && make install
 
+  - ccache --show-stats
 
 script:
-  - cd $TRAVIS_BUILD_DIR
-  - make
+  - cd ${TRAVIS_BUILD_DIR}
+  - LEVELDB_POST_121=1 make
+
+before_deploy:
+  - mkdir -p ${PKG_DIR}/lib
+  - cd ${TRAVIS_BUILD_DIR}
+  - cp imposm3 ${PKG_DIR}
+  - cp example-mapping.json ${PKG_DIR}/mapping.json
+
+  - cd $PREFIX/lib
+  - cp libgeos_c.so ${PKG_DIR}/lib
+  - ln -s libgeos_c.so ${PKG_DIR}/lib/libgeos_c.so.1
+  - cp libgeos.so ${PKG_DIR}/lib
+  - ln -s libgeos.so ${PKG_DIR}/lib/libgeos-$GEOS_VERSION.so
+  - cp -R libleveldb.so* ${PKG_DIR}/lib
+
+  - chrpath ${PKG_DIR}/lib/libgeos_c.so -r '${ORIGIN}'
+
+  - find ${PKG_DIR}
+  - BUILD_VERSION=`${PKG_DIR}/imposm3 version`-linux-x86-64
+  - mv ${PKG_DIR} /tmp/imposm3-${BUILD_VERSION}
+  - cd /tmp && tar zcvf imposm3-${BUILD_VERSION}.tar.gz imposm3-${BUILD_VERSION}
+
+  - cd ${TRAVIS_BUILD_DIR}
+
+deploy:
+  provider: releases
+  api_key:
+    secure: fBhtCy6vdxxxuLYuJWXeTHJb3SAZCCbUJncIvR9ZOLCDWMJAPBnzPoqJFbByWzl6XghVRwhy9fe/82vzqByKiB/AQpqGqBxlwA9dSsqvSQcQxomAoHKKfZVdOuxM2bLDW3v5pJpmFtCMwhWjgwIOb9WxnBVeLxBbsq2Ox49tgHw=
+  file: /tmp/imposm3-${BUILD_VERSION}.tar.gz
+  skip_cleanup: true
+  on:
+    repo: omniscale/imposm3
+    tags: true
+    go: stable
+
+
