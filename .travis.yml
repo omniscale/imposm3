@@ -4,10 +4,9 @@ sudo: false
 language: go
 
 go:
-#  - "1.8.5"
-#  - "1.9.x"
- - stable
-#  - tip
+  - "1.8.x"
+  - "1.9.x"
+  - stable
 
 cache:
   directories:
@@ -19,27 +18,23 @@ env:
     - CGO_CFLAGS=-I${PREFIX}/include
     - CGO_LDFLAGS=-L${PREFIX}/lib
     - LD_LIBRARY_PATH=${PREFIX}/lib
+    - PKG_DIR=/tmp/imposm_packaging
     - PGUSER=postgres
+
     - GEOS_VERSION=3.6.2
     - PROTOBUF_VERSION=3.5.1
-    - PKG_DIR=/tmp/imposm_packaging
-    - CCACHE_TEMPDIR=/tmp/.ccache-temp
+
+    # enable ccache by updating PATH
     - PATH=/usr/lib/ccache:$PATH
+    - CCACHE_TEMPDIR=/tmp/.ccache-temp
 
 addons:
     postgresql: "9.5"
     apt:
       # List of whitelisted in travis packages for ubuntu-trusty can be found here:
       #   https://github.com/travis-ci/apt-package-whitelist/blob/master/ubuntu-trusty
-      # List of whitelisted in travis apt-sources:
-      #   https://github.com/travis-ci/apt-source-whitelist/blob/master/ubuntu.json
-      # sources:
-        # - ubuntu-toolchain-r-test
       packages:
         - postgresql-9.5-postgis-2.3
-        # - libgeos-dev
-        # - libprotobuf-dev
-        # - protobuf-compiler
         - osmosis
         - chrpath
 
@@ -51,23 +46,25 @@ before_script:
 
 before_install:
   - ccache --show-stats
+
+  # build GEOS
   - curl -fsSL http://download.osgeo.org/geos/geos-${GEOS_VERSION}.tar.bz2 | tar -jxf - -C ${HOME}/build
   - cd ${HOME}/build/geos-${GEOS_VERSION} && ./configure --prefix=$PREFIX && make -j2 && make install
 
+  # build LevelDB
   - mkdir -p ${HOME}/build/leveldb
-  - curl -fsSL https://github.com/pwnall/leveldb/archive/no-has-include.tar.gz | tar -zxf - --strip-components 1 -C ${HOME}/build/leveldb
+  - curl -fsSL https://github.com/google/leveldb/archive/master.tar.gz | tar -zxf - --strip-components 1 -C ${HOME}/build/leveldb
   - mkdir -p ${HOME}/build/leveldb/build
   - cd ${HOME}/build/leveldb/build
-  - cmake .. -DBUILD_SHARED_LIBS=1
-  - cat include/port/port_config.h
-  - cmake --build .
+  - cmake .. -DBUILD_SHARED_LIBS=1 && make -j 2
 
   - mkdir -p ${HOME}/local/{lib,include}
   - cp -R ${HOME}/build/leveldb/build/liblevel* ${HOME}/local/lib/
   - cp -R ${HOME}/build/leveldb/include/leveldb ${HOME}/local/include/
 
-  - curl -fsSL https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protobuf-all-${PROTOBUF_VERSION}.tar.gz | tar -zxf - -C ${HOME}/build
-  - cd ${HOME}/build/protobuf-${PROTOBUF_VERSION}/ && ./configure --prefix=${PREFIX} && make -j2 && make install
+  # build protobuf
+  # - curl -fsSL https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protobuf-all-${PROTOBUF_VERSION}.tar.gz | tar -zxf - -C ${HOME}/build
+  # - cd ${HOME}/build/protobuf-${PROTOBUF_VERSION}/ && ./configure --prefix=${PREFIX} && make -j2 && make install
 
   - ccache --show-stats
 
