@@ -4,17 +4,13 @@ sudo: false
 language: go
 
 go:
-  - "1.8.x"
-  - "1.9.x"
+  # - "1.8.x"
+  # - "1.9.x"
   - stable
 
-cache:
-  directories:
-    - $HOME/.ccache
 
 env:
   global:
-    - PREFIX=${HOME}/local
     - CGO_CFLAGS=-I${PREFIX}/include
     - CGO_LDFLAGS=-L${PREFIX}/lib
     - LD_LIBRARY_PATH=${PREFIX}/lib
@@ -23,10 +19,17 @@ env:
 
     - GEOS_VERSION=3.6.2
     - PROTOBUF_VERSION=3.5.1
+    - DEPS_REVISION=1
+    - PREFIX=${PREFIX}-${DEPS_REVISION}
 
     # enable ccache by updating PATH
     - PATH=/usr/lib/ccache:$PATH
     - CCACHE_TEMPDIR=/tmp/.ccache-temp
+
+cache:
+  directories:
+    - $HOME/.ccache
+    - $PREFIX
 
 addons:
     postgresql: "9.5"
@@ -48,19 +51,25 @@ before_install:
   - ccache --show-stats
 
   # build GEOS
-  - curl -fsSL http://download.osgeo.org/geos/geos-${GEOS_VERSION}.tar.bz2 | tar -jxf - -C ${HOME}/build
-  - cd ${HOME}/build/geos-${GEOS_VERSION} && ./configure --prefix=$PREFIX && make -j2 && make install
+  - if [[ ! -e ${PREFIX}/lib/libgeos_c.so ]]; then \
+      curl -fsSL http://download.osgeo.org/geos/geos-${GEOS_VERSION}.tar.bz2 | tar -jxf - -C ${HOME}/build \
+      cd ${HOME}/build/geos-${GEOS_VERSION} \
+      ./configure --prefix=$PREFIX \
+      make -j2 \
+      make install \
+    fi
 
   # build LevelDB
-  - mkdir -p ${HOME}/build/leveldb
-  - curl -fsSL https://github.com/google/leveldb/archive/master.tar.gz | tar -zxf - --strip-components 1 -C ${HOME}/build/leveldb
-  - mkdir -p ${HOME}/build/leveldb/build
-  - cd ${HOME}/build/leveldb/build
-  - cmake .. -DBUILD_SHARED_LIBS=1 && make -j 2
-
-  - mkdir -p ${HOME}/local/{lib,include}
-  - cp -R ${HOME}/build/leveldb/build/liblevel* ${HOME}/local/lib/
-  - cp -R ${HOME}/build/leveldb/include/leveldb ${HOME}/local/include/
+  - if [[ ! -e ${PREFIX}/lib/libgeos_c.so ]]; then \
+      mkdir -p ${HOME}/build/leveldb \
+      curl -fsSL https://github.com/google/leveldb/archive/master.tar.gz | tar -zxf - --strip-components 1 -C ${HOME}/build/leveldb \
+      mkdir -p ${HOME}/build/leveldb/build \
+      cd ${HOME}/build/leveldb/build \
+      cmake .. -DBUILD_SHARED_LIBS=1 && make -j 2 \
+      mkdir -p ${PREFIX}/{lib,include} \
+      cp -R ${HOME}/build/leveldb/build/liblevel* ${PREFIX}/lib/ \
+      cp -R ${HOME}/build/leveldb/include/leveldb ${PREFIX}/include/ \
+    fi
 
   # build protobuf
   # - curl -fsSL https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protobuf-all-${PROTOBUF_VERSION}.tar.gz | tar -zxf - -C ${HOME}/build
@@ -78,11 +87,11 @@ before_deploy:
   - cp imposm3 ${PKG_DIR}
   - cp example-mapping.json ${PKG_DIR}/mapping.json
 
-  - cd $PREFIX/lib
+  - cd ${PREFIX}/lib
   - cp libgeos_c.so ${PKG_DIR}/lib
   - ln -s libgeos_c.so ${PKG_DIR}/lib/libgeos_c.so.1
   - cp libgeos.so ${PKG_DIR}/lib
-  - ln -s libgeos.so ${PKG_DIR}/lib/libgeos-$GEOS_VERSION.so
+  - ln -s libgeos.so ${PKG_DIR}/lib/libgeos-${GEOS_VERSION}.so
   - cp -R libleveldb.so* ${PKG_DIR}/lib
 
   - chrpath ${PKG_DIR}/lib/libgeos_c.so -r '${ORIGIN}'
