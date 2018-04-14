@@ -4,8 +4,7 @@ sudo: false
 language: go
 
 go:
-  # - "1.8.x"
-  # - "1.9.x"
+  - "1.7.x"
   - stable
 
 
@@ -13,15 +12,20 @@ env:
   global:
     - GEOS_VERSION=3.6.2
     - PROTOBUF_VERSION=3.5.1
-    # NOTE increase DEPS_REVISION everytime one of the compiled dependencies
-    # changes!
+    - LEVELDB_VERSION=1.21 # TODO: update before_script when 1.21 is released
+    # NOTE increase DEPS_REVISION everytime one of the compiled deps changes!
     - DEPS_REVISION=1
+    # PREFIX is where we install our compiled deps
     - PREFIX=${HOME}/local-${DEPS_REVISION}
 
+    # tell Go to find our compiled deps
     - CGO_CFLAGS=-I${PREFIX}/include
     - CGO_LDFLAGS=-L${PREFIX}/lib
     - LD_LIBRARY_PATH=${PREFIX}/lib
+
+    # PKG_DIR is where we assemble the final package for releases
     - PKG_DIR=/tmp/imposm_packaging
+
     - PGUSER=postgres
 
     # enable ccache by updating PATH
@@ -55,7 +59,8 @@ before_install:
   # build GEOS
   - |
     if [[ ! -e ${PREFIX}/lib/libgeos_c.so ]]; then
-      curl -fsSL http://download.osgeo.org/geos/geos-${GEOS_VERSION}.tar.bz2 | tar -jxf - -C ${HOME}/build
+      curl -fsSL http://download.osgeo.org/geos/geos-${GEOS_VERSION}.tar.bz2 | \
+        tar -jxf - -C ${HOME}/build
       cd ${HOME}/build/geos-${GEOS_VERSION}
       ./configure --prefix=$PREFIX
       make -j2
@@ -66,7 +71,8 @@ before_install:
   - |
     if [[ ! -e ${PREFIX}/lib/liblevel* ]]; then
       mkdir -p ${HOME}/build/leveldb
-      curl -fsSL https://github.com/google/leveldb/archive/master.tar.gz | tar -zxf - --strip-components 1 -C ${HOME}/build/leveldb
+      curl -fsSL https://github.com/google/leveldb/archive/master.tar.gz | \
+        tar -zxf - --strip-components 1 -C ${HOME}/build/leveldb
       mkdir -p ${HOME}/build/leveldb/build
       cd ${HOME}/build/leveldb/build
       cmake .. -DBUILD_SHARED_LIBS=1 && make -j 2
@@ -75,10 +81,6 @@ before_install:
       cp -R ${HOME}/build/leveldb/include/leveldb ${PREFIX}/include/
     fi
 
-  # build protobuf
-  # - curl -fsSL https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protobuf-all-${PROTOBUF_VERSION}.tar.gz | tar -zxf - -C ${HOME}/build
-  # - cd ${HOME}/build/protobuf-${PROTOBUF_VERSION}/ && ./configure --prefix=${PREFIX} && make -j2 && make install
-
   - ccache --show-stats
 
 script:
@@ -86,11 +88,14 @@ script:
   - LEVELDB_POST_121=1 make
 
 before_deploy:
-  - mkdir -p ${PKG_DIR}/lib
   - cd ${TRAVIS_BUILD_DIR}
+  - mkdir -p ${PKG_DIR}/lib
+
+  # copy files
   - cp imposm3 ${PKG_DIR}
   - cp example-mapping.json ${PKG_DIR}/mapping.json
 
+  # copy/link libs
   - cd ${PREFIX}/lib
   - cp libgeos_c.so ${PKG_DIR}/lib
   - ln -s libgeos_c.so ${PKG_DIR}/lib/libgeos_c.so.1
@@ -98,13 +103,15 @@ before_deploy:
   - ln -s libgeos.so ${PKG_DIR}/lib/libgeos-${GEOS_VERSION}.so
   - cp -R libleveldb.so* ${PKG_DIR}/lib
 
+  # update RPATH of libgeos_c.so so that is points to our libgeos.so
   - chrpath ${PKG_DIR}/lib/libgeos_c.so -r '${ORIGIN}'
 
-  - find ${PKG_DIR}
+  # create tar.gz
   - BUILD_VERSION=`${PKG_DIR}/imposm3 version`-linux-x86-64
   - mv ${PKG_DIR} /tmp/imposm3-${BUILD_VERSION}
   - cd /tmp && tar zcvf imposm3-${BUILD_VERSION}.tar.gz imposm3-${BUILD_VERSION}
 
+  # move back to build dir for deploy
   - cd ${TRAVIS_BUILD_DIR}
 
 deploy:
@@ -117,5 +124,4 @@ deploy:
     repo: omniscale/imposm3
     tags: true
     go: stable
-
 
