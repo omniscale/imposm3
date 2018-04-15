@@ -5,7 +5,7 @@ language: go
 
 go:
   - "1.7.x"
-  - stable
+  - "1.10.x"
 
 
 env:
@@ -123,5 +123,5 @@ deploy:
   on:
     repo: omniscale/imposm3
     tags: true
-    go: stable
+    go: "1.10.x"
 
