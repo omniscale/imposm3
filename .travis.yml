@@ -5,6 +5,7 @@ language: go
 
 go:
   - "1.7.x"
+  - "1.10.x"
   - stable
 
 
@@ -48,6 +49,8 @@ addons:
         - chrpath
 
 before_script:
+  - env
+  - flsdkjfhsdlkfjhsdlfkjhdslfkjh # stop
   - psql -U postgres -c 'create database travis' || true
   - psql -U postgres -c "create extension if not exists postgis"
   - psql -U postgres -c "create extension if not exists hstore"
