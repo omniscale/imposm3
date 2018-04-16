@@ -5,9 +5,14 @@ language: go
 
 go:
   - "1.7.x"
-  - "1.10.x"
-  - stable
+  - "1.9.x"
+  - "1.10.x" # we use this for releases, see deploy.on.condition below
+  - tip
 
+matrix:
+  allow_failures:
+    - go: tip
+      fast_finish: true
 
 env:
   global:
@@ -49,8 +54,6 @@ addons:
         - chrpath
 
 before_script:
-  - env
-  - flsdkjfhsdlkfjhsdlfkjhdslfkjh # stop
   - psql -U postgres -c 'create database travis' || true
   - psql -U postgres -c "create extension if not exists postgis"
   - psql -U postgres -c "create extension if not exists hstore"
@@ -126,5 +129,5 @@ deploy:
   on:
     repo: omniscale/imposm3
     tags: true
-    go: stable
+    condition: $TRAVIS_GO_VERSION =~ ^1\.10\.[0-9]+$
 
