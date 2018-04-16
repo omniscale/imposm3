@@ -19,7 +19,13 @@ import (
 
 var log = logging.NewLogger("replication")
 
-var NotAvailable = errors.New("file not available")
+type NotAvailable struct {
+    url    string
+}
+
+func (e *NotAvailable) Error() string {
+    return fmt.Sprintf("File not available: %s", e.url)
+}
 
 type Sequence struct {
 	Filename      string
@@ -71,13 +77,23 @@ func newDownloader(dest, url string, seq int, interval time.Duration) *downloade
 		},
 	}
 
+	var naWaittime time.Duration
+	switch interval {
+	case 24 * time.Hour:
+		naWaittime = 5 * time.Minute
+	case time.Hour:
+		naWaittime = 60 * time.Second
+	default:
+		naWaittime = 10 * time.Second
+	}
+
 	dl := &downloader{
 		baseUrl:      url,
 		dest:         dest,
 		lastSequence: seq,
 		interval:     interval,
 		errWaittime:  60 * time.Second,
-		naWaittime:   10 * time.Second,
+		naWaittime:   naWaittime,
 		sequences:    make(chan Sequence, 1),
 		client:       client,
 	}
@@ -92,6 +108,7 @@ func (d *downloader) Sequences() <-chan Sequence {
 func (d *downloader) download(seq int, ext string) error {
 	dest := path.Join(d.dest, seqPath(seq)+ext)
 	url := d.baseUrl + seqPath(seq) + ext
+	log.Print("Downloading diff file from ", url)
 
 	if _, err := os.Stat(dest); err == nil {
 		return nil
@@ -121,11 +138,11 @@ func (d *downloader) download(seq int, ext string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == 404 {
-		return NotAvailable
+		return &NotAvailable{url}
 	}
 
 	if resp.StatusCode != 200 {
-		return errors.New(fmt.Sprintf("invalid repsonse: %v", resp))
+		return errors.New(fmt.Sprintf("invalid response: %v", resp))
 	}
 
 	_, err = io.Copy(out, resp.Body)
@@ -148,7 +165,8 @@ func (d *downloader) downloadTillSuccess(seq int, ext string) {
 		if err == nil {
 			break
 		}
-		if err == NotAvailable {
+		if err, ok := err.(*NotAvailable); ok {
+			log.Print(err)
 			time.Sleep(d.naWaittime)
 		} else {
 			log.Warn(err)
@@ -161,17 +179,19 @@ func (d *downloader) fetchNextLoop() {
 	stateFile := path.Join(d.dest, seqPath(d.lastSequence)+d.stateExt)
 	lastTime, err := d.stateTime(stateFile)
 	for {
+		nextSeq := d.lastSequence + 1
+		log.Print("Processing sequence ", nextSeq)
 		if err == nil {
 			nextDiffTime := lastTime.Add(d.interval)
 			if nextDiffTime.After(time.Now()) {
 				// we catched up and the next diff file is in the future.
 				// wait till last diff time + interval, before fetching next
-				nextDiffTime = lastTime.Add(d.interval + 2*time.Second /* allow small time diff between server*/)
+				nextDiffTime = lastTime.Add(d.interval + 2*time.Second /* allow small time diff between servers */)
 				waitFor := nextDiffTime.Sub(time.Now())
+				log.Print("Next process in ", waitFor)
 				time.Sleep(waitFor)
 			}
 		}
-		nextSeq := d.lastSequence + 1
 		// download will retry until they succeed
 		d.downloadTillSuccess(nextSeq, d.stateExt)
 		d.downloadTillSuccess(nextSeq, d.fileExt)

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"os"
 	"path"
@@ -76,7 +77,7 @@ func FromOscGz(oscFile string) (*DiffState, error) {
 	return ParseFile(stateFile)
 }
 
-func FromPbf(filename string, before time.Duration) (*DiffState, error) {
+func FromPbf(filename string, before time.Duration, replicationUrl string, replicationInterval time.Duration) (*DiffState, error) {
 	pbfFile, err := pbf.NewParser(filename)
 	if err != nil {
 		return nil, err
@@ -92,15 +93,17 @@ func FromPbf(filename string, before time.Duration) (*DiffState, error) {
 		timestamp = fstat.ModTime()
 	}
 
-	replicationUrl := "https://planet.openstreetmap.org/replication/minute/"
+	if replicationUrl == "" {
+		replicationUrl = "https://planet.openstreetmap.org/replication/minute/"
+	}
 
-	seq := estimateSequence(replicationUrl, timestamp)
+	seq := estimateSequence(replicationUrl, replicationInterval, timestamp)
 	if seq == 0 {
 		return nil, nil
 	}
 
 	// start earlier
-	seq -= int(before.Minutes())
+	seq -= int(math.Ceil(before.Minutes() / replicationInterval.Minutes()))
 	return &DiffState{Time: timestamp, Url: replicationUrl, Sequence: seq}, nil
 }
 
@@ -186,16 +189,16 @@ func currentState(url string) (*DiffState, error) {
 		return nil, err
 	}
 	if resp.StatusCode != 200 {
-		return nil, errors.New(fmt.Sprintf("invalid repsonse: %v", resp))
+		return nil, errors.New(fmt.Sprintf("invalid response: %v", resp))
 	}
 	defer resp.Body.Close()
 	return Parse(resp.Body)
 }
 
-func estimateSequence(url string, timestamp time.Time) int {
+func estimateSequence(url string, interval time.Duration, timestamp time.Time) int {
 	state, err := currentState(url)
 	if err != nil {
-		// try a second time befor failing
+		// try a second time before failing
 		log.Warn("unable to fetch current state from ", url, ":", err, ", retry in 30s")
 		time.Sleep(time.Second * 30)
 		state, err = currentState(url)
@@ -205,6 +208,7 @@ func estimateSequence(url string, timestamp time.Time) int {
 		}
 	}
 
-	behind := state.Time.Sub(timestamp)
-	return state.Sequence - int(behind.Minutes())
+    behind := state.Time.Sub(timestamp)
+    // Sequence unit depends on replication interval (minute, hour, day).
+    return state.Sequence - int(math.Ceil(behind.Minutes() / interval.Minutes()))
 }

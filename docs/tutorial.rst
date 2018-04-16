@@ -210,7 +210,9 @@ To start the update process::
 
 You can stop processing new diff files SIGTERM (``crtl-c``), SIGKILL or SIGHUP. You should create systemd/upstart/init.d service for ``imposm3 run`` to always run in background.
 
-You can change to hourly updates by adding `replication_url: "https://planet.openstreetmap.org/replication/hour/"` and `replication_interval: "1h"` to the Imposm configuration.
+You can change to hourly updates by adding `replication_url: "https://planet.openstreetmap.org/replication/hour/"` and `replication_interval: "1h"` to the Imposm configuration. Same for daily updates (works also for Geofabrik updates): `replication_url: "https://planet.openstreetmap.org/replication/day/"` and `replication_interval: "24h"`.
+
+At import time, Imposm compute the first diff sequence number by comparing the PBF input file timestamp and the latest state available in the remote server. Depending on the PBF generation process, this sequence number may not be correct, you can force Imposm to start with an earlier sequence number by adding a `diff_state_before` duration in your conf file. For example, `diff_state_before: 4h` will start with an initial sequence number generated 4 hours before the PBF generation time.
 
 
 One-time update
