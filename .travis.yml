@@ -128,5 +128,5 @@ deploy:
   on:
     repo: omniscale/imposm3
     tags: true
-    condition: $TRAVIS_GO_VERSION =~ ^1\.10\.[0-9]+$
+    condition: $TRAVIS_GO_VERSION =~ ^1\.10(\.[0-9]+)?$
 
