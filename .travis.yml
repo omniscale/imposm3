@@ -74,7 +74,7 @@ before_install:
 
   # build LevelDB
   - |
-    if [[ ! -e ${PREFIX}/lib/liblevel* ]]; then
+    if [[ ! -e ${PREFIX}/lib/libleveldb.so ]]; then
       mkdir -p ${HOME}/build/leveldb
       curl -fsSL https://github.com/google/leveldb/archive/master.tar.gz | \
         tar -zxf - --strip-components 1 -C ${HOME}/build/leveldb
