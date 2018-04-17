@@ -29,24 +29,24 @@ VERSION_LDFLAGS=-X github.com/omniscale/imposm3.Version=$(BUILD_VERSION)
 
 all: build test
 
-imposm3: $(PBGOFILES) $(GOFILES)
-	$(GO) build $(GOTAGS) $(GOLDFLAGS) ./cmd/imposm3
+imposm: $(PBGOFILES) $(GOFILES)
+	$(GO) build $(GOTAGS) $(GOLDFLAGS) ./cmd/imposm
 
-build: imposm3
+build: imposm
 
 clean:
-	rm -f imposm3
+	rm -f imposm
 	(cd test && make clean)
 
-test: imposm3 system-test-files
+test: imposm system-test-files
 	$(GO) test $(GOTAGS) -i `$(GO) list ./... | grep -Ev '/vendor'`
 	$(GO) test $(GOTAGS) `$(GO) list ./... | grep -Ev '/vendor'`
 
-test-unit: imposm3
+test-unit: imposm
 	$(GO) test $(GOTAGS) -i `$(GO) list ./... | grep -Ev '/test|/vendor'`
 	$(GO) test $(GOTAGS) `$(GO) list ./... | grep -Ev '/test|/vendor'`
 
-test-system: imposm3
+test-system: imposm
 	(cd test && make test)
 
 system-test-files:

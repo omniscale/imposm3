@@ -20,11 +20,11 @@ import (
 var log = logging.NewLogger("replication")
 
 type NotAvailable struct {
-    url    string
+	url string
 }
 
 func (e *NotAvailable) Error() string {
-    return fmt.Sprintf("File not available: %s", e.url)
+	return fmt.Sprintf("File not available: %s", e.url)
 }
 
 type Sequence struct {
@@ -129,7 +129,7 @@ func (d *downloader) download(seq int, ext string) error {
 	if err != nil {
 		return err
 	}
-	req.Header.Set("User-Agent", "Imposm3 "+imposm3.Version)
+	req.Header.Set("User-Agent", "Imposm "+imposm3.Version)
 	resp, err := d.client.Do(req)
 	if err != nil {
 		return err

@@ -22,9 +22,9 @@ import (
 )
 
 const (
-	dbschemaImport     = "imposm3testimport"
-	dbschemaProduction = "imposm3testproduction"
-	dbschemaBackup     = "imposm3testbackup"
+	dbschemaImport     = "imposm_test_import"
+	dbschemaProduction = "imposm_test_production"
+	dbschemaBackup     = "imposm_test_backup"
 )
 
 type importConfig struct {

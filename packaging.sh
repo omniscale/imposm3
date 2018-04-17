@@ -3,7 +3,7 @@
 cat <<EOF
 =================== Imposm Packaging Script ============================
 
-This script creates binary packages for Imposm 3 for Linux.
+This script creates binary packages for Imposm for Linux.
 It installs and builds all dependencies, compiles the master
 branch of this local repository and creates a .tar.gz with
 the imposm3 binary and all 3rd party dependencies.
@@ -186,7 +186,8 @@ echo '-> building imposm package'
 rm -rf $BUILD_TMP
 mkdir -p $BUILD_TMP
 pushd $IMPOSM_SRC
-    cp imposm3 $BUILD_TMP
+    cp imposm $BUILD_TMP
+    cp README.md $BUILD_TMP
     cp example-mapping.json $BUILD_TMP/mapping.json
 popd
 
@@ -211,12 +212,12 @@ popd
 
 
 pushd $BUILD_BASE
-    VERSION=`$BUILD_TMP/imposm3 version`-linux-x86-64
-    rm -rf imposm3-$VERSION
-    mv imposm-build imposm3-$VERSION
-    tar zcvf imposm3-$VERSION.tar.gz imposm3-$VERSION
+    VERSION=`$BUILD_TMP/imposm version`-linux-x86-64
+    rm -rf imposm-$VERSION
+    mv imposm-build imposm-$VERSION
+    tar zcvf imposm-$VERSION.tar.gz imposm-$VERSION
     mkdir -p /vagrant/dist
-    mv imposm3-$VERSION.tar.gz /vagrant/dist/
+    mv imposm-$VERSION.tar.gz /vagrant/dist/
 
     echo "###########################################################################"
     echo " Call the following commands to download the created binary packages:"

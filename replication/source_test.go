@@ -22,7 +22,7 @@ func TestSeqPath(t *testing.T) {
 }
 
 func TestWaitTillPresent(t *testing.T) {
-	tmpdir, err := ioutil.TempDir("", "imposm3tests")
+	tmpdir, err := ioutil.TempDir("", "imposm_tests")
 	if err != nil {
 		t.Fatal(err)
 	}

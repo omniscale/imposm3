@@ -1,12 +1,12 @@
 Tutorial
 ========
 
-The ``imposm3`` command has multiple sub-commands. This tutorial will explain the most important sub-commands: ``import`` and ``diff``.
+The ``imposm`` command has multiple sub-commands. This tutorial will explain the most important sub-commands: ``import`` and ``diff``.
 
 Use the name of the sub-command as the second argument to start it. For example, to print the installed version number call the ``version`` sub-command::
 
-  $ imposm3 version
-  0.1dev-20150507-7ddba33
+  $ imposm version
+  master-20180507-7ddba33
 
 
 Preparation
@@ -58,13 +58,13 @@ Imposm needs to know which OSM elements you want to have in your database. You c
 
 To read an extract::
 
-  imposm3 import -mapping mapping.yml -read germany.osm.pbf
+  imposm import -mapping mapping.yml -read germany.osm.pbf
 
 
 Cache files
 ~~~~~~~~~~~
 
-Imposm stores the cache files in `/tmp/imposm3`. You can change that path with ``-cachedir``. Imposm can merge multiple OSM files into the same cache (e.g. when combining multiple extracts) with the ``-appendcache`` option or it can overwrite existing caches with ``-overwritecache``. Imposm will fail to ``-read`` if it finds existing cache files and if you don't specify either ``-appendcache`` or ``-overwritecache``.
+Imposm stores the cache files in `/tmp/imposm`. You can change that path with ``-cachedir``. Imposm can merge multiple OSM files into the same cache (e.g. when combining multiple extracts) with the ``-appendcache`` option or it can overwrite existing caches with ``-overwritecache``. Imposm will fail to ``-read`` if it finds existing cache files and if you don't specify either ``-appendcache`` or ``-overwritecache``.
 
 Make sure that you have enough disk space for storing these cache files. The underlying LevelDB library will crash if it runs out of free space. 2-3 times the size of the PBF file is a good estimate for the cache size, even with -diff mode.
 
@@ -80,16 +80,16 @@ You need to tell Imposm the connection parameters of your database. The ``-conne
 In our example:
 ::
 
-  imposm3 import -mapping mapping.yml -write -connection postgis://osm:osm@localhost/osm
+  imposm import -mapping mapping.yml -write -connection postgis://osm:osm@localhost/osm
 
 You can combine reading and writing::
 
-  imposm3 import -mapping mapping.yml -read hamburg.osm.pbf -write -connection postgis://osm:osm@localhost/osm
+  imposm import -mapping mapping.yml -read hamburg.osm.pbf -write -connection postgis://osm:osm@localhost/osm
 
 
 All tables are prefixed with ``osm_``, e.g. ``roads`` will create the table ``osm_roads``. You can change the prefix by appending ``?prefix=myprefix`` to the connection URL. Use ``NONE`` to disable prefixing::
 
-  imposm3 import -mapping mapping.yml -write -connection postgis://osm:osm@localhost/osm?prefix=NONE
+  imposm import -mapping mapping.yml -write -connection postgis://osm:osm@localhost/osm?prefix=NONE
 
 
 Limit to
@@ -99,7 +99,7 @@ You can limit the imported geometries to polygon boundaries. You can load the li
 
 ::
 
-    imposm3 import -mapping mapping.yml -connection postgis://osm:osm@localhost/osm -read europe.osm.pbf -write -limitto germany.geojson
+    imposm import -mapping mapping.yml -connection postgis://osm:osm@localhost/osm -read europe.osm.pbf -write -limitto germany.geojson
 
 
 ``-limitto`` also controls which elements are stored in the internal cache. You can configure a buffer around the ``-limitto`` geometry with the ``-limittocachebuffer`` to add more elements to your cache. This is necessary for getting complete polygons and line strings at the boundaries of your ``-limitto`` geometry.
@@ -123,14 +123,14 @@ You can configure the following options:
 Here is an example configuration::
 
     {
-        "cachedir": "/tmp/imposm3_cache",
+        "cachedir": "/tmp/imposm_cache",
         "connection": "postgis://osm:osm@localhost/osm",
         "mapping": "mapping.yml"
     }
 
 And here is it in use::
 
-    imposm3 import -config config.json -read hamburg.osm.pbf -write
+    imposm import -config config.json -read hamburg.osm.pbf -write
 
 
 
@@ -141,11 +141,11 @@ This step is optional and it does some optimization on the created tables. It cl
 
 ::
 
-  imposm3 import -config config.json -optimize
+  imposm import -config config.json -optimize
 
 You can combine reading, writing and optimizing::
 
-  imposm3 import -config config.json -read hamburg.osm.pbf -write -optimize
+  imposm import -config config.json -read hamburg.osm.pbf -write -optimize
 
 
 .. _production_tables:
@@ -161,17 +161,17 @@ Imposm imports all tables into the ``import`` schema by default. For example, af
 Imposm can `deploy` all imported tables by updating the schema of the tables.
 To move all tables form ``import`` to the default schema ``public``::
 
-  imposm3 import -mapping mapping.yml -connection postgis://osm:osm@localhost/osm -deployproduction
+  imposm import -mapping mapping.yml -connection postgis://osm:osm@localhost/osm -deployproduction
 
 This will also remove all existing Imposm tables from ``backup`` and it will moves tables from the ``public`` to the ``backup`` schema.
 
 You can revert a deploy (moving ``public`` tables to ``import`` and ``backup`` tables to ``public``)::
 
-  imposm3 import -mapping mapping.yml -connection postgis://osm:osm@localhost/osm -revertdeploy
+  imposm import -mapping mapping.yml -connection postgis://osm:osm@localhost/osm -revertdeploy
 
 And you can remove the backup schema::
 
-  imposm3 import -mapping mapping.yml -connection postgis://osm:osm@localhost/osm -removebackup
+  imposm import -mapping mapping.yml -connection postgis://osm:osm@localhost/osm -removebackup
 
 You can change the schema names with ``dbschema-import``, ``-dbschema-production`` and ``-dbschema-backup``
 
@@ -193,7 +193,7 @@ It needs to cache a few more information to be able to update the database from 
 
 ::
 
-  imposm3 import -config config.json -read hamburg.osm.pbf -write -diff -cachedir ./cache -diffdir ./diff
+  imposm import -config config.json -read hamburg.osm.pbf -write -diff -cachedir ./cache -diffdir ./diff
 
 .. note:: Each diff import requires access to the cache files from this initial import. So it is a good idea to set ``-cachedir`` to a premanent location instead of `/tmp/`.
 
@@ -202,13 +202,13 @@ It needs to cache a few more information to be able to update the database from 
 `run`
 -----
 
-Imposm 3 can automatically fetch and import diff files. It stores the current sequence in `last.state.txt` inside the `-diffdir` directory. The downloaded diff files are cached in this directory as well.
+Imposm can automatically fetch and import diff files. It stores the current sequence in `last.state.txt` inside the `-diffdir` directory. The downloaded diff files are cached in this directory as well.
 
 To start the update process::
 
-  imposm3 run -config config.json
+  imposm run -config config.json
 
-You can stop processing new diff files SIGTERM (``crtl-c``), SIGKILL or SIGHUP. You should create systemd/upstart/init.d service for ``imposm3 run`` to always run in background.
+You can stop processing new diff files SIGTERM (``crtl-c``), SIGKILL or SIGHUP. You should create systemd/upstart/init.d service for ``imposm run`` to always run in background.
 
 You can change to hourly updates by adding `replication_url: "https://planet.openstreetmap.org/replication/hour/"` and `replication_interval: "1h"` to the Imposm configuration. Same for daily updates (works also for Geofabrik updates): `replication_url: "https://planet.openstreetmap.org/replication/day/"` and `replication_interval: "24h"`.
 
@@ -224,9 +224,9 @@ The ``diff`` sub-command requires similar options as the ``import`` sub-command.
 
 To update an existing database with three change files::
 
-  imposm3 diff -config config.json changes-1.osc.gz changes-2.osc.gz changes-3.osc.gz
+  imposm diff -config config.json changes-1.osc.gz changes-2.osc.gz changes-3.osc.gz
 
-Imposm 3 stores the sequence number of the last imported changeset in `${cachedir}/last.state.txt`, if it finds a matching state file (`123.state.txt` for `123.osc.gz`). Imposm refuses to import the same diff files a second time if these state files are present.
+Imposm stores the sequence number of the last imported changeset in `${cachedir}/last.state.txt`, if it finds a matching state file (`123.state.txt` for `123.osc.gz`). Imposm refuses to import the same diff files a second time if these state files are present.
 
 Remember that you have to make the initial import with the ``-diff`` option. See above.
 

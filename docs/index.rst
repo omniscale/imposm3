@@ -1,10 +1,10 @@
-Imposm3
-=======
+Imposm
+======
 
-Imposm3 is an importer for OpenStreetMap data. It reads PBF files and imports the data into PostgreSQL/PostGIS databases.
+Imposm is an importer for OpenStreetMap data. It reads PBF files and imports the data into PostgreSQL/PostGIS databases.
 It is designed to create databases that are optimized for rendering/tile/map-services.
 
-It is developed and supported by `Omniscale <http://omniscale.com>`_ and is released as open source under the `Apache Software License 2.0 <http://www.apache.org/licenses/LICENSE-2.0.html>`_. Imposm3 is a rewrite of Imposm 2 with even better performance and support for (minutely) diff updates.
+It is developed and supported by `Omniscale <http://omniscale.com>`_ and is released as open source under the `Apache Software License 2.0 <http://www.apache.org/licenses/LICENSE-2.0.html>`_. Imposm >=3 is a rewrite of Imposm 2 with even better performance and support for (minutely) diff updates.
 
 
 Features
@@ -39,8 +39,6 @@ Support
 -------
 
 There is a `mailing list at Google Groups <http://groups.google.com/group/imposm>`_ for all questions. You can subscribe by sending an email to: imposm+subscribe@googlegroups.com
-
-For commercial support `contact Omniscale <http://omniscale.com/contact>`_.
 
 Development
 -----------

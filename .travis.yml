@@ -97,7 +97,9 @@ before_deploy:
   - mkdir -p ${PKG_DIR}/lib
 
   # copy files
-  - cp imposm3 ${PKG_DIR}
+  - cp imposm ${PKG_DIR}
+  - ln -s imposm ${PKG_DIR}/imposm3
+  - cp README.md ${PKG_DIR}
   - cp example-mapping.json ${PKG_DIR}/mapping.json
 
   # copy/link libs
@@ -112,9 +114,9 @@ before_deploy:
   - chrpath ${PKG_DIR}/lib/libgeos_c.so -r '${ORIGIN}'
 
   # create tar.gz
-  - BUILD_VERSION=`${PKG_DIR}/imposm3 version`-linux-x86-64
-  - mv ${PKG_DIR} /tmp/imposm3-${BUILD_VERSION}
-  - cd /tmp && tar zcvf imposm3-${BUILD_VERSION}.tar.gz imposm3-${BUILD_VERSION}
+  - BUILD_VERSION=`${PKG_DIR}/imposm version`-linux-x86-64
+  - mv ${PKG_DIR} /tmp/imposm-${BUILD_VERSION}
+  - cd /tmp && tar zcvf imposm-${BUILD_VERSION}.tar.gz imposm-${BUILD_VERSION}
 
   # move back to build dir for deploy
   - cd ${TRAVIS_BUILD_DIR}
@@ -123,7 +125,7 @@ deploy:
   provider: releases
   api_key:
     secure: fBhtCy6vdxxxuLYuJWXeTHJb3SAZCCbUJncIvR9ZOLCDWMJAPBnzPoqJFbByWzl6XghVRwhy9fe/82vzqByKiB/AQpqGqBxlwA9dSsqvSQcQxomAoHKKfZVdOuxM2bLDW3v5pJpmFtCMwhWjgwIOb9WxnBVeLxBbsq2Ox49tgHw=
-  file: /tmp/imposm3-${BUILD_VERSION}.tar.gz
+  file: /tmp/imposm-${BUILD_VERSION}.tar.gz
   skip_cleanup: true
   on:
     repo: omniscale/imposm3

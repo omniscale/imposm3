@@ -5,6 +5,7 @@ import (
 	golog "log"
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/omniscale/imposm3"
 	"github.com/omniscale/imposm3/cache/query"
@@ -37,6 +38,10 @@ func Main(usage func()) {
 		usage()
 		logging.Shutdown()
 		os.Exit(1)
+	}
+
+	if strings.HasSuffix(os.Args[0], "imposm3") {
+		fmt.Println("WARNING: Use imposm binary instead of imposm3!")
 	}
 
 	switch os.Args[1] {

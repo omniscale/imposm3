@@ -13,7 +13,7 @@ import (
 func TestRouteRelation_Prepare(t *testing.T) {
 	var err error
 
-	ts.dir, err = ioutil.TempDir("", "imposm3test")
+	ts.dir, err = ioutil.TempDir("", "imposm_test")
 	if err != nil {
 		t.Fatal(err)
 	}

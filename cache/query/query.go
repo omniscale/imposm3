@@ -21,7 +21,7 @@ var (
 	relIds   = flags.String("rel", "", "relation")
 	full     = flags.Bool("full", false, "recurse into relations/ways")
 	deps     = flags.Bool("deps", false, "show dependent ways/relations")
-	cachedir = flags.String("cachedir", "/tmp/imposm3", "cache directory")
+	cachedir = flags.String("cachedir", "/tmp/imposm", "cache directory")
 )
 
 type nodes map[string]*node
