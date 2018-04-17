@@ -29,7 +29,7 @@ VERSION_LDFLAGS=-X github.com/omniscale/imposm3.Version=$(BUILD_VERSION)
 
 all: build test
 
-imposm: $(PBGOFILES) $(GOFILES)
+imposm: $(GOFILES)
 	$(GO) build $(GOTAGS) $(GOLDFLAGS) ./cmd/imposm
 
 build: imposm
@@ -51,6 +51,8 @@ test-system: imposm
 
 system-test-files:
 	(cd test && make files)
+
+regen-protobuf: $(PBGOFILES)
 
 %.pb.go: %.proto
 	protoc --proto_path=$(GOPATH)/src:$(GOPATH)/src/github.com/omniscale/imposm3/vendor/github.com/gogo/protobuf/protobuf:. --gogofaster_out=. $^
