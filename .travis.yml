@@ -50,6 +50,7 @@ addons:
       #   https://github.com/travis-ci/apt-package-whitelist/blob/master/ubuntu-trusty
       packages:
         - postgresql-9.5-postgis-2.3
+        - osmosis
         - chrpath
 
 before_script:

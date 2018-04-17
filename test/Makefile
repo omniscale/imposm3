@@ -9,15 +9,17 @@ endif
 all: test
 
 clean:
-	rm generated/*.{pbf,gz}
+	rm -rf build
 
-PBF_FILES=$(addprefix generated/,$(patsubst %.osm,%.pbf,$(wildcard *.osm)))
-OSCGZ_FILES=$(addprefix generated/,$(patsubst %.osc,%.osc.gz,$(wildcard *.osc)))
+PBF_FILES=$(addprefix build/,$(patsubst %.osm,%.pbf,$(wildcard *.osm)))
+OSCGZ_FILES=$(addprefix build/,$(patsubst %.osc,%.osc.gz,$(wildcard *.osc)))
 
-generated/%.pbf: %.osm
+build/%.pbf: %.osm
+	@mkdir -p build
 	osmosis --read-xml $< --sort type="TypeThenId" --write-pbf $@ omitmetadata=true
 
-generated/%.osc.gz: %.osc
+build/%.osc.gz: %.osc
+	@mkdir -p build
 	gzip --stdout $< > $@
 
 files: $(PBF_FILES) $(OSCGZ_FILES)

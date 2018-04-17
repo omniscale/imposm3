@@ -24,7 +24,7 @@ func TestExpireTiles_Prepare(t *testing.T) {
 	ts.config = importConfig{
 		connection:      "postgis://",
 		cacheDir:        ts.dir,
-		osmFileName:     "generated/expire_tiles.pbf",
+		osmFileName:     "build/expire_tiles.pbf",
 		mappingFileName: "expire_tiles_mapping.yml",
 		expireTileDir:   filepath.Join(ts.dir, "expiretiles"),
 	}
@@ -62,7 +62,7 @@ func TestExpireTiles_Elements(t *testing.T) {
 }
 
 func TestExpireTiles_Update(t *testing.T) {
-	ts.updateOsm(t, "generated/expire_tiles.osc.gz")
+	ts.updateOsm(t, "build/expire_tiles.osc.gz")
 }
 
 func TestExpireTiles_CheckExpireFile(t *testing.T) {

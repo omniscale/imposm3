@@ -23,7 +23,7 @@ func TestSingleTable_Prepare(t *testing.T) {
 	ts.config = importConfig{
 		connection:      "postgis://",
 		cacheDir:        ts.dir,
-		osmFileName:     "generated/single_table.pbf",
+		osmFileName:     "build/single_table.pbf",
 		mappingFileName: "single_table_mapping.json",
 	}
 	ts.g = geos.NewGeos()
@@ -167,7 +167,7 @@ func TestSingleTable_DuplicateIds1(t *testing.T) {
 // #######################################################################
 
 func TestSingleTable_Update(t *testing.T) {
-	ts.updateOsm(t, "./generated/single_table.osc.gz")
+	ts.updateOsm(t, "./build/single_table.osc.gz")
 }
 
 // #######################################################################

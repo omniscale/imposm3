@@ -29,7 +29,7 @@ func TestComplete_Prepare(t *testing.T) {
 	ts.config = importConfig{
 		connection:      "postgis://",
 		cacheDir:        ts.dir,
-		osmFileName:     "generated/complete_db.pbf",
+		osmFileName:     "build/complete_db.pbf",
 		mappingFileName: "complete_db_mapping.json",
 	}
 	ts.g = geos.NewGeos()
@@ -400,7 +400,7 @@ func TestComplete_HstoreTags(t *testing.T) {
 // #######################################################################
 
 func TestComplete_Update(t *testing.T) {
-	ts.updateOsm(t, "./generated/complete_db.osc.gz")
+	ts.updateOsm(t, "./build/complete_db.osc.gz")
 }
 
 // #######################################################################

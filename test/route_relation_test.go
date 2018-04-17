@@ -20,7 +20,7 @@ func TestRouteRelation_Prepare(t *testing.T) {
 	ts.config = importConfig{
 		connection:      "postgis://",
 		cacheDir:        ts.dir,
-		osmFileName:     "generated/route_relation.pbf",
+		osmFileName:     "build/route_relation.pbf",
 		mappingFileName: "route_relation_mapping.yml",
 	}
 	ts.g = geos.NewGeos()
@@ -107,7 +107,7 @@ func TestRouteRelation_NoRouteWithMissingMember(t *testing.T) {
 // #######################################################################
 
 func TestRouteRelation_Update(t *testing.T) {
-	ts.updateOsm(t, "./generated/route_relation.osc.gz")
+	ts.updateOsm(t, "./build/route_relation.osc.gz")
 }
 
 // #######################################################################
