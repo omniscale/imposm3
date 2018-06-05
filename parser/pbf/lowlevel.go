@@ -46,8 +46,12 @@ func readBlobData(pos block) ([]byte, error) {
 	var blob = &osmpbf.Blob{}
 
 	blobData := make([]byte, pos.size)
-	file.Seek(pos.offset, 0)
-	io.ReadFull(file, blobData)
+	if _, err := file.Seek(pos.offset, 0); err != nil {
+		return nil, err
+	}
+	if n, err := io.ReadFull(file, blobData); n != int(pos.size) || err != nil {
+		return nil, newParserError("reading blob data", err)
+	}
 	err = proto.Unmarshal(blobData, blob)
 	if err != nil {
 		return nil, newParserError("unmarshaling blob", err)
