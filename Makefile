@@ -38,16 +38,14 @@ clean:
 	rm -f imposm
 	(cd test && make clean)
 
-test: imposm system-test-files
-	$(GO) test $(GOTAGS) -i `$(GO) list ./... | grep -Ev '/vendor'`
-	$(GO) test $(GOTAGS) `$(GO) list ./... | grep -Ev '/vendor'`
+test: system-test-files
+	$(GO) test $(GOTAGS) ./...
 
-test-unit: imposm
-	$(GO) test $(GOTAGS) -i `$(GO) list ./... | grep -Ev '/test|/vendor'`
-	$(GO) test $(GOTAGS) `$(GO) list ./... | grep -Ev '/test|/vendor'`
+test-unit: system-test-files
+	$(GO) test $(GOTAGS) -test.short ./...
 
-test-system: imposm
-	(cd test && make test)
+test-system: system-test-files
+	$(GO) test $(GOTAGS) ./test
 
 system-test-files:
 	(cd test && make files)
@@ -77,23 +75,8 @@ build-license-deps:
 	' _ {} \;
 
 
-
-comma:= ,
-empty:=
-space:= $(empty) $(empty)
-COVER_IGNORE:='/vendor|/cmd'
-COVER_PACKAGES:= $(shell $(GO) list ./... | grep -Ev $(COVER_IGNORE))
-COVER_PACKAGES_LIST:=$(subst $(space),$(comma),$(COVER_PACKAGES))
-
 test-coverage:
-	mkdir -p .coverprofile
-	rm -f .coverprofile/*
-	$(GO) list -f '{{if gt (len .TestGoFiles) 0}}"$(GO) test -covermode count -coverprofile ./.coverprofile/{{.Name}}-$$$$.coverprofile -coverpkg $(COVER_PACKAGES_LIST) {{.ImportPath}}"{{end}}' ./... \
-		| grep -Ev $(COVER_IGNORE) \
-		| xargs -n 1 bash -c
-	$(GOPATH)/bin/gocovmerge .coverprofile/*.coverprofile > overalls.coverprofile
-	rm -rf .coverprofile
-
+	$(GO) test -coverprofile imposm.coverprofile ./...
 test-coverage-html: test-coverage
-	$(GO) tool cover -html overalls.coverprofile
+	$(GO) tool cover -html imposm.coverprofile
 
