@@ -7,7 +7,7 @@ import (
 )
 
 func BenchmarkTagMatch(b *testing.B) {
-	m, err := NewMapping("test_mapping.yml")
+	m, err := FromFile("test_mapping.yml")
 	if err != nil {
 		b.Fatal(err)
 	}

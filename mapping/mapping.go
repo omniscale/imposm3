@@ -89,14 +89,17 @@ type Mapping struct {
 	RelationMemberMatcher RelationMatcher
 }
 
-func NewMapping(filename string) (*Mapping, error) {
-	f, err := ioutil.ReadFile(filename)
+func FromFile(filename string) (*Mapping, error) {
+	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
+	return New(b)
+}
 
+func New(b []byte) (*Mapping, error) {
 	mapping := Mapping{}
-	err = yaml.Unmarshal(f, &mapping.Conf)
+	err := yaml.Unmarshal(b, &mapping.Conf)
 	if err != nil {
 		return nil, err
 	}

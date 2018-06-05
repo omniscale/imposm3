@@ -49,7 +49,7 @@ func Import() {
 		log.StopStep(step)
 	}
 
-	tagmapping, err := mapping.NewMapping(config.BaseOptions.MappingFile)
+	tagmapping, err := mapping.FromFile(config.BaseOptions.MappingFile)
 	if err != nil {
 		log.Fatal("error in mapping file: ", err)
 	}

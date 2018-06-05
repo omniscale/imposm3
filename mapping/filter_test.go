@@ -8,63 +8,44 @@ import (
 	"github.com/omniscale/imposm3/mapping/config"
 )
 
-var mapping *Mapping
-
-func init() {
-	var err error
-	mapping, err = NewMapping("./test_mapping.yml")
-	if err != nil {
-		panic(err)
-	}
-}
-
-func stringMapEqual(expected, actual map[string]string) bool {
-	if len(expected) != len(actual) {
-		return false
-	}
-
-	for k, v := range expected {
-		if actualV, ok := actual[k]; ok {
-			if actualV != v {
-				return false
-			}
-		} else {
-			return false
-		}
-	}
-	return true
-}
-
-func matchesEqual(expected []Match, actual []Match) bool {
-	expectedMatches := make(map[DestTable]Match)
-	actualMatches := make(map[DestTable]Match)
-
-	if len(expected) != len(actual) {
-		return false
-	}
-
-	for _, match := range expected {
-		expectedMatches[match.Table] = match
-	}
-	for _, match := range actual {
-		actualMatches[match.Table] = match
-	}
-
-	for name, expectedMatch := range expectedMatches {
-		if actualMatch, ok := actualMatches[name]; ok {
-			if expectedMatch.Table != actualMatch.Table ||
-				expectedMatch.Key != actualMatch.Key ||
-				expectedMatch.Value != actualMatch.Value {
-				return false
-			}
-		} else {
-			return false
-		}
-	}
-	return true
-}
-
 func TestTagFilterNodes(t *testing.T) {
+	mapping, err := New([]byte(`
+    tables:
+      places:
+        type: point
+        columns:
+        - key: name
+          name: name
+          type: string
+        - args:
+            values:
+            - village
+            - town
+            - city
+            - county
+          name: z_order
+          type: enumerate
+        - key: population
+          name: population
+          type: integer
+        mapping:
+          place:
+          - city
+          - town
+          - village
+      transport_points:
+        type: point
+        columns:
+        mapping:
+          highway: [bus_stop]
+      highways:
+        type: linestring
+        mapping:
+          highway: [__any__] # ignored as we test node filters
+    `))
+	if err != nil {
+		t.Fatal(err)
+	}
 	tests := []struct {
 		tags     element.Tags
 		expected element.Tags
@@ -72,12 +53,11 @@ func TestTagFilterNodes(t *testing.T) {
 		{tags: element.Tags{}, expected: element.Tags{}},
 		{tags: element.Tags{"name": "foo"}, expected: element.Tags{"name": "foo"}},
 		{tags: element.Tags{"name": "foo", "unknown": "foo"}, expected: element.Tags{"name": "foo"}},
-		{tags: element.Tags{"name": "foo", "place": "unknown"}, expected: element.Tags{"name": "foo"}},
-		{tags: element.Tags{"name": "foo", "place": "unknown", "population": "1000"}, expected: element.Tags{"name": "foo", "population": "1000"}},
-		{tags: element.Tags{"name": "foo", "place": "village"}, expected: element.Tags{"name": "foo", "place": "village"}},
-		{tags: element.Tags{"name": "foo", "place": "village", "population": "1000"}, expected: element.Tags{"name": "foo", "place": "village", "population": "1000"}},
-		{tags: element.Tags{"name": "foo", "place": "village", "unknown": "foo"}, expected: element.Tags{"name": "foo", "place": "village"}},
-		{tags: element.Tags{"name": "foo", "place": "village", "highway": "bus_stop"}, expected: element.Tags{"name": "foo", "place": "village", "highway": "bus_stop"}},
+		{tags: element.Tags{"place": "unknown"}, expected: element.Tags{}},
+		{tags: element.Tags{"place": "village"}, expected: element.Tags{"place": "village"}},
+		{tags: element.Tags{"population": "1000"}, expected: element.Tags{"population": "1000"}},
+		{tags: element.Tags{"highway": "bus_stop"}, expected: element.Tags{"highway": "bus_stop"}},
+		{tags: element.Tags{"highway": "residential"}, expected: element.Tags{}},
 	}
 
 	nodes := mapping.NodeTagFilter()
@@ -90,6 +70,38 @@ func TestTagFilterNodes(t *testing.T) {
 }
 
 func TestTagFilterWays(t *testing.T) {
+	mapping, err := New([]byte(`
+    tables:
+      buildings:
+        type: polygon
+        mapping:
+          building: [__any__]
+      highways:
+        type: linestring
+        columns:
+            - key: name
+              name: name
+              type: string
+            - key: tunnel
+              name: tunnel
+              type: boolint
+            - key: oneway
+              name: oneway
+              type: direction
+        mapping:
+          highway:
+            - track
+      places:
+        type: point
+        mapping:
+          place:  # ignored as we test ways
+          - city
+          - town
+          - village
+    `))
+	if err != nil {
+		t.Fatal(err)
+	}
 	tests := []struct {
 		tags     element.Tags
 		expected element.Tags
@@ -97,12 +109,11 @@ func TestTagFilterWays(t *testing.T) {
 		{tags: element.Tags{}, expected: element.Tags{}},
 		{tags: element.Tags{"name": "foo"}, expected: element.Tags{"name": "foo"}},
 		{tags: element.Tags{"name": "foo", "unknown": "foo"}, expected: element.Tags{"name": "foo"}},
-		{tags: element.Tags{"name": "foo", "highway": "unknown"}, expected: element.Tags{"name": "foo"}},
-		{tags: element.Tags{"name": "foo", "highway": "track"}, expected: element.Tags{"name": "foo", "highway": "track"}},
-		{tags: element.Tags{"name": "foo", "building": "whatever"}, expected: element.Tags{"name": "foo", "building": "whatever"}},
-		{tags: element.Tags{"name": "foo", "highway": "track", "unknown": "foo"}, expected: element.Tags{"name": "foo", "highway": "track"}},
-		{tags: element.Tags{"name": "foo", "place": "village", "highway": "track"}, expected: element.Tags{"name": "foo", "highway": "track"}},
-		{tags: element.Tags{"name": "foo", "highway": "track", "oneway": "yes", "tunnel": "1"}, expected: element.Tags{"name": "foo", "highway": "track", "oneway": "yes", "tunnel": "1"}},
+		{tags: element.Tags{"highway": "unknown"}, expected: element.Tags{}},
+		{tags: element.Tags{"highway": "track"}, expected: element.Tags{"highway": "track"}},
+		{tags: element.Tags{"building": "whatever"}, expected: element.Tags{"building": "whatever"}},
+		{tags: element.Tags{"place": "village"}, expected: element.Tags{}},
+		{tags: element.Tags{"oneway": "yes", "tunnel": "1"}, expected: element.Tags{"oneway": "yes", "tunnel": "1"}},
 	}
 
 	ways := mapping.WayTagFilter()
@@ -115,19 +126,54 @@ func TestTagFilterWays(t *testing.T) {
 }
 
 func TestTagFilterRelations(t *testing.T) {
+	mapping, err := New([]byte(`
+    tags:
+        include: [source]
+    tables:
+      landuse:
+        type: polygon
+        mapping:
+          landuse: [farm]
+      buildings:
+        type: polygon
+        columns:
+          - key: name
+            type: string
+            name: name
+        mapping:
+          building: [__any__]
+      highways:
+        type: linestring
+        mapping:
+          highway: # imported for relations
+            - track
+      places:
+        type: point
+        mapping:
+          place: # ignored as we test ways
+          - city
+          - town
+          - village
+    `))
+	if err != nil {
+		t.Fatal(err)
+	}
 	tests := []struct {
 		tags     element.Tags
 		expected element.Tags
 	}{
 		{tags: element.Tags{}, expected: element.Tags{}},
 		{tags: element.Tags{"name": "foo"}, expected: element.Tags{"name": "foo"}},
-		{tags: element.Tags{"name": "foo", "unknown": "foo"}, expected: element.Tags{"name": "foo"}},
-		{tags: element.Tags{"name": "foo", "landuse": "unknown"}, expected: element.Tags{"name": "foo"}},
-		{tags: element.Tags{"name": "foo", "landuse": "farm"}, expected: element.Tags{"name": "foo", "landuse": "farm"}},
-		{tags: element.Tags{"name": "foo", "landuse": "farm", "type": "multipolygon"}, expected: element.Tags{"name": "foo", "landuse": "farm", "type": "multipolygon"}},
-		{tags: element.Tags{"name": "foo", "type": "multipolygon"}, expected: element.Tags{"name": "foo", "type": "multipolygon"}},
-		{tags: element.Tags{"name": "foo", "type": "boundary"}, expected: element.Tags{"name": "foo", "type": "boundary"}},
-		{tags: element.Tags{"name": "foo", "landuse": "farm", "type": "boundary"}, expected: element.Tags{"name": "foo", "landuse": "farm", "type": "boundary"}},
+		{tags: element.Tags{"unknown": "foo"}, expected: element.Tags{}},
+		{tags: element.Tags{"landuse": "unknown"}, expected: element.Tags{}},
+		{tags: element.Tags{"highway": "track"}, expected: element.Tags{"highway": "track"}},
+		{tags: element.Tags{"place": "town"}, expected: element.Tags{}},
+		{tags: element.Tags{"landuse": "farm"}, expected: element.Tags{"landuse": "farm"}},
+		{tags: element.Tags{"landuse": "farm", "type": "multipolygon"}, expected: element.Tags{"landuse": "farm", "type": "multipolygon"}},
+		{tags: element.Tags{"type": "multipolygon"}, expected: element.Tags{"type": "multipolygon"}},
+		{tags: element.Tags{"type": "boundary"}, expected: element.Tags{"type": "boundary"}},
+		{tags: element.Tags{"building": "yes"}, expected: element.Tags{"building": "yes"}},
+		{tags: element.Tags{"source": "JOSM"}, expected: element.Tags{"source": "JOSM"}},
 	}
 
 	relations := mapping.RelationTagFilter()
@@ -140,6 +186,43 @@ func TestTagFilterRelations(t *testing.T) {
 }
 
 func TestPointMatcher(t *testing.T) {
+	mapping, err := New([]byte(`
+    tables:
+      places:
+        type: point
+        columns:
+        - key: name
+          name: name
+          type: string
+        - args:
+            values:
+            - village
+            - town
+            - city
+            - county
+          name: z_order
+          type: enumerate
+        - key: population
+          name: population
+          type: integer
+        mapping:
+          place:
+          - city
+          - town
+          - village
+      transport_points:
+        type: point
+        columns:
+        mapping:
+          highway: [bus_stop]
+      highways:
+        type: linestring
+        mapping:
+          highway: [__any__] # ignored as we test node filters
+    `))
+	if err != nil {
+		t.Fatal(err)
+	}
 	tests := []struct {
 		tags    element.Tags
 		matches []Match
@@ -147,7 +230,7 @@ func TestPointMatcher(t *testing.T) {
 		{element.Tags{"unknown": "baz"}, []Match{}},
 		{element.Tags{"place": "unknown"}, []Match{}},
 		{element.Tags{"place": "city"}, []Match{{"place", "city", DestTable{Name: "places"}, nil}}},
-		{element.Tags{"place": "city", "highway": "unknown"}, []Match{{"place", "city", DestTable{Name: "places"}, nil}}},
+		{element.Tags{"place": "city", "highway": "residential"}, []Match{{"place", "city", DestTable{Name: "places"}, nil}}},
 		{element.Tags{"place": "city", "highway": "bus_stop"}, []Match{
 			{"place", "city", DestTable{Name: "places"}, nil},
 			{"highway", "bus_stop", DestTable{Name: "transport_points"}, nil}},
@@ -166,12 +249,55 @@ func TestPointMatcher(t *testing.T) {
 }
 
 func TestLineStringMatcher(t *testing.T) {
+	mapping, err := New([]byte(`
+    areas:
+      area_tags: [buildings, landuse, leisure, natural, aeroway]
+      linear_tags: [highway, barrier]
+    tables:
+      landuse:
+        type: polygon
+        mapping:
+          landuse: [park]
+      aeroways:
+        type: linestring
+        mapping:
+          aeroway: [runway]
+      barrierways:
+        type: linestring
+        mapping:
+          barrier: [hedge]
+      roads:
+        type: linestring
+        mappings:
+          roads:
+            mapping:
+              highway:
+                - track
+                - pedestrian
+                - footway
+                - secondary
+          railway:
+            mapping:
+              railway:
+                - tram
+      places:
+        type: point
+        mapping:
+          place:  # ignored as we test ways
+          - city
+          - town
+          - village
+    `))
+	if err != nil {
+		t.Fatal(err)
+	}
 	tests := []struct {
 		tags    element.Tags
 		matches []Match
 	}{
 		{element.Tags{"unknown": "baz"}, []Match{}},
 		{element.Tags{"highway": "unknown"}, []Match{}},
+		{element.Tags{"place": "city"}, []Match{}},
 		{element.Tags{"highway": "pedestrian"},
 			[]Match{{"highway", "pedestrian", DestTable{Name: "roads", SubMapping: "roads"}, nil}}},
 
@@ -216,6 +342,49 @@ func TestLineStringMatcher(t *testing.T) {
 }
 
 func TestPolygonMatcher_MatchWay(t *testing.T) {
+	mapping, err := New([]byte(`
+    areas:
+      area_tags: [buildings, landuse, leisure, natural, aeroway]
+      linear_tags: [highway, barrier]
+    tables:
+      landusages:
+        type: polygon
+        mapping:
+            amenity: [university]
+            landuse: [farm, forest]
+            leisure: [park]
+            landuse: [park]
+            highway: [footway]
+            barrier: [hedge]
+      transport_areas:
+        type: polygon
+        mapping:
+          aeroway: [runway, apron]
+      barrierways:
+        type: linestring
+        mapping:
+          barrier: [hedge]
+      buildings:
+        type: polygon
+        mapping:
+          building: [__any__]
+      amenity_areas:
+        type: polygon
+        mapping:
+          building: [shop]
+      highways:
+        type: linestring
+        mapping:
+          highway: # imported for relations
+            - track
+      admin:
+        type: polygon
+        mapping:
+          boundary: [administrative]
+    `))
+	if err != nil {
+		t.Fatal(err)
+	}
 	tests := []struct {
 		tags    element.Tags
 		matches []Match
@@ -295,6 +464,50 @@ func TestPolygonMatcher_MatchWay(t *testing.T) {
 
 func TestPolygonMatcher_MatchRelation(t *testing.T) {
 	// check that only relations with type=multipolygon/boundary are matched as polygon
+
+	mapping, err := New([]byte(`
+    areas:
+      area_tags: [buildings, landuse, leisure, natural, aeroway]
+      linear_tags: [highway, barrier]
+    tables:
+      landusages:
+        type: polygon
+        mapping:
+            amenity: [university]
+            landuse: [farm, forest]
+            leisure: [park]
+            landuse: [park]
+            highway: [footway]
+            barrier: [hedge]
+      transport_areas:
+        type: polygon
+        mapping:
+          aeroway: [runway, apron]
+      barrierways:
+        type: linestring
+        mapping:
+          barrier: [hedge]
+      buildings:
+        type: polygon
+        mapping:
+          building: [__any__]
+      amenity_areas:
+        type: polygon
+        mapping:
+          building: [shop]
+      highways:
+        type: linestring
+        mapping:
+          highway: # imported for relations
+            - track
+      admin:
+        type: polygon
+        mapping:
+          boundary: [administrative]
+    `))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	tests := []struct {
 		tags    element.Tags
@@ -377,6 +590,12 @@ func TestExcludeFilter(t *testing.T) {
 func BenchmarkFilterNodes(b *testing.B) {
 	var tags element.Tags
 
+	mapping, err := FromFile("./test_mapping.yml")
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.ResetTimer()
+
 	for i := 0; i < b.N; i++ {
 		// test __any__
 		tags = make(element.Tags)
@@ -390,4 +609,50 @@ func BenchmarkFilterNodes(b *testing.B) {
 			b.Fatal("Filter result not expected", tags)
 		}
 	}
+}
+
+func stringMapEqual(expected, actual map[string]string) bool {
+	if len(expected) != len(actual) {
+		return false
+	}
+
+	for k, v := range expected {
+		if actualV, ok := actual[k]; ok {
+			if actualV != v {
+				return false
+			}
+		} else {
+			return false
+		}
+	}
+	return true
+}
+
+func matchesEqual(expected []Match, actual []Match) bool {
+	expectedMatches := make(map[DestTable]Match)
+	actualMatches := make(map[DestTable]Match)
+
+	if len(expected) != len(actual) {
+		return false
+	}
+
+	for _, match := range expected {
+		expectedMatches[match.Table] = match
+	}
+	for _, match := range actual {
+		actualMatches[match.Table] = match
+	}
+
+	for name, expectedMatch := range expectedMatches {
+		if actualMatch, ok := actualMatches[name]; ok {
+			if expectedMatch.Table != actualMatch.Table ||
+				expectedMatch.Key != actualMatch.Key ||
+				expectedMatch.Value != actualMatch.Value {
+				return false
+			}
+		} else {
+			return false
+		}
+	}
+	return true
 }

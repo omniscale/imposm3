@@ -462,7 +462,7 @@ func filterTest(t *testing.T, mapping string, accept []element.Tags, reject []el
 		t.Fatal(err)
 	}
 
-	configTestMapping, err = NewMapping(tmpfile.Name())
+	configTestMapping, err = FromFile(tmpfile.Name())
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -106,7 +106,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 		return err
 	}
 
-	tagmapping, err := mapping.NewMapping(config.BaseOptions.MappingFile)
+	tagmapping, err := mapping.FromFile(config.BaseOptions.MappingFile)
 	if err != nil {
 		return err
 	}
