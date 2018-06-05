@@ -21,12 +21,6 @@ import (
 	"github.com/omniscale/imposm3/import_"
 )
 
-const (
-	dbschemaImport     = "imposm_test_import"
-	dbschemaProduction = "imposm_test_production"
-	dbschemaBackup     = "imposm_test_backup"
-)
-
 type importConfig struct {
 	connection      string
 	osmFileName     string
@@ -38,12 +32,17 @@ type importConfig struct {
 
 type importTestSuite struct {
 	dir    string
+	name   string
 	config importConfig
 	db     *sql.DB
 	g      *geos.Geos
 }
 
 const Missing = ""
+
+func (s *importTestSuite) dbschemaImport() string     { return "imposm_test_" + s.name + "_import" }
+func (s *importTestSuite) dbschemaProduction() string { return "imposm_test_" + s.name + "_production" }
+func (s *importTestSuite) dbschemaBackup() string     { return "imposm_test_" + s.name + "_backup" }
 
 func (s *importTestSuite) importOsm(t *testing.T) {
 	importArgs := []string{
@@ -53,7 +52,7 @@ func (s *importTestSuite) importOsm(t *testing.T) {
 		"-cachedir", s.config.cacheDir,
 		"-diff",
 		"-overwritecache",
-		"-dbschema-import", dbschemaImport,
+		"-dbschema-import", s.dbschemaImport(),
 		// "-optimize",
 		"-mapping", s.config.mappingFileName,
 		"-quiet",
@@ -75,9 +74,9 @@ func (s *importTestSuite) deployOsm(t *testing.T) {
 		"-deployproduction",
 		"-removebackup=false",
 		"-connection", s.config.connection,
-		"-dbschema-import", dbschemaImport,
-		"-dbschema-production", dbschemaProduction,
-		"-dbschema-backup", dbschemaBackup,
+		"-dbschema-import", s.dbschemaImport(),
+		"-dbschema-production", s.dbschemaProduction(),
+		"-dbschema-backup", s.dbschemaBackup(),
 		"-deployproduction",
 		"-mapping", s.config.mappingFileName,
 		"-quiet",
@@ -96,9 +95,9 @@ func (s *importTestSuite) revertDeployOsm(t *testing.T) {
 		"-deployproduction=false",
 		"-removebackup=false",
 		"-connection", s.config.connection,
-		"-dbschema-import", dbschemaImport,
-		"-dbschema-production", dbschemaProduction,
-		"-dbschema-backup", dbschemaBackup,
+		"-dbschema-import", s.dbschemaImport(),
+		"-dbschema-production", s.dbschemaProduction(),
+		"-dbschema-backup", s.dbschemaBackup(),
 		"-revertdeploy",
 		"-deployproduction=false",
 		"-removebackup=false",
@@ -135,9 +134,9 @@ func (s *importTestSuite) removeBackupOsm(t *testing.T) {
 		"-deployproduction=false",
 		"-removebackup",
 		"-connection", s.config.connection,
-		"-dbschema-import", dbschemaImport,
-		"-dbschema-production", dbschemaProduction,
-		"-dbschema-backup", dbschemaBackup,
+		"-dbschema-import", s.dbschemaImport(),
+		"-dbschema-production", s.dbschemaProduction(),
+		"-dbschema-backup", s.dbschemaBackup(),
 		"-mapping", s.config.mappingFileName,
 		"-quiet",
 	}
@@ -151,7 +150,7 @@ func (s *importTestSuite) updateOsm(t *testing.T, diffFile string) {
 		"-connection", s.config.connection,
 		"-cachedir", s.config.cacheDir,
 		"-limitto", "clipping.geojson",
-		"-dbschema-production", dbschemaProduction,
+		"-dbschema-production", s.dbschemaProduction(),
 		"-mapping", s.config.mappingFileName,
 	}
 	if s.config.expireTileDir != "" {
@@ -164,15 +163,15 @@ func (s *importTestSuite) updateOsm(t *testing.T, diffFile string) {
 
 func (s *importTestSuite) dropSchemas() {
 	var err error
-	_, err = s.db.Exec(fmt.Sprintf(`DROP SCHEMA IF EXISTS %s CASCADE`, dbschemaImport))
+	_, err = s.db.Exec(fmt.Sprintf(`DROP SCHEMA IF EXISTS %s CASCADE`, s.dbschemaImport()))
 	if err != nil {
 		log.Fatal(err)
 	}
-	_, err = s.db.Exec(fmt.Sprintf(`DROP SCHEMA IF EXISTS %s CASCADE`, dbschemaProduction))
+	_, err = s.db.Exec(fmt.Sprintf(`DROP SCHEMA IF EXISTS %s CASCADE`, s.dbschemaProduction()))
 	if err != nil {
 		log.Fatal(err)
 	}
-	_, err = s.db.Exec(fmt.Sprintf(`DROP SCHEMA IF EXISTS %s CASCADE`, dbschemaBackup))
+	_, err = s.db.Exec(fmt.Sprintf(`DROP SCHEMA IF EXISTS %s CASCADE`, s.dbschemaBackup()))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -208,7 +207,7 @@ func (s *importTestSuite) query(t *testing.T, table string, id int64, keys []str
 	} else {
 		columns = "hstore(ARRAY[" + columns + "])"
 	}
-	stmt := fmt.Sprintf(`SELECT osm_id, name, type, ST_AsText(geometry), %s FROM "%s"."%s" WHERE osm_id=$1`, columns, dbschemaProduction, table)
+	stmt := fmt.Sprintf(`SELECT osm_id, name, type, ST_AsText(geometry), %s FROM "%s"."%s" WHERE osm_id=$1`, columns, s.dbschemaProduction(), table)
 	row := s.db.QueryRow(stmt, id)
 	r := record{}
 	h := hstore.Hstore{}
@@ -231,7 +230,7 @@ func (s *importTestSuite) query(t *testing.T, table string, id int64, keys []str
 }
 
 func (s *importTestSuite) queryTags(t *testing.T, table string, id int64) record {
-	stmt := fmt.Sprintf(`SELECT osm_id, tags FROM "%s"."%s" WHERE osm_id=$1`, dbschemaProduction, table)
+	stmt := fmt.Sprintf(`SELECT osm_id, tags FROM "%s"."%s" WHERE osm_id=$1`, s.dbschemaProduction(), table)
 	row := s.db.QueryRow(stmt, id)
 	r := record{}
 	h := hstore.Hstore{}
@@ -254,7 +253,7 @@ func (s *importTestSuite) queryTags(t *testing.T, table string, id int64) record
 }
 
 func (s *importTestSuite) queryRows(t *testing.T, table string, id int64) []record {
-	rows, err := s.db.Query(fmt.Sprintf(`SELECT osm_id, name, type, ST_AsText(geometry) FROM "%s"."%s" WHERE osm_id=$1 ORDER BY type, name, ST_GeometryType(geometry)`, dbschemaProduction, table), id)
+	rows, err := s.db.Query(fmt.Sprintf(`SELECT osm_id, name, type, ST_AsText(geometry) FROM "%s"."%s" WHERE osm_id=$1 ORDER BY type, name, ST_GeometryType(geometry)`, s.dbschemaProduction(), table), id)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -270,7 +269,7 @@ func (s *importTestSuite) queryRows(t *testing.T, table string, id int64) []reco
 }
 
 func (s *importTestSuite) queryRowsTags(t *testing.T, table string, id int64) []record {
-	rows, err := s.db.Query(fmt.Sprintf(`SELECT osm_id, ST_AsText(geometry), tags FROM "%s"."%s" WHERE osm_id=$1 ORDER BY ST_GeometryType(geometry)`, dbschemaProduction, table), id)
+	rows, err := s.db.Query(fmt.Sprintf(`SELECT osm_id, ST_AsText(geometry), tags FROM "%s"."%s" WHERE osm_id=$1 ORDER BY ST_GeometryType(geometry)`, s.dbschemaProduction(), table), id)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -295,7 +294,7 @@ func (s *importTestSuite) queryRowsTags(t *testing.T, table string, id int64) []
 }
 
 func (s *importTestSuite) queryGeom(t *testing.T, table string, id int64) *geos.Geom {
-	stmt := fmt.Sprintf(`SELECT osm_id, ST_AsText(geometry) FROM "%s"."%s" WHERE osm_id=$1`, dbschemaProduction, table)
+	stmt := fmt.Sprintf(`SELECT osm_id, ST_AsText(geometry) FROM "%s"."%s" WHERE osm_id=$1`, s.dbschemaProduction(), table)
 	row := s.db.QueryRow(stmt, id)
 	r := record{}
 	if err := row.Scan(&r.id, &r.wkt); err != nil {
@@ -315,7 +314,7 @@ func (s *importTestSuite) queryGeom(t *testing.T, table string, id int64) *geos.
 }
 
 func (s *importTestSuite) queryDynamic(t *testing.T, table, where string) []map[string]string {
-	stmt := fmt.Sprintf(`SELECT hstore(r) FROM (SELECT ST_AsText(geometry) AS wkt, * FROM "%s"."%s" WHERE %s) AS r`, dbschemaProduction, table, where)
+	stmt := fmt.Sprintf(`SELECT hstore(r) FROM (SELECT ST_AsText(geometry) AS wkt, * FROM "%s"."%s" WHERE %s) AS r`, s.dbschemaProduction(), table, where)
 	rows, err := s.db.Query(stmt)
 	if err != nil {
 		t.Fatal(err)
@@ -344,7 +343,7 @@ type checkElem struct {
 	tags    map[string]string
 }
 
-func assertRecords(t *testing.T, elems []checkElem) {
+func (ts *importTestSuite) assertRecords(t *testing.T, elems []checkElem) {
 	for _, e := range elems {
 		keys := make([]string, 0, len(e.tags))
 		for k, _ := range e.tags {
@@ -368,7 +367,7 @@ func assertRecords(t *testing.T, elems []checkElem) {
 	}
 }
 
-func assertHstore(t *testing.T, elems []checkElem) {
+func (ts *importTestSuite) assertHstore(t *testing.T, elems []checkElem) {
 	for _, e := range elems {
 		r := ts.queryTags(t, e.table, e.id)
 		if e.osmType == "" {
@@ -388,14 +387,14 @@ func assertHstore(t *testing.T, elems []checkElem) {
 	}
 }
 
-func assertGeomValid(t *testing.T, e checkElem) {
+func (ts *importTestSuite) assertGeomValid(t *testing.T, e checkElem) {
 	geom := ts.queryGeom(t, e.table, e.id)
 	if !ts.g.IsValid(geom) {
 		t.Fatalf("geometry of %d is invalid", e.id)
 	}
 }
 
-func assertGeomArea(t *testing.T, e checkElem, expect float64) {
+func (ts *importTestSuite) assertGeomArea(t *testing.T, e checkElem, expect float64) {
 	geom := ts.queryGeom(t, e.table, e.id)
 	if !ts.g.IsValid(geom) {
 		t.Fatalf("geometry of %d is invalid", e.id)
@@ -406,7 +405,7 @@ func assertGeomArea(t *testing.T, e checkElem, expect float64) {
 	}
 }
 
-func assertGeomLength(t *testing.T, e checkElem, expect float64) {
+func (ts *importTestSuite) assertGeomLength(t *testing.T, e checkElem, expect float64) {
 	geom := ts.queryGeom(t, e.table, e.id)
 	if !ts.g.IsValid(geom) {
 		t.Fatalf("geometry of %d is invalid", e.id)
@@ -417,14 +416,14 @@ func assertGeomLength(t *testing.T, e checkElem, expect float64) {
 	}
 }
 
-func assertGeomType(t *testing.T, e checkElem, expect string) {
+func (ts *importTestSuite) assertGeomType(t *testing.T, e checkElem, expect string) {
 	actual := ts.g.Type(ts.queryGeom(t, e.table, e.id))
 	if actual != expect {
 		t.Errorf("expected %s geometry for %d, got %s", expect, e.id, actual)
 	}
 }
 
-func assertCachedWay(t *testing.T, c *cache.OSMCache, id int64) *element.Way {
+func (ts *importTestSuite) assertCachedWay(t *testing.T, c *cache.OSMCache, id int64) *element.Way {
 	way, err := c.Ways.GetWay(id)
 	if err == cache.NotFound {
 		t.Errorf("missing way %d", id)
@@ -437,7 +436,7 @@ func assertCachedWay(t *testing.T, c *cache.OSMCache, id int64) *element.Way {
 	return way
 }
 
-func assertCachedNode(t *testing.T, c *cache.OSMCache, id int64) *element.Node {
+func (ts *importTestSuite) assertCachedNode(t *testing.T, c *cache.OSMCache, id int64) *element.Node {
 	node, err := c.Nodes.GetNode(id)
 	if err == cache.NotFound {
 		node, err = c.Coords.GetCoord(id)
