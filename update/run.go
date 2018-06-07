@@ -18,19 +18,19 @@ import (
 
 var logger = logging.NewLogger("")
 
-func Run() {
-	if config.BaseOptions.Quiet {
+func Run(baseOpts config.Base) {
+	if baseOpts.Quiet {
 		logging.SetQuiet(true)
 	}
 
 	var geometryLimiter *limit.Limiter
-	if config.BaseOptions.LimitTo != "" {
+	if baseOpts.LimitTo != "" {
 		var err error
 		step := logger.StartStep("Reading limitto geometries")
 		geometryLimiter, err = limit.NewFromGeoJSON(
-			config.BaseOptions.LimitTo,
-			config.BaseOptions.LimitToCacheBuffer,
-			config.BaseOptions.Srid,
+			baseOpts.LimitTo,
+			baseOpts.LimitToCacheBuffer,
+			baseOpts.Srid,
 		)
 		if err != nil {
 			logger.Fatal(err)
@@ -38,11 +38,11 @@ func Run() {
 		logger.StopStep(step)
 	}
 
-	s, err := state.ParseLastState(config.BaseOptions.DiffDir)
+	s, err := state.ParseLastState(baseOpts.DiffDir)
 	if err != nil {
 		log.Fatal("unable to read last.state.txt", err)
 	}
-	replicationUrl := config.BaseOptions.ReplicationUrl
+	replicationUrl := baseOpts.ReplicationUrl
 	if replicationUrl == "" {
 		replicationUrl = s.Url
 	}
@@ -51,24 +51,24 @@ func Run() {
 			"or replication_url in -config file")
 	}
 	logger.Print("Replication URL: " + replicationUrl)
-	logger.Print("Replication interval: ", config.BaseOptions.ReplicationInterval)
+	logger.Print("Replication interval: ", baseOpts.ReplicationInterval)
 
 	downloader := replication.NewDiffDownloader(
-		config.BaseOptions.DiffDir,
+		baseOpts.DiffDir,
 		replicationUrl,
 		s.Sequence,
-		config.BaseOptions.ReplicationInterval,
+		baseOpts.ReplicationInterval,
 	)
 	nextSeq := downloader.Sequences()
 
-	osmCache := cache.NewOSMCache(config.BaseOptions.CacheDir)
+	osmCache := cache.NewOSMCache(baseOpts.CacheDir)
 	err = osmCache.Open()
 	if err != nil {
 		logger.Fatal("osm cache: ", err)
 	}
 	defer osmCache.Close()
 
-	diffCache := cache.NewDiffCache(config.BaseOptions.CacheDir)
+	diffCache := cache.NewDiffCache(baseOpts.CacheDir)
 	err = diffCache.Open()
 	if err != nil {
 		logger.Fatal("diff cache: ", err)
@@ -81,8 +81,8 @@ func Run() {
 	var tilelist *expire.TileList
 	var lastTlFlush = time.Now()
 	var tileExpireor expire.Expireor
-	if config.BaseOptions.ExpireTilesDir != "" {
-		tilelist = expire.NewTileList(config.BaseOptions.ExpireTilesZoom, config.BaseOptions.ExpireTilesDir)
+	if baseOpts.ExpireTilesDir != "" {
+		tilelist = expire.NewTileList(baseOpts.ExpireTilesZoom, baseOpts.ExpireTilesDir)
 		tileExpireor = tilelist
 	}
 
@@ -113,7 +113,7 @@ func Run() {
 			for {
 				p := logger.StartStep(fmt.Sprintf("importing #%d till %s", seqId, seqTime))
 
-				err := Update(fname, geometryLimiter, tileExpireor, osmCache, diffCache, false)
+				err := Update(baseOpts, fname, geometryLimiter, tileExpireor, osmCache, diffCache, false)
 
 				osmCache.Coords.Flush()
 				diffCache.Flush()

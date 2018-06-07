@@ -38,11 +38,7 @@ const defaultSchemaImport = "import"
 const defaultSchemaProduction = "public"
 const defaultSchemaBackup = "backup"
 
-var ImportFlags = flag.NewFlagSet("import", flag.ExitOnError)
-var DiffFlags = flag.NewFlagSet("diff", flag.ExitOnError)
-var RunFlags = flag.NewFlagSet("run", flag.ExitOnError)
-
-type _BaseOptions struct {
+type Base struct {
 	Connection          string
 	CacheDir            string
 	DiffDir             string
@@ -61,7 +57,7 @@ type _BaseOptions struct {
 	DiffStateBefore     time.Duration
 }
 
-func (o *_BaseOptions) updateFromConfig() error {
+func (o *Base) updateFromConfig() error {
 	conf := &Config{
 		CacheDir: defaultCacheDir,
 		Srid:     defaultSrid,
@@ -149,7 +145,7 @@ func (o *_BaseOptions) updateFromConfig() error {
 	return nil
 }
 
-func (o *_BaseOptions) check() []error {
+func (o *Base) check() []error {
 	errs := []error{}
 	if o.Srid != 3857 && o.Srid != 4326 {
 		errs = append(errs, errors.New("only -srid=3857 or -srid=4326 are supported"))
@@ -160,7 +156,8 @@ func (o *_BaseOptions) check() []error {
 	return errs
 }
 
-type _ImportOptions struct {
+type Import struct {
+	Base             Base
 	Overwritecache   bool
 	Appendcache      bool
 	Read             string
@@ -172,129 +169,137 @@ type _ImportOptions struct {
 	RemoveBackup     bool
 }
 
-var BaseOptions = _BaseOptions{}
-var ImportOptions = _ImportOptions{}
-
-func addBaseFlags(flags *flag.FlagSet) {
-	flags.StringVar(&BaseOptions.Connection, "connection", "", "connection parameters")
-	flags.StringVar(&BaseOptions.CacheDir, "cachedir", defaultCacheDir, "cache directory")
-	flags.StringVar(&BaseOptions.DiffDir, "diffdir", "", "diff directory for last.state.txt")
-	flags.StringVar(&BaseOptions.MappingFile, "mapping", "", "mapping file")
-	flags.IntVar(&BaseOptions.Srid, "srid", defaultSrid, "srs id")
-	flags.StringVar(&BaseOptions.LimitTo, "limitto", "", "limit to geometries")
-	flags.Float64Var(&BaseOptions.LimitToCacheBuffer, "limittocachebuffer", 0.0, "limit to buffer for cache")
-	flags.StringVar(&BaseOptions.ConfigFile, "config", "", "config (json)")
-	flags.StringVar(&BaseOptions.Httpprofile, "httpprofile", "", "bind address for profile server")
-	flags.BoolVar(&BaseOptions.Quiet, "quiet", false, "quiet log output")
-	flags.StringVar(&BaseOptions.Schemas.Import, "dbschema-import", defaultSchemaImport, "db schema for imports")
-	flags.StringVar(&BaseOptions.Schemas.Production, "dbschema-production", defaultSchemaProduction, "db schema for production")
-	flags.StringVar(&BaseOptions.Schemas.Backup, "dbschema-backup", defaultSchemaBackup, "db schema for backups")
+func addBaseFlags(opts *Base, flags *flag.FlagSet) {
+	flags.StringVar(&opts.Connection, "connection", "", "connection parameters")
+	flags.StringVar(&opts.CacheDir, "cachedir", defaultCacheDir, "cache directory")
+	flags.StringVar(&opts.DiffDir, "diffdir", "", "diff directory for last.state.txt")
+	flags.StringVar(&opts.MappingFile, "mapping", "", "mapping file")
+	flags.IntVar(&opts.Srid, "srid", defaultSrid, "srs id")
+	flags.StringVar(&opts.LimitTo, "limitto", "", "limit to geometries")
+	flags.Float64Var(&opts.LimitToCacheBuffer, "limittocachebuffer", 0.0, "limit to buffer for cache")
+	flags.StringVar(&opts.ConfigFile, "config", "", "config (json)")
+	flags.StringVar(&opts.Httpprofile, "httpprofile", "", "bind address for profile server")
+	flags.BoolVar(&opts.Quiet, "quiet", false, "quiet log output")
+	flags.StringVar(&opts.Schemas.Import, "dbschema-import", defaultSchemaImport, "db schema for imports")
+	flags.StringVar(&opts.Schemas.Production, "dbschema-production", defaultSchemaProduction, "db schema for production")
+	flags.StringVar(&opts.Schemas.Backup, "dbschema-backup", defaultSchemaBackup, "db schema for backups")
 }
 
-func UsageImport() {
-	fmt.Fprintf(os.Stderr, "Usage: %s %s [args]\n\n", os.Args[0], os.Args[1])
-	ImportFlags.PrintDefaults()
-	os.Exit(2)
-}
+func ParseImport(args []string) Import {
+	flags := flag.NewFlagSet("import", flag.ExitOnError)
+	opts := Import{}
 
-func UsageDiff() {
-	fmt.Fprintf(os.Stderr, "Usage: %s %s [args] [.osc.gz, ...]\n\n", os.Args[0], os.Args[1])
-	DiffFlags.PrintDefaults()
-	os.Exit(2)
-}
+	addBaseFlags(&opts.Base, flags)
+	flags.BoolVar(&opts.Overwritecache, "overwritecache", false, "overwritecache")
+	flags.BoolVar(&opts.Appendcache, "appendcache", false, "append cache")
+	flags.StringVar(&opts.Read, "read", "", "read")
+	flags.BoolVar(&opts.Write, "write", false, "write")
+	flags.BoolVar(&opts.Optimize, "optimize", false, "optimize")
+	flags.BoolVar(&opts.Diff, "diff", false, "enable diff support")
+	flags.BoolVar(&opts.DeployProduction, "deployproduction", false, "deploy production")
+	flags.BoolVar(&opts.RevertDeploy, "revertdeploy", false, "revert deploy to production")
+	flags.BoolVar(&opts.RemoveBackup, "removebackup", false, "remove backups from deploy")
+	flags.DurationVar(&opts.Base.DiffStateBefore, "diff-state-before", 0, "set initial diff sequence before")
 
-func UsageRun() {
-	fmt.Fprintf(os.Stderr, "Usage: %s %s [args] [.osc.gz, ...]\n\n", os.Args[0], os.Args[1])
-	DiffFlags.PrintDefaults()
-	os.Exit(2)
-}
+	flags.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s %s [args]\n\n", os.Args[0], os.Args[1])
+		flags.PrintDefaults()
+		os.Exit(2)
+	}
 
-func init() {
-	ImportFlags.Usage = UsageImport
-	DiffFlags.Usage = UsageDiff
-	RunFlags.Usage = UsageRun
-
-	addBaseFlags(DiffFlags)
-	addBaseFlags(ImportFlags)
-	addBaseFlags(RunFlags)
-	ImportFlags.BoolVar(&ImportOptions.Overwritecache, "overwritecache", false, "overwritecache")
-	ImportFlags.BoolVar(&ImportOptions.Appendcache, "appendcache", false, "append cache")
-	ImportFlags.StringVar(&ImportOptions.Read, "read", "", "read")
-	ImportFlags.BoolVar(&ImportOptions.Write, "write", false, "write")
-	ImportFlags.BoolVar(&ImportOptions.Optimize, "optimize", false, "optimize")
-	ImportFlags.BoolVar(&ImportOptions.Diff, "diff", false, "enable diff support")
-	ImportFlags.BoolVar(&ImportOptions.DeployProduction, "deployproduction", false, "deploy production")
-	ImportFlags.BoolVar(&ImportOptions.RevertDeploy, "revertdeploy", false, "revert deploy to production")
-	ImportFlags.BoolVar(&ImportOptions.RemoveBackup, "removebackup", false, "remove backups from deploy")
-	ImportFlags.DurationVar(&BaseOptions.DiffStateBefore, "diff-state-before", 0, "set initial diff sequence before")
-
-	DiffFlags.StringVar(&BaseOptions.ExpireTilesDir, "expiretiles-dir", "", "write expire tiles into dir")
-	DiffFlags.IntVar(&BaseOptions.ExpireTilesZoom, "expiretiles-zoom", 14, "write expire tiles in this zoom level")
-
-	RunFlags.StringVar(&BaseOptions.ExpireTilesDir, "expiretiles-dir", "", "write expire tiles into dir")
-	RunFlags.IntVar(&BaseOptions.ExpireTilesZoom, "expiretiles-zoom", 14, "write expire tiles in this zoom level")
-	RunFlags.DurationVar(&BaseOptions.ReplicationInterval, "replication-interval", time.Minute, "replication interval as duration (1m, 1h, 24h)")
-}
-
-func ParseImport(args []string) {
 	if len(args) == 0 {
-		UsageImport()
+		flags.Usage()
 	}
-	err := ImportFlags.Parse(args)
+
+	err := flags.Parse(args)
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = BaseOptions.updateFromConfig()
+	err = opts.Base.updateFromConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
-	errs := BaseOptions.check()
+	errs := opts.Base.check()
 	if len(errs) != 0 {
 		reportErrors(errs)
-		UsageImport()
+		flags.Usage()
 	}
+	return opts
 }
 
-func ParseDiffImport(args []string) {
+func ParseDiffImport(args []string) (Base, []string) {
+	flags := flag.NewFlagSet("diff", flag.ExitOnError)
+	opts := Base{}
+
+	addBaseFlags(&opts, flags)
+	flags.StringVar(&opts.ExpireTilesDir, "expiretiles-dir", "", "write expire tiles into dir")
+	flags.IntVar(&opts.ExpireTilesZoom, "expiretiles-zoom", 14, "write expire tiles in this zoom level")
+
+	flags.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s %s [args] [.osc.gz, ...]\n\n", os.Args[0], os.Args[1])
+		flags.PrintDefaults()
+		os.Exit(2)
+	}
+
 	if len(args) == 0 {
-		UsageDiff()
+		flags.Usage()
 	}
-	err := DiffFlags.Parse(args)
+
+	err := flags.Parse(args)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = BaseOptions.updateFromConfig()
+	err = opts.updateFromConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	errs := BaseOptions.check()
+	errs := opts.check()
 	if len(errs) != 0 {
 		reportErrors(errs)
-		UsageDiff()
+		flags.Usage()
 	}
+
+	return opts, flags.Args()
 }
 
-func ParseRunImport(args []string) {
+func ParseRunImport(args []string) Base {
+	flags := flag.NewFlagSet("run", flag.ExitOnError)
+	opts := Base{}
+
+	addBaseFlags(&opts, flags)
+	flags.StringVar(&opts.ExpireTilesDir, "expiretiles-dir", "", "write expire tiles into dir")
+	flags.IntVar(&opts.ExpireTilesZoom, "expiretiles-zoom", 14, "write expire tiles in this zoom level")
+	flags.DurationVar(&opts.ReplicationInterval, "replication-interval", time.Minute, "replication interval as duration (1m, 1h, 24h)")
+
+	flags.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s %s [args] [.osc.gz, ...]\n\n", os.Args[0], os.Args[1])
+		flags.PrintDefaults()
+		os.Exit(2)
+	}
+
 	if len(args) == 0 {
-		UsageRun()
+		flags.Usage()
 	}
-	err := RunFlags.Parse(args)
+
+	err := flags.Parse(args)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = BaseOptions.updateFromConfig()
+	err = opts.updateFromConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	errs := BaseOptions.check()
+	errs := opts.check()
 	if len(errs) != 0 {
 		reportErrors(errs)
-		UsageRun()
+		flags.Usage()
 	}
+
+	return opts
 }
 
 func reportErrors(errs []error) {

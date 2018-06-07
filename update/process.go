@@ -25,33 +25,33 @@ import (
 
 var log = logging.NewLogger("diff")
 
-func Diff() {
-	if config.BaseOptions.Quiet {
+func Diff(baseOpts config.Base, files []string) {
+	if baseOpts.Quiet {
 		logging.SetQuiet(true)
 	}
 
 	var geometryLimiter *limit.Limiter
-	if config.BaseOptions.LimitTo != "" {
+	if baseOpts.LimitTo != "" {
 		var err error
 		step := log.StartStep("Reading limitto geometries")
 		geometryLimiter, err = limit.NewFromGeoJSON(
-			config.BaseOptions.LimitTo,
-			config.BaseOptions.LimitToCacheBuffer,
-			config.BaseOptions.Srid,
+			baseOpts.LimitTo,
+			baseOpts.LimitToCacheBuffer,
+			baseOpts.Srid,
 		)
 		if err != nil {
 			log.Fatal(err)
 		}
 		log.StopStep(step)
 	}
-	osmCache := cache.NewOSMCache(config.BaseOptions.CacheDir)
+	osmCache := cache.NewOSMCache(baseOpts.CacheDir)
 	err := osmCache.Open()
 	if err != nil {
 		log.Fatal("osm cache: ", err)
 	}
 	defer osmCache.Close()
 
-	diffCache := cache.NewDiffCache(config.BaseOptions.CacheDir)
+	diffCache := cache.NewDiffCache(baseOpts.CacheDir)
 	err = diffCache.Open()
 	if err != nil {
 		log.Fatal("diff cache: ", err)
@@ -59,8 +59,8 @@ func Diff() {
 
 	var exp expire.Expireor
 
-	if config.BaseOptions.ExpireTilesDir != "" {
-		tileexpire := expire.NewTileList(config.BaseOptions.ExpireTilesZoom, config.BaseOptions.ExpireTilesDir)
+	if baseOpts.ExpireTilesDir != "" {
+		tileexpire := expire.NewTileList(baseOpts.ExpireTilesZoom, baseOpts.ExpireTilesDir)
 		exp = tileexpire
 		defer func() {
 			if err := tileexpire.Flush(); err != nil {
@@ -69,8 +69,8 @@ func Diff() {
 		}()
 	}
 
-	for _, oscFile := range config.DiffFlags.Args() {
-		err := Update(oscFile, geometryLimiter, exp, osmCache, diffCache, false)
+	for _, oscFile := range files {
+		err := Update(baseOpts, oscFile, geometryLimiter, exp, osmCache, diffCache, false)
 		if err != nil {
 			osmCache.Close()
 			diffCache.Close()
@@ -82,12 +82,20 @@ func Diff() {
 	diffCache.Close()
 }
 
-func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expireor, osmCache *cache.OSMCache, diffCache *cache.DiffCache, force bool) error {
+func Update(
+	baseOpts config.Base,
+	oscFile string,
+	geometryLimiter *limit.Limiter,
+	expireor expire.Expireor,
+	osmCache *cache.OSMCache,
+	diffCache *cache.DiffCache,
+	force bool,
+) error {
 	state, err := diffstate.FromOscGz(oscFile)
 	if err != nil {
 		return err
 	}
-	lastState, err := diffstate.ParseLastState(config.BaseOptions.DiffDir)
+	lastState, err := diffstate.ParseLastState(baseOpts.DiffDir)
 	if err != nil {
 		log.Warn(err)
 	}
@@ -106,18 +114,18 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 		return err
 	}
 
-	tagmapping, err := mapping.FromFile(config.BaseOptions.MappingFile)
+	tagmapping, err := mapping.FromFile(baseOpts.MappingFile)
 	if err != nil {
 		return err
 	}
 
 	dbConf := database.Config{
-		ConnectionParams: config.BaseOptions.Connection,
-		Srid:             config.BaseOptions.Srid,
+		ConnectionParams: baseOpts.Connection,
+		Srid:             baseOpts.Srid,
 		// we apply diff imports on the Production schema
-		ImportSchema:     config.BaseOptions.Schemas.Production,
-		ProductionSchema: config.BaseOptions.Schemas.Production,
-		BackupSchema:     config.BaseOptions.Schemas.Backup,
+		ImportSchema:     baseOpts.Schemas.Production,
+		ProductionSchema: baseOpts.Schemas.Production,
+		BackupSchema:     baseOpts.Schemas.Backup,
 	}
 	db, err := database.Open(dbConf, &tagmapping.Conf)
 	if err != nil {
@@ -170,7 +178,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 		tagmapping.PolygonMatcher,
 		tagmapping.RelationMatcher,
 		tagmapping.RelationMemberMatcher,
-		config.BaseOptions.Srid)
+		baseOpts.Srid)
 	relWriter.SetLimiter(geometryLimiter)
 	relWriter.SetExpireor(expireor)
 	relWriter.Start()
@@ -181,7 +189,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 		progress,
 		tagmapping.PolygonMatcher,
 		tagmapping.LineStringMatcher,
-		config.BaseOptions.Srid)
+		baseOpts.Srid)
 	wayWriter.SetLimiter(geometryLimiter)
 	wayWriter.SetExpireor(expireor)
 	wayWriter.Start()
@@ -189,7 +197,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 	nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
 		progress,
 		tagmapping.PointMatcher,
-		config.BaseOptions.Srid)
+		baseOpts.Srid)
 	nodeWriter.SetLimiter(geometryLimiter)
 	nodeWriter.SetExpireor(expireor)
 	nodeWriter.Start()
@@ -413,7 +421,7 @@ func Update(oscFile string, geometryLimiter *limit.Limiter, expireor expire.Expi
 		if lastState != nil {
 			state.Url = lastState.Url
 		}
-		err = diffstate.WriteLastState(config.BaseOptions.DiffDir, state)
+		err = diffstate.WriteLastState(baseOpts.DiffDir, state)
 		if err != nil {
 			log.Warn(err) // warn only
 		}

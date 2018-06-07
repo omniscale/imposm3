@@ -61,8 +61,8 @@ func (s *importTestSuite) importOsm(t *testing.T) {
 		"-removebackup=false",
 	}
 
-	config.ParseImport(importArgs)
-	import_.Import()
+	opts := config.ParseImport(importArgs)
+	import_.Import(opts)
 }
 
 func (s *importTestSuite) deployOsm(t *testing.T) {
@@ -82,8 +82,8 @@ func (s *importTestSuite) deployOsm(t *testing.T) {
 		"-quiet",
 	}
 
-	config.ParseImport(importArgs)
-	import_.Import()
+	opts := config.ParseImport(importArgs)
+	import_.Import(opts)
 }
 
 func (s *importTestSuite) revertDeployOsm(t *testing.T) {
@@ -105,8 +105,8 @@ func (s *importTestSuite) revertDeployOsm(t *testing.T) {
 		"-quiet",
 	}
 
-	config.ParseImport(importArgs)
-	import_.Import()
+	opts := config.ParseImport(importArgs)
+	import_.Import(opts)
 }
 
 func (s *importTestSuite) cache(t *testing.T) *cache.OSMCache {
@@ -141,8 +141,8 @@ func (s *importTestSuite) removeBackupOsm(t *testing.T) {
 		"-quiet",
 	}
 
-	config.ParseImport(importArgs)
-	import_.Import()
+	opts := config.ParseImport(importArgs)
+	import_.Import(opts)
 }
 
 func (s *importTestSuite) updateOsm(t *testing.T, diffFile string) {
@@ -157,8 +157,8 @@ func (s *importTestSuite) updateOsm(t *testing.T, diffFile string) {
 		args = append(args, "-expiretiles-dir", s.config.expireTileDir)
 	}
 	args = append(args, diffFile)
-	config.ParseDiffImport(args)
-	update.Diff()
+	opts, files := config.ParseDiffImport(args)
+	update.Diff(opts, files)
 }
 
 func (s *importTestSuite) dropSchemas() {

@@ -21,27 +21,28 @@ import (
 
 var log = logging.NewLogger("")
 
-func Import() {
-	if config.BaseOptions.Quiet {
+func Import(importOpts config.Import) {
+	baseOpts := importOpts.Base
+	if baseOpts.Quiet {
 		logging.SetQuiet(true)
 	}
 
-	if (config.ImportOptions.Write || config.ImportOptions.Read != "") && (config.ImportOptions.RevertDeploy || config.ImportOptions.RemoveBackup) {
+	if (importOpts.Write || importOpts.Read != "") && (importOpts.RevertDeploy || importOpts.RemoveBackup) {
 		log.Fatal("-revertdeploy and -removebackup not compatible with -read/-write")
 	}
 
-	if config.ImportOptions.RevertDeploy && (config.ImportOptions.RemoveBackup || config.ImportOptions.DeployProduction) {
+	if importOpts.RevertDeploy && (importOpts.RemoveBackup || importOpts.DeployProduction) {
 		log.Fatal("-revertdeploy not compatible with -deployproduction/-removebackup")
 	}
 
 	var geometryLimiter *limit.Limiter
-	if (config.ImportOptions.Write || config.ImportOptions.Read != "") && config.BaseOptions.LimitTo != "" {
+	if (importOpts.Write || importOpts.Read != "") && baseOpts.LimitTo != "" {
 		var err error
 		step := log.StartStep("Reading limitto geometries")
 		geometryLimiter, err = limit.NewFromGeoJSON(
-			config.BaseOptions.LimitTo,
-			config.BaseOptions.LimitToCacheBuffer,
-			config.BaseOptions.Srid,
+			baseOpts.LimitTo,
+			baseOpts.LimitToCacheBuffer,
+			baseOpts.Srid,
 		)
 		if err != nil {
 			log.Fatal(err)
@@ -49,23 +50,23 @@ func Import() {
 		log.StopStep(step)
 	}
 
-	tagmapping, err := mapping.FromFile(config.BaseOptions.MappingFile)
+	tagmapping, err := mapping.FromFile(baseOpts.MappingFile)
 	if err != nil {
 		log.Fatal("error in mapping file: ", err)
 	}
 
 	var db database.DB
 
-	if config.ImportOptions.Write || config.ImportOptions.DeployProduction || config.ImportOptions.RevertDeploy || config.ImportOptions.RemoveBackup || config.ImportOptions.Optimize {
-		if config.BaseOptions.Connection == "" {
+	if importOpts.Write || importOpts.DeployProduction || importOpts.RevertDeploy || importOpts.RemoveBackup || importOpts.Optimize {
+		if baseOpts.Connection == "" {
 			log.Fatal("missing connection option")
 		}
 		conf := database.Config{
-			ConnectionParams: config.BaseOptions.Connection,
-			Srid:             config.BaseOptions.Srid,
-			ImportSchema:     config.BaseOptions.Schemas.Import,
-			ProductionSchema: config.BaseOptions.Schemas.Production,
-			BackupSchema:     config.BaseOptions.Schemas.Backup,
+			ConnectionParams: baseOpts.Connection,
+			Srid:             baseOpts.Srid,
+			ImportSchema:     baseOpts.Schemas.Import,
+			ProductionSchema: baseOpts.Schemas.Production,
+			BackupSchema:     baseOpts.Schemas.Backup,
 		}
 		db, err = database.Open(conf, &tagmapping.Conf)
 		if err != nil {
@@ -74,16 +75,16 @@ func Import() {
 		defer db.Close()
 	}
 
-	osmCache := cache.NewOSMCache(config.BaseOptions.CacheDir)
+	osmCache := cache.NewOSMCache(baseOpts.CacheDir)
 
-	if config.ImportOptions.Read != "" && osmCache.Exists() {
-		if config.ImportOptions.Overwritecache {
-			log.Printf("removing existing cache %s", config.BaseOptions.CacheDir)
+	if importOpts.Read != "" && osmCache.Exists() {
+		if importOpts.Overwritecache {
+			log.Printf("removing existing cache %s", baseOpts.CacheDir)
 			err := osmCache.Remove()
 			if err != nil {
 				log.Fatal("unable to remove cache:", err)
 			}
-		} else if !config.ImportOptions.Appendcache {
+		} else if !importOpts.Appendcache {
 			log.Fatal("cache already exists use -appendcache or -overwritecache")
 		}
 	}
@@ -92,7 +93,7 @@ func Import() {
 
 	var elementCounts *stats.ElementCounts
 
-	if config.ImportOptions.Read != "" {
+	if importOpts.Read != "" {
 		step := log.StartStep("Reading OSM data")
 		err = osmCache.Open()
 		if err != nil {
@@ -100,17 +101,17 @@ func Import() {
 		}
 		progress := stats.NewStatsReporter()
 
-		if !config.ImportOptions.Appendcache {
+		if !importOpts.Appendcache {
 			// enable optimization if we don't append to existing cache
 			osmCache.Coords.SetLinearImport(true)
 		}
 
 		readLimiter := geometryLimiter
-		if config.BaseOptions.LimitToCacheBuffer == 0.0 {
+		if baseOpts.LimitToCacheBuffer == 0.0 {
 			readLimiter = nil
 		}
 
-		err := reader.ReadPbf(config.ImportOptions.Read,
+		err := reader.ReadPbf(importOpts.Read,
 			osmCache,
 			progress,
 			tagmapping,
@@ -124,13 +125,13 @@ func Import() {
 		elementCounts = progress.Stop()
 		osmCache.Close()
 		log.StopStep(step)
-		if config.ImportOptions.Diff {
-			diffstate, err := state.FromPbf(config.ImportOptions.Read, config.BaseOptions.DiffStateBefore, config.BaseOptions.ReplicationUrl, config.BaseOptions.ReplicationInterval)
+		if importOpts.Diff {
+			diffstate, err := state.FromPbf(importOpts.Read, baseOpts.DiffStateBefore, baseOpts.ReplicationUrl, baseOpts.ReplicationInterval)
 			if err != nil {
 				log.Print("error parsing diff state form PBF", err)
 			} else if diffstate != nil {
-				os.MkdirAll(config.BaseOptions.DiffDir, 0755)
-				err := state.WriteLastState(config.BaseOptions.DiffDir, diffstate)
+				os.MkdirAll(baseOpts.DiffDir, 0755)
+				err := state.WriteLastState(baseOpts.DiffDir, diffstate)
 				if err != nil {
 					log.Print("error writing last.state.txt: ", err)
 				}
@@ -138,7 +139,7 @@ func Import() {
 		}
 	}
 
-	if config.ImportOptions.Write {
+	if importOpts.Write {
 		stepImport := log.StartStep("Importing OSM data")
 		stepWrite := log.StartStep("Writing OSM data")
 		progress := stats.NewStatsReporterWithEstimate(elementCounts)
@@ -159,8 +160,8 @@ func Import() {
 		}
 
 		var diffCache *cache.DiffCache
-		if config.ImportOptions.Diff {
-			diffCache = cache.NewDiffCache(config.BaseOptions.CacheDir)
+		if importOpts.Diff {
+			diffCache = cache.NewDiffCache(baseOpts.CacheDir)
 			if err = diffCache.Remove(); err != nil {
 				log.Fatal(err)
 			}
@@ -187,7 +188,7 @@ func Import() {
 			tagmapping.PolygonMatcher,
 			tagmapping.RelationMatcher,
 			tagmapping.RelationMemberMatcher,
-			config.BaseOptions.Srid)
+			baseOpts.Srid)
 		relWriter.SetLimiter(geometryLimiter)
 		relWriter.EnableConcurrent()
 		relWriter.Start()
@@ -200,7 +201,7 @@ func Import() {
 			ways, db,
 			progress,
 			tagmapping.PolygonMatcher, tagmapping.LineStringMatcher,
-			config.BaseOptions.Srid)
+			baseOpts.Srid)
 		wayWriter.SetLimiter(geometryLimiter)
 		wayWriter.EnableConcurrent()
 		wayWriter.Start()
@@ -211,7 +212,7 @@ func Import() {
 		nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
 			progress,
 			tagmapping.PointMatcher,
-			config.BaseOptions.Srid)
+			baseOpts.Srid)
 		nodeWriter.SetLimiter(geometryLimiter)
 		nodeWriter.EnableConcurrent()
 		nodeWriter.Start()
@@ -225,7 +226,7 @@ func Import() {
 
 		progress.Stop()
 
-		if config.ImportOptions.Diff {
+		if importOpts.Diff {
 			diffCache.Close()
 		}
 
@@ -249,7 +250,7 @@ func Import() {
 		log.StopStep(stepImport)
 	}
 
-	if config.ImportOptions.Optimize {
+	if importOpts.Optimize {
 		if db, ok := db.(database.Optimizer); ok {
 			if err := db.Optimize(); err != nil {
 				log.Fatal(err)
@@ -259,7 +260,7 @@ func Import() {
 		}
 	}
 
-	if config.ImportOptions.DeployProduction {
+	if importOpts.DeployProduction {
 		if db, ok := db.(database.Deployer); ok {
 			if err := db.Deploy(); err != nil {
 				log.Fatal(err)
@@ -269,7 +270,7 @@ func Import() {
 		}
 	}
 
-	if config.ImportOptions.RevertDeploy {
+	if importOpts.RevertDeploy {
 		if db, ok := db.(database.Deployer); ok {
 			if err := db.RevertDeploy(); err != nil {
 				log.Fatal(err)
@@ -279,7 +280,7 @@ func Import() {
 		}
 	}
 
-	if config.ImportOptions.RemoveBackup {
+	if importOpts.RemoveBackup {
 		if db, ok := db.(database.Deployer); ok {
 			if err := db.RemoveBackup(); err != nil {
 				log.Fatal(err)

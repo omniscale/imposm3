@@ -46,25 +46,25 @@ func Main(usage func()) {
 
 	switch os.Args[1] {
 	case "import":
-		config.ParseImport(os.Args[2:])
-		if config.BaseOptions.Httpprofile != "" {
-			stats.StartHttpPProf(config.BaseOptions.Httpprofile)
+		opts := config.ParseImport(os.Args[2:])
+		if opts.Base.Httpprofile != "" {
+			stats.StartHttpPProf(opts.Base.Httpprofile)
 		}
-		import_.Import()
+		import_.Import(opts)
 	case "diff":
-		config.ParseDiffImport(os.Args[2:])
+		opts, files := config.ParseDiffImport(os.Args[2:])
 
-		if config.BaseOptions.Httpprofile != "" {
-			stats.StartHttpPProf(config.BaseOptions.Httpprofile)
+		if opts.Httpprofile != "" {
+			stats.StartHttpPProf(opts.Httpprofile)
 		}
-		update.Diff()
+		update.Diff(opts, files)
 	case "run":
-		config.ParseRunImport(os.Args[2:])
+		opts := config.ParseRunImport(os.Args[2:])
 
-		if config.BaseOptions.Httpprofile != "" {
-			stats.StartHttpPProf(config.BaseOptions.Httpprofile)
+		if opts.Httpprofile != "" {
+			stats.StartHttpPProf(opts.Httpprofile)
 		}
-		update.Run()
+		update.Run(opts)
 	case "query-cache":
 		query.Query(os.Args[2:])
 	case "version":
