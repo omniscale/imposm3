@@ -76,7 +76,7 @@ build-license-deps:
 
 
 test-coverage:
-	$(GO) test -coverprofile imposm.coverprofile ./...
+	$(GO) test -coverprofile imposm.coverprofile -coverpkg ./... -covermode count ./...
 test-coverage-html: test-coverage
 	$(GO) tool cover -html imposm.coverprofile
 
