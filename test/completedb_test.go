@@ -21,6 +21,7 @@ func TestComplete(t *testing.T) {
 	if testing.Short() {
 		t.Skip("system test skipped with -test.short")
 	}
+	t.Parallel()
 
 	ts := importTestSuite{
 		name: "complete",

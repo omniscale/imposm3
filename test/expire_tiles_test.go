@@ -18,6 +18,7 @@ func TestExpireTiles(t *testing.T) {
 	if testing.Short() {
 		t.Skip("system test skipped with -test.short")
 	}
+	t.Parallel()
 
 	ts := importTestSuite{
 		name: "expire_tiles",

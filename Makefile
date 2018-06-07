@@ -39,13 +39,13 @@ clean:
 	(cd test && make clean)
 
 test: system-test-files
-	$(GO) test $(GOTAGS) ./...
+	$(GO) test $(GOTAGS) -parallel 4 ./...
 
 test-unit: system-test-files
 	$(GO) test $(GOTAGS) -test.short ./...
 
 test-system: system-test-files
-	$(GO) test $(GOTAGS) ./test
+	$(GO) test $(GOTAGS) -parallel 4 ./test
 
 system-test-files:
 	(cd test && make files)
