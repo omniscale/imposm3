@@ -4,7 +4,6 @@ sudo: false
 language: go
 
 go:
-  - "1.7.x"
   - "1.9.x"
   - "1.10.x" # we use this for releases, see deploy.on.condition below
   - tip
