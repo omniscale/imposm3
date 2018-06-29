@@ -235,5 +235,5 @@ Remember that you have to make the initial import with the ``-diff`` option. See
 Expire tiles
 ------------
 
-Imposm can log where the OSM data was changed when it imports diff files. You can use the ``-expiretiles-dir`` option to specify a location where Imposm should log this information. Imposm creates files in the format `YYYYmmdd/HHMMSS.sss.tiles`` (e.g. ``20161129/212345.123.tiles``) inside this directory. Each file contains a list with webmercator tiles in the format ``z/x/y`` (e.g. ``14/7321/1339``). All tiles are based on zoom level 14. You can change this with the ``-expiretiles-zoom`` option.
+Imposm can log where the OSM data was changed when it imports diff files. You can use the ``-expiretiles-dir`` option to specify a location where Imposm should log this information. Imposm creates files in the format `YYYYmmdd/HHMMSS.sss.tiles`` (e.g. ``20161129/212345.123.tiles``) inside this directory. The timestamp is the current time of the diff import, not the creation time of the diff. Each file contains a list with webmercator tiles in the format ``z/x/y`` (e.g. ``14/7321/1339``). All tiles are based on zoom level 14. You can change this with the ``-expiretiles-zoom`` option.
 Both expire options can be set as ``expiretiles_dir`` and ``expiretiles_zoom`` in the JSON configuration.
