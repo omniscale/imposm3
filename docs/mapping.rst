@@ -5,6 +5,9 @@ The data mapping defines which `OSM feature types <http://wiki.openstreetmap.org
 
 See `example-mapping.yml <https://raw.githubusercontent.com/omniscale/imposm3/master/example-mapping.yml>`_ for an example.
 
+.. note::
+  The `YAML format <https://en.wikipedia.org/wiki/YAML>`_ uses indentations to indicate nesting. Tab characters are not allowed.
+  Quotes around simple strings are optional with YAML. ``"simple_string"``, ``'simple_string'`` and ``simple_string`` are all equal. However, numbers and boolean values (``yes``, ``no``, ``true``, ``false``) need to be quoted when they should be interpreted as a string (for example, when filtering ``building: ['no']``).
 
 Tables
 ------
@@ -112,7 +115,7 @@ The following mapping only imports buildings with a `name` tag. Buildings with `
           require:
             name: [__any__]
           reject:
-            building: [no, none]
+            building: ['no', none]
           reject_regexp:
             level: '^\D+.*$'
         mapping:
