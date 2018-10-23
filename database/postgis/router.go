@@ -2,6 +2,8 @@ package postgis
 
 import (
 	"database/sql"
+
+	"github.com/pkg/errors"
 )
 
 // TxRouter routes inserts/deletes to TableTx
@@ -27,14 +29,14 @@ func newTxRouter(pg *PostGIS, bulkImport bool) (*TxRouter, error) {
 	} else {
 		tx, err := pg.Db.Begin()
 		if err != nil {
-			panic(err) // TODO
+			return nil, errors.Wrap(err, "begin postgis transaction")
 		}
 		txr.tx = tx
 		for tableName, table := range pg.Tables {
 			tt := NewSynchronousTableTx(pg, table.FullName, table)
 			err := tt.Begin(tx)
 			if err != nil {
-				return nil, err
+				return nil, errors.Wrapf(err, "begin postgis transaction for table %s", table.FullName)
 			}
 			txr.Tables[tableName] = tt
 		}
@@ -42,7 +44,7 @@ func newTxRouter(pg *PostGIS, bulkImport bool) (*TxRouter, error) {
 			tt := NewSynchronousTableTx(pg, table.FullName, table)
 			err := tt.Begin(tx)
 			if err != nil {
-				return nil, err
+				return nil, errors.Wrapf(err, "begin postgis transaction for generalized table %s", table.FullName)
 			}
 			txr.Tables[tableName] = tt
 		}
@@ -83,7 +85,7 @@ func (txr *TxRouter) Abort() error {
 func (txr *TxRouter) Insert(table string, row []interface{}) error {
 	tt, ok := txr.Tables[table]
 	if !ok {
-		panic("unknown table " + table)
+		return errors.New("Insert into unknown table " + table)
 	}
 	return tt.Insert(row)
 }
@@ -91,7 +93,7 @@ func (txr *TxRouter) Insert(table string, row []interface{}) error {
 func (txr *TxRouter) Delete(table string, id int64) error {
 	tt, ok := txr.Tables[table]
 	if !ok {
-		panic("unknown table " + table)
+		return errors.New("Delete from unknown table " + table)
 	}
 	return tt.Delete(id)
 }

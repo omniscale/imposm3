@@ -72,12 +72,13 @@ func (tt *bulkTableTx) Insert(row []interface{}) error {
 	return nil
 }
 
-// TODO remove loop() and directly Exec in tt.Insert()
 func (tt *bulkTableTx) loop() {
 	for row := range tt.rows {
 		_, err := tt.InsertStmt.Exec(row...)
 		if err != nil {
-			log.Fatal(&SQLInsertError{SQLError{tt.InsertSql, err}, row})
+			// InsertStmt uses COPY so the error may not be related to this row.
+			// Abort the import as the whole transaction is lost anyway.
+			log.Fatalf("[fatal] bulk insert into %q: %s", tt.Table, &SQLError{tt.InsertSql, err})
 		}
 	}
 	tt.wg.Done()

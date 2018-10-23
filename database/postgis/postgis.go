@@ -15,6 +15,7 @@ import (
 	"github.com/omniscale/imposm3/log"
 	"github.com/omniscale/imposm3/mapping"
 	"github.com/omniscale/imposm3/mapping/config"
+	"github.com/pkg/errors"
 )
 
 type SQLError struct {
@@ -308,7 +309,7 @@ func (pg *PostGIS) generalizeTable(table *GeneralizedTableSpec) error {
 	}
 
 	if err := dropTableIfExists(tx, pg.Config.ImportSchema, table.FullName); err != nil {
-		return err
+		return errors.Wrap(err, "dropping existing table")
 	}
 
 	columnSQL := strings.Join(cols, ",\n")
@@ -330,18 +331,18 @@ func (pg *PostGIS) generalizeTable(table *GeneralizedTableSpec) error {
 
 	isPG2, err := isPostGIS2(tx)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "detecting PostGIS version")
 	}
 	if !isPG2 {
 		err = populateGeometryColumn(tx, table.FullName, *table.Source)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "populating GeometryColumn for PostGIS 2")
 		}
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "commiting tx for generalizes table %q", table.FullName)
 	}
 	tx = nil // set nil to prevent rollback
 	return nil
@@ -375,7 +376,7 @@ func (pg *PostGIS) Optimize() error {
 
 	err := p.wait()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "optimizing database")
 	}
 
 	return nil
@@ -384,34 +385,34 @@ func (pg *PostGIS) Optimize() error {
 func clusterTable(pg *PostGIS, tableName string, srid int, columns []ColumnSpec) error {
 	for _, col := range columns {
 		if col.Type.Name() == "GEOMETRY" {
-			step := log.Step(fmt.Sprintf("Indexing %s on geohash", tableName))
+			step := log.Step(fmt.Sprintf("Indexing %q on geohash", tableName))
 			sql := fmt.Sprintf(`CREATE INDEX "%s_geom_geohash" ON "%s"."%s" (ST_GeoHash(ST_Transform(ST_SetSRID(Box2D(%s), %d), 4326)))`,
 				tableName, pg.Config.ImportSchema, tableName, col.Name, srid)
 			_, err := pg.Db.Exec(sql)
 			step()
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "indexing %q on geohash", tableName)
 			}
 
-			step = log.Step(fmt.Sprintf("Clustering %s on geohash", tableName))
+			step = log.Step(fmt.Sprintf("Clustering %q on geohash", tableName))
 			sql = fmt.Sprintf(`CLUSTER "%s_geom_geohash" ON "%s"."%s"`,
 				tableName, pg.Config.ImportSchema, tableName)
 			_, err = pg.Db.Exec(sql)
 			step()
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "clusering %q on geohash", tableName)
 			}
 			break
 		}
 	}
 
-	step := log.Step(fmt.Sprintf("Analysing %s", tableName))
+	step := log.Step(fmt.Sprintf("Analysing %q", tableName))
 	sql := fmt.Sprintf(`ANALYSE "%s"."%s"`,
 		pg.Config.ImportSchema, tableName)
 	_, err := pg.Db.Exec(sql)
 	step()
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "analyzing %q", tableName)
 	}
 
 	return nil
@@ -436,12 +437,12 @@ func (pg *PostGIS) Open() error {
 
 	pg.Db, err = sql.Open("postgres", pg.Params)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "opening Postgres DB")
 	}
 	// check that the connection actually works
 	err = pg.Db.Ping()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "ping Postgres DB")
 	}
 	return nil
 }
@@ -599,7 +600,7 @@ func New(conf database.Config, m *config.Mapping) (database.DB, error) {
 		// connStr is a URL
 		params, err = pq.ParseURL(connStr)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "parsing database connection URL")
 		}
 	} else {
 		// connStr is already a params list (postgres: host=localhost ...)
@@ -612,19 +613,21 @@ func New(conf database.Config, m *config.Mapping) (database.DB, error) {
 	for name, table := range m.Tables {
 		db.Tables[name], err = NewTableSpec(db, table)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "creating table spec for %q", name)
 		}
 	}
 	for name, table := range m.GeneralizedTables {
 		db.GeneralizedTables[name] = NewGeneralizedTableSpec(db, table)
 	}
-	db.prepareGeneralizedTableSources()
+	if err := db.prepareGeneralizedTableSources(); err != nil {
+		return nil, errors.Wrap(err, "preparing generalized table sources")
+	}
 	db.prepareGeneralizations()
 
 	db.Params = params
 	err = db.Open()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "opening db")
 	}
 	return db, nil
 }
@@ -632,16 +635,15 @@ func New(conf database.Config, m *config.Mapping) (database.DB, error) {
 // prepareGeneralizedTableSources checks if all generalized table have an
 // existing source and sets .Source to the original source (works even
 // when source is allready generalized).
-func (pg *PostGIS) prepareGeneralizedTableSources() {
+func (pg *PostGIS) prepareGeneralizedTableSources() error {
 	for name, table := range pg.GeneralizedTables {
 		if source, ok := pg.Tables[table.SourceName]; ok {
 			table.Source = source
 		} else if source, ok := pg.GeneralizedTables[table.SourceName]; ok {
 			table.SourceGeneralized = source
 		} else {
-			log.Printf("[error] missing source '%s' for generalized table '%s'\n",
+			return errors.Errorf("missing source %q for generalized table %q",
 				table.SourceName, name)
-			// TODO: return error?
 		}
 	}
 
@@ -657,6 +659,7 @@ func (pg *PostGIS) prepareGeneralizedTableSources() {
 			}
 		}
 	}
+	return nil
 }
 
 func (pg *PostGIS) prepareGeneralizations() {
