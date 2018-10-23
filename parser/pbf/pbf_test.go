@@ -10,7 +10,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/omniscale/imposm3/element"
-	"github.com/omniscale/imposm3/log"
 	"github.com/omniscale/imposm3/parser/pbf/internal/osmpbf"
 )
 
@@ -18,7 +17,7 @@ func BenchmarkHello(b *testing.B) {
 	b.StopTimer()
 	pbf, err := open("./monaco-20150428.osm.pbf")
 	if err != nil {
-		panic(err)
+		b.Fatal(err)
 	}
 
 	for pos := range pbf.BlockPositions() {
@@ -83,7 +82,7 @@ func BenchmarkPrimitiveBlock(b *testing.B) {
 
 	file, err := os.Open("./monaco-20150428.osm.pbf")
 	if err != nil {
-		log.Panic(err)
+		b.Fatal(err)
 	}
 	defer file.Close()
 
@@ -98,7 +97,7 @@ func BenchmarkPrimitiveBlock(b *testing.B) {
 	io.ReadFull(file, blobData)
 	err = proto.Unmarshal(blobData, blob)
 	if err != nil {
-		log.Panic("unmarshaling error blob: ", err)
+		b.Fatal("unmarshaling error blob: ", err)
 	}
 
 	b.StartTimer()
@@ -106,13 +105,13 @@ func BenchmarkPrimitiveBlock(b *testing.B) {
 		buf := bytes.NewBuffer(blob.GetZlibData())
 		r, err := zlib.NewReader(buf)
 		if err != nil {
-			log.Panic("zlib error: ", err)
+			b.Fatal("zlib error: ", err)
 		}
 		raw := make([]byte, blob.GetRawSize())
 		io.ReadFull(r, raw)
 		err = proto.Unmarshal(raw, block)
 		if err != nil {
-			log.Panic("unmarshaling error: ", err)
+			b.Fatal("unmarshaling error: ", err)
 		}
 	}
 }
