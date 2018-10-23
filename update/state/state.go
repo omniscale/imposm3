@@ -13,11 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/omniscale/imposm3/logging"
+	"github.com/omniscale/imposm3/log"
 	"github.com/omniscale/imposm3/parser/pbf"
 )
-
-var log = logging.NewLogger("diff")
 
 type DiffState struct {
 	Time     time.Time
@@ -59,13 +57,13 @@ func WriteLastState(cacheDir string, state *DiffState) error {
 func FromOscGz(oscFile string) (*DiffState, error) {
 	var stateFile string
 	if !strings.HasSuffix(oscFile, ".osc.gz") {
-		log.Warn("cannot read state file for non .osc.gz files")
+		log.Println("[warn] cannot read state file for non .osc.gz files")
 		return nil, nil
 	}
 
 	stateFile = oscFile[:len(oscFile)-len(".osc.gz")] + ".state.txt"
 	if _, err := os.Stat(stateFile); os.IsNotExist(err) {
-		log.Warn("cannot find state file ", stateFile)
+		log.Println("[warn] cannot find state file ", stateFile)
 		return nil, nil
 	}
 
@@ -176,7 +174,7 @@ func parseTimeStamp(value string) (time.Time, error) {
 
 func parseSequence(value string) (int, error) {
 	if value == "" {
-		log.Warn("missing sequenceNumber in state file")
+		log.Println("[warn] missing sequenceNumber in state file")
 		return 0, nil
 	}
 	val, err := strconv.ParseInt(value, 10, 32)
@@ -199,16 +197,16 @@ func estimateSequence(url string, interval time.Duration, timestamp time.Time) i
 	state, err := currentState(url)
 	if err != nil {
 		// try a second time before failing
-		log.Warn("unable to fetch current state from ", url, ":", err, ", retry in 30s")
+		log.Println("[warn] unable to fetch current state from ", url, ":", err, ", retry in 30s")
 		time.Sleep(time.Second * 30)
 		state, err = currentState(url)
 		if err != nil {
-			log.Warn("unable to fetch current state from ", url, ":", err, ", giving up")
+			log.Println("[warn] unable to fetch current state from ", url, ":", err, ", giving up")
 			return 0
 		}
 	}
 
-    behind := state.Time.Sub(timestamp)
-    // Sequence unit depends on replication interval (minute, hour, day).
-    return state.Sequence - int(math.Ceil(behind.Minutes() / interval.Minutes()))
+	behind := state.Time.Sub(timestamp)
+	// Sequence unit depends on replication interval (minute, hour, day).
+	return state.Sequence - int(math.Ceil(behind.Minutes()/interval.Minutes()))
 }

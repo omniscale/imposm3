@@ -450,7 +450,7 @@ func filterTest(t *testing.T, mapping string, accept []element.Tags, reject []el
 
 	tmpfile, err := ioutil.TempFile("", "filter_test_mapping.yml")
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	defer os.Remove(tmpfile.Name())

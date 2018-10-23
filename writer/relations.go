@@ -10,6 +10,7 @@ import (
 	"github.com/omniscale/imposm3/expire"
 	geomp "github.com/omniscale/imposm3/geom"
 	geosp "github.com/omniscale/imposm3/geom/geos"
+	"github.com/omniscale/imposm3/log"
 	"github.com/omniscale/imposm3/mapping"
 	"github.com/omniscale/imposm3/stats"
 )
@@ -78,7 +79,7 @@ NextRel:
 		err := rw.osmCache.Ways.FillMembers(r.Members)
 		if err != nil {
 			if err != cache.NotFound {
-				log.Warn(err)
+				log.Println("[warn]: ", err)
 			}
 			continue
 		}
@@ -89,7 +90,7 @@ NextRel:
 			err := rw.osmCache.Coords.FillWay(m.Way)
 			if err != nil {
 				if err != cache.NotFound {
-					log.Warn(err)
+					log.Println("[warn]: ", err)
 				}
 				continue NextRel
 			}
@@ -143,7 +144,7 @@ func handleMultiPolygon(rw *RelationWriter, r *element.Relation, geos *geosp.Geo
 	prepedRel, err := geomp.PrepareRelation(r, rw.srid, rw.maxGap)
 	if err != nil {
 		if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
-			log.Warn(err)
+			log.Println("[warn]: ", err)
 		}
 		return false
 	}
@@ -155,7 +156,7 @@ func handleMultiPolygon(rw *RelationWriter, r *element.Relation, geos *geosp.Geo
 	}
 	if err != nil {
 		if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
-			log.Warn(err)
+			log.Println("[warn]: ", err)
 		}
 		return false
 	}
@@ -164,11 +165,11 @@ func handleMultiPolygon(rw *RelationWriter, r *element.Relation, geos *geosp.Geo
 		start := time.Now()
 		parts, err := rw.limiter.Clip(geom.Geom)
 		if err != nil {
-			log.Warn(err)
+			log.Println("[warn]: ", err)
 			return false
 		}
 		if duration := time.Now().Sub(start); duration > time.Minute {
-			log.Warnf("clipping relation %d to -limitto took %s", r.Id, duration)
+			log.Printf("[warn]: clipping relation %d to -limitto took %s", r.Id, duration)
 		}
 		if len(parts) == 0 {
 			return false
@@ -180,7 +181,7 @@ func handleMultiPolygon(rw *RelationWriter, r *element.Relation, geos *geosp.Geo
 			err := rw.inserter.InsertPolygon(rel.OSMElem, geom, matches)
 			if err != nil {
 				if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
-					log.Warn(err)
+					log.Println("[warn]: ", err)
 				}
 				continue
 			}
@@ -191,7 +192,7 @@ func handleMultiPolygon(rw *RelationWriter, r *element.Relation, geos *geosp.Geo
 		err := rw.inserter.InsertPolygon(rel.OSMElem, geom, matches)
 		if err != nil {
 			if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
-				log.Warn(err)
+				log.Println("[warn]: ", err)
 			}
 			return false
 		}
@@ -221,7 +222,7 @@ func handleRelationMembers(rw *RelationWriter, r *element.Relation, geos *geosp.
 			mrel, err := rw.osmCache.Relations.GetRelation(m.Id)
 			if err != nil {
 				if err != cache.NotFound {
-					log.Warn(err)
+					log.Println("[warn]: ", err)
 				}
 				return false
 			}
@@ -233,12 +234,12 @@ func handleRelationMembers(rw *RelationWriter, r *element.Relation, geos *geosp.
 					nd, err = rw.osmCache.Coords.GetCoord(m.Id)
 					if err != nil {
 						if err != cache.NotFound {
-							log.Warn(err)
+							log.Println("[warn]: ", err)
 						}
 						return false
 					}
 				} else {
-					log.Warn(err)
+					log.Println("[warn]: ", err)
 					return false
 				}
 			}
@@ -258,7 +259,7 @@ func handleRelationMembers(rw *RelationWriter, r *element.Relation, geos *geosp.
 		}
 
 		if err != nil {
-			log.Warn(err)
+			log.Println("[warn]: ", err)
 			return false
 		}
 
@@ -269,7 +270,7 @@ func handleRelationMembers(rw *RelationWriter, r *element.Relation, geos *geosp.
 		} else {
 			gelem, err = geomp.AsGeomElement(geos, g)
 			if err != nil {
-				log.Warn(err)
+				log.Println("[warn]: ", err)
 				return false
 			}
 		}

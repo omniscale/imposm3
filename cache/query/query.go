@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"strings"
 
 	"github.com/omniscale/imposm3/cache"
 	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/log"
 )
 
 var flags = flag.NewFlagSet("query-cache", flag.ExitOnError)
@@ -168,8 +168,6 @@ func Query(args []string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.SetFlags(0)
-	log.SetOutput(os.Stdout)
 
 	osmCache := cache.NewOSMCache(*cachedir)
 	err = osmCache.Open()

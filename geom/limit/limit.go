@@ -9,11 +9,9 @@ import (
 
 	"github.com/omniscale/imposm3/geom/geojson"
 	"github.com/omniscale/imposm3/geom/geos"
-	"github.com/omniscale/imposm3/logging"
+	"github.com/omniscale/imposm3/log"
 	"github.com/omniscale/imposm3/proj"
 )
-
-var log = logging.NewLogger("limiter")
 
 // Tile bbox into multiple sub-boxes, each of `width` size.
 

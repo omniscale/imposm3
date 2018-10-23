@@ -9,6 +9,7 @@ import (
 	"github.com/omniscale/imposm3/expire"
 	geomp "github.com/omniscale/imposm3/geom"
 	"github.com/omniscale/imposm3/geom/geos"
+	"github.com/omniscale/imposm3/log"
 	"github.com/omniscale/imposm3/mapping"
 	"github.com/omniscale/imposm3/stats"
 )
@@ -100,7 +101,7 @@ func (ww *WayWriter) loop() {
 			err, inserted = ww.buildAndInsert(geos, w, matches, false)
 			if err != nil {
 				if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
-					log.Warn(err)
+					log.Println("[warn]: ", err)
 				}
 				continue
 			}
@@ -113,7 +114,7 @@ func (ww *WayWriter) loop() {
 				err, insertedPolygon = ww.buildAndInsert(geos, w, matches, true)
 				if err != nil {
 					if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
-						log.Warn(err)
+						log.Println("[warn]: ", err)
 					}
 					continue
 				}

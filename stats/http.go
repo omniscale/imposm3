@@ -1,9 +1,10 @@
 package stats
 
 import (
-	"log"
 	"net/http"
 	_ "net/http/pprof"
+
+	"github.com/omniscale/imposm3/log"
 )
 
 func StartHttpPProf(bind string) {

@@ -9,10 +9,8 @@ import (
 	"time"
 
 	"github.com/omniscale/imposm3/element"
-	"github.com/omniscale/imposm3/logging"
+	"github.com/omniscale/imposm3/log"
 )
-
-var log = logging.NewLogger("osc parser")
 
 type Element struct {
 	Add  bool
@@ -212,7 +210,7 @@ NextToken:
 			case "osmChange":
 				// pass
 			default:
-				log.Warn("unhandled XML tag ", tok.Name.Local, " in OSC")
+				log.Println("[warn] unhandled XML tag ", tok.Name.Local, " in OSC")
 			}
 		case xml.EndElement:
 			var e Element

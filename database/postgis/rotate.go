@@ -2,10 +2,12 @@ package postgis
 
 import (
 	"fmt"
+
+	"github.com/omniscale/imposm3/log"
 )
 
 func (pg *PostGIS) rotate(source, dest, backup string) error {
-	defer log.StopStep(log.StartStep(fmt.Sprintf("Rotating tables")))
+	defer log.Step("Rotating tables")()
 
 	if err := pg.createSchema(dest); err != nil {
 		return err
@@ -24,7 +26,7 @@ func (pg *PostGIS) rotate(source, dest, backup string) error {
 	for _, tableName := range pg.tableNames() {
 		tableName = pg.Prefix + tableName
 
-		log.Printf("Rotating %s from %s -> %s -> %s", tableName, source, dest, backup)
+		log.Printf("[info] Rotating %s from %s -> %s -> %s", tableName, source, dest, backup)
 
 		backupExists, err := tableExists(tx, backup, tableName)
 		if err != nil {
@@ -40,12 +42,12 @@ func (pg *PostGIS) rotate(source, dest, backup string) error {
 		}
 
 		if !sourceExists {
-			log.Warnf("skipping rotate of %s, table does not exists in %s", tableName, source)
+			log.Printf("[warn] skipping rotate of %s, table does not exists in %s", tableName, source)
 			continue
 		}
 
 		if destExists {
-			log.Printf("backup of %s, to %s", tableName, backup)
+			log.Printf("[info] backup of %s, to %s", tableName, backup)
 			if backupExists {
 				err = dropTableIfExists(tx, backup, tableName)
 				if err != nil {
@@ -99,7 +101,7 @@ func (pg *PostGIS) RemoveBackup() error {
 			return err
 		}
 		if backupExists {
-			log.Printf("removing backup of %s from %s", tableName, backup)
+			log.Printf("[info] removing backup of %s from %s", tableName, backup)
 			err = dropTableIfExists(tx, backup, tableName)
 			if err != nil {
 				return err

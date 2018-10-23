@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"compress/zlib"
 	"io"
-	"log"
 	"os"
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
+
 	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/log"
 	"github.com/omniscale/imposm3/parser/pbf/internal/osmpbf"
 )
 

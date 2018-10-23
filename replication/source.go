@@ -14,10 +14,8 @@ import (
 	"gopkg.in/fsnotify.v1"
 
 	"github.com/omniscale/imposm3"
-	"github.com/omniscale/imposm3/logging"
+	"github.com/omniscale/imposm3/log"
 )
-
-var log = logging.NewLogger("replication")
 
 type NotAvailable struct {
 	url string
@@ -108,7 +106,7 @@ func (d *downloader) Sequences() <-chan Sequence {
 func (d *downloader) download(seq int, ext string) error {
 	dest := path.Join(d.dest, seqPath(seq)+ext)
 	url := d.baseUrl + seqPath(seq) + ext
-	log.Print("Downloading diff file from ", url)
+	log.Println("[debug] Downloading diff file from ", url)
 
 	if _, err := os.Stat(dest); err == nil {
 		return nil
@@ -160,16 +158,21 @@ func (d *downloader) download(seq int, ext string) error {
 }
 
 func (d *downloader) downloadTillSuccess(seq int, ext string) {
+	errCount := 0
 	for {
 		err := d.download(seq, ext)
 		if err == nil {
 			break
 		}
+		errCount++
 		if err, ok := err.(*NotAvailable); ok {
-			log.Print(err)
+			log.Println("[debug] File not found/available:", err.url)
 			time.Sleep(d.naWaittime)
+		} else if errCount == 1 {
+			log.Println("[warn] Downloading file:", err)
+			time.Sleep(d.errWaittime)
 		} else {
-			log.Warn(err)
+			log.Println("[error] Downloading file:", err)
 			time.Sleep(d.errWaittime)
 		}
 	}
@@ -180,7 +183,7 @@ func (d *downloader) fetchNextLoop() {
 	lastTime, err := d.stateTime(stateFile)
 	for {
 		nextSeq := d.lastSequence + 1
-		log.Print("Processing sequence ", nextSeq)
+		log.Println("[debug] Processing download for sequence", nextSeq)
 		if err == nil {
 			nextDiffTime := lastTime.Add(d.interval)
 			if nextDiffTime.After(time.Now()) {
@@ -188,7 +191,7 @@ func (d *downloader) fetchNextLoop() {
 				// wait till last diff time + interval, before fetching next
 				nextDiffTime = lastTime.Add(d.interval + 2*time.Second /* allow small time diff between servers */)
 				waitFor := nextDiffTime.Sub(time.Now())
-				log.Print("Next process in ", waitFor)
+				log.Println("[debug] Waiting for next download in", waitFor)
 				time.Sleep(waitFor)
 			}
 		}
@@ -241,10 +244,12 @@ func (d *reader) fetchNextLoop() {
 	for {
 		nextSeq := d.lastSequence + 1
 		if err := d.waitTillPresent(nextSeq, d.stateExt); err != nil {
-			log.Error(err)
+			log.Println("[warn] Waiting for state file:", err)
+			continue
 		}
 		if err := d.waitTillPresent(nextSeq, d.fileExt); err != nil {
-			log.Error(err)
+			log.Println("[warn] Waiting for diff file:", err)
+			continue
 		}
 		d.lastSequence = nextSeq
 		base := path.Join(d.dest, seqPath(d.lastSequence))

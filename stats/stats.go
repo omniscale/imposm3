@@ -2,8 +2,9 @@ package stats
 
 import (
 	"fmt"
-	"github.com/omniscale/imposm3/logging"
 	"time"
+
+	"github.com/omniscale/imposm3/log"
 )
 
 type Counter struct {
@@ -103,20 +104,16 @@ func NewStatsReporterWithEstimate(counts *ElementCounts) *Statistics {
 }
 
 func (s *Statistics) loop() {
-	tick := time.NewTicker(500 * time.Millisecond)
 	tock := time.NewTicker(time.Minute)
 	for {
 		select {
 		case <-s.done:
-			tick.Stop()
 			tock.Stop()
 			s.counter.PrintStats()
 			return
 		case <-tock.C:
-			s.counter.PrintStats()
-		case <-tick.C:
-			s.counter.PrintTick()
 			s.counter.Tick()
+			s.counter.PrintStats()
 		}
 	}
 }
@@ -132,27 +129,8 @@ func roundInt(val float64, round int) int64 {
 	return int64(val/float64(round)) * int64(round)
 }
 
-func (c *Counter) PrintTick() {
-	logging.Progress(
-		fmt.Sprintf("[%6s] C: %7d/s %7d/s (%s) N: %7d/s %7d/s (%s) W: %7d/s %7d/s (%s) R: %6d/s %6d/s (%s)",
-			c.Duration(),
-			roundInt(c.Coords.Rps(), 1000),
-			roundInt(c.Coords.LastRps(), 1000),
-			fmtPercentOrVal(c.Coords.Progress(), c.Coords.Value()),
-			roundInt(c.Nodes.Rps(), 100),
-			roundInt(c.Nodes.LastRps(), 100),
-			fmtPercentOrVal(c.Nodes.Progress(), c.Nodes.Value()),
-			roundInt(c.Ways.Rps(), 100),
-			roundInt(c.Ways.LastRps(), 100),
-			fmtPercentOrVal(c.Ways.Progress(), c.Ways.Value()),
-			roundInt(c.Relations.Rps(), 10),
-			roundInt(c.Relations.LastRps(), 10),
-			fmtPercentOrVal(c.Relations.Progress(), c.Relations.Value()),
-		))
-}
-
 func (c *Counter) PrintStats() {
-	logging.Infof("[%6s] C: %7d/s (%s) N: %7d/s (%s) W: %7d/s (%s) R: %6d/s (%s)",
+	log.Printf("[progress] %6s C: %7d/s (%s) N: %7d/s (%s) W: %7d/s (%s) R: %6d/s (%s)",
 		c.Duration(),
 		roundInt(c.Coords.Rps(), 1000),
 		fmtPercentOrVal(c.Coords.Progress(), c.Coords.Value()),

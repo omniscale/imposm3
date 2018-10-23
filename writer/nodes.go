@@ -9,6 +9,7 @@ import (
 	"github.com/omniscale/imposm3/expire"
 	geomp "github.com/omniscale/imposm3/geom"
 	"github.com/omniscale/imposm3/geom/geos"
+	"github.com/omniscale/imposm3/log"
 	"github.com/omniscale/imposm3/mapping"
 	"github.com/omniscale/imposm3/stats"
 )
@@ -54,14 +55,14 @@ func (nw *NodeWriter) loop() {
 			point, err := geomp.Point(geos, *n)
 			if err != nil {
 				if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
-					log.Warn(err)
+					log.Println("[warn]: ", err)
 				}
 				continue
 			}
 
 			geom, err := geomp.AsGeomElement(geos, point)
 			if err != nil {
-				log.Warn(err)
+				log.Println("[warn]: ", err)
 				continue
 			}
 
@@ -69,19 +70,19 @@ func (nw *NodeWriter) loop() {
 			if nw.limiter != nil {
 				parts, err := nw.limiter.Clip(geom.Geom)
 				if err != nil {
-					log.Warn(err)
+					log.Println("[warn]: ", err)
 					continue
 				}
 				if len(parts) >= 1 {
 					if err := nw.inserter.InsertPoint(n.OSMElem, geom, matches); err != nil {
-						log.Warn(err)
+						log.Println("[warn]: ", err)
 						continue
 					}
 					inserted = true
 				}
 			} else {
 				if err := nw.inserter.InsertPoint(n.OSMElem, geom, matches); err != nil {
-					log.Warn(err)
+					log.Println("[warn]: ", err)
 					continue
 				}
 				inserted = true

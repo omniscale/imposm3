@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"sync"
+
+	"github.com/omniscale/imposm3/log"
 )
 
 type TableTx interface {
@@ -70,11 +72,11 @@ func (tt *bulkTableTx) Insert(row []interface{}) error {
 	return nil
 }
 
+// TODO remove loop() and directly Exec in tt.Insert()
 func (tt *bulkTableTx) loop() {
 	for row := range tt.rows {
 		_, err := tt.InsertStmt.Exec(row...)
 		if err != nil {
-			// TODO
 			log.Fatal(&SQLInsertError{SQLError{tt.InsertSql, err}, row})
 		}
 	}

@@ -6,14 +6,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/omniscale/imposm3/log"
+
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/geom"
-	"github.com/omniscale/imposm3/logging"
 	"github.com/omniscale/imposm3/mapping/config"
 	"github.com/pkg/errors"
 )
-
-var log = logging.NewLogger("mapping")
 
 var AvailableColumnTypes map[string]ColumnType
 
@@ -135,7 +134,7 @@ func Geometry(val string, elem *element.OSMElem, geom *geom.Geometry, match Matc
 }
 
 func MakePseudoArea(columnName string, columnType ColumnType, column config.Column) (MakeValue, error) {
-	log.Print("warn: pseudoarea type is deprecated and will be removed. See area and webmerc_area type.")
+	log.Println("[warn] pseudoarea type is deprecated and will be removed. See area and webmerc_area type.")
 	return Area, nil
 }
 
@@ -286,7 +285,7 @@ func DefaultWayZOrder(val string, elem *element.OSMElem, geom *geom.Geometry, ma
 }
 
 func MakeZOrder(columnName string, columnType ColumnType, column config.Column) (MakeValue, error) {
-	log.Print("warn: zorder type is deprecated and will be removed. See enumerate type.")
+	log.Println("[warn] zorder type is deprecated and will be removed. See enumerate type.")
 	_rankList, ok := column.Args["ranks"]
 	if !ok {
 		return nil, errors.New("missing ranks in args for zorder")

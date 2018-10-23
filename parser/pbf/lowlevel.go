@@ -7,11 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
+
+	"github.com/omniscale/imposm3/log"
 	"github.com/omniscale/imposm3/parser/pbf/internal/osmpbf"
 )
 
@@ -77,12 +78,12 @@ func readBlobData(pos block) ([]byte, error) {
 func readPrimitiveBlock(pos block) *osmpbf.PrimitiveBlock {
 	raw, err := readBlobData(pos)
 	if err != nil {
-		log.Panic(err)
+		log.Fatal(err)
 	}
 	block := &osmpbf.PrimitiveBlock{}
 	err = proto.Unmarshal(raw, block)
 	if err != nil {
-		log.Panic("unmarshaling error: ", err)
+		log.Fatal("unmarshaling error: ", err)
 	}
 
 	return block

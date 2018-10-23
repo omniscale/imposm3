@@ -6,10 +6,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/omniscale/imposm3/logging"
+	"github.com/omniscale/imposm3/log"
 )
-
-var log = logging.NewLogger("geojson")
 
 type object struct {
 	Type        string                 `json:"type"`
@@ -40,7 +38,7 @@ func newPointFromCoords(coords []interface{}) (Point, error) {
 	}
 
 	if p.Long > 180.0 || p.Long < -180.0 || p.Lat > 90.0 || p.Lat < -90.0 {
-		log.Warn("coordinates outside of world boundary. non-4326?: ", p)
+		log.Println("[warn] coordinates outside of world boundary. non-4326?: ", p)
 	}
 
 	return p, nil

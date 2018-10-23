@@ -9,12 +9,9 @@ import (
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/expire"
 	"github.com/omniscale/imposm3/geom/limit"
-	"github.com/omniscale/imposm3/logging"
 	"github.com/omniscale/imposm3/proj"
 	"github.com/omniscale/imposm3/stats"
 )
-
-var log = logging.NewLogger("writer")
 
 type ErrorLevel interface {
 	Level() int

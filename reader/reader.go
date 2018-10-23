@@ -12,13 +12,11 @@ import (
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/geom/geos"
 	"github.com/omniscale/imposm3/geom/limit"
-	"github.com/omniscale/imposm3/logging"
+	"github.com/omniscale/imposm3/log"
 	"github.com/omniscale/imposm3/mapping"
 	"github.com/omniscale/imposm3/parser/pbf"
 	"github.com/omniscale/imposm3/stats"
 )
-
-var log = logging.NewLogger("reader")
 
 var skipCoords, skipNodes, skipWays bool
 var nParser, nWays, nRels, nNodes, nCoords int64
@@ -73,7 +71,7 @@ func ReadPbf(
 	}
 
 	if header := parser.Header(); header.Time.Unix() != 0 {
-		log.Printf("reading %s with data till %v", filename, header.Time.Local())
+		log.Printf("[info] reading %s with data till %v", filename, header.Time.Local())
 	}
 
 	// wait for all coords/nodes to be processed before continuing with
@@ -122,7 +120,7 @@ func ReadPbf(
 					if withLimiter {
 						cached, err := cache.Coords.FirstRefIsCached(ws[i].Refs)
 						if err != nil {
-							log.Errorf("error while checking for cached refs of way %d: %v", ws[i].Id, err)
+							log.Printf("[error] checking for cached refs of way %d: %v", ws[i].Id, err)
 							cached = true // don't skip in case of error
 						}
 						if cached {
@@ -135,7 +133,7 @@ func ReadPbf(
 				}
 				err := cache.Ways.PutWays(ws)
 				if err != nil {
-					log.Errorf("error while caching ways: %v", err)
+					log.Printf("[error] caching ways: %v", err)
 				}
 				progress.AddWays(len(ws))
 			}
@@ -160,7 +158,7 @@ func ReadPbf(
 					if withLimiter {
 						cached, err := cache.FirstMemberIsCached(rels[i].Members)
 						if err != nil {
-							log.Errorf("error while checking for cached members of relation %d: %v", rels[i].Id, err)
+							log.Printf("[error] checking for cached members of relation %d: %v", rels[i].Id, err)
 							cached = true // don't skip in case of error
 						}
 						if cached {
@@ -173,7 +171,7 @@ func ReadPbf(
 				}
 				err := cache.Relations.PutRelations(rels)
 				if err != nil {
-					log.Errorf("error while caching relation: %v", err)
+					log.Printf("[error] caching relation: %v", err)
 				}
 				progress.AddRelations(numWithTags)
 			}

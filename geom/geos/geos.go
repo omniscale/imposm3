@@ -17,10 +17,8 @@ import (
 	"runtime"
 	"unsafe"
 
-	"github.com/omniscale/imposm3/logging"
+	"github.com/omniscale/imposm3/log"
 )
-
-var log = logging.NewLogger("GEOS")
 
 //export goLogString
 func goLogString(msg *C.char) {

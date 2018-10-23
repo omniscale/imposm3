@@ -11,7 +11,7 @@ import (
 	"github.com/omniscale/imposm3/database"
 	_ "github.com/omniscale/imposm3/database/postgis"
 	"github.com/omniscale/imposm3/geom/limit"
-	"github.com/omniscale/imposm3/logging"
+	"github.com/omniscale/imposm3/log"
 	"github.com/omniscale/imposm3/mapping"
 	"github.com/omniscale/imposm3/reader"
 	"github.com/omniscale/imposm3/stats"
@@ -19,13 +19,8 @@ import (
 	"github.com/omniscale/imposm3/writer"
 )
 
-var log = logging.NewLogger("")
-
 func Import(importOpts config.Import) {
 	baseOpts := importOpts.Base
-	if baseOpts.Quiet {
-		logging.SetQuiet(true)
-	}
 
 	if (importOpts.Write || importOpts.Read != "") && (importOpts.RevertDeploy || importOpts.RemoveBackup) {
 		log.Fatal("-revertdeploy and -removebackup not compatible with -read/-write")
@@ -38,7 +33,7 @@ func Import(importOpts config.Import) {
 	var geometryLimiter *limit.Limiter
 	if (importOpts.Write || importOpts.Read != "") && baseOpts.LimitTo != "" {
 		var err error
-		step := log.StartStep("Reading limitto geometries")
+		step := log.Step("Reading limitto geometries")
 		geometryLimiter, err = limit.NewFromGeoJSON(
 			baseOpts.LimitTo,
 			baseOpts.LimitToCacheBuffer,
@@ -47,19 +42,19 @@ func Import(importOpts config.Import) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.StopStep(step)
+		step()
 	}
 
 	tagmapping, err := mapping.FromFile(baseOpts.MappingFile)
 	if err != nil {
-		log.Fatal("error in mapping file: ", err)
+		log.Fatal("[error] reading mapping file: ", err)
 	}
 
 	var db database.DB
 
 	if importOpts.Write || importOpts.DeployProduction || importOpts.RevertDeploy || importOpts.RemoveBackup || importOpts.Optimize {
 		if baseOpts.Connection == "" {
-			log.Fatal("missing connection option")
+			log.Fatal("[error] missing connection option in configuration")
 		}
 		conf := database.Config{
 			ConnectionParams: baseOpts.Connection,
@@ -70,7 +65,7 @@ func Import(importOpts config.Import) {
 		}
 		db, err = database.Open(conf, &tagmapping.Conf)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("[error] opening database: ", err)
 		}
 		defer db.Close()
 	}
@@ -89,15 +84,15 @@ func Import(importOpts config.Import) {
 		}
 	}
 
-	step := log.StartStep("Imposm")
+	step := log.Step("Imposm")
 
 	var elementCounts *stats.ElementCounts
 
 	if importOpts.Read != "" {
-		step := log.StartStep("Reading OSM data")
+		step := log.Step("Reading OSM data")
 		err = osmCache.Open()
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("[error] opening cache files: ", err)
 		}
 		progress := stats.NewStatsReporter()
 
@@ -124,24 +119,24 @@ func Import(importOpts config.Import) {
 		osmCache.Coords.SetLinearImport(false)
 		elementCounts = progress.Stop()
 		osmCache.Close()
-		log.StopStep(step)
+		step()
 		if importOpts.Diff {
 			diffstate, err := state.FromPbf(importOpts.Read, baseOpts.DiffStateBefore, baseOpts.ReplicationUrl, baseOpts.ReplicationInterval)
 			if err != nil {
-				log.Print("error parsing diff state form PBF", err)
+				log.Println("[error] parsing diff state form PBF", err)
 			} else if diffstate != nil {
 				os.MkdirAll(baseOpts.DiffDir, 0755)
 				err := state.WriteLastState(baseOpts.DiffDir, diffstate)
 				if err != nil {
-					log.Print("error writing last.state.txt: ", err)
+					log.Println("[error] writing last.state.txt: ", err)
 				}
 			}
 		}
 	}
 
 	if importOpts.Write {
-		stepImport := log.StartStep("Importing OSM data")
-		stepWrite := log.StartStep("Writing OSM data")
+		importFinished := log.Step("Importing OSM data")
+		writeFinished := log.Step("Writing OSM data")
 		progress := stats.NewStatsReporterWithEstimate(elementCounts)
 
 		err = db.Init()
@@ -188,7 +183,8 @@ func Import(importOpts config.Import) {
 			tagmapping.PolygonMatcher,
 			tagmapping.RelationMatcher,
 			tagmapping.RelationMemberMatcher,
-			baseOpts.Srid)
+			baseOpts.Srid,
+		)
 		relWriter.SetLimiter(geometryLimiter)
 		relWriter.EnableConcurrent()
 		relWriter.Start()
@@ -200,8 +196,10 @@ func Import(importOpts config.Import) {
 			tagmapping.Conf.SingleIdSpace,
 			ways, db,
 			progress,
-			tagmapping.PolygonMatcher, tagmapping.LineStringMatcher,
-			baseOpts.Srid)
+			tagmapping.PolygonMatcher,
+			tagmapping.LineStringMatcher,
+			baseOpts.Srid,
+		)
 		wayWriter.SetLimiter(geometryLimiter)
 		wayWriter.EnableConcurrent()
 		wayWriter.Start()
@@ -212,7 +210,8 @@ func Import(importOpts config.Import) {
 		nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
 			progress,
 			tagmapping.PointMatcher,
-			baseOpts.Srid)
+			baseOpts.Srid,
+		)
 		nodeWriter.SetLimiter(geometryLimiter)
 		nodeWriter.EnableConcurrent()
 		nodeWriter.Start()
@@ -230,7 +229,7 @@ func Import(importOpts config.Import) {
 			diffCache.Close()
 		}
 
-		log.StopStep(stepWrite)
+		writeFinished()
 
 		if db, ok := db.(database.Generalizer); ok {
 			if err := db.Generalize(); err != nil {
@@ -247,7 +246,7 @@ func Import(importOpts config.Import) {
 		} else {
 			log.Fatal("database not finishable")
 		}
-		log.StopStep(stepImport)
+		importFinished()
 	}
 
 	if importOpts.Optimize {
@@ -290,6 +289,6 @@ func Import(importOpts config.Import) {
 		}
 	}
 
-	log.StopStep(step)
+	step()
 
 }

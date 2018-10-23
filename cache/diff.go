@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/omniscale/imposm3/cache/binary"
 	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/log"
 )
 
 type DiffCache struct {
@@ -442,7 +442,7 @@ func (index *bunchRefCache) SetLinearImport(val bool) {
 func (index *bunchRefCache) writer() {
 	for buffer := range index.write {
 		if err := index.writeRefs(buffer); err != nil {
-			log.Println("error while writing ref index", err)
+			log.Println("[error] writing ref index:", err)
 		}
 	}
 	index.waitWrite.Done()

@@ -3,8 +3,9 @@ package cache
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"os"
+
+	"github.com/omniscale/imposm3/log"
 )
 
 type cacheOptions struct {
@@ -97,11 +98,11 @@ func init() {
 	if cacheConfFile != "" {
 		data, err := ioutil.ReadFile(cacheConfFile)
 		if err != nil {
-			log.Println("Unable to read cache config:", err)
+			log.Fatal("[fatal] Reading cache config:", err)
 		}
 		err = json.Unmarshal(data, &globalCacheOptions)
 		if err != nil {
-			log.Println("Unable to parse cache config:", err)
+			log.Fatal("[fatal] Parsing cache config:", err)
 		}
 	}
 }

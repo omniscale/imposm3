@@ -3,10 +3,11 @@ package postgis
 import (
 	"database/sql"
 	"fmt"
-	_ "log"
 	"os"
 	"strings"
 	"sync"
+
+	"github.com/omniscale/imposm3/log"
 )
 
 // disableDefaultSsl adds sslmode=disable to params
@@ -96,7 +97,7 @@ func dropTableIfExists(tx *sql.Tx, schema, table string) error {
 func rollbackIfTx(tx **sql.Tx) {
 	if *tx != nil {
 		if err := (*tx).Rollback(); err != nil {
-			log.Fatal("rollback failed", err)
+			log.Fatal("[error] rollback failed", err)
 		}
 	}
 }

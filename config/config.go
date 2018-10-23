@@ -5,9 +5,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"time"
+
+	"github.com/omniscale/imposm3/log"
 )
 
 type Config struct {

@@ -6,6 +6,7 @@ package geos
 #include <stdlib.h>
 */
 import "C"
+import "github.com/omniscale/imposm3/log"
 
 type PreparedGeom struct {
 	v *C.GEOSPreparedGeometry

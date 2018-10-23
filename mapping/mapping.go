@@ -5,6 +5,7 @@ import (
 	"regexp"
 
 	"github.com/omniscale/imposm3/element"
+	"github.com/omniscale/imposm3/log"
 	"github.com/omniscale/imposm3/mapping/config"
 
 	"github.com/pkg/errors"
@@ -366,7 +367,7 @@ func (m *Mapping) addFilters(filters tableElementFilters) {
 			continue
 		}
 		if t.Filters.ExcludeTags != nil {
-			log.Print("warn: exclude_tags filter is deprecated and will be removed. See require and reject filter.")
+			log.Println("[warn]: exclude_tags filter is deprecated and will be removed. See require and reject filter.")
 			for _, filterKeyVal := range *t.Filters.ExcludeTags {
 				// Convert `exclude_tags`` filter to `reject` filter !
 				keyname := filterKeyVal[0]
@@ -433,12 +434,12 @@ func makeRegexpFiltersFunction(tablename string, virtualTrue bool, virtualFalse 
 func makeFiltersFunction(tablename string, virtualTrue bool, virtualFalse bool, vKeyname string, vVararr []config.OrderedValue) func(tags element.Tags, key Key, closed bool) bool {
 
 	if findValueInOrderedValue("__nil__", vVararr) { // check __nil__
-		log.Print("warn: Filter value '__nil__' is not supported ! (tablename:" + tablename + ")")
+		log.Println("[warn] Filter value '__nil__' is not supported ! (tablename:" + tablename + ")")
 	}
 
 	if findValueInOrderedValue("__any__", vVararr) { // check __any__
 		if len(vVararr) > 1 {
-			log.Print("warn: Multiple filter value with '__any__' keywords is not valid! (tablename:" + tablename + ")")
+			log.Println("[warn] Multiple filter value with '__any__' keywords is not valid! (tablename:" + tablename + ")")
 		}
 		return func(tags element.Tags, key Key, closed bool) bool {
 			if _, ok := tags[vKeyname]; ok {

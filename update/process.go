@@ -1,11 +1,10 @@
 package update
 
 import (
-	"errors"
 	"fmt"
 	"io"
-	"path/filepath"
-	"runtime"
+
+	"github.com/pkg/errors"
 
 	"github.com/omniscale/imposm3/cache"
 	"github.com/omniscale/imposm3/config"
@@ -15,7 +14,7 @@ import (
 	"github.com/omniscale/imposm3/expire"
 	"github.com/omniscale/imposm3/geom/geos"
 	"github.com/omniscale/imposm3/geom/limit"
-	"github.com/omniscale/imposm3/logging"
+	"github.com/omniscale/imposm3/log"
 	"github.com/omniscale/imposm3/mapping"
 	"github.com/omniscale/imposm3/parser/diff"
 	"github.com/omniscale/imposm3/stats"
@@ -23,38 +22,36 @@ import (
 	"github.com/omniscale/imposm3/writer"
 )
 
-var log = logging.NewLogger("diff")
-
 func Diff(baseOpts config.Base, files []string) {
 	if baseOpts.Quiet {
-		logging.SetQuiet(true)
+		log.SetMinLevel(log.LInfo)
 	}
 
 	var geometryLimiter *limit.Limiter
 	if baseOpts.LimitTo != "" {
 		var err error
-		step := log.StartStep("Reading limitto geometries")
+		step := log.Step("Reading limitto geometries")
 		geometryLimiter, err = limit.NewFromGeoJSON(
 			baseOpts.LimitTo,
 			baseOpts.LimitToCacheBuffer,
 			baseOpts.Srid,
 		)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("[fatal] Reading limitto geometry:", err)
 		}
-		log.StopStep(step)
+		step()
 	}
 	osmCache := cache.NewOSMCache(baseOpts.CacheDir)
 	err := osmCache.Open()
 	if err != nil {
-		log.Fatal("osm cache: ", err)
+		log.Fatal("[fatal] Opening OSM cache:", err)
 	}
 	defer osmCache.Close()
 
 	diffCache := cache.NewDiffCache(baseOpts.CacheDir)
 	err = diffCache.Open()
 	if err != nil {
-		log.Fatal("diff cache: ", err)
+		log.Fatal("[fatal] Opening diff cache:", err)
 	}
 
 	var exp expire.Expireor
@@ -64,7 +61,7 @@ func Diff(baseOpts config.Base, files []string) {
 		exp = tileexpire
 		defer func() {
 			if err := tileexpire.Flush(); err != nil {
-				log.Error("error while writing tile expire file:", err)
+				log.Println("[error] Writing tile expire file:", err)
 			}
 		}()
 	}
@@ -74,7 +71,7 @@ func Diff(baseOpts config.Base, files []string) {
 		if err != nil {
 			osmCache.Close()
 			diffCache.Close()
-			log.Fatalf("unable to process %s: %v", oscFile, err)
+			log.Fatalf("[fatal] Unable to process %s: %v", oscFile, err)
 		}
 	}
 	// explicitly Close since os.Exit prevents defers
@@ -97,17 +94,17 @@ func Update(
 	}
 	lastState, err := diffstate.ParseLastState(baseOpts.DiffDir)
 	if err != nil {
-		log.Warn(err)
+		log.Printf("[warn] Parsing last state from %s: %s", baseOpts.DiffDir, err)
 	}
 
 	if lastState != nil && lastState.Sequence != 0 && state != nil && state.Sequence <= lastState.Sequence {
 		if !force {
-			log.Warn(state, " already imported")
+			log.Println("[warn] Skipping ", state, ", already imported")
 			return nil
 		}
 	}
 
-	defer log.StopStep(log.StartStep(fmt.Sprintf("Processing %s", oscFile)))
+	defer log.Step(fmt.Sprintf("Processing %s", oscFile))()
 
 	parser, err := diff.NewOscGzParser(oscFile)
 	if err != nil {
@@ -129,7 +126,7 @@ func Update(
 	}
 	db, err := database.Open(dbConf, &tagmapping.Conf)
 	if err != nil {
-		return errors.New("database open: " + err.Error())
+		return errors.Wrap(err, "opening database")
 	}
 	defer db.Close()
 
@@ -206,7 +203,7 @@ func Update(
 	wayIds := make(map[int64]struct{})
 	relIds := make(map[int64]struct{})
 
-	step := log.StartStep("Parsing changes, updating cache and removing elements")
+	step := log.Step("Parsing changes, updating cache and removing elements")
 
 	g := geos.NewGeos()
 
@@ -216,7 +213,7 @@ func Update(
 			break // finished
 		}
 		if err != nil {
-			return diffError(err, "")
+			return errors.Wrap(err, "parsing diff")
 		}
 		if elem.Rel != nil {
 			relTagFilter.Filter(&elem.Rel.Tags)
@@ -235,34 +232,34 @@ func Update(
 		// always delete, to prevent duplicate elements from overlap of initial
 		// import and diff import
 		if err := deleter.Delete(elem); err != nil && err != cache.NotFound {
-			return diffError(err, "delete element %#v", elem)
+			return errors.Wrapf(err, "delete element %#v", elem)
 		}
 		if elem.Del {
 			// no new or modified elem -> remove from cache
 			if elem.Rel != nil {
 				if err := osmCache.Relations.DeleteRelation(elem.Rel.Id); err != nil && err != cache.NotFound {
-					return diffError(err, "delete relation %v", elem.Rel)
+					return errors.Wrapf(err, "delete relation %v", elem.Rel)
 				}
 			} else if elem.Way != nil {
 				if err := osmCache.Ways.DeleteWay(elem.Way.Id); err != nil && err != cache.NotFound {
-					return diffError(err, "delete way %v", elem.Way)
+					return errors.Wrapf(err, "delete way %v", elem.Way)
 				}
 				if err := diffCache.Ways.Delete(elem.Way.Id); err != nil && err != cache.NotFound {
-					return diffError(err, "delete way references %v", elem.Way)
+					return errors.Wrapf(err, "delete way references %v", elem.Way)
 				}
 			} else if elem.Node != nil {
 				if err := osmCache.Nodes.DeleteNode(elem.Node.Id); err != nil && err != cache.NotFound {
-					return diffError(err, "delete node %v", elem.Node)
+					return errors.Wrapf(err, "delete node %v", elem.Node)
 				}
 				if err := osmCache.Coords.DeleteCoord(elem.Node.Id); err != nil && err != cache.NotFound {
-					return diffError(err, "delete coord %v", elem.Node)
+					return errors.Wrapf(err, "delete coord %v", elem.Node)
 				}
 			}
 		}
 		if elem.Mod && elem.Node != nil && elem.Node.Tags == nil {
 			// handle modifies where a node drops all tags
 			if err := osmCache.Nodes.DeleteNode(elem.Node.Id); err != nil && err != cache.NotFound {
-				return diffError(err, "delete node %v", elem.Node)
+				return errors.Wrapf(err, "delete node %v", elem.Node)
 			}
 		}
 		if elem.Add || elem.Mod {
@@ -271,12 +268,12 @@ func Update(
 				// unneeded relations (typical outside of our coverage)
 				cached, err := osmCache.FirstMemberIsCached(elem.Rel.Members)
 				if err != nil {
-					return diffError(err, "query first member %v", elem.Rel)
+					return errors.Wrapf(err, "query first member %v", elem.Rel)
 				}
 				if cached {
 					err := osmCache.Relations.PutRelation(elem.Rel)
 					if err != nil {
-						return diffError(err, "put relation %v", elem.Rel)
+						return errors.Wrapf(err, "put relation %v", elem.Rel)
 					}
 					relIds[elem.Rel.Id] = struct{}{}
 				}
@@ -285,12 +282,12 @@ func Update(
 				// unneeded ways (typical outside of our coverage)
 				cached, err := osmCache.Coords.FirstRefIsCached(elem.Way.Refs)
 				if err != nil {
-					return diffError(err, "query first ref %v", elem.Way)
+					return errors.Wrapf(err, "query first ref %v", elem.Way)
 				}
 				if cached {
 					err := osmCache.Ways.PutWay(elem.Way)
 					if err != nil {
-						return diffError(err, "put way %v", elem.Way)
+						return errors.Wrapf(err, "put way %v", elem.Way)
 					}
 					wayIds[elem.Way.Id] = struct{}{}
 				}
@@ -304,11 +301,11 @@ func Update(
 				if addNode {
 					err := osmCache.Nodes.PutNode(elem.Node)
 					if err != nil {
-						return diffError(err, "put node %v", elem.Node)
+						return errors.Wrapf(err, "put node %v", elem.Node)
 					}
 					err = osmCache.Coords.PutCoords([]element.Node{*elem.Node})
 					if err != nil {
-						return diffError(err, "put coord %v", elem.Node)
+						return errors.Wrapf(err, "put coord %v", elem.Node)
 					}
 					nodeIds[elem.Node.Id] = struct{}{}
 				}
@@ -322,8 +319,8 @@ func Update(
 	}
 
 	progress.Stop()
-	log.StopStep(step)
-	step = log.StartStep("Writing added/modified elements")
+	step()
+	step = log.Step("Importing added/modified elements")
 
 	progress = stats.NewStatsReporter()
 
@@ -354,7 +351,7 @@ func Update(
 		rel, err := osmCache.Relations.GetRelation(relId)
 		if err != nil {
 			if err != cache.NotFound {
-				return diffError(err, "could not get relation %v", relId)
+				return errors.Wrapf(err, "fetching cached relation %v", relId)
 			}
 			continue
 		}
@@ -367,7 +364,7 @@ func Update(
 		way, err := osmCache.Ways.GetWay(wayId)
 		if err != nil {
 			if err != cache.NotFound {
-				return diffError(err, "could not get way %v", wayId)
+				return errors.Wrapf(err, "fetching cached way %v", wayId)
 			}
 			continue
 		}
@@ -380,7 +377,7 @@ func Update(
 		node, err := osmCache.Nodes.GetNode(nodeId)
 		if err != nil {
 			if err != cache.NotFound {
-				return diffError(err, "could not get node %v", nodeId)
+				return errors.Wrapf(err, "fetching cached node %v", nodeId)
 			}
 			// missing nodes can still be Coords
 			// no `continue` here
@@ -413,7 +410,7 @@ func Update(
 		return err
 	}
 
-	log.StopStep(step)
+	step()
 
 	progress.Stop()
 
@@ -423,14 +420,8 @@ func Update(
 		}
 		err = diffstate.WriteLastState(baseOpts.DiffDir, state)
 		if err != nil {
-			log.Warn(err) // warn only
+			log.Println("[error] Unable to write last state:", err)
 		}
 	}
 	return nil
-}
-
-func diffError(err error, msg string, args ...interface{}) error {
-	_, file, line, _ := runtime.Caller(1)
-	return fmt.Errorf("diff process error (%s:%d): %s %v",
-		filepath.Base(file), line, fmt.Sprintf(msg, args...), err)
 }

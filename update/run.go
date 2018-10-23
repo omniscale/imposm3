@@ -11,47 +11,44 @@ import (
 	"github.com/omniscale/imposm3/config"
 	"github.com/omniscale/imposm3/expire"
 	"github.com/omniscale/imposm3/geom/limit"
-	"github.com/omniscale/imposm3/logging"
+	"github.com/omniscale/imposm3/log"
 	"github.com/omniscale/imposm3/replication"
 	"github.com/omniscale/imposm3/update/state"
 )
 
-var logger = logging.NewLogger("")
-
 func Run(baseOpts config.Base) {
 	if baseOpts.Quiet {
-		logging.SetQuiet(true)
+		log.SetMinLevel(log.LInfo)
 	}
 
 	var geometryLimiter *limit.Limiter
 	if baseOpts.LimitTo != "" {
 		var err error
-		step := logger.StartStep("Reading limitto geometries")
+		step := log.Step("Reading limitto geometries")
 		geometryLimiter, err = limit.NewFromGeoJSON(
 			baseOpts.LimitTo,
 			baseOpts.LimitToCacheBuffer,
 			baseOpts.Srid,
 		)
 		if err != nil {
-			logger.Fatal(err)
+			log.Fatal("[error] Reading limit to geometry", err)
 		}
-		logger.StopStep(step)
+		step()
 	}
 
 	s, err := state.ParseLastState(baseOpts.DiffDir)
 	if err != nil {
-		log.Fatal("unable to read last.state.txt", err)
+		log.Fatal("[fatal] Unable to read last.state.txt:", err)
 	}
 	replicationUrl := baseOpts.ReplicationUrl
 	if replicationUrl == "" {
 		replicationUrl = s.Url
 	}
 	if replicationUrl == "" {
-		log.Fatal("no replicationUrl in last.state.txt " +
-			"or replication_url in -config file")
+		log.Fatal("[fatal] No replicationUrl in last.state.txt " +
+			"or replication_url in -config")
 	}
-	logger.Print("Replication URL: " + replicationUrl)
-	logger.Print("Replication interval: ", baseOpts.ReplicationInterval)
+	log.Printf("[info] Starting replication from %s with %s interval", replicationUrl, baseOpts.ReplicationInterval)
 
 	downloader := replication.NewDiffDownloader(
 		baseOpts.DiffDir,
@@ -64,14 +61,14 @@ func Run(baseOpts config.Base) {
 	osmCache := cache.NewOSMCache(baseOpts.CacheDir)
 	err = osmCache.Open()
 	if err != nil {
-		logger.Fatal("osm cache: ", err)
+		log.Fatal("[fatal] Opening OSM cache:", err)
 	}
 	defer osmCache.Close()
 
 	diffCache := cache.NewDiffCache(baseOpts.CacheDir)
 	err = diffCache.Open()
 	if err != nil {
-		logger.Fatal("diff cache: ", err)
+		log.Fatal("[fatal] Opening diff cache:", err)
 	}
 	defer diffCache.Close()
 
@@ -87,14 +84,13 @@ func Run(baseOpts config.Base) {
 	}
 
 	shutdown := func() {
-		logger.Print("Exiting. (SIGTERM/SIGINT/SIGHUB)")
-		logging.Shutdown()
+		log.Println("[info] Exiting. (SIGTERM/SIGINT/SIGHUB)")
 		osmCache.Close()
 		diffCache.Close()
 		if tilelist != nil {
 			err := tilelist.Flush()
 			if err != nil {
-				logger.Print("error writing tile expire list", err)
+				log.Println("[error] Writing tile expire list", err)
 			}
 		}
 		os.Exit(0)
@@ -111,7 +107,8 @@ func Run(baseOpts config.Base) {
 			seqId := seq.Sequence
 			seqTime := seq.Time
 			for {
-				p := logger.StartStep(fmt.Sprintf("importing #%d till %s", seqId, seqTime))
+				log.Printf("[info] Importing #%d including changes till %s (%s behind)", seqId, seqTime, time.Since(seqTime).Truncate(time.Second))
+				finishedImport := log.Step(fmt.Sprintf("Importing #%d", seqId))
 
 				err := Update(baseOpts, fname, geometryLimiter, tileExpireor, osmCache, diffCache, false)
 
@@ -124,11 +121,11 @@ func Run(baseOpts config.Base) {
 					lastTlFlush = time.Now()
 					err := tilelist.Flush()
 					if err != nil {
-						logger.Print("error writing tile expire list", err)
+						log.Println("[error] Writing tile expire list", err)
 					}
 				}
 
-				logger.StopStep(p)
+				finishedImport()
 
 				select {
 				case <-sigc:
@@ -137,8 +134,9 @@ func Run(baseOpts config.Base) {
 				}
 
 				if err != nil {
-					logger.Error(err)
-					logger.Print("retrying in ", exp.Duration())
+					log.Printf("[error] Importing #%s: %s", seqId, err)
+					log.Println("[info] Retrying in", exp.Duration())
+					// TODO handle <-sigc during wait
 					exp.Wait()
 				} else {
 					exp.Reset()

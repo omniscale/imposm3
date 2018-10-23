@@ -2,11 +2,12 @@ package stats
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path"
 	"runtime/pprof"
 	"time"
+
+	"github.com/omniscale/imposm3/log"
 )
 
 func MemProfiler(dir string, interval time.Duration) {
