@@ -103,7 +103,7 @@ There are some dependencies:
 
 #### Compiler
 
-You need [Go >=1.6](http://golang.org).
+You need [Go >=1.9](http://golang.org).
 
 #### C/C++ libraries
 
