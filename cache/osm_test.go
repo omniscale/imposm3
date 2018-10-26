@@ -33,7 +33,7 @@ func TestReadWriteNode(t *testing.T) {
 		t.Fatal()
 	}
 	node := &osm.Node{
-		OSMElem: osm.OSMElem{
+		Element: osm.Element{
 			ID:   1234,
 			Tags: osm.Tags{"foo": "bar"}},
 	}
@@ -67,7 +67,7 @@ func TestReadWriteWay(t *testing.T) {
 		t.Fatal()
 	}
 	way := &osm.Way{
-		OSMElem: osm.OSMElem{
+		Element: osm.Element{
 			ID:   1234,
 			Tags: osm.Tags{"foo": "bar"}},
 		Refs: []int64{942374923, 23948234},
@@ -123,7 +123,7 @@ func BenchmarkWriteWay(b *testing.B) {
 
 	b.StartTimer()
 	way := &osm.Way{
-		OSMElem: osm.OSMElem{Tags: osm.Tags{"foo": "bar"}},
+		Element: osm.Element{Tags: osm.Tags{"foo": "bar"}},
 		Refs:    []int64{942374923, 23948234},
 	}
 	for i := 0; i < b.N; i++ {

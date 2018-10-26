@@ -149,7 +149,7 @@ func (ww *WayWriter) buildAndInsert(
 			return err, false
 		}
 		geom := geomp.Geometry{Wkb: wkb}
-		if err := ww.inserter.InsertLineString(w.OSMElem, geom, matches); err != nil {
+		if err := ww.inserter.InsertLineString(w.Element, geom, matches); err != nil {
 			return err, false
 		}
 		return nil, true
@@ -160,7 +160,7 @@ func (ww *WayWriter) buildAndInsert(
 	// a non-GEOS implementation.
 	// if ww.limiter == nil && isPolygon && len(w.Nodes) <= 5 {
 	// 	geom := geomp.Geometry{Wkb: geomp.WayAsEWKBHexPolygon(w.Nodes, ww.srid)}
-	// 	if err := ww.inserter.InsertPolygon(w.OSMElem, geom, matches); err != nil {
+	// 	if err := ww.inserter.InsertPolygon(w.Element, geom, matches); err != nil {
 	// 		return err, false
 	// 	}
 	// 	return nil, true
@@ -203,22 +203,22 @@ func (ww *WayWriter) buildAndInsert(
 			way := osm.Way(*w)
 			geom = geomp.Geometry{Geom: p, Wkb: g.AsEwkbHex(p)}
 			if isPolygon {
-				if err := ww.inserter.InsertPolygon(way.OSMElem, geom, matches); err != nil {
+				if err := ww.inserter.InsertPolygon(way.Element, geom, matches); err != nil {
 					return err, false
 				}
 			} else {
-				if err := ww.inserter.InsertLineString(way.OSMElem, geom, matches); err != nil {
+				if err := ww.inserter.InsertLineString(way.Element, geom, matches); err != nil {
 					return err, false
 				}
 			}
 		}
 	} else {
 		if isPolygon {
-			if err := ww.inserter.InsertPolygon(way.OSMElem, geom, matches); err != nil {
+			if err := ww.inserter.InsertPolygon(way.Element, geom, matches); err != nil {
 				return err, false
 			}
 		} else {
-			if err := ww.inserter.InsertLineString(way.OSMElem, geom, matches); err != nil {
+			if err := ww.inserter.InsertLineString(way.Element, geom, matches); err != nil {
 				return err, false
 			}
 		}

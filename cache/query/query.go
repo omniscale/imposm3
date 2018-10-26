@@ -64,7 +64,7 @@ func collectRelations(osmCache *cache.OSMCache, ids []int64, recurse bool) relat
 			if recurse {
 				memberWayIDs := []int64{}
 				for _, m := range rel.Members {
-					if m.Type == osm.WAY {
+					if m.Type == osm.WayMember {
 						memberWayIDs = append(memberWayIDs, m.ID)
 					}
 				}

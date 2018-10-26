@@ -23,18 +23,18 @@ func TestDiffCache(t *testing.T) {
 	w1 := osm.Way{}
 	w1.ID = 100
 	w1.Nodes = []osm.Node{
-		{OSMElem: osm.OSMElem{ID: 1000}},
-		{OSMElem: osm.OSMElem{ID: 1001}},
-		{OSMElem: osm.OSMElem{ID: 1002}},
+		{Element: osm.Element{ID: 1000}},
+		{Element: osm.Element{ID: 1001}},
+		{Element: osm.Element{ID: 1002}},
 	}
 	cache.AddFromWay(&w1)
 
 	w2 := osm.Way{}
 	w2.ID = 200
 	w2.Nodes = []osm.Node{
-		{OSMElem: osm.OSMElem{ID: 1002}},
-		{OSMElem: osm.OSMElem{ID: 1003}},
-		{OSMElem: osm.OSMElem{ID: 1004}},
+		{Element: osm.Element{ID: 1002}},
+		{Element: osm.Element{ID: 1003}},
+		{Element: osm.Element{ID: 1004}},
 	}
 	cache.AddFromWay(&w2)
 

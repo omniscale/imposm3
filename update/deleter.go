@@ -113,11 +113,11 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 
 	if deleteRefs {
 		for _, m := range elem.Members {
-			if m.Type == osm.WAY {
+			if m.Type == osm.WayMember {
 				if err := d.diffCache.Ways.DeleteRef(m.ID, id); err != nil {
 					return err
 				}
-			} else if m.Type == osm.NODE {
+			} else if m.Type == osm.NodeMember {
 				if err := d.diffCache.CoordsRel.DeleteRef(m.ID, id); err != nil {
 					return err
 				}

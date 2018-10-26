@@ -74,14 +74,14 @@ func (nw *NodeWriter) loop() {
 					continue
 				}
 				if len(parts) >= 1 {
-					if err := nw.inserter.InsertPoint(n.OSMElem, geom, matches); err != nil {
+					if err := nw.inserter.InsertPoint(n.Element, geom, matches); err != nil {
 						log.Println("[warn]: ", err)
 						continue
 					}
 					inserted = true
 				}
 			} else {
-				if err := nw.inserter.InsertPoint(n.OSMElem, geom, matches); err != nil {
+				if err := nw.inserter.InsertPoint(n.Element, geom, matches); err != nil {
 					log.Println("[warn]: ", err)
 					continue
 				}

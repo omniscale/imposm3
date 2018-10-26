@@ -101,7 +101,7 @@ func (self *WaysCache) FillMembers(members []osm.Member) error {
 		return nil
 	}
 	for i, member := range members {
-		if member.Type != osm.WAY {
+		if member.Type != osm.WayMember {
 			continue
 		}
 		way, err := self.GetWay(member.ID)

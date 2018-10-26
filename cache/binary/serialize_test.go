@@ -104,8 +104,8 @@ func TestMarshalRelation(t *testing.T) {
 	rel.Tags = make(osm.Tags)
 	rel.Tags["name"] = "test"
 	rel.Tags["landusage"] = "forest"
-	rel.Members = append(rel.Members, osm.Member{ID: 123, Type: osm.WAY, Role: "outer"})
-	rel.Members = append(rel.Members, osm.Member{ID: 124, Type: osm.WAY, Role: "inner"})
+	rel.Members = append(rel.Members, osm.Member{ID: 123, Type: osm.WayMember, Role: "outer"})
+	rel.Members = append(rel.Members, osm.Member{ID: 124, Type: osm.WayMember, Role: "inner"})
 
 	data, _ := MarshalRelation(rel)
 	rel, _ = UnmarshalRelation(data)
@@ -125,11 +125,11 @@ func TestMarshalRelation(t *testing.T) {
 		t.Error("members len does not match")
 	}
 
-	if rel.Members[0].ID != 123 || rel.Members[0].Type != osm.WAY || rel.Members[0].Role != "outer" {
+	if rel.Members[0].ID != 123 || rel.Members[0].Type != osm.WayMember || rel.Members[0].Role != "outer" {
 		t.Error("members do not match", rel.Members[0])
 	}
 
-	if rel.Members[1].ID != 124 || rel.Members[1].Type != osm.WAY || rel.Members[1].Role != "inner" {
+	if rel.Members[1].ID != 124 || rel.Members[1].Type != osm.WayMember || rel.Members[1].Role != "inner" {
 		t.Error("members do not match", rel.Members[1])
 	}
 }

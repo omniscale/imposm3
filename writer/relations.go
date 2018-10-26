@@ -96,7 +96,7 @@ NextRel:
 				continue NextRel
 			}
 			rw.NodesToSrid(m.Way.Nodes)
-			r.Members[i].Elem = &m.Way.OSMElem
+			r.Members[i].Element = &m.Way.Element
 		}
 
 		// handleRelation updates r.Members but we need all of them
@@ -179,7 +179,7 @@ func handleMultiPolygon(rw *RelationWriter, r *osm.Relation, geos *geosp.Geos) b
 			rel := osm.Relation(*r)
 			rel.ID = rw.relID(r.ID)
 			geom = geomp.Geometry{Geom: g, Wkb: geos.AsEwkbHex(g)}
-			err := rw.inserter.InsertPolygon(rel.OSMElem, geom, matches)
+			err := rw.inserter.InsertPolygon(rel.Element, geom, matches)
 			if err != nil {
 				if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
 					log.Println("[warn]: ", err)
@@ -190,7 +190,7 @@ func handleMultiPolygon(rw *RelationWriter, r *osm.Relation, geos *geosp.Geos) b
 	} else {
 		rel := osm.Relation(*r)
 		rel.ID = rw.relID(r.ID)
-		err := rw.inserter.InsertPolygon(rel.OSMElem, geom, matches)
+		err := rw.inserter.InsertPolygon(rel.Element, geom, matches)
 		if err != nil {
 			if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
 				log.Println("[warn]: ", err)
@@ -209,7 +209,7 @@ func handleRelation(rw *RelationWriter, r *osm.Relation, geos *geosp.Geos) bool 
 	}
 	rel := osm.Relation(*r)
 	rel.ID = rw.relID(r.ID)
-	rw.inserter.InsertPolygon(rel.OSMElem, geomp.Geometry{}, relMatches)
+	rw.inserter.InsertPolygon(rel.Element, geomp.Geometry{}, relMatches)
 	return true
 }
 
@@ -219,7 +219,7 @@ func handleRelationMembers(rw *RelationWriter, r *osm.Relation, geos *geosp.Geos
 		return false
 	}
 	for i, m := range r.Members {
-		if m.Type == osm.RELATION {
+		if m.Type == osm.RelationMember {
 			mrel, err := rw.osmCache.Relations.GetRelation(m.ID)
 			if err != nil {
 				if err != cache.NotFound {
@@ -227,8 +227,8 @@ func handleRelationMembers(rw *RelationWriter, r *osm.Relation, geos *geosp.Geos
 				}
 				return false
 			}
-			r.Members[i].Elem = &mrel.OSMElem
-		} else if m.Type == osm.NODE {
+			r.Members[i].Element = &mrel.Element
+		} else if m.Type == osm.NodeMember {
 			nd, err := rw.osmCache.Nodes.GetNode(m.ID)
 			if err != nil {
 				if err == cache.NotFound {
@@ -246,7 +246,7 @@ func handleRelationMembers(rw *RelationWriter, r *osm.Relation, geos *geosp.Geos
 			}
 			rw.NodeToSrid(nd)
 			r.Members[i].Node = nd
-			r.Members[i].Elem = &nd.OSMElem
+			r.Members[i].Element = &nd.Element
 		}
 	}
 

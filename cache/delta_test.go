@@ -12,7 +12,7 @@ import (
 
 func mknode(id int64) osm.Node {
 	return osm.Node{
-		OSMElem: osm.OSMElem{
+		Element: osm.Element{
 			ID: id,
 		},
 		Long: 8,

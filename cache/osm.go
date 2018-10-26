@@ -122,10 +122,10 @@ func (c *OSMCache) Remove() error {
 }
 
 // FirstMemberIsCached checks whether the first way or node member is cached.
-// Also returns true if there are no members of type WAY or NODE.
+// Also returns true if there are no members of type WayMember or NodeMember.
 func (c *OSMCache) FirstMemberIsCached(members []osm.Member) (bool, error) {
 	for _, m := range members {
-		if m.Type == osm.WAY {
+		if m.Type == osm.WayMember {
 			_, err := c.Ways.GetWay(m.ID)
 			if err == NotFound {
 				return false, nil
@@ -134,7 +134,7 @@ func (c *OSMCache) FirstMemberIsCached(members []osm.Member) (bool, error) {
 				return false, err
 			}
 			return true, nil
-		} else if m.Type == osm.NODE {
+		} else if m.Type == osm.NodeMember {
 			_, err := c.Coords.GetCoord(m.ID)
 			if err == NotFound {
 				return false, nil

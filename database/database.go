@@ -34,9 +34,9 @@ type BulkBeginner interface {
 type Inserter interface {
 	// InsertXxx inserts element of that type into the database.
 	// element.Geom is set to that type.
-	InsertPoint(osm.OSMElem, geom.Geometry, []mapping.Match) error
-	InsertLineString(osm.OSMElem, geom.Geometry, []mapping.Match) error
-	InsertPolygon(osm.OSMElem, geom.Geometry, []mapping.Match) error
+	InsertPoint(osm.Element, geom.Geometry, []mapping.Match) error
+	InsertLineString(osm.Element, geom.Geometry, []mapping.Match) error
+	InsertPolygon(osm.Element, geom.Geometry, []mapping.Match) error
 	InsertRelationMember(osm.Relation, osm.Member, geom.Geometry, []mapping.Match) error
 }
 
@@ -99,9 +99,9 @@ func (n *nullDb) Begin() error                                                  
 func (n *nullDb) End() error                                                         { return nil }
 func (n *nullDb) Close() error                                                       { return nil }
 func (n *nullDb) Abort() error                                                       { return nil }
-func (n *nullDb) InsertPoint(osm.OSMElem, geom.Geometry, []mapping.Match) error      { return nil }
-func (n *nullDb) InsertLineString(osm.OSMElem, geom.Geometry, []mapping.Match) error { return nil }
-func (n *nullDb) InsertPolygon(osm.OSMElem, geom.Geometry, []mapping.Match) error    { return nil }
+func (n *nullDb) InsertPoint(osm.Element, geom.Geometry, []mapping.Match) error      { return nil }
+func (n *nullDb) InsertLineString(osm.Element, geom.Geometry, []mapping.Match) error { return nil }
+func (n *nullDb) InsertPolygon(osm.Element, geom.Geometry, []mapping.Match) error    { return nil }
 func (n *nullDb) InsertRelationMember(osm.Relation, osm.Member, geom.Geometry, []mapping.Match) error {
 	return nil
 }

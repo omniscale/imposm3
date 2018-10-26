@@ -68,7 +68,7 @@ func buildRings(rel *osm.Relation, maxRingGap float64) ([]*ring, error) {
 		}
 	}()
 
-	// create rings for all WAY members
+	// create rings for all WayMember members
 	for _, member := range rel.Members {
 		if member.Way == nil {
 			continue

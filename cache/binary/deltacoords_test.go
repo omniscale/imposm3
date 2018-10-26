@@ -36,7 +36,7 @@ func init() {
 	nodes = make([]osm.Node, 64)
 	offset := rand.Int63n(1e10)
 	for i := range nodes {
-		nodes[i] = osm.Node{OSMElem: osm.OSMElem{ID: offset + rand.Int63n(1000)}, Long: rand.Float64()*360 - 180, Lat: rand.Float64()*180 - 90}
+		nodes[i] = osm.Node{Element: osm.Element{ID: offset + rand.Int63n(1000)}, Long: rand.Float64()*360 - 180, Lat: rand.Float64()*180 - 90}
 	}
 }
 

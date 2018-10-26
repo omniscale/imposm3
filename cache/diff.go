@@ -393,7 +393,7 @@ func (index *CoordsRefIndex) DeleteFromWay(way *osm.Way) {
 
 func (index *CoordsRelRefIndex) AddFromMembers(relID int64, members []osm.Member) {
 	for _, member := range members {
-		if member.Type == osm.NODE {
+		if member.Type == osm.NodeMember {
 			if index.linearImport {
 				index.addc <- idRef{id: member.ID, ref: relID}
 			} else {
@@ -405,7 +405,7 @@ func (index *CoordsRelRefIndex) AddFromMembers(relID int64, members []osm.Member
 
 func (index *WaysRefIndex) AddFromMembers(relID int64, members []osm.Member) {
 	for _, member := range members {
-		if member.Type == osm.WAY {
+		if member.Type == osm.WayMember {
 			if index.linearImport {
 				index.addc <- idRef{id: member.ID, ref: relID}
 			} else {

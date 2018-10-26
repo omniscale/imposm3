@@ -86,7 +86,7 @@ func TestZOrder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	elem := &osm.OSMElem{}
+	elem := &osm.Element{}
 
 	elem.Tags = osm.Tags{} // missing
 	if v := zOrder("", elem, nil, match); v != 0 {
@@ -137,7 +137,7 @@ func TestEnumerate_Match(t *testing.T) {
 		{"ZZ", nil, 4},
 	}
 	for _, test := range tests {
-		elem := &osm.OSMElem{Tags: test.tags}
+		elem := &osm.Element{Tags: test.tags}
 		match := Match{Value: test.key}
 		if v := zOrder("", elem, nil, match); v.(int) != test.expected {
 			t.Errorf("%v %v %d != %d", test.key, test.tags, v, test.expected)
@@ -173,7 +173,7 @@ func TestEnumerate_Key(t *testing.T) {
 		{"ZZ", nil, 4},
 	}
 	for _, test := range tests {
-		elem := &osm.OSMElem{Tags: test.tags}
+		elem := &osm.Element{Tags: test.tags}
 		match := Match{}
 		if v := zOrder(test.key, elem, nil, match); v.(int) != test.expected {
 			t.Errorf("%v %v %d != %d", test.key, test.tags, v, test.expected)
@@ -225,7 +225,7 @@ func TestWayZOrder(t *testing.T) {
 		{"unknown", osm.Tags{"tunnel": "yes", "layer": "1"}, 5},
 	}
 	for _, test := range tests {
-		elem := &osm.OSMElem{Tags: test.tags}
+		elem := &osm.Element{Tags: test.tags}
 		match := Match{Value: test.key}
 
 		if v := zOrder("", elem, nil, match); v.(int) != test.expected {
@@ -268,7 +268,7 @@ func TestAreaColumn(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unable to create test geometry %v: %v", test.wkt, err)
 		}
-		elem := &osm.OSMElem{}
+		elem := &osm.Element{}
 		match := Match{}
 
 		if v := test.areaFunc("", elem, &geometry, match); v.(float32) != test.expected {
@@ -332,13 +332,13 @@ func TestHstoreString(t *testing.T) {
 		{hstoreInclude, osm.Tags{"key1": "value"}, `"key1"=>"value"`},
 		{hstoreInclude, osm.Tags{"key": "value", "key2": "value"}, `"key2"=>"value"`},
 	} {
-		actual := test.column("", &osm.OSMElem{Tags: test.tags}, nil, Match{})
+		actual := test.column("", &osm.Element{Tags: test.tags}, nil, Match{})
 		if actual.(string) != test.expected {
 			t.Errorf("%#v != %#v for %#v", actual, test.expected, test.tags)
 		}
 	}
 
-	actual := hstoreAll("", &osm.OSMElem{Tags: osm.Tags{"key1": "value", "key2": "value"}}, nil, Match{})
+	actual := hstoreAll("", &osm.Element{Tags: osm.Tags{"key1": "value", "key2": "value"}}, nil, Match{})
 	// check mutliple tags, can be in any order
 	if actual.(string) != `"key1"=>"value", "key2"=>"value"` && actual.(string) != `"key2"=>"value", "key1"=>"value"` {
 		t.Error("unexpected value", actual)

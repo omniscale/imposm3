@@ -114,7 +114,7 @@ type Match struct {
 	builder *rowBuilder
 }
 
-func (m *Match) Row(elem *osm.OSMElem, geom *geom.Geometry) []interface{} {
+func (m *Match) Row(elem *osm.Element, geom *geom.Geometry) []interface{} {
 	return m.builder.MakeRow(elem, geom, *m)
 }
 
@@ -237,7 +237,7 @@ type valueBuilder struct {
 	colType ColumnType
 }
 
-func (v *valueBuilder) Value(elem *osm.OSMElem, geom *geom.Geometry, match Match) interface{} {
+func (v *valueBuilder) Value(elem *osm.Element, geom *geom.Geometry, match Match) interface{} {
 	if v.colType.Func != nil {
 		return v.colType.Func(elem.Tags[string(v.key)], elem, geom, match)
 	}
@@ -247,12 +247,12 @@ func (v *valueBuilder) Value(elem *osm.OSMElem, geom *geom.Geometry, match Match
 func (v *valueBuilder) MemberValue(rel *osm.Relation, member *osm.Member, geom *geom.Geometry, match Match) interface{} {
 	if v.colType.Func != nil {
 		if v.colType.FromMember {
-			if member.Elem == nil {
+			if member.Element == nil {
 				return nil
 			}
-			return v.colType.Func(member.Elem.Tags[string(v.key)], member.Elem, geom, match)
+			return v.colType.Func(member.Element.Tags[string(v.key)], member.Element, geom, match)
 		}
-		return v.colType.Func(rel.Tags[string(v.key)], &rel.OSMElem, geom, match)
+		return v.colType.Func(rel.Tags[string(v.key)], &rel.Element, geom, match)
 	}
 	if v.colType.MemberFunc != nil {
 		return v.colType.MemberFunc(rel, member, match)
@@ -264,7 +264,7 @@ type rowBuilder struct {
 	columns []valueBuilder
 }
 
-func (r *rowBuilder) MakeRow(elem *osm.OSMElem, geom *geom.Geometry, match Match) []interface{} {
+func (r *rowBuilder) MakeRow(elem *osm.Element, geom *geom.Geometry, match Match) []interface{} {
 	var row []interface{}
 	for _, column := range r.columns {
 		row = append(row, column.Value(elem, geom, match))

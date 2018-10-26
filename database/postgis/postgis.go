@@ -447,7 +447,7 @@ func (pg *PostGIS) Open() error {
 	return nil
 }
 
-func (pg *PostGIS) InsertPoint(elem osm.OSMElem, geom geom.Geometry, matches []mapping.Match) error {
+func (pg *PostGIS) InsertPoint(elem osm.Element, geom geom.Geometry, matches []mapping.Match) error {
 	for _, match := range matches {
 		row := match.Row(&elem, &geom)
 		if err := pg.txRouter.Insert(match.Table.Name, row); err != nil {
@@ -457,7 +457,7 @@ func (pg *PostGIS) InsertPoint(elem osm.OSMElem, geom geom.Geometry, matches []m
 	return nil
 }
 
-func (pg *PostGIS) InsertLineString(elem osm.OSMElem, geom geom.Geometry, matches []mapping.Match) error {
+func (pg *PostGIS) InsertLineString(elem osm.Element, geom geom.Geometry, matches []mapping.Match) error {
 	for _, match := range matches {
 		row := match.Row(&elem, &geom)
 		if err := pg.txRouter.Insert(match.Table.Name, row); err != nil {
@@ -478,7 +478,7 @@ func (pg *PostGIS) InsertLineString(elem osm.OSMElem, geom geom.Geometry, matche
 	return nil
 }
 
-func (pg *PostGIS) InsertPolygon(elem osm.OSMElem, geom geom.Geometry, matches []mapping.Match) error {
+func (pg *PostGIS) InsertPolygon(elem osm.Element, geom geom.Geometry, matches []mapping.Match) error {
 	for _, match := range matches {
 		row := match.Row(&elem, &geom)
 		if err := pg.txRouter.Insert(match.Table.Name, row); err != nil {
