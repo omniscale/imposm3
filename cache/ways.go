@@ -2,8 +2,8 @@ package cache
 
 import (
 	"github.com/jmhodges/levigo"
+	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/cache/binary"
-	"github.com/omniscale/imposm3/element"
 )
 
 type WaysCache struct {
@@ -20,11 +20,11 @@ func newWaysCache(path string) (*WaysCache, error) {
 	return &cache, err
 }
 
-func (p *WaysCache) PutWay(way *element.Way) error {
-	if way.Id == SKIP {
+func (p *WaysCache) PutWay(way *osm.Way) error {
+	if way.ID == SKIP {
 		return nil
 	}
-	keyBuf := idToKeyBuf(way.Id)
+	keyBuf := idToKeyBuf(way.ID)
 	data, err := binary.MarshalWay(way)
 	if err != nil {
 		return err
@@ -32,15 +32,15 @@ func (p *WaysCache) PutWay(way *element.Way) error {
 	return p.db.Put(p.wo, keyBuf, data)
 }
 
-func (p *WaysCache) PutWays(ways []element.Way) error {
+func (p *WaysCache) PutWays(ways []osm.Way) error {
 	batch := levigo.NewWriteBatch()
 	defer batch.Close()
 
 	for _, way := range ways {
-		if way.Id == SKIP {
+		if way.ID == SKIP {
 			continue
 		}
-		keyBuf := idToKeyBuf(way.Id)
+		keyBuf := idToKeyBuf(way.ID)
 		data, err := binary.MarshalWay(&way)
 		if err != nil {
 			return err
@@ -50,7 +50,7 @@ func (p *WaysCache) PutWays(ways []element.Way) error {
 	return p.db.Write(p.wo, batch)
 }
 
-func (p *WaysCache) GetWay(id int64) (*element.Way, error) {
+func (p *WaysCache) GetWay(id int64) (*osm.Way, error) {
 	keyBuf := idToKeyBuf(id)
 	data, err := p.db.Get(p.ro, keyBuf)
 	if err != nil {
@@ -63,7 +63,7 @@ func (p *WaysCache) GetWay(id int64) (*element.Way, error) {
 	if err != nil {
 		return nil, err
 	}
-	way.Id = id
+	way.ID = id
 	return way, nil
 }
 
@@ -72,8 +72,8 @@ func (p *WaysCache) DeleteWay(id int64) error {
 	return p.db.Delete(p.wo, keyBuf)
 }
 
-func (p *WaysCache) Iter() chan *element.Way {
-	ways := make(chan *element.Way, 1024)
+func (p *WaysCache) Iter() chan *osm.Way {
+	ways := make(chan *osm.Way, 1024)
 	go func() {
 		ro := levigo.NewReadOptions()
 		ro.SetFillCache(false)
@@ -89,22 +89,22 @@ func (p *WaysCache) Iter() chan *element.Way {
 			if err != nil {
 				panic(err)
 			}
-			way.Id = idFromKeyBuf(it.Key())
+			way.ID = idFromKeyBuf(it.Key())
 			ways <- way
 		}
 	}()
 	return ways
 }
 
-func (self *WaysCache) FillMembers(members []element.Member) error {
+func (self *WaysCache) FillMembers(members []osm.Member) error {
 	if members == nil || len(members) == 0 {
 		return nil
 	}
 	for i, member := range members {
-		if member.Type != element.WAY {
+		if member.Type != osm.WAY {
 			continue
 		}
-		way, err := self.GetWay(member.Id)
+		way, err := self.GetWay(member.ID)
 		if err != nil {
 			return err
 		}

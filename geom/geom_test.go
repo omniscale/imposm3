@@ -3,14 +3,14 @@ package geom
 import (
 	"testing"
 
-	"github.com/omniscale/imposm3/element"
+	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/geom/geos"
 )
 
 func TestLineString(t *testing.T) {
-	nodes := make([]element.Node, 2)
-	nodes[0] = element.Node{Lat: 0, Long: 0}
-	nodes[1] = element.Node{Lat: 0, Long: 10}
+	nodes := make([]osm.Node, 2)
+	nodes[0] = osm.Node{Lat: 0, Long: 0}
+	nodes[1] = osm.Node{Lat: 0, Long: 10}
 	g := geos.NewGeos()
 	defer g.Finish()
 	geom, err := LineString(g, nodes)
@@ -24,11 +24,11 @@ func TestLineString(t *testing.T) {
 }
 
 func TestPolygon(t *testing.T) {
-	nodes := []element.Node{
-		element.Node{Lat: 0, Long: 0},
-		element.Node{Lat: 0, Long: 10},
-		element.Node{Lat: 10, Long: 10},
-		element.Node{Lat: 0, Long: 0},
+	nodes := []osm.Node{
+		osm.Node{Lat: 0, Long: 0},
+		osm.Node{Lat: 0, Long: 10},
+		osm.Node{Lat: 10, Long: 10},
+		osm.Node{Lat: 0, Long: 0},
 	}
 	g := geos.NewGeos()
 	defer g.Finish()
@@ -43,10 +43,10 @@ func TestPolygon(t *testing.T) {
 }
 
 func TestPolygonNotClosed(t *testing.T) {
-	nodes := []element.Node{
-		element.Node{Lat: 0, Long: 0},
-		element.Node{Lat: 0, Long: 10},
-		element.Node{Lat: 10, Long: 10},
+	nodes := []osm.Node{
+		osm.Node{Lat: 0, Long: 0},
+		osm.Node{Lat: 0, Long: 10},
+		osm.Node{Lat: 10, Long: 10},
 	}
 	g := geos.NewGeos()
 	defer g.Finish()
@@ -57,12 +57,12 @@ func TestPolygonNotClosed(t *testing.T) {
 }
 
 func TestPolygonIntersection(t *testing.T) {
-	nodes := []element.Node{
-		element.Node{Lat: 0, Long: 0},
-		element.Node{Lat: 0, Long: 10},
-		element.Node{Lat: 10, Long: 10},
-		element.Node{Lat: 10, Long: 0},
-		element.Node{Lat: 0, Long: 0},
+	nodes := []osm.Node{
+		osm.Node{Lat: 0, Long: 0},
+		osm.Node{Lat: 0, Long: 10},
+		osm.Node{Lat: 10, Long: 10},
+		osm.Node{Lat: 10, Long: 0},
+		osm.Node{Lat: 0, Long: 0},
 	}
 	g := geos.NewGeos()
 	defer g.Finish()
@@ -80,9 +80,9 @@ func TestPolygonIntersection(t *testing.T) {
 
 func BenchmarkLineString(b *testing.B) {
 	size := 16
-	nodes := make([]element.Node, size)
+	nodes := make([]osm.Node, size)
 	for i := 0; i < size; i++ {
-		nodes[i] = element.Node{Lat: 0, Long: float64(i)}
+		nodes[i] = osm.Node{Lat: 0, Long: float64(i)}
 	}
 	g := geos.NewGeos()
 	g.SetHandleSrid(4326)
@@ -99,9 +99,9 @@ func BenchmarkLineString(b *testing.B) {
 
 func BenchmarkLineStringNoGeos(b *testing.B) {
 	size := 16
-	nodes := make([]element.Node, size)
+	nodes := make([]osm.Node, size)
 	for i := 0; i < size; i++ {
-		nodes[i] = element.Node{Lat: 0, Long: float64(i)}
+		nodes[i] = osm.Node{Lat: 0, Long: float64(i)}
 	}
 
 	for i := 0; i < b.N; i++ {
@@ -111,12 +111,12 @@ func BenchmarkLineStringNoGeos(b *testing.B) {
 
 func BenchmarkPolygon(b *testing.B) {
 	size := 16
-	nodes := make([]element.Node, size)
+	nodes := make([]osm.Node, size)
 	for i := 1; i < size; i++ {
-		nodes[i] = element.Node{Lat: 1, Long: float64(i)}
+		nodes[i] = osm.Node{Lat: 1, Long: float64(i)}
 	}
-	nodes[0] = element.Node{Lat: 0, Long: 0}
-	nodes[len(nodes)-1] = element.Node{Lat: 0, Long: 0}
+	nodes[0] = osm.Node{Lat: 0, Long: 0}
+	nodes[len(nodes)-1] = osm.Node{Lat: 0, Long: 0}
 	g := geos.NewGeos()
 	g.SetHandleSrid(4326)
 	defer g.Finish()
@@ -132,12 +132,12 @@ func BenchmarkPolygon(b *testing.B) {
 
 func BenchmarkPolygonNoGeos(b *testing.B) {
 	size := 16
-	nodes := make([]element.Node, size)
+	nodes := make([]osm.Node, size)
 	for i := 1; i < size; i++ {
-		nodes[i] = element.Node{Lat: 1, Long: float64(i)}
+		nodes[i] = osm.Node{Lat: 1, Long: float64(i)}
 	}
-	nodes[0] = element.Node{Lat: 0, Long: 0}
-	nodes[len(nodes)-1] = element.Node{Lat: 0, Long: 0}
+	nodes[0] = osm.Node{Lat: 0, Long: 0}
+	nodes[len(nodes)-1] = osm.Node{Lat: 0, Long: 0}
 
 	for i := 0; i < b.N; i++ {
 		NodesAsEWKBHexPolygon(nodes, 4326)
@@ -145,52 +145,52 @@ func BenchmarkPolygonNoGeos(b *testing.B) {
 }
 
 func TestUnduplicateNodes(t *testing.T) {
-	var nodes []element.Node
+	var nodes []osm.Node
 
-	nodes = []element.Node{
-		element.Node{Lat: 0, Long: 0},
+	nodes = []osm.Node{
+		osm.Node{Lat: 0, Long: 0},
 	}
 	if res := unduplicateNodes(nodes); len(res) != 1 {
 		t.Fatal(res)
 	}
-	nodes = []element.Node{
-		element.Node{Lat: 47.0, Long: 80.0},
-		element.Node{Lat: 47.0, Long: 80.0},
+	nodes = []osm.Node{
+		osm.Node{Lat: 47.0, Long: 80.0},
+		osm.Node{Lat: 47.0, Long: 80.0},
 	}
 	if res := unduplicateNodes(nodes); len(res) != 1 {
 		t.Fatal(res)
 	}
 
-	nodes = []element.Node{
-		element.Node{Lat: 0, Long: -10},
-		element.Node{Lat: 0, Long: -10},
-		element.Node{Lat: 0, Long: -10},
-		element.Node{Lat: 10, Long: 10},
-		element.Node{Lat: 10, Long: 10},
-		element.Node{Lat: 10, Long: 10},
+	nodes = []osm.Node{
+		osm.Node{Lat: 0, Long: -10},
+		osm.Node{Lat: 0, Long: -10},
+		osm.Node{Lat: 0, Long: -10},
+		osm.Node{Lat: 10, Long: 10},
+		osm.Node{Lat: 10, Long: 10},
+		osm.Node{Lat: 10, Long: 10},
 	}
 	if res := unduplicateNodes(nodes); len(res) != 2 {
 		t.Fatal(res)
 	}
 
-	nodes = []element.Node{
-		element.Node{Lat: 10, Long: 10},
-		element.Node{Lat: 0, Long: 10},
-		element.Node{Lat: 10, Long: 10},
-		element.Node{Lat: 10, Long: 10},
-		element.Node{Lat: 0, Long: 10},
-		element.Node{Lat: 0, Long: 10},
+	nodes = []osm.Node{
+		osm.Node{Lat: 10, Long: 10},
+		osm.Node{Lat: 0, Long: 10},
+		osm.Node{Lat: 10, Long: 10},
+		osm.Node{Lat: 10, Long: 10},
+		osm.Node{Lat: 0, Long: 10},
+		osm.Node{Lat: 0, Long: 10},
 	}
 	if res := unduplicateNodes(nodes); len(res) != 4 {
 		t.Fatal(res)
 	}
 
-	nodes = []element.Node{
-		element.Node{Lat: 0, Long: 0},
-		element.Node{Lat: 0, Long: -10},
-		element.Node{Lat: 10, Long: -10},
-		element.Node{Lat: 10, Long: 0},
-		element.Node{Lat: 0, Long: 0},
+	nodes = []osm.Node{
+		osm.Node{Lat: 0, Long: 0},
+		osm.Node{Lat: 0, Long: -10},
+		osm.Node{Lat: 10, Long: -10},
+		osm.Node{Lat: 10, Long: 0},
+		osm.Node{Lat: 0, Long: 0},
 	}
 	if res := unduplicateNodes(nodes); len(res) != 5 {
 		t.Fatal(res)

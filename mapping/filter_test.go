@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/omniscale/imposm3/element"
+	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/mapping/config"
 )
 
@@ -47,17 +47,17 @@ func TestTagFilterNodes(t *testing.T) {
 		t.Fatal(err)
 	}
 	tests := []struct {
-		tags     element.Tags
-		expected element.Tags
+		tags     osm.Tags
+		expected osm.Tags
 	}{
-		{tags: element.Tags{}, expected: element.Tags{}},
-		{tags: element.Tags{"name": "foo"}, expected: element.Tags{"name": "foo"}},
-		{tags: element.Tags{"name": "foo", "unknown": "foo"}, expected: element.Tags{"name": "foo"}},
-		{tags: element.Tags{"place": "unknown"}, expected: element.Tags{}},
-		{tags: element.Tags{"place": "village"}, expected: element.Tags{"place": "village"}},
-		{tags: element.Tags{"population": "1000"}, expected: element.Tags{"population": "1000"}},
-		{tags: element.Tags{"highway": "bus_stop"}, expected: element.Tags{"highway": "bus_stop"}},
-		{tags: element.Tags{"highway": "residential"}, expected: element.Tags{}},
+		{tags: osm.Tags{}, expected: osm.Tags{}},
+		{tags: osm.Tags{"name": "foo"}, expected: osm.Tags{"name": "foo"}},
+		{tags: osm.Tags{"name": "foo", "unknown": "foo"}, expected: osm.Tags{"name": "foo"}},
+		{tags: osm.Tags{"place": "unknown"}, expected: osm.Tags{}},
+		{tags: osm.Tags{"place": "village"}, expected: osm.Tags{"place": "village"}},
+		{tags: osm.Tags{"population": "1000"}, expected: osm.Tags{"population": "1000"}},
+		{tags: osm.Tags{"highway": "bus_stop"}, expected: osm.Tags{"highway": "bus_stop"}},
+		{tags: osm.Tags{"highway": "residential"}, expected: osm.Tags{}},
 	}
 
 	nodes := mapping.NodeTagFilter()
@@ -103,17 +103,17 @@ func TestTagFilterWays(t *testing.T) {
 		t.Fatal(err)
 	}
 	tests := []struct {
-		tags     element.Tags
-		expected element.Tags
+		tags     osm.Tags
+		expected osm.Tags
 	}{
-		{tags: element.Tags{}, expected: element.Tags{}},
-		{tags: element.Tags{"name": "foo"}, expected: element.Tags{"name": "foo"}},
-		{tags: element.Tags{"name": "foo", "unknown": "foo"}, expected: element.Tags{"name": "foo"}},
-		{tags: element.Tags{"highway": "unknown"}, expected: element.Tags{}},
-		{tags: element.Tags{"highway": "track"}, expected: element.Tags{"highway": "track"}},
-		{tags: element.Tags{"building": "whatever"}, expected: element.Tags{"building": "whatever"}},
-		{tags: element.Tags{"place": "village"}, expected: element.Tags{}},
-		{tags: element.Tags{"oneway": "yes", "tunnel": "1"}, expected: element.Tags{"oneway": "yes", "tunnel": "1"}},
+		{tags: osm.Tags{}, expected: osm.Tags{}},
+		{tags: osm.Tags{"name": "foo"}, expected: osm.Tags{"name": "foo"}},
+		{tags: osm.Tags{"name": "foo", "unknown": "foo"}, expected: osm.Tags{"name": "foo"}},
+		{tags: osm.Tags{"highway": "unknown"}, expected: osm.Tags{}},
+		{tags: osm.Tags{"highway": "track"}, expected: osm.Tags{"highway": "track"}},
+		{tags: osm.Tags{"building": "whatever"}, expected: osm.Tags{"building": "whatever"}},
+		{tags: osm.Tags{"place": "village"}, expected: osm.Tags{}},
+		{tags: osm.Tags{"oneway": "yes", "tunnel": "1"}, expected: osm.Tags{"oneway": "yes", "tunnel": "1"}},
 	}
 
 	ways := mapping.WayTagFilter()
@@ -159,21 +159,21 @@ func TestTagFilterRelations(t *testing.T) {
 		t.Fatal(err)
 	}
 	tests := []struct {
-		tags     element.Tags
-		expected element.Tags
+		tags     osm.Tags
+		expected osm.Tags
 	}{
-		{tags: element.Tags{}, expected: element.Tags{}},
-		{tags: element.Tags{"name": "foo"}, expected: element.Tags{"name": "foo"}},
-		{tags: element.Tags{"unknown": "foo"}, expected: element.Tags{}},
-		{tags: element.Tags{"landuse": "unknown"}, expected: element.Tags{}},
-		{tags: element.Tags{"highway": "track"}, expected: element.Tags{"highway": "track"}},
-		{tags: element.Tags{"place": "town"}, expected: element.Tags{}},
-		{tags: element.Tags{"landuse": "farm"}, expected: element.Tags{"landuse": "farm"}},
-		{tags: element.Tags{"landuse": "farm", "type": "multipolygon"}, expected: element.Tags{"landuse": "farm", "type": "multipolygon"}},
-		{tags: element.Tags{"type": "multipolygon"}, expected: element.Tags{"type": "multipolygon"}},
-		{tags: element.Tags{"type": "boundary"}, expected: element.Tags{"type": "boundary"}},
-		{tags: element.Tags{"building": "yes"}, expected: element.Tags{"building": "yes"}},
-		{tags: element.Tags{"source": "JOSM"}, expected: element.Tags{"source": "JOSM"}},
+		{tags: osm.Tags{}, expected: osm.Tags{}},
+		{tags: osm.Tags{"name": "foo"}, expected: osm.Tags{"name": "foo"}},
+		{tags: osm.Tags{"unknown": "foo"}, expected: osm.Tags{}},
+		{tags: osm.Tags{"landuse": "unknown"}, expected: osm.Tags{}},
+		{tags: osm.Tags{"highway": "track"}, expected: osm.Tags{"highway": "track"}},
+		{tags: osm.Tags{"place": "town"}, expected: osm.Tags{}},
+		{tags: osm.Tags{"landuse": "farm"}, expected: osm.Tags{"landuse": "farm"}},
+		{tags: osm.Tags{"landuse": "farm", "type": "multipolygon"}, expected: osm.Tags{"landuse": "farm", "type": "multipolygon"}},
+		{tags: osm.Tags{"type": "multipolygon"}, expected: osm.Tags{"type": "multipolygon"}},
+		{tags: osm.Tags{"type": "boundary"}, expected: osm.Tags{"type": "boundary"}},
+		{tags: osm.Tags{"building": "yes"}, expected: osm.Tags{"building": "yes"}},
+		{tags: osm.Tags{"source": "JOSM"}, expected: osm.Tags{"source": "JOSM"}},
 	}
 
 	relations := mapping.RelationTagFilter()
@@ -224,20 +224,20 @@ func TestPointMatcher(t *testing.T) {
 		t.Fatal(err)
 	}
 	tests := []struct {
-		tags    element.Tags
+		tags    osm.Tags
 		matches []Match
 	}{
-		{element.Tags{"unknown": "baz"}, []Match{}},
-		{element.Tags{"place": "unknown"}, []Match{}},
-		{element.Tags{"place": "city"}, []Match{{"place", "city", DestTable{Name: "places"}, nil}}},
-		{element.Tags{"place": "city", "highway": "residential"}, []Match{{"place", "city", DestTable{Name: "places"}, nil}}},
-		{element.Tags{"place": "city", "highway": "bus_stop"}, []Match{
+		{osm.Tags{"unknown": "baz"}, []Match{}},
+		{osm.Tags{"place": "unknown"}, []Match{}},
+		{osm.Tags{"place": "city"}, []Match{{"place", "city", DestTable{Name: "places"}, nil}}},
+		{osm.Tags{"place": "city", "highway": "residential"}, []Match{{"place", "city", DestTable{Name: "places"}, nil}}},
+		{osm.Tags{"place": "city", "highway": "bus_stop"}, []Match{
 			{"place", "city", DestTable{Name: "places"}, nil},
 			{"highway", "bus_stop", DestTable{Name: "transport_points"}, nil}},
 		},
 	}
 
-	elem := element.Node{}
+	elem := osm.Node{}
 	m := mapping.PointMatcher
 	for i, test := range tests {
 		elem.Tags = test.tags
@@ -292,32 +292,32 @@ func TestLineStringMatcher(t *testing.T) {
 		t.Fatal(err)
 	}
 	tests := []struct {
-		tags    element.Tags
+		tags    osm.Tags
 		matches []Match
 	}{
-		{element.Tags{"unknown": "baz"}, []Match{}},
-		{element.Tags{"highway": "unknown"}, []Match{}},
-		{element.Tags{"place": "city"}, []Match{}},
-		{element.Tags{"highway": "pedestrian"},
+		{osm.Tags{"unknown": "baz"}, []Match{}},
+		{osm.Tags{"highway": "unknown"}, []Match{}},
+		{osm.Tags{"place": "city"}, []Match{}},
+		{osm.Tags{"highway": "pedestrian"},
 			[]Match{{"highway", "pedestrian", DestTable{Name: "roads", SubMapping: "roads"}, nil}}},
 
 		// exclude_tags area=yes
-		{element.Tags{"highway": "pedestrian", "area": "yes"}, []Match{}},
+		{osm.Tags{"highway": "pedestrian", "area": "yes"}, []Match{}},
 
-		{element.Tags{"barrier": "hedge"},
+		{osm.Tags{"barrier": "hedge"},
 			[]Match{{"barrier", "hedge", DestTable{Name: "barrierways"}, nil}}},
-		{element.Tags{"barrier": "hedge", "area": "yes"}, []Match{}},
+		{osm.Tags{"barrier": "hedge", "area": "yes"}, []Match{}},
 
-		{element.Tags{"aeroway": "runway"}, []Match{}},
-		{element.Tags{"aeroway": "runway", "area": "no"},
+		{osm.Tags{"aeroway": "runway"}, []Match{}},
+		{osm.Tags{"aeroway": "runway", "area": "no"},
 			[]Match{{"aeroway", "runway", DestTable{Name: "aeroways"}, nil}}},
 
-		{element.Tags{"highway": "secondary", "railway": "tram"},
+		{osm.Tags{"highway": "secondary", "railway": "tram"},
 			[]Match{
 				{"highway", "secondary", DestTable{Name: "roads", SubMapping: "roads"}, nil},
 				{"railway", "tram", DestTable{Name: "roads", SubMapping: "railway"}, nil}},
 		},
-		{element.Tags{"highway": "footway", "landuse": "park", "barrier": "hedge"},
+		{osm.Tags{"highway": "footway", "landuse": "park", "barrier": "hedge"},
 			// landusages not a linestring table
 			[]Match{
 				{"highway", "footway", DestTable{Name: "roads", SubMapping: "roads"}, nil},
@@ -325,7 +325,7 @@ func TestLineStringMatcher(t *testing.T) {
 		},
 	}
 
-	elem := element.Way{}
+	elem := osm.Way{}
 	// fake closed way for area matching
 	elem.Refs = []int64{1, 2, 3, 4, 1}
 	if !elem.IsClosed() {
@@ -386,39 +386,39 @@ func TestPolygonMatcher_MatchWay(t *testing.T) {
 		t.Fatal(err)
 	}
 	tests := []struct {
-		tags    element.Tags
+		tags    osm.Tags
 		matches []Match
 	}{
-		{element.Tags{}, []Match{}},
-		{element.Tags{"unknown": "baz"}, []Match{}},
-		{element.Tags{"landuse": "unknown"}, []Match{}},
-		{element.Tags{"landuse": "unknown", "type": "multipolygon"}, []Match{}},
-		{element.Tags{"building": "yes"}, []Match{{"building", "yes", DestTable{Name: "buildings"}, nil}}},
-		{element.Tags{"building": "residential"}, []Match{{"building", "residential", DestTable{Name: "buildings"}, nil}}},
+		{osm.Tags{}, []Match{}},
+		{osm.Tags{"unknown": "baz"}, []Match{}},
+		{osm.Tags{"landuse": "unknown"}, []Match{}},
+		{osm.Tags{"landuse": "unknown", "type": "multipolygon"}, []Match{}},
+		{osm.Tags{"building": "yes"}, []Match{{"building", "yes", DestTable{Name: "buildings"}, nil}}},
+		{osm.Tags{"building": "residential"}, []Match{{"building", "residential", DestTable{Name: "buildings"}, nil}}},
 		// line type requires area=yes
-		{element.Tags{"barrier": "hedge"}, []Match{}},
-		{element.Tags{"barrier": "hedge", "area": "yes"}, []Match{{"barrier", "hedge", DestTable{Name: "landusages"}, nil}}},
+		{osm.Tags{"barrier": "hedge"}, []Match{}},
+		{osm.Tags{"barrier": "hedge", "area": "yes"}, []Match{{"barrier", "hedge", DestTable{Name: "landusages"}, nil}}},
 
-		{element.Tags{"building": "shop"}, []Match{
+		{osm.Tags{"building": "shop"}, []Match{
 			{"building", "shop", DestTable{Name: "buildings"}, nil},
 			{"building", "shop", DestTable{Name: "amenity_areas"}, nil},
 		}},
 
-		{element.Tags{"aeroway": "apron", "landuse": "farm"}, []Match{
+		{osm.Tags{"aeroway": "apron", "landuse": "farm"}, []Match{
 			{"aeroway", "apron", DestTable{Name: "transport_areas"}, nil},
 			{"landuse", "farm", DestTable{Name: "landusages"}, nil},
 		}},
 
-		{element.Tags{"landuse": "farm", "highway": "secondary"}, []Match{
+		{osm.Tags{"landuse": "farm", "highway": "secondary"}, []Match{
 			{"landuse", "farm", DestTable{Name: "landusages"}, nil},
 		}},
 
-		{element.Tags{"highway": "footway"}, []Match{}},
-		{element.Tags{"highway": "footway", "area": "yes"}, []Match{
+		{osm.Tags{"highway": "footway"}, []Match{}},
+		{osm.Tags{"highway": "footway", "area": "yes"}, []Match{
 			{"highway", "footway", DestTable{Name: "landusages"}, nil},
 		}},
 
-		{element.Tags{"boundary": "administrative", "admin_level": "8"}, []Match{{"boundary", "administrative", DestTable{Name: "admin"}, nil}}},
+		{osm.Tags{"boundary": "administrative", "admin_level": "8"}, []Match{{"boundary", "administrative", DestTable{Name: "admin"}, nil}}},
 
 		/*
 			landusages mapping has the following order,
@@ -434,12 +434,12 @@ func TestPolygonMatcher_MatchWay(t *testing.T) {
 			- park
 		*/
 
-		{element.Tags{"landuse": "forest", "leisure": "park"}, []Match{{"landuse", "forest", DestTable{Name: "landusages"}, nil}}},
-		{element.Tags{"landuse": "park", "leisure": "park"}, []Match{{"leisure", "park", DestTable{Name: "landusages"}, nil}}},
-		{element.Tags{"landuse": "park", "leisure": "park", "amenity": "university"}, []Match{{"amenity", "university", DestTable{Name: "landusages"}, nil}}},
+		{osm.Tags{"landuse": "forest", "leisure": "park"}, []Match{{"landuse", "forest", DestTable{Name: "landusages"}, nil}}},
+		{osm.Tags{"landuse": "park", "leisure": "park"}, []Match{{"leisure", "park", DestTable{Name: "landusages"}, nil}}},
+		{osm.Tags{"landuse": "park", "leisure": "park", "amenity": "university"}, []Match{{"amenity", "university", DestTable{Name: "landusages"}, nil}}},
 	}
 
-	elem := element.Way{}
+	elem := osm.Way{}
 	// fake closed way for area matching
 	elem.Refs = []int64{1, 2, 3, 4, 1}
 	if !elem.IsClosed() {
@@ -455,7 +455,7 @@ func TestPolygonMatcher_MatchWay(t *testing.T) {
 	}
 
 	elem.Refs = nil
-	elem.Tags = element.Tags{"building": "yes"}
+	elem.Tags = osm.Tags{"building": "yes"}
 	actual := m.MatchWay(&elem)
 	if !matchesEqual([]Match{}, actual) {
 		t.Error("open way matched as polygon")
@@ -510,44 +510,44 @@ func TestPolygonMatcher_MatchRelation(t *testing.T) {
 	}
 
 	tests := []struct {
-		tags    element.Tags
+		tags    osm.Tags
 		matches []Match
 	}{
-		{element.Tags{}, []Match{}},
-		{element.Tags{"unknown": "baz"}, []Match{}},
-		{element.Tags{"landuse": "unknown"}, []Match{}},
-		{element.Tags{"landuse": "unknown", "type": "multipolygon"}, []Match{}},
-		{element.Tags{"building": "yes"}, []Match{}},
-		{element.Tags{"building": "yes", "type": "multipolygon"}, []Match{{"building", "yes", DestTable{Name: "buildings"}, nil}}},
-		{element.Tags{"building": "residential", "type": "multipolygon"}, []Match{{"building", "residential", DestTable{Name: "buildings"}, nil}}},
+		{osm.Tags{}, []Match{}},
+		{osm.Tags{"unknown": "baz"}, []Match{}},
+		{osm.Tags{"landuse": "unknown"}, []Match{}},
+		{osm.Tags{"landuse": "unknown", "type": "multipolygon"}, []Match{}},
+		{osm.Tags{"building": "yes"}, []Match{}},
+		{osm.Tags{"building": "yes", "type": "multipolygon"}, []Match{{"building", "yes", DestTable{Name: "buildings"}, nil}}},
+		{osm.Tags{"building": "residential", "type": "multipolygon"}, []Match{{"building", "residential", DestTable{Name: "buildings"}, nil}}},
 		// line type requires area=yes
-		{element.Tags{"barrier": "hedge", "type": "multipolygon"}, []Match{}},
-		{element.Tags{"barrier": "hedge", "area": "yes", "type": "multipolygon"}, []Match{{"barrier", "hedge", DestTable{Name: "landusages"}, nil}}},
+		{osm.Tags{"barrier": "hedge", "type": "multipolygon"}, []Match{}},
+		{osm.Tags{"barrier": "hedge", "area": "yes", "type": "multipolygon"}, []Match{{"barrier", "hedge", DestTable{Name: "landusages"}, nil}}},
 
-		{element.Tags{"building": "shop", "type": "multipolygon"}, []Match{
+		{osm.Tags{"building": "shop", "type": "multipolygon"}, []Match{
 			{"building", "shop", DestTable{Name: "buildings"}, nil},
 			{"building", "shop", DestTable{Name: "amenity_areas"}, nil},
 		}},
 
-		{element.Tags{"aeroway": "apron", "landuse": "farm", "type": "multipolygon"}, []Match{
+		{osm.Tags{"aeroway": "apron", "landuse": "farm", "type": "multipolygon"}, []Match{
 			{"aeroway", "apron", DestTable{Name: "transport_areas"}, nil},
 			{"landuse", "farm", DestTable{Name: "landusages"}, nil},
 		}},
 
-		{element.Tags{"landuse": "farm", "highway": "secondary", "type": "multipolygon"}, []Match{
+		{osm.Tags{"landuse": "farm", "highway": "secondary", "type": "multipolygon"}, []Match{
 			{"landuse", "farm", DestTable{Name: "landusages"}, nil},
 		}},
 
-		{element.Tags{"highway": "footway", "type": "multipolygon"}, []Match{}},
-		{element.Tags{"highway": "footway", "area": "yes", "type": "multipolygon"}, []Match{
+		{osm.Tags{"highway": "footway", "type": "multipolygon"}, []Match{}},
+		{osm.Tags{"highway": "footway", "area": "yes", "type": "multipolygon"}, []Match{
 			{"highway", "footway", DestTable{Name: "landusages"}, nil},
 		}},
 
-		{element.Tags{"boundary": "administrative", "admin_level": "8"}, []Match{}},
-		{element.Tags{"boundary": "administrative", "admin_level": "8", "type": "boundary"}, []Match{{"boundary", "administrative", DestTable{Name: "admin"}, nil}}},
+		{osm.Tags{"boundary": "administrative", "admin_level": "8"}, []Match{}},
+		{osm.Tags{"boundary": "administrative", "admin_level": "8", "type": "boundary"}, []Match{{"boundary", "administrative", DestTable{Name: "admin"}, nil}}},
 	}
 
-	elem := element.Relation{}
+	elem := osm.Relation{}
 	m := mapping.PolygonMatcher
 	for i, test := range tests {
 		elem.Tags = test.tags
@@ -560,35 +560,35 @@ func TestPolygonMatcher_MatchRelation(t *testing.T) {
 
 func TestExcludeFilter(t *testing.T) {
 	var f TagFilterer
-	var tags element.Tags
+	var tags osm.Tags
 
 	// no matches
 	f = newExcludeFilter([]config.Key{})
-	tags = element.Tags{"source": "1", "tiger:foo": "1", "source:foo": "1"}
+	tags = osm.Tags{"source": "1", "tiger:foo": "1", "source:foo": "1"}
 	f.Filter(&tags)
-	if !reflect.DeepEqual(tags, element.Tags{"source": "1", "tiger:foo": "1", "source:foo": "1"}) {
+	if !reflect.DeepEqual(tags, osm.Tags{"source": "1", "tiger:foo": "1", "source:foo": "1"}) {
 		t.Error("unexpected filter result", tags)
 	}
 
 	// match all
 	f = newExcludeFilter([]config.Key{"*"})
-	tags = element.Tags{"source": "1", "tiger:foo": "1", "source:foo": "1"}
+	tags = osm.Tags{"source": "1", "tiger:foo": "1", "source:foo": "1"}
 	f.Filter(&tags)
-	if !reflect.DeepEqual(tags, element.Tags{}) {
+	if !reflect.DeepEqual(tags, osm.Tags{}) {
 		t.Error("unexpected filter result", tags)
 	}
 
 	// fixed string and wildcard match
 	f = newExcludeFilter([]config.Key{"source", "tiger:*"})
-	tags = element.Tags{"source": "1", "tiger:foo": "1", "source:foo": "1"}
+	tags = osm.Tags{"source": "1", "tiger:foo": "1", "source:foo": "1"}
 	f.Filter(&tags)
-	if !reflect.DeepEqual(tags, element.Tags{"source:foo": "1"}) {
+	if !reflect.DeepEqual(tags, osm.Tags{"source:foo": "1"}) {
 		t.Error("unexpected filter result", tags)
 	}
 }
 
 func BenchmarkFilterNodes(b *testing.B) {
-	var tags element.Tags
+	var tags osm.Tags
 
 	mapping, err := FromFile("./test_mapping.yml")
 	if err != nil {
@@ -598,7 +598,7 @@ func BenchmarkFilterNodes(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		// test __any__
-		tags = make(element.Tags)
+		tags = make(osm.Tags)
 		tags["population"] = "0"
 		tags["name"] = "foo"
 		tags["boring"] = "true"

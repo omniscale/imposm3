@@ -5,29 +5,29 @@ import (
 	"sort"
 	"sync"
 
+	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/cache/binary"
-	"github.com/omniscale/imposm3/element"
 )
 
-type byId []element.Node
+type byID []osm.Node
 
-func (s byId) Len() int           { return len(s) }
-func (s byId) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-func (s byId) Less(i, j int) bool { return s[i].Id < s[j].Id }
+func (s byID) Len() int           { return len(s) }
+func (s byID) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s byID) Less(i, j int) bool { return s[i].ID < s[j].ID }
 
 type coordsBunch struct {
 	sync.Mutex
 	id         int64
-	coords     []element.Node
+	coords     []osm.Node
 	elem       *list.Element
 	needsWrite bool
 }
 
-func (b *coordsBunch) GetCoord(id int64) (*element.Node, error) {
+func (b *coordsBunch) GetCoord(id int64) (*osm.Node, error) {
 	idx := sort.Search(len(b.coords), func(i int) bool {
-		return b.coords[i].Id >= id
+		return b.coords[i].ID >= id
 	})
-	if idx < len(b.coords) && b.coords[idx].Id == id {
+	if idx < len(b.coords) && b.coords[idx].ID == id {
 		nd := b.coords[idx] // create copy prevent to race when node gets reprojected
 		return &nd, nil
 	}
@@ -36,21 +36,21 @@ func (b *coordsBunch) GetCoord(id int64) (*element.Node, error) {
 
 func (b *coordsBunch) DeleteCoord(id int64) {
 	idx := sort.Search(len(b.coords), func(i int) bool {
-		return b.coords[i].Id >= id
+		return b.coords[i].ID >= id
 	})
-	if idx < len(b.coords) && b.coords[idx].Id == id {
+	if idx < len(b.coords) && b.coords[idx].ID == id {
 		b.coords = append(b.coords[:idx], b.coords[idx+1:]...)
 	}
 }
 
 // PutCoord puts a single coord into the coords bunch. This function
 // does support updating nodes.
-func (b *coordsBunch) PutCoord(node element.Node) {
+func (b *coordsBunch) PutCoord(node osm.Node) {
 	idx := sort.Search(len(b.coords), func(i int) bool {
-		return b.coords[i].Id >= node.Id
+		return b.coords[i].ID >= node.ID
 	})
 	if idx < len(b.coords) {
-		if b.coords[idx].Id == node.Id {
+		if b.coords[idx].ID == node.ID {
 			// overwrite
 			b.coords[idx] = node
 		} else {
@@ -67,9 +67,9 @@ func (b *coordsBunch) PutCoord(node element.Node) {
 
 // PutCoords puts multiple coords into the coords bunch. This bulk function
 // does not support duplicate or updated nodes.
-func (b *coordsBunch) PutCoords(nodes []element.Node) {
+func (b *coordsBunch) PutCoords(nodes []osm.Node) {
 	b.coords = append(b.coords, nodes...)
-	sort.Sort(byId(b.coords))
+	sort.Sort(byID(b.coords))
 }
 
 type DeltaCoordsCache struct {
@@ -105,9 +105,9 @@ func (self *DeltaCoordsCache) SetLinearImport(v bool) {
 func (self *DeltaCoordsCache) Flush() error {
 	self.mu.Lock()
 	defer self.mu.Unlock()
-	for bunchId, bunch := range self.table {
+	for bunchID, bunch := range self.table {
 		if bunch.needsWrite {
-			err := self.putCoordsPacked(bunchId, bunch.coords)
+			err := self.putCoordsPacked(bunchID, bunch.coords)
 			if err != nil {
 				return err
 			}
@@ -133,9 +133,9 @@ func (self *DeltaCoordsCache) SetReadOnly(val bool) {
 	self.readOnly = val
 }
 
-func (self *DeltaCoordsCache) GetCoord(id int64) (*element.Node, error) {
-	bunchId := self.getBunchId(id)
-	bunch, err := self.getBunch(bunchId)
+func (self *DeltaCoordsCache) GetCoord(id int64) (*osm.Node, error) {
+	bunchID := self.getBunchID(id)
+	bunch, err := self.getBunch(bunchID)
 	if err != nil {
 		return nil, err
 	}
@@ -148,8 +148,8 @@ func (self *DeltaCoordsCache) GetCoord(id int64) (*element.Node, error) {
 }
 
 func (self *DeltaCoordsCache) DeleteCoord(id int64) error {
-	bunchId := self.getBunchId(id)
-	bunch, err := self.getBunch(bunchId)
+	bunchID := self.getBunchID(id)
+	bunch, err := self.getBunch(bunchID)
 	if err != nil {
 		return err
 	}
@@ -159,30 +159,30 @@ func (self *DeltaCoordsCache) DeleteCoord(id int64) error {
 	return nil
 }
 
-func (self *DeltaCoordsCache) FillWay(way *element.Way) error {
+func (self *DeltaCoordsCache) FillWay(way *osm.Way) error {
 	if way == nil {
 		return nil
 	}
-	way.Nodes = make([]element.Node, len(way.Refs))
+	way.Nodes = make([]osm.Node, len(way.Refs))
 
 	var err error
 	var bunch *coordsBunch
-	var bunchId, lastBunchId int64
-	lastBunchId = -1
+	var bunchID, lastBunchID int64
+	lastBunchID = -1
 
 	for i, id := range way.Refs {
-		bunchId = self.getBunchId(id)
+		bunchID = self.getBunchID(id)
 		// re-use bunches
-		if bunchId != lastBunchId {
+		if bunchID != lastBunchID {
 			if bunch != nil {
 				bunch.Unlock()
 			}
-			bunch, err = self.getBunch(bunchId)
+			bunch, err = self.getBunch(bunchID)
 			if err != nil {
 				return err
 			}
 		}
-		lastBunchId = bunchId
+		lastBunchID = bunchID
 
 		nd, err := bunch.GetCoord(id)
 		if err != nil {
@@ -197,13 +197,13 @@ func (self *DeltaCoordsCache) FillWay(way *element.Way) error {
 	return nil
 }
 
-func removeSkippedNodes(nodes []element.Node) []element.Node {
+func removeSkippedNodes(nodes []osm.Node) []osm.Node {
 	insertPoint := 0
 	for i := 0; i < len(nodes); i++ {
 		if i != insertPoint {
 			nodes[insertPoint] = nodes[i]
 		}
-		if nodes[i].Id != SKIP {
+		if nodes[i].ID != SKIP {
 			insertPoint += 1
 		}
 	}
@@ -211,29 +211,29 @@ func removeSkippedNodes(nodes []element.Node) []element.Node {
 }
 
 // PutCoords puts nodes into cache.
-// nodes need to be sorted by Id.
-func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) error {
-	var start, currentBunchId int64
+// nodes need to be sorted by ID.
+func (self *DeltaCoordsCache) PutCoords(nodes []osm.Node) error {
+	var start, currentBunchID int64
 	nodes = removeSkippedNodes(nodes)
 	if len(nodes) == 0 {
 		// skipped all nodes
 		return nil
 	}
-	currentBunchId = self.getBunchId(nodes[0].Id)
+	currentBunchID = self.getBunchID(nodes[0].ID)
 	start = 0
 	totalNodes := len(nodes)
 	for i, node := range nodes {
-		bunchId := self.getBunchId(node.Id)
-		if bunchId != currentBunchId {
+		bunchID := self.getBunchID(node.ID)
+		if bunchID != currentBunchID {
 			if self.linearImport && int64(i) > self.bunchSize && int64(i) < int64(totalNodes)-self.bunchSize {
 				// no need to handle concurrent updates to the same
 				// bunch if we are not at the boundary of a self.bunchSize
-				err := self.putCoordsPacked(currentBunchId, nodes[start:i])
+				err := self.putCoordsPacked(currentBunchID, nodes[start:i])
 				if err != nil {
 					return err
 				}
 			} else {
-				bunch, err := self.getBunch(currentBunchId)
+				bunch, err := self.getBunch(currentBunchID)
 				if err != nil {
 					return err
 				}
@@ -248,11 +248,11 @@ func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) error {
 				bunch.needsWrite = true
 				bunch.Unlock()
 			}
-			currentBunchId = bunchId
+			currentBunchID = bunchID
 			start = int64(i)
 		}
 	}
-	bunch, err := self.getBunch(currentBunchId)
+	bunch, err := self.getBunch(currentBunchID)
 	if err != nil {
 		return err
 	}
@@ -271,8 +271,8 @@ func (self *DeltaCoordsCache) PutCoords(nodes []element.Node) error {
 	return nil
 }
 
-func (p *DeltaCoordsCache) putCoordsPacked(bunchId int64, nodes []element.Node) error {
-	keyBuf := idToKeyBuf(bunchId)
+func (p *DeltaCoordsCache) putCoordsPacked(bunchID int64, nodes []osm.Node) error {
+	keyBuf := idToKeyBuf(bunchID)
 
 	if len(nodes) == 0 {
 		return p.db.Delete(p.wo, keyBuf)
@@ -289,8 +289,8 @@ func (p *DeltaCoordsCache) putCoordsPacked(bunchId int64, nodes []element.Node) 
 	return nil
 }
 
-func (p *DeltaCoordsCache) getCoordsPacked(bunchId int64, nodes []element.Node) ([]element.Node, error) {
-	keyBuf := idToKeyBuf(bunchId)
+func (p *DeltaCoordsCache) getCoordsPacked(bunchID int64, nodes []osm.Node) ([]osm.Node, error) {
+	keyBuf := idToKeyBuf(bunchID)
 
 	data, err := p.db.Get(p.ro, keyBuf)
 	if err != nil {
@@ -308,21 +308,21 @@ func (p *DeltaCoordsCache) getCoordsPacked(bunchId int64, nodes []element.Node) 
 	return nodes, nil
 }
 
-func (self *DeltaCoordsCache) getBunchId(nodeId int64) int64 {
-	return nodeId / self.bunchSize
+func (self *DeltaCoordsCache) getBunchID(nodeID int64) int64 {
+	return nodeID / self.bunchSize
 }
 
-func (self *DeltaCoordsCache) getBunch(bunchId int64) (*coordsBunch, error) {
+func (self *DeltaCoordsCache) getBunch(bunchID int64) (*coordsBunch, error) {
 	self.mu.Lock()
-	bunch, ok := self.table[bunchId]
-	var nodes []element.Node
+	bunch, ok := self.table[bunchID]
+	var nodes []osm.Node
 	needsGet := false
 	if !ok {
-		elem := self.lruList.PushFront(bunchId)
-		nodes = make([]element.Node, 0, self.bunchSize)
-		bunch = &coordsBunch{id: bunchId, coords: nodes, elem: elem}
+		elem := self.lruList.PushFront(bunchID)
+		nodes = make([]osm.Node, 0, self.bunchSize)
+		bunch = &coordsBunch{id: bunchID, coords: nodes, elem: elem}
 		needsGet = true
-		self.table[bunchId] = bunch
+		self.table[bunchID] = bunch
 	} else {
 		self.lruList.MoveToFront(bunch.elem)
 	}
@@ -334,7 +334,7 @@ func (self *DeltaCoordsCache) getBunch(bunchId int64) (*coordsBunch, error) {
 	}
 
 	if needsGet {
-		nodes, err := self.getCoordsPacked(bunchId, nodes)
+		nodes, err := self.getCoordsPacked(bunchID, nodes)
 		if err != nil {
 			return nil, err
 		}
@@ -347,15 +347,15 @@ func (self *DeltaCoordsCache) getBunch(bunchId int64) (*coordsBunch, error) {
 func (self *DeltaCoordsCache) CheckCapacity() error {
 	for int64(len(self.table)) > self.capacity {
 		elem := self.lruList.Back()
-		bunchId := self.lruList.Remove(elem).(int64)
-		bunch := self.table[bunchId]
+		bunchID := self.lruList.Remove(elem).(int64)
+		bunch := self.table[bunchID]
 		bunch.elem = nil
 		if bunch.needsWrite {
-			if err := self.putCoordsPacked(bunchId, bunch.coords); err != nil {
+			if err := self.putCoordsPacked(bunchID, bunch.coords); err != nil {
 				return err
 			}
 		}
-		delete(self.table, bunchId)
+		delete(self.table, bunchID)
 	}
 	return nil
 }

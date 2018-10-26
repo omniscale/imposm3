@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/jmhodges/levigo"
-	"github.com/omniscale/imposm3/element"
+	osm "github.com/omniscale/go-osm"
 )
 
 var (
@@ -123,10 +123,10 @@ func (c *OSMCache) Remove() error {
 
 // FirstMemberIsCached checks whether the first way or node member is cached.
 // Also returns true if there are no members of type WAY or NODE.
-func (c *OSMCache) FirstMemberIsCached(members []element.Member) (bool, error) {
+func (c *OSMCache) FirstMemberIsCached(members []osm.Member) (bool, error) {
 	for _, m := range members {
-		if m.Type == element.WAY {
-			_, err := c.Ways.GetWay(m.Id)
+		if m.Type == osm.WAY {
+			_, err := c.Ways.GetWay(m.ID)
 			if err == NotFound {
 				return false, nil
 			}
@@ -134,8 +134,8 @@ func (c *OSMCache) FirstMemberIsCached(members []element.Member) (bool, error) {
 				return false, err
 			}
 			return true, nil
-		} else if m.Type == element.NODE {
-			_, err := c.Coords.GetCoord(m.Id)
+		} else if m.Type == osm.NODE {
+			_, err := c.Coords.GetCoord(m.ID)
 			if err == NotFound {
 				return false, nil
 			}

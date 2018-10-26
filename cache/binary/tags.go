@@ -17,7 +17,7 @@ package binary
 import (
 	"unicode/utf8"
 
-	"github.com/omniscale/imposm3/element"
+	osm "github.com/omniscale/go-osm"
 )
 
 type codepoint rune
@@ -68,11 +68,11 @@ func addCommonKey(key string) {
 	nextKeyCodePoint += 1
 }
 
-func tagsFromArray(arr []string) element.Tags {
+func tagsFromArray(arr []string) osm.Tags {
 	if len(arr) == 0 {
-		return element.Tags{}
+		return osm.Tags{}
 	}
-	result := make(element.Tags)
+	result := make(osm.Tags)
 	for i := 0; i < len(arr); i += 1 {
 		if r, size := utf8.DecodeRuneInString(arr[i]); size >= 3 {
 			if r == escapeRune {
@@ -105,7 +105,7 @@ func tagsFromArray(arr []string) element.Tags {
 	return result
 }
 
-func tagsAsArray(tags element.Tags) []string {
+func tagsAsArray(tags osm.Tags) []string {
 	if len(tags) == 0 {
 		return nil
 	}

@@ -2,8 +2,8 @@ package cache
 
 import (
 	"github.com/jmhodges/levigo"
+	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/cache/binary"
-	"github.com/omniscale/imposm3/element"
 )
 
 type RelationsCache struct {
@@ -20,11 +20,11 @@ func newRelationsCache(path string) (*RelationsCache, error) {
 	return &cache, err
 }
 
-func (p *RelationsCache) PutRelation(relation *element.Relation) error {
-	if relation.Id == SKIP {
+func (p *RelationsCache) PutRelation(relation *osm.Relation) error {
+	if relation.ID == SKIP {
 		return nil
 	}
-	keyBuf := idToKeyBuf(relation.Id)
+	keyBuf := idToKeyBuf(relation.ID)
 	data, err := binary.MarshalRelation(relation)
 	if err != nil {
 		return err
@@ -32,18 +32,18 @@ func (p *RelationsCache) PutRelation(relation *element.Relation) error {
 	return p.db.Put(p.wo, keyBuf, data)
 }
 
-func (p *RelationsCache) PutRelations(rels []element.Relation) error {
+func (p *RelationsCache) PutRelations(rels []osm.Relation) error {
 	batch := levigo.NewWriteBatch()
 	defer batch.Close()
 
 	for _, rel := range rels {
-		if rel.Id == SKIP {
+		if rel.ID == SKIP {
 			continue
 		}
 		if len(rel.Tags) == 0 {
 			continue
 		}
-		keyBuf := idToKeyBuf(rel.Id)
+		keyBuf := idToKeyBuf(rel.ID)
 		data, err := binary.MarshalRelation(&rel)
 		if err != nil {
 			return err
@@ -53,8 +53,8 @@ func (p *RelationsCache) PutRelations(rels []element.Relation) error {
 	return p.db.Write(p.wo, batch)
 }
 
-func (p *RelationsCache) Iter() chan *element.Relation {
-	rels := make(chan *element.Relation)
+func (p *RelationsCache) Iter() chan *osm.Relation {
+	rels := make(chan *osm.Relation)
 	go func() {
 		ro := levigo.NewReadOptions()
 		ro.SetFillCache(false)
@@ -70,7 +70,7 @@ func (p *RelationsCache) Iter() chan *element.Relation {
 			if err != nil {
 				panic(err)
 			}
-			rel.Id = idFromKeyBuf(it.Key())
+			rel.ID = idFromKeyBuf(it.Key())
 
 			rels <- rel
 		}
@@ -78,7 +78,7 @@ func (p *RelationsCache) Iter() chan *element.Relation {
 	return rels
 }
 
-func (p *RelationsCache) GetRelation(id int64) (*element.Relation, error) {
+func (p *RelationsCache) GetRelation(id int64) (*osm.Relation, error) {
 	keyBuf := idToKeyBuf(id)
 	data, err := p.db.Get(p.ro, keyBuf)
 	if err != nil {
@@ -91,7 +91,7 @@ func (p *RelationsCache) GetRelation(id int64) (*element.Relation, error) {
 	if err != nil {
 		return nil, err
 	}
-	relation.Id = id
+	relation.ID = id
 	return relation, err
 }
 

@@ -4,19 +4,19 @@ import (
 	"errors"
 	"sort"
 
-	"github.com/omniscale/imposm3/element"
+	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/geom/geos"
 )
 
 type PreparedRelation struct {
 	rings []*ring
-	rel   *element.Relation
+	rel   *osm.Relation
 	srid  int
 }
 
 // PrepareRelation is the first step in building a (multi-)polygon of a Relation.
 // It builds rings from all ways and returns an error if there are unclosed rings.
-func PrepareRelation(rel *element.Relation, srid int, maxRingGap float64) (PreparedRelation, error) {
+func PrepareRelation(rel *osm.Relation, srid int, maxRingGap float64) (PreparedRelation, error) {
 	rings, err := buildRings(rel, maxRingGap)
 	if err != nil {
 		return PreparedRelation{}, err
@@ -52,7 +52,7 @@ func destroyRings(g *geos.Geos, rings []*ring) {
 	}
 }
 
-func buildRings(rel *element.Relation, maxRingGap float64) ([]*ring, error) {
+func buildRings(rel *osm.Relation, maxRingGap float64) ([]*ring, error) {
 	var rings []*ring
 	var incompleteRings []*ring
 	var completeRings []*ring
@@ -125,7 +125,7 @@ func (r sortableRingsDesc) Swap(i, j int)      { r[i], r[j] = r[j], r[i] }
 
 // buildRelGeometry builds the geometry of rel by creating a multipolygon of all rings.
 // rings need to be sorted by area (large to small).
-func buildRelGeometry(g *geos.Geos, rel *element.Relation, rings []*ring) (*geos.Geom, error) {
+func buildRelGeometry(g *geos.Geos, rel *osm.Relation, rings []*ring) (*geos.Geom, error) {
 	totalRings := len(rings)
 	shells := map[*ring]bool{rings[0]: true}
 	for i := 0; i < totalRings; i++ {
@@ -205,12 +205,12 @@ func buildRelGeometry(g *geos.Geos, rel *element.Relation, rings []*ring) (*geos
 	for i := range rings {
 		if rings[i].outer {
 			for _, w := range rings[i].ways {
-				outer[w.Id] = struct{}{}
+				outer[w.ID] = struct{}{}
 			}
 		}
 	}
 	for i := range rel.Members {
-		mid := rel.Members[i].Id
+		mid := rel.Members[i].ID
 		if _, ok := outer[mid]; ok {
 			rel.Members[i].Role = "outer"
 		} else {

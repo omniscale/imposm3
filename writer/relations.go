@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/cache"
 	"github.com/omniscale/imposm3/database"
 	"github.com/omniscale/imposm3/element"
@@ -17,8 +18,8 @@ import (
 
 type RelationWriter struct {
 	OsmElemWriter
-	singleIdSpace         bool
-	rel                   chan *element.Relation
+	singleIDSpace         bool
+	rel                   chan *osm.Relation
 	polygonMatcher        mapping.RelWayMatcher
 	relationMatcher       mapping.RelationMatcher
 	relationMemberMatcher mapping.RelationMatcher
@@ -28,8 +29,8 @@ type RelationWriter struct {
 func NewRelationWriter(
 	osmCache *cache.OSMCache,
 	diffCache *cache.DiffCache,
-	singleIdSpace bool,
-	rel chan *element.Relation,
+	singleIDSpace bool,
+	rel chan *osm.Relation,
 	inserter database.Inserter,
 	progress *stats.Statistics,
 	matcher mapping.RelWayMatcher,
@@ -50,7 +51,7 @@ func NewRelationWriter(
 			inserter:  inserter,
 			srid:      srid,
 		},
-		singleIdSpace:         singleIdSpace,
+		singleIDSpace:         singleIDSpace,
 		polygonMatcher:        matcher,
 		relationMatcher:       relMatcher,
 		relationMemberMatcher: relMemberMatcher,
@@ -61,11 +62,11 @@ func NewRelationWriter(
 	return &rw.OsmElemWriter
 }
 
-func (rw *RelationWriter) relId(id int64) int64 {
-	if !rw.singleIdSpace {
+func (rw *RelationWriter) relID(id int64) int64 {
+	if !rw.singleIDSpace {
 		return -id
 	}
-	return element.RelIdOffset - id
+	return element.RelIDOffset - id
 }
 
 func (rw *RelationWriter) loop() {
@@ -115,8 +116,8 @@ NextRel:
 		}
 
 		if inserted && rw.diffCache != nil {
-			rw.diffCache.Ways.AddFromMembers(r.Id, allMembers)
-			rw.diffCache.CoordsRel.AddFromMembers(r.Id, allMembers)
+			rw.diffCache.Ways.AddFromMembers(r.ID, allMembers)
+			rw.diffCache.CoordsRel.AddFromMembers(r.ID, allMembers)
 			for _, member := range allMembers {
 				if member.Way != nil {
 					rw.diffCache.Coords.AddFromWay(member.Way)
@@ -134,7 +135,7 @@ NextRel:
 	rw.wg.Done()
 }
 
-func handleMultiPolygon(rw *RelationWriter, r *element.Relation, geos *geosp.Geos) bool {
+func handleMultiPolygon(rw *RelationWriter, r *osm.Relation, geos *geosp.Geos) bool {
 	matches := rw.polygonMatcher.MatchRelation(r)
 	if matches == nil {
 		return false
@@ -169,14 +170,14 @@ func handleMultiPolygon(rw *RelationWriter, r *element.Relation, geos *geosp.Geo
 			return false
 		}
 		if duration := time.Now().Sub(start); duration > time.Minute {
-			log.Printf("[warn]: clipping relation %d to -limitto took %s", r.Id, duration)
+			log.Printf("[warn]: clipping relation %d to -limitto took %s", r.ID, duration)
 		}
 		if len(parts) == 0 {
 			return false
 		}
 		for _, g := range parts {
-			rel := element.Relation(*r)
-			rel.Id = rw.relId(r.Id)
+			rel := osm.Relation(*r)
+			rel.ID = rw.relID(r.ID)
 			geom = geomp.Geometry{Geom: g, Wkb: geos.AsEwkbHex(g)}
 			err := rw.inserter.InsertPolygon(rel.OSMElem, geom, matches)
 			if err != nil {
@@ -187,8 +188,8 @@ func handleMultiPolygon(rw *RelationWriter, r *element.Relation, geos *geosp.Geo
 			}
 		}
 	} else {
-		rel := element.Relation(*r)
-		rel.Id = rw.relId(r.Id)
+		rel := osm.Relation(*r)
+		rel.ID = rw.relID(r.ID)
 		err := rw.inserter.InsertPolygon(rel.OSMElem, geom, matches)
 		if err != nil {
 			if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
@@ -201,25 +202,25 @@ func handleMultiPolygon(rw *RelationWriter, r *element.Relation, geos *geosp.Geo
 	return true
 }
 
-func handleRelation(rw *RelationWriter, r *element.Relation, geos *geosp.Geos) bool {
+func handleRelation(rw *RelationWriter, r *osm.Relation, geos *geosp.Geos) bool {
 	relMatches := rw.relationMatcher.MatchRelation(r)
 	if relMatches == nil {
 		return false
 	}
-	rel := element.Relation(*r)
-	rel.Id = rw.relId(r.Id)
+	rel := osm.Relation(*r)
+	rel.ID = rw.relID(r.ID)
 	rw.inserter.InsertPolygon(rel.OSMElem, geomp.Geometry{}, relMatches)
 	return true
 }
 
-func handleRelationMembers(rw *RelationWriter, r *element.Relation, geos *geosp.Geos) bool {
+func handleRelationMembers(rw *RelationWriter, r *osm.Relation, geos *geosp.Geos) bool {
 	relMemberMatches := rw.relationMemberMatcher.MatchRelation(r)
 	if relMemberMatches == nil {
 		return false
 	}
 	for i, m := range r.Members {
-		if m.Type == element.RELATION {
-			mrel, err := rw.osmCache.Relations.GetRelation(m.Id)
+		if m.Type == osm.RELATION {
+			mrel, err := rw.osmCache.Relations.GetRelation(m.ID)
 			if err != nil {
 				if err != cache.NotFound {
 					log.Println("[warn]: ", err)
@@ -227,11 +228,11 @@ func handleRelationMembers(rw *RelationWriter, r *element.Relation, geos *geosp.
 				return false
 			}
 			r.Members[i].Elem = &mrel.OSMElem
-		} else if m.Type == element.NODE {
-			nd, err := rw.osmCache.Nodes.GetNode(m.Id)
+		} else if m.Type == osm.NODE {
+			nd, err := rw.osmCache.Nodes.GetNode(m.ID)
 			if err != nil {
 				if err == cache.NotFound {
-					nd, err = rw.osmCache.Coords.GetCoord(m.Id)
+					nd, err = rw.osmCache.Coords.GetCoord(m.ID)
 					if err != nil {
 						if err != cache.NotFound {
 							log.Println("[warn]: ", err)
@@ -274,8 +275,8 @@ func handleRelationMembers(rw *RelationWriter, r *element.Relation, geos *geosp.
 				return false
 			}
 		}
-		rel := element.Relation(*r)
-		rel.Id = rw.relId(r.Id)
+		rel := osm.Relation(*r)
+		rel.ID = rw.relID(r.ID)
 		rw.inserter.InsertRelationMember(rel, m, gelem, relMemberMatches)
 	}
 	return true

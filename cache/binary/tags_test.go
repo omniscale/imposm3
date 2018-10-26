@@ -5,11 +5,11 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/omniscale/imposm3/element"
+	osm "github.com/omniscale/go-osm"
 )
 
 func TestTagsAsAndFromArray(t *testing.T) {
-	tags := element.Tags{"name": "foo", "highway": "residential", "oneway": "yes"}
+	tags := osm.Tags{"name": "foo", "highway": "residential", "oneway": "yes"}
 	array := tagsAsArray(tags)
 
 	if len(array) != 3 {
@@ -39,7 +39,7 @@ func TestTagsAsAndFromArray(t *testing.T) {
 func TestTagsArrayEncoding(t *testing.T) {
 	for i, check := range []struct {
 		// Test tags with string array of key/value instead of
-		// element.Tags to have fixed order
+		// osm.Tags to have fixed order
 		tags     []string
 		expected []string
 	}{
@@ -95,7 +95,7 @@ func TestTagsArrayEncoding(t *testing.T) {
 			}
 		}
 		actualTags := tagsFromArray(actual)
-		expectedTags := make(element.Tags)
+		expectedTags := make(osm.Tags)
 		for i := 0; i < len(check.tags); i += 2 {
 			expectedTags[check.tags[i]] = check.tags[i+1]
 		}

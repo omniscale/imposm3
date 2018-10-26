@@ -3,9 +3,9 @@ package writer
 import (
 	"sync"
 
+	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/cache"
 	"github.com/omniscale/imposm3/database"
-	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/expire"
 	geomp "github.com/omniscale/imposm3/geom"
 	"github.com/omniscale/imposm3/geom/geos"
@@ -16,13 +16,13 @@ import (
 
 type NodeWriter struct {
 	OsmElemWriter
-	nodes        chan *element.Node
+	nodes        chan *osm.Node
 	pointMatcher mapping.NodeMatcher
 }
 
 func NewNodeWriter(
 	osmCache *cache.OSMCache,
-	nodes chan *element.Node,
+	nodes chan *osm.Node,
 	inserter database.Inserter,
 	progress *stats.Statistics,
 	matcher mapping.NodeMatcher,

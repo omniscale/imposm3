@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/omniscale/imposm3/element"
+	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/geom/geos"
 )
 
@@ -14,19 +14,19 @@ type coord struct {
 	lat  float64
 }
 
-func makeWay(id int64, tags element.Tags, coords []coord) element.Way {
-	way := element.Way{}
-	way.Id = id
+func makeWay(id int64, tags osm.Tags, coords []coord) osm.Way {
+	way := osm.Way{}
+	way.ID = id
 	way.Tags = tags
 	for _, coord := range coords {
 		way.Refs = append(way.Refs, coord.id)
 		way.Nodes = append(way.Nodes,
-			element.Node{OSMElem: element.OSMElem{Id: coord.id}, Long: coord.long, Lat: coord.lat})
+			osm.Node{OSMElem: osm.OSMElem{ID: coord.id}, Long: coord.long, Lat: coord.lat})
 	}
 	return way
 }
 
-func buildRelation(rel *element.Relation, srid int) (Geometry, error) {
+func buildRelation(rel *osm.Relation, srid int) (Geometry, error) {
 	prep, err := PrepareRelation(rel, srid, 0.1)
 	if err != nil {
 		return Geometry{}, err
@@ -35,14 +35,14 @@ func buildRelation(rel *element.Relation, srid int) (Geometry, error) {
 }
 
 func TestSimplePolygonWithHole(t *testing.T) {
-	w1 := makeWay(1, element.Tags{}, []coord{
+	w1 := makeWay(1, osm.Tags{}, []coord{
 		{1, 0, 0},
 		{2, 10, 0},
 		{3, 10, 10},
 		{4, 0, 10},
 		{1, 0, 0},
 	})
-	w2 := makeWay(2, element.Tags{}, []coord{
+	w2 := makeWay(2, osm.Tags{}, []coord{
 		{5, 2, 2},
 		{6, 8, 2},
 		{7, 8, 8},
@@ -50,11 +50,11 @@ func TestSimplePolygonWithHole(t *testing.T) {
 		{5, 2, 2},
 	})
 
-	rel := element.Relation{
-		OSMElem: element.OSMElem{Id: 1, Tags: element.Tags{}}}
-	rel.Members = []element.Member{
-		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
-		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
+	rel := osm.Relation{
+		OSMElem: osm.OSMElem{ID: 1, Tags: osm.Tags{}}}
+	rel.Members = []osm.Member{
+		{ID: 1, Type: osm.WAY, Role: "outer", Way: &w1},
+		{ID: 2, Type: osm.WAY, Role: "inner", Way: &w2},
 	}
 
 	geom, err := buildRelation(&rel, 3857)
@@ -78,14 +78,14 @@ func TestSimplePolygonWithHole(t *testing.T) {
 }
 
 func TestMultiPolygonWithHoleAndRelName(t *testing.T) {
-	w1 := makeWay(1, element.Tags{"natural": "forest", "name": "Blackwood"}, []coord{
+	w1 := makeWay(1, osm.Tags{"natural": "forest", "name": "Blackwood"}, []coord{
 		{1, 0, 0},
 		{2, 10, 0},
 		{3, 10, 10},
 		{4, 0, 10},
 		{1, 0, 0},
 	})
-	w2 := makeWay(1, element.Tags{"landusage": "scrub"}, []coord{
+	w2 := makeWay(1, osm.Tags{"landusage": "scrub"}, []coord{
 		{5, 2, 2},
 		{6, 8, 2},
 		{7, 8, 8},
@@ -93,11 +93,11 @@ func TestMultiPolygonWithHoleAndRelName(t *testing.T) {
 		{5, 2, 2},
 	})
 
-	rel := element.Relation{
-		OSMElem: element.OSMElem{Id: 1, Tags: element.Tags{"name": "Relation", "natural": "forest", "type": "multipolygon"}}}
-	rel.Members = []element.Member{
-		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
-		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
+	rel := osm.Relation{
+		OSMElem: osm.OSMElem{ID: 1, Tags: osm.Tags{"name": "Relation", "natural": "forest", "type": "multipolygon"}}}
+	rel.Members = []osm.Member{
+		{ID: 1, Type: osm.WAY, Role: "outer", Way: &w1},
+		{ID: 2, Type: osm.WAY, Role: "inner", Way: &w2},
 	}
 
 	geom, err := buildRelation(&rel, 3857)
@@ -125,21 +125,21 @@ func TestMultiPolygonWithHoleAndRelName(t *testing.T) {
 }
 
 func TestMultiPolygonWithMultipleHoles(t *testing.T) {
-	w1 := makeWay(1, element.Tags{"landusage": "forest"}, []coord{
+	w1 := makeWay(1, osm.Tags{"landusage": "forest"}, []coord{
 		{1, 0, 0},
 		{2, 10, 0},
 		{3, 10, 10},
 		{4, 0, 10},
 		{1, 0, 0},
 	})
-	w2 := makeWay(1, element.Tags{"water": "basin"}, []coord{
+	w2 := makeWay(1, osm.Tags{"water": "basin"}, []coord{
 		{1, 1, 1},
 		{2, 2, 1},
 		{3, 2, 2},
 		{4, 1, 2},
 		{1, 1, 1},
 	})
-	w3 := makeWay(3, element.Tags{"landusage": "scrub"}, []coord{
+	w3 := makeWay(3, osm.Tags{"landusage": "scrub"}, []coord{
 		{1, 3, 3},
 		{2, 4, 3},
 		{3, 4, 4},
@@ -147,12 +147,12 @@ func TestMultiPolygonWithMultipleHoles(t *testing.T) {
 		{1, 3, 3},
 	})
 
-	rel := element.Relation{
-		OSMElem: element.OSMElem{Id: 1, Tags: element.Tags{"landusage": "forest", "type": "multipolygon"}}}
-	rel.Members = []element.Member{
-		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
-		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
-		{Id: 3, Type: element.WAY, Role: "inner", Way: &w3},
+	rel := osm.Relation{
+		OSMElem: osm.OSMElem{ID: 1, Tags: osm.Tags{"landusage": "forest", "type": "multipolygon"}}}
+	rel.Members = []osm.Member{
+		{ID: 1, Type: osm.WAY, Role: "outer", Way: &w1},
+		{ID: 2, Type: osm.WAY, Role: "inner", Way: &w2},
+		{ID: 3, Type: osm.WAY, Role: "inner", Way: &w3},
 	}
 
 	geom, err := buildRelation(&rel, 3857)
@@ -179,35 +179,35 @@ func TestMultiPolygonWithMultipleHoles(t *testing.T) {
 }
 
 func TestMultiPolygonWithNeastedHoles(t *testing.T) {
-	w1 := makeWay(1, element.Tags{"landusage": "forest"}, []coord{
+	w1 := makeWay(1, osm.Tags{"landusage": "forest"}, []coord{
 		{1, 0, 0},
 		{2, 10, 0},
 		{3, 10, 10},
 		{4, 0, 10},
 		{1, 0, 0},
 	})
-	w2 := makeWay(2, element.Tags{"landusage": "scrub"}, []coord{
+	w2 := makeWay(2, osm.Tags{"landusage": "scrub"}, []coord{
 		{1, 1, 1},
 		{2, 9, 1},
 		{3, 9, 9},
 		{4, 1, 9},
 		{1, 1, 1},
 	})
-	w3 := makeWay(3, element.Tags{}, []coord{
+	w3 := makeWay(3, osm.Tags{}, []coord{
 		{1, 2, 2},
 		{2, 8, 2},
 		{3, 8, 8},
 		{4, 2, 8},
 		{1, 2, 2},
 	})
-	w4 := makeWay(4, element.Tags{"landusage": "scrub"}, []coord{
+	w4 := makeWay(4, osm.Tags{"landusage": "scrub"}, []coord{
 		{1, 3, 3},
 		{2, 7, 3},
 		{3, 7, 7},
 		{4, 3, 7},
 		{1, 3, 3},
 	})
-	w5 := makeWay(5, element.Tags{"landusage": "forest"}, []coord{
+	w5 := makeWay(5, osm.Tags{"landusage": "forest"}, []coord{
 		{1, 4, 4},
 		{2, 6, 4},
 		{3, 6, 6},
@@ -215,13 +215,13 @@ func TestMultiPolygonWithNeastedHoles(t *testing.T) {
 		{1, 4, 4},
 	})
 
-	rel := element.Relation{OSMElem: element.OSMElem{Id: 1, Tags: element.Tags{"landusage": "forest", "type": "multipolygon"}}}
-	rel.Members = []element.Member{
-		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
-		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
-		{Id: 3, Type: element.WAY, Role: "inner", Way: &w3},
-		{Id: 4, Type: element.WAY, Role: "inner", Way: &w4},
-		{Id: 5, Type: element.WAY, Role: "inner", Way: &w5},
+	rel := osm.Relation{OSMElem: osm.OSMElem{ID: 1, Tags: osm.Tags{"landusage": "forest", "type": "multipolygon"}}}
+	rel.Members = []osm.Member{
+		{ID: 1, Type: osm.WAY, Role: "outer", Way: &w1},
+		{ID: 2, Type: osm.WAY, Role: "inner", Way: &w2},
+		{ID: 3, Type: osm.WAY, Role: "inner", Way: &w3},
+		{ID: 4, Type: osm.WAY, Role: "inner", Way: &w4},
+		{ID: 5, Type: osm.WAY, Role: "inner", Way: &w5},
 	}
 
 	geom, err := buildRelation(&rel, 3857)
@@ -248,25 +248,25 @@ func TestMultiPolygonWithNeastedHoles(t *testing.T) {
 }
 
 func TestPolygonFromThreeWays(t *testing.T) {
-	w1 := makeWay(1, element.Tags{"landusage": "forest"}, []coord{
+	w1 := makeWay(1, osm.Tags{"landusage": "forest"}, []coord{
 		{1, 0, 0},
 		{2, 10, 0},
 		{3, 10, 10},
 	})
-	w2 := makeWay(2, element.Tags{"landusage": "water"}, []coord{
+	w2 := makeWay(2, osm.Tags{"landusage": "water"}, []coord{
 		{3, 10, 10},
 		{4, 0, 10},
 	})
-	w3 := makeWay(3, element.Tags{"landusage": "forest"}, []coord{
+	w3 := makeWay(3, osm.Tags{"landusage": "forest"}, []coord{
 		{4, 0, 10},
 		{1, 0, 0},
 	})
 
-	rel := element.Relation{OSMElem: element.OSMElem{Id: 1, Tags: element.Tags{"landusage": "forest", "type": "multipolygon"}}}
-	rel.Members = []element.Member{
-		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
-		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
-		{Id: 3, Type: element.WAY, Role: "inner", Way: &w3},
+	rel := osm.Relation{OSMElem: osm.OSMElem{ID: 1, Tags: osm.Tags{"landusage": "forest", "type": "multipolygon"}}}
+	rel.Members = []osm.Member{
+		{ID: 1, Type: osm.WAY, Role: "outer", Way: &w1},
+		{ID: 2, Type: osm.WAY, Role: "inner", Way: &w2},
+		{ID: 3, Type: osm.WAY, Role: "inner", Way: &w3},
 	}
 
 	geom, err := buildRelation(&rel, 3857)
@@ -293,21 +293,21 @@ func TestPolygonFromThreeWays(t *testing.T) {
 }
 
 func TestTouchingPolygonsWithHole(t *testing.T) {
-	w1 := makeWay(1, element.Tags{"water": "riverbank"}, []coord{
+	w1 := makeWay(1, osm.Tags{"water": "riverbank"}, []coord{
 		{1, 0, 0},
 		{2, 10, 0},
 		{3, 10, 10},
 		{4, 0, 10},
 		{1, 0, 0},
 	})
-	w2 := makeWay(2, element.Tags{"water": "riverbank"}, []coord{
+	w2 := makeWay(2, osm.Tags{"water": "riverbank"}, []coord{
 		{2, 10, 0},
 		{5, 30, 0},
 		{6, 30, 10},
 		{3, 10, 10},
 		{2, 10, 0},
 	})
-	w3 := makeWay(3, element.Tags{"landusage": "forest"}, []coord{
+	w3 := makeWay(3, osm.Tags{"landusage": "forest"}, []coord{
 		{7, 2, 2},
 		{8, 8, 2},
 		{9, 8, 8},
@@ -315,11 +315,11 @@ func TestTouchingPolygonsWithHole(t *testing.T) {
 		{7, 2, 2},
 	})
 
-	rel := element.Relation{OSMElem: element.OSMElem{Id: 1, Tags: element.Tags{"water": "riverbank"}}}
-	rel.Members = []element.Member{
-		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
-		{Id: 2, Type: element.WAY, Role: "outer", Way: &w2},
-		{Id: 3, Type: element.WAY, Role: "inner", Way: &w3},
+	rel := osm.Relation{OSMElem: osm.OSMElem{ID: 1, Tags: osm.Tags{"water": "riverbank"}}}
+	rel.Members = []osm.Member{
+		{ID: 1, Type: osm.WAY, Role: "outer", Way: &w1},
+		{ID: 2, Type: osm.WAY, Role: "outer", Way: &w2},
+		{ID: 3, Type: osm.WAY, Role: "inner", Way: &w3},
 	}
 	geom, err := buildRelation(&rel, 3857)
 	if err != nil {
@@ -346,21 +346,21 @@ func TestTouchingPolygonsWithHole(t *testing.T) {
 }
 
 func TestInsertedWaysDifferentTags(t *testing.T) {
-	w1 := makeWay(1, element.Tags{"landusage": "forest"}, []coord{
+	w1 := makeWay(1, osm.Tags{"landusage": "forest"}, []coord{
 		{1, 0, 0},
 		{2, 10, 0},
 		{3, 10, 10},
 	})
-	w2 := makeWay(2, element.Tags{"highway": "secondary"}, []coord{
+	w2 := makeWay(2, osm.Tags{"highway": "secondary"}, []coord{
 		{3, 10, 10},
 		{4, 0, 10},
 		{1, 0, 0},
 	})
 
-	rel := element.Relation{OSMElem: element.OSMElem{Id: 1, Tags: element.Tags{"landusage": "forest"}}}
-	rel.Members = []element.Member{
-		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
-		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
+	rel := osm.Relation{OSMElem: osm.OSMElem{ID: 1, Tags: osm.Tags{"landusage": "forest"}}}
+	rel.Members = []osm.Member{
+		{ID: 1, Type: osm.WAY, Role: "outer", Way: &w1},
+		{ID: 2, Type: osm.WAY, Role: "inner", Way: &w2},
 	}
 
 	geom, err := buildRelation(&rel, 3857)
@@ -388,21 +388,21 @@ func TestInsertedWaysDifferentTags(t *testing.T) {
 }
 
 func TestInsertMultipleTags(t *testing.T) {
-	w1 := makeWay(1, element.Tags{"landusage": "forest", "highway": "secondary"}, []coord{
+	w1 := makeWay(1, osm.Tags{"landusage": "forest", "highway": "secondary"}, []coord{
 		{1, 0, 0},
 		{2, 10, 0},
 		{3, 10, 10},
 	})
-	w2 := makeWay(2, element.Tags{"highway": "secondary"}, []coord{
+	w2 := makeWay(2, osm.Tags{"highway": "secondary"}, []coord{
 		{3, 10, 10},
 		{4, 0, 10},
 		{1, 0, 0},
 	})
 
-	rel := element.Relation{OSMElem: element.OSMElem{Id: 1, Tags: element.Tags{"landusage": "forest"}}}
-	rel.Members = []element.Member{
-		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1}, // also highway=secondary
-		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
+	rel := osm.Relation{OSMElem: osm.OSMElem{ID: 1, Tags: osm.Tags{"landusage": "forest"}}}
+	rel.Members = []osm.Member{
+		{ID: 1, Type: osm.WAY, Role: "outer", Way: &w1}, // also highway=secondary
+		{ID: 2, Type: osm.WAY, Role: "inner", Way: &w2},
 	}
 
 	geom, err := buildRelation(&rel, 3857)
@@ -429,7 +429,7 @@ func TestBrokenPolygonSelfIntersect(t *testing.T) {
 	//  2##3    6##7
 	//  #  #    ####
 	//  1##4____5##8
-	w1 := makeWay(1, element.Tags{}, []coord{
+	w1 := makeWay(1, osm.Tags{}, []coord{
 		{1, 0, 0},
 		{2, 0, 10},
 		{3, 10, 10},
@@ -440,7 +440,7 @@ func TestBrokenPolygonSelfIntersect(t *testing.T) {
 		{8, 30, 0},
 		{1, 0, 0},
 	})
-	w2 := makeWay(2, element.Tags{}, []coord{
+	w2 := makeWay(2, osm.Tags{}, []coord{
 		{15, 2, 2},
 		{16, 8, 2},
 		{17, 8, 8},
@@ -448,10 +448,10 @@ func TestBrokenPolygonSelfIntersect(t *testing.T) {
 		{15, 2, 2},
 	})
 
-	rel1 := element.Relation{OSMElem: element.OSMElem{Id: 1}}
-	rel1.Members = []element.Member{
-		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
-		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
+	rel1 := osm.Relation{OSMElem: osm.OSMElem{ID: 1}}
+	rel1.Members = []osm.Member{
+		{ID: 1, Type: osm.WAY, Role: "outer", Way: &w1},
+		{ID: 2, Type: osm.WAY, Role: "inner", Way: &w2},
 	}
 
 	geom1, err := buildRelation(&rel1, 3857)
@@ -476,7 +476,7 @@ func TestBrokenPolygonSelfIntersect(t *testing.T) {
 	//  2##3    6##7
 	//  #  #    ####
 	//  1##4____5##8
-	w3 := makeWay(1, element.Tags{}, []coord{
+	w3 := makeWay(1, osm.Tags{}, []coord{
 		{4, 10, 0},
 		{1, 0, 0},
 		{2, 0, 10},
@@ -489,10 +489,10 @@ func TestBrokenPolygonSelfIntersect(t *testing.T) {
 		{4, 10, 0},
 	})
 
-	rel2 := element.Relation{OSMElem: element.OSMElem{Id: 1}}
-	rel2.Members = []element.Member{
-		{Id: 1, Type: element.WAY, Role: "outer", Way: &w3},
-		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
+	rel2 := osm.Relation{OSMElem: osm.OSMElem{ID: 1}}
+	rel2.Members = []osm.Member{
+		{ID: 1, Type: osm.WAY, Role: "outer", Way: &w3},
+		{ID: 2, Type: osm.WAY, Role: "inner", Way: &w2},
 	}
 
 	geom2, err := buildRelation(&rel2, 3857)
@@ -523,14 +523,14 @@ func TestBrokenPolygonSelfIntersectTriangle(t *testing.T) {
 	// 1###
 	// triangle with four points, minor overlapping
 
-	w1 := makeWay(1, element.Tags{}, []coord{
+	w1 := makeWay(1, osm.Tags{}, []coord{
 		{1, 0, 0},
 		{2, 0, 100},
 		{3, 100, 50 - 0.00001},
 		{4, 100, 50 + 0.00001},
 		{1, 0, 0},
 	})
-	w2 := makeWay(2, element.Tags{}, []coord{
+	w2 := makeWay(2, osm.Tags{}, []coord{
 		{15, 10, 45},
 		{16, 10, 55},
 		{17, 20, 55},
@@ -538,10 +538,10 @@ func TestBrokenPolygonSelfIntersectTriangle(t *testing.T) {
 		{15, 10, 45},
 	})
 
-	rel := element.Relation{OSMElem: element.OSMElem{Id: 1}}
-	rel.Members = []element.Member{
-		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
-		{Id: 2, Type: element.WAY, Role: "inner", Way: &w2},
+	rel := osm.Relation{OSMElem: osm.OSMElem{ID: 1}}
+	rel.Members = []osm.Member{
+		{ID: 1, Type: osm.WAY, Role: "outer", Way: &w1},
+		{ID: 2, Type: osm.WAY, Role: "inner", Way: &w2},
 	}
 
 	geom, err := buildRelation(&rel, 3857)
@@ -563,14 +563,14 @@ func TestBrokenPolygonSelfIntersectTriangle(t *testing.T) {
 	}
 
 	// larger overlap
-	w3 := makeWay(1, element.Tags{}, []coord{
+	w3 := makeWay(1, osm.Tags{}, []coord{
 		{1, 0, 0},
 		{2, 0, 100},
 		{3, 100, 50 - 1},
 		{4, 100, 50 + 1},
 		{1, 0, 0},
 	})
-	w4 := makeWay(2, element.Tags{}, []coord{
+	w4 := makeWay(2, osm.Tags{}, []coord{
 		{15, 10, 45},
 		{16, 10, 55},
 		{17, 20, 55},
@@ -578,10 +578,10 @@ func TestBrokenPolygonSelfIntersectTriangle(t *testing.T) {
 		{15, 10, 45},
 	})
 
-	rel = element.Relation{OSMElem: element.OSMElem{Id: 1}}
-	rel.Members = []element.Member{
-		{Id: 1, Type: element.WAY, Role: "outer", Way: &w3},
-		{Id: 2, Type: element.WAY, Role: "inner", Way: &w4},
+	rel = osm.Relation{OSMElem: osm.OSMElem{ID: 1}}
+	rel.Members = []osm.Member{
+		{ID: 1, Type: osm.WAY, Role: "outer", Way: &w3},
+		{ID: 2, Type: osm.WAY, Role: "inner", Way: &w4},
 	}
 
 	geom, err = buildRelation(&rel, 3857)
@@ -601,17 +601,17 @@ func TestBrokenPolygonSelfIntersectTriangle(t *testing.T) {
 }
 
 func TestOpenRing(t *testing.T) {
-	w1 := makeWay(1, element.Tags{}, []coord{
+	w1 := makeWay(1, osm.Tags{}, []coord{
 		{1, 0, 0},
 		{2, 10, 0},
 		{3, 10, 10},
 		{4, 0, 10},
 	})
 
-	rel := element.Relation{
-		OSMElem: element.OSMElem{Id: 1, Tags: element.Tags{}}}
-	rel.Members = []element.Member{
-		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
+	rel := osm.Relation{
+		OSMElem: osm.OSMElem{ID: 1, Tags: osm.Tags{}}}
+	rel.Members = []osm.Member{
+		{ID: 1, Type: osm.WAY, Role: "outer", Way: &w1},
 	}
 
 	_, err := buildRelation(&rel, 3857)
@@ -621,22 +621,22 @@ func TestOpenRing(t *testing.T) {
 }
 
 func TestClosedAndOpenRing(t *testing.T) {
-	w1 := makeWay(1, element.Tags{}, []coord{
+	w1 := makeWay(1, osm.Tags{}, []coord{
 		{1, 0, 0},
 		{2, 10, 0},
 		{3, 10, 10},
 		{4, 0, 10},
 		{1, 0, 0},
 	})
-	w2 := makeWay(2, element.Tags{}, []coord{
+	w2 := makeWay(2, osm.Tags{}, []coord{
 		{5, 0, 0},
 		{6, -5, -2},
 	})
-	rel := element.Relation{
-		OSMElem: element.OSMElem{Id: 1, Tags: element.Tags{}}}
-	rel.Members = []element.Member{
-		{Id: 1, Type: element.WAY, Role: "outer", Way: &w1},
-		{Id: 2, Type: element.WAY, Role: "outer", Way: &w2},
+	rel := osm.Relation{
+		OSMElem: osm.OSMElem{ID: 1, Tags: osm.Tags{}}}
+	rel.Members = []osm.Member{
+		{ID: 1, Type: osm.WAY, Role: "outer", Way: &w1},
+		{ID: 2, Type: osm.WAY, Role: "outer", Way: &w2},
 	}
 
 	prep, err := PrepareRelation(&rel, 3857, 0.1)

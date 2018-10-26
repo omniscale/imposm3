@@ -3,7 +3,7 @@ package mapping
 import (
 	"testing"
 
-	"github.com/omniscale/imposm3/element"
+	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/geom"
 	"github.com/omniscale/imposm3/geom/geos"
 	"github.com/omniscale/imposm3/mapping/config"
@@ -86,25 +86,25 @@ func TestZOrder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	elem := &element.OSMElem{}
+	elem := &osm.OSMElem{}
 
-	elem.Tags = element.Tags{} // missing
+	elem.Tags = osm.Tags{} // missing
 	if v := zOrder("", elem, nil, match); v != 0 {
 		t.Errorf(" -> %v", v)
 	}
-	elem.Tags = element.Tags{"fips": "ABCD"} // unknown
+	elem.Tags = osm.Tags{"fips": "ABCD"} // unknown
 	if v := zOrder("", elem, nil, match); v != 0 {
 		t.Errorf(" -> %v", v)
 	}
-	elem.Tags = element.Tags{"fips": "AA"}
+	elem.Tags = osm.Tags{"fips": "AA"}
 	if v := zOrder("", elem, nil, match); v != 4 {
 		t.Errorf(" -> %v", v)
 	}
-	elem.Tags = element.Tags{"fips": "CC"}
+	elem.Tags = osm.Tags{"fips": "CC"}
 	if v := zOrder("", elem, nil, match); v != 3 {
 		t.Errorf(" -> %v", v)
 	}
-	elem.Tags = element.Tags{"fips": "ZZ"}
+	elem.Tags = osm.Tags{"fips": "ZZ"}
 	if v := zOrder("", elem, nil, match); v != 1 {
 		t.Errorf(" -> %v", v)
 	}
@@ -127,7 +127,7 @@ func TestEnumerate_Match(t *testing.T) {
 	}
 	tests := []struct {
 		key      string
-		tags     element.Tags
+		tags     osm.Tags
 		expected int
 	}{
 		{"", nil, 0},
@@ -137,7 +137,7 @@ func TestEnumerate_Match(t *testing.T) {
 		{"ZZ", nil, 4},
 	}
 	for _, test := range tests {
-		elem := &element.OSMElem{Tags: test.tags}
+		elem := &osm.OSMElem{Tags: test.tags}
 		match := Match{Value: test.key}
 		if v := zOrder("", elem, nil, match); v.(int) != test.expected {
 			t.Errorf("%v %v %d != %d", test.key, test.tags, v, test.expected)
@@ -163,7 +163,7 @@ func TestEnumerate_Key(t *testing.T) {
 
 	tests := []struct {
 		key      string
-		tags     element.Tags
+		tags     osm.Tags
 		expected int
 	}{
 		{"", nil, 0},
@@ -173,7 +173,7 @@ func TestEnumerate_Key(t *testing.T) {
 		{"ZZ", nil, 4},
 	}
 	for _, test := range tests {
-		elem := &element.OSMElem{Tags: test.tags}
+		elem := &osm.OSMElem{Tags: test.tags}
 		match := Match{}
 		if v := zOrder(test.key, elem, nil, match); v.(int) != test.expected {
 			t.Errorf("%v %v %d != %d", test.key, test.tags, v, test.expected)
@@ -210,7 +210,7 @@ func TestWayZOrder(t *testing.T) {
 
 	tests := []struct {
 		key      string
-		tags     element.Tags
+		tags     osm.Tags
 		expected int
 	}{
 		{"unknown", nil, 5},
@@ -218,14 +218,14 @@ func TestWayZOrder(t *testing.T) {
 		{"residential", nil, 4},
 		{"residential", nil, 4},
 		{"motorway", nil, 11},
-		{"path", element.Tags{"bridge": "yes"}, 12},
-		{"path", element.Tags{"layer": "1"}, 12},
-		{"path", element.Tags{"tunnel": "yes"}, -10},
-		{"unknown", element.Tags{"tunnel": "yes"}, -6},
-		{"unknown", element.Tags{"tunnel": "yes", "layer": "1"}, 5},
+		{"path", osm.Tags{"bridge": "yes"}, 12},
+		{"path", osm.Tags{"layer": "1"}, 12},
+		{"path", osm.Tags{"tunnel": "yes"}, -10},
+		{"unknown", osm.Tags{"tunnel": "yes"}, -6},
+		{"unknown", osm.Tags{"tunnel": "yes", "layer": "1"}, 5},
 	}
 	for _, test := range tests {
-		elem := &element.OSMElem{Tags: test.tags}
+		elem := &osm.OSMElem{Tags: test.tags}
 		match := Match{Value: test.key}
 
 		if v := zOrder("", elem, nil, match); v.(int) != test.expected {
@@ -268,7 +268,7 @@ func TestAreaColumn(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unable to create test geometry %v: %v", test.wkt, err)
 		}
-		elem := &element.OSMElem{}
+		elem := &osm.OSMElem{}
 		match := Match{}
 
 		if v := test.areaFunc("", elem, &geometry, match); v.(float32) != test.expected {
@@ -320,25 +320,25 @@ func TestHstoreString(t *testing.T) {
 
 	for _, test := range []struct {
 		column   MakeValue
-		tags     element.Tags
+		tags     osm.Tags
 		expected interface{}
 	}{
-		{hstoreAll, element.Tags{}, ``},
-		{hstoreAll, element.Tags{"key": "value"}, `"key"=>"value"`},
-		{hstoreAll, element.Tags{`"key"`: `'"value"'`}, `"\"key\""=>"'\"value\"'"`},
-		{hstoreAll, element.Tags{`\`: `\\\\`}, `"\\"=>"\\\\\\\\"`},
-		{hstoreAll, element.Tags{"Ümlåütê=>": ""}, `"Ümlåütê=>"=>""`},
-		{hstoreInclude, element.Tags{"key": "value"}, ``},
-		{hstoreInclude, element.Tags{"key1": "value"}, `"key1"=>"value"`},
-		{hstoreInclude, element.Tags{"key": "value", "key2": "value"}, `"key2"=>"value"`},
+		{hstoreAll, osm.Tags{}, ``},
+		{hstoreAll, osm.Tags{"key": "value"}, `"key"=>"value"`},
+		{hstoreAll, osm.Tags{`"key"`: `'"value"'`}, `"\"key\""=>"'\"value\"'"`},
+		{hstoreAll, osm.Tags{`\`: `\\\\`}, `"\\"=>"\\\\\\\\"`},
+		{hstoreAll, osm.Tags{"Ümlåütê=>": ""}, `"Ümlåütê=>"=>""`},
+		{hstoreInclude, osm.Tags{"key": "value"}, ``},
+		{hstoreInclude, osm.Tags{"key1": "value"}, `"key1"=>"value"`},
+		{hstoreInclude, osm.Tags{"key": "value", "key2": "value"}, `"key2"=>"value"`},
 	} {
-		actual := test.column("", &element.OSMElem{Tags: test.tags}, nil, Match{})
+		actual := test.column("", &osm.OSMElem{Tags: test.tags}, nil, Match{})
 		if actual.(string) != test.expected {
 			t.Errorf("%#v != %#v for %#v", actual, test.expected, test.tags)
 		}
 	}
 
-	actual := hstoreAll("", &element.OSMElem{Tags: element.Tags{"key1": "value", "key2": "value"}}, nil, Match{})
+	actual := hstoreAll("", &osm.OSMElem{Tags: osm.Tags{"key1": "value", "key2": "value"}}, nil, Match{})
 	// check mutliple tags, can be in any order
 	if actual.(string) != `"key1"=>"value", "key2"=>"value"` && actual.(string) != `"key2"=>"value", "key1"=>"value"` {
 		t.Error("unexpected value", actual)

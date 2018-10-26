@@ -4,16 +4,17 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
+	"github.com/omniscale/go-osm/replication/diff"
+	"github.com/omniscale/go-osm/state"
 	"github.com/omniscale/imposm3/cache"
 	"github.com/omniscale/imposm3/config"
 	"github.com/omniscale/imposm3/expire"
 	"github.com/omniscale/imposm3/geom/limit"
 	"github.com/omniscale/imposm3/log"
-	"github.com/omniscale/imposm3/replication"
-	"github.com/omniscale/imposm3/update/state"
 )
 
 func Run(baseOpts config.Base) {
@@ -36,13 +37,13 @@ func Run(baseOpts config.Base) {
 		step()
 	}
 
-	s, err := state.ParseLastState(baseOpts.DiffDir)
+	s, err := state.ParseFile(filepath.Join(baseOpts.DiffDir, LastStateFilename))
 	if err != nil {
 		log.Fatal("[fatal] Unable to read last.state.txt:", err)
 	}
 	replicationUrl := baseOpts.ReplicationUrl
 	if replicationUrl == "" {
-		replicationUrl = s.Url
+		replicationUrl = s.URL
 	}
 	if replicationUrl == "" {
 		log.Fatal("[fatal] No replicationUrl in last.state.txt " +
@@ -50,7 +51,7 @@ func Run(baseOpts config.Base) {
 	}
 	log.Printf("[info] Starting replication from %s with %s interval", replicationUrl, baseOpts.ReplicationInterval)
 
-	downloader := replication.NewDiffDownloader(
+	downloader := diff.NewDownloader(
 		baseOpts.DiffDir,
 		replicationUrl,
 		s.Sequence,
@@ -85,6 +86,7 @@ func Run(baseOpts config.Base) {
 
 	shutdown := func() {
 		log.Println("[info] Exiting. (SIGTERM/SIGINT/SIGHUB)")
+		downloader.Stop()
 		osmCache.Close()
 		diffCache.Close()
 		if tilelist != nil {
@@ -103,6 +105,10 @@ func Run(baseOpts config.Base) {
 		case <-sigc:
 			shutdown()
 		case seq := <-nextSeq:
+			if seq.Error != nil {
+				log.Printf("[error] Downloading #%d: %s", seq.Sequence, seq.Error)
+				continue
+			}
 			fname := seq.Filename
 			seqId := seq.Sequence
 			seqTime := seq.Time
@@ -134,7 +140,7 @@ func Run(baseOpts config.Base) {
 				}
 
 				if err != nil {
-					log.Printf("[error] Importing #%s: %s", seqId, err)
+					log.Printf("[error] Importing #%d: %s", seqId, err)
 					log.Println("[info] Retrying in", exp.Duration())
 					// TODO handle <-sigc during wait
 					exp.Wait()

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"math"
 
-	"github.com/omniscale/imposm3/element"
+	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/geom/geos"
 )
 
@@ -35,7 +35,7 @@ var (
 	ErrorNoRing     = newGeomError("linestrings do not form ring", 0)
 )
 
-func Point(g *geos.Geos, node element.Node) (*geos.Geom, error) {
+func Point(g *geos.Geos, node osm.Node) (*geos.Geom, error) {
 	geom := g.Point(node.Long, node.Lat)
 	if geom == nil {
 		return nil, newGeomError("couldn't create point", 1)
@@ -44,7 +44,7 @@ func Point(g *geos.Geos, node element.Node) (*geos.Geom, error) {
 	return geom, nil
 }
 
-func nodesEqual(a, b element.Node) bool {
+func nodesEqual(a, b osm.Node) bool {
 	if d := a.Long - b.Long; math.Abs(d) < 1e-9 {
 		if d := a.Lat - b.Lat; math.Abs(d) < 1e-9 {
 			return true
@@ -53,7 +53,7 @@ func nodesEqual(a, b element.Node) bool {
 	return false
 }
 
-func unduplicateNodes(nodes []element.Node) []element.Node {
+func unduplicateNodes(nodes []osm.Node) []osm.Node {
 	if len(nodes) < 2 {
 		return nodes
 	}
@@ -68,7 +68,7 @@ func unduplicateNodes(nodes []element.Node) []element.Node {
 		return nodes
 	}
 
-	result := make([]element.Node, 0, len(nodes))
+	result := make([]osm.Node, 0, len(nodes))
 	result = append(result, nodes[0])
 	for i := 1; i < len(nodes); i++ {
 		if nodesEqual(nodes[i-1], nodes[i]) {
@@ -79,7 +79,7 @@ func unduplicateNodes(nodes []element.Node) []element.Node {
 	return result
 }
 
-func LineString(g *geos.Geos, nodes []element.Node) (*geos.Geom, error) {
+func LineString(g *geos.Geos, nodes []osm.Node) (*geos.Geom, error) {
 	nodes = unduplicateNodes(nodes)
 	if len(nodes) < 2 {
 		return nil, ErrorOneNodeWay
@@ -102,7 +102,7 @@ func LineString(g *geos.Geos, nodes []element.Node) (*geos.Geom, error) {
 	return geom, nil
 }
 
-func Polygon(g *geos.Geos, nodes []element.Node) (*geos.Geom, error) {
+func Polygon(g *geos.Geos, nodes []osm.Node) (*geos.Geom, error) {
 	nodes = unduplicateNodes(nodes)
 	if len(nodes) < 4 {
 		return nil, ErrorNoRing

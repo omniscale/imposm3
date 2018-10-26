@@ -6,11 +6,11 @@ import (
 	"github.com/omniscale/imposm3/element"
 )
 
-func MarshalIdRefsBunch(idRefs []element.IdRefs) []byte {
+func MarshalIDRefsBunch(idRefs []element.IDRefs) []byte {
 	buf := make([]byte, len(idRefs)*(4+1+6)+binary.MaxVarintLen64)
 
 	lastRef := int64(0)
-	lastId := int64(0)
+	lastID := int64(0)
 	nextPos := 0
 
 	nextPos += binary.PutUvarint(buf[nextPos:], uint64(len(idRefs)))
@@ -21,8 +21,8 @@ func MarshalIdRefsBunch(idRefs []element.IdRefs) []byte {
 			copy(tmp, buf)
 			buf = tmp
 		}
-		nextPos += binary.PutVarint(buf[nextPos:], idRef.Id-lastId)
-		lastId = idRef.Id
+		nextPos += binary.PutVarint(buf[nextPos:], idRef.ID-lastID)
+		lastID = idRef.ID
 	}
 	for _, idRef := range idRefs {
 		if len(buf)-nextPos < binary.MaxVarintLen64 {
@@ -46,9 +46,9 @@ func MarshalIdRefsBunch(idRefs []element.IdRefs) []byte {
 	return buf[:nextPos]
 }
 
-func MarshalIdRefsBunch2(idRefs []element.IdRefs, buf []byte) []byte {
+func MarshalIDRefsBunch2(idRefs []element.IDRefs, buf []byte) []byte {
 	lastRef := int64(0)
-	lastId := int64(0)
+	lastID := int64(0)
 	nextPos := 0
 
 	estSize := len(idRefs)*(4+1+6) + binary.MaxVarintLen64
@@ -67,8 +67,8 @@ func MarshalIdRefsBunch2(idRefs []element.IdRefs, buf []byte) []byte {
 			copy(tmp, buf[:nextPos])
 			buf = tmp
 		}
-		nextPos += binary.PutVarint(buf[nextPos:], idRef.Id-lastId)
-		lastId = idRef.Id
+		nextPos += binary.PutVarint(buf[nextPos:], idRef.ID-lastID)
+		lastID = idRef.ID
 	}
 	for _, idRef := range idRefs {
 		if len(buf)-nextPos < binary.MaxVarintLen64 {
@@ -92,7 +92,7 @@ func MarshalIdRefsBunch2(idRefs []element.IdRefs, buf []byte) []byte {
 	return buf[:nextPos]
 }
 
-func UnmarshalIdRefsBunch(buf []byte) []element.IdRefs {
+func UnmarshalIDRefsBunch(buf []byte) []element.IDRefs {
 	length, n := binary.Uvarint(buf)
 	if n <= 0 {
 		return nil
@@ -100,17 +100,17 @@ func UnmarshalIdRefsBunch(buf []byte) []element.IdRefs {
 
 	offset := n
 
-	idRefs := make([]element.IdRefs, length)
+	idRefs := make([]element.IDRefs, length)
 
 	last := int64(0)
 	for i := 0; uint64(i) < length; i++ {
-		idRefs[i].Id, n = binary.Varint(buf[offset:])
+		idRefs[i].ID, n = binary.Varint(buf[offset:])
 		if n <= 0 {
 			panic("no data")
 		}
 		offset += n
-		idRefs[i].Id += last
-		last = idRefs[i].Id
+		idRefs[i].ID += last
+		last = idRefs[i].ID
 	}
 	var numRefs uint64
 	for i := 0; uint64(i) < length; i++ {
@@ -136,7 +136,7 @@ func UnmarshalIdRefsBunch(buf []byte) []element.IdRefs {
 	return idRefs
 }
 
-func UnmarshalIdRefsBunch2(buf []byte, idRefs []element.IdRefs) []element.IdRefs {
+func UnmarshalIDRefsBunch2(buf []byte, idRefs []element.IDRefs) []element.IDRefs {
 	length, n := binary.Uvarint(buf)
 	if n <= 0 {
 		return nil
@@ -145,20 +145,20 @@ func UnmarshalIdRefsBunch2(buf []byte, idRefs []element.IdRefs) []element.IdRefs
 	offset := n
 
 	if uint64(cap(idRefs)) < length {
-		idRefs = make([]element.IdRefs, length)
+		idRefs = make([]element.IDRefs, length)
 	} else {
 		idRefs = idRefs[:length]
 	}
 
 	last := int64(0)
 	for i := 0; uint64(i) < length; i++ {
-		idRefs[i].Id, n = binary.Varint(buf[offset:])
+		idRefs[i].ID, n = binary.Varint(buf[offset:])
 		if n <= 0 {
 			panic("no data")
 		}
 		offset += n
-		idRefs[i].Id += last
-		last = idRefs[i].Id
+		idRefs[i].ID += last
+		last = idRefs[i].ID
 	}
 	var numRefs uint64
 	for i := 0; uint64(i) < length; i++ {

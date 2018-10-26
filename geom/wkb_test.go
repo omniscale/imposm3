@@ -4,17 +4,17 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omniscale/imposm3/element"
+	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/geom/geos"
 )
 
 func TestWkbLineString(t *testing.T) {
-	nodes := make([]element.Node, 5)
-	nodes[0] = element.Node{Lat: 0, Long: 0}
-	nodes[1] = element.Node{Lat: 1.123, Long: -0.2}
-	nodes[2] = element.Node{Lat: 1.99, Long: 1}
-	nodes[3] = element.Node{Lat: 0, Long: 1.1}
-	nodes[4] = element.Node{Lat: 0, Long: 0}
+	nodes := make([]osm.Node, 5)
+	nodes[0] = osm.Node{Lat: 0, Long: 0}
+	nodes[1] = osm.Node{Lat: 1.123, Long: -0.2}
+	nodes[2] = osm.Node{Lat: 1.99, Long: 1}
+	nodes[3] = osm.Node{Lat: 0, Long: 1.1}
+	nodes[4] = osm.Node{Lat: 0, Long: 0}
 	g := geos.NewGeos()
 	defer g.Finish()
 
@@ -37,12 +37,12 @@ func TestWkbLineString(t *testing.T) {
 }
 
 func TestWkbPolygon(t *testing.T) {
-	nodes := make([]element.Node, 5)
-	nodes[0] = element.Node{Lat: 1.123, Long: -0.2}
-	nodes[1] = element.Node{Lat: 1.99, Long: 1}
-	nodes[2] = element.Node{Lat: 0, Long: 1.1}
-	nodes[3] = element.Node{Lat: 0, Long: 0}
-	nodes[4] = element.Node{Lat: 1.123, Long: -0.2}
+	nodes := make([]osm.Node, 5)
+	nodes[0] = osm.Node{Lat: 1.123, Long: -0.2}
+	nodes[1] = osm.Node{Lat: 1.99, Long: 1}
+	nodes[2] = osm.Node{Lat: 0, Long: 1.1}
+	nodes[3] = osm.Node{Lat: 0, Long: 0}
+	nodes[4] = osm.Node{Lat: 1.123, Long: -0.2}
 	g := geos.NewGeos()
 	defer g.Finish()
 

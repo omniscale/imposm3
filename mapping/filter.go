@@ -4,12 +4,12 @@ import (
 	"path"
 	"strings"
 
-	"github.com/omniscale/imposm3/element"
+	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/mapping/config"
 )
 
 type TagFilterer interface {
-	Filter(tags *element.Tags)
+	Filter(tags *osm.Tags)
 }
 
 func (m *Mapping) NodeTagFilter() TagFilterer {
@@ -68,7 +68,7 @@ type tagFilter struct {
 	extraTags map[Key]bool
 }
 
-func (f *tagFilter) Filter(tags *element.Tags) {
+func (f *tagFilter) Filter(tags *osm.Tags) {
 	if tags == nil {
 		return
 	}
@@ -108,7 +108,7 @@ func newExcludeFilter(tags []config.Key) *excludeFilter {
 	return &f
 }
 
-func (f *excludeFilter) Filter(tags *element.Tags) {
+func (f *excludeFilter) Filter(tags *osm.Tags) {
 	for k := range *tags {
 		if _, ok := f.keys[Key(k)]; ok {
 			delete(*tags, k)

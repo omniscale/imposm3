@@ -9,8 +9,8 @@ import (
 	"sync/atomic"
 
 	pq "github.com/lib/pq"
+	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/database"
-	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/geom"
 	"github.com/omniscale/imposm3/log"
 	"github.com/omniscale/imposm3/mapping"
@@ -224,7 +224,7 @@ func createIndex(pg *PostGIS, tableName string, columns []ColumnSpec) error {
 func (pg *PostGIS) GeneralizeUpdates() error {
 	defer log.Step("Updating generalized tables")()
 	for _, table := range pg.sortedGeneralizedTables() {
-		if ids, ok := pg.updatedIds[table]; ok {
+		if ids, ok := pg.updatedIDs[table]; ok {
 			for _, id := range ids {
 				pg.txRouter.Insert(table, []interface{}{id})
 			}
@@ -428,8 +428,8 @@ type PostGIS struct {
 	txRouter                *TxRouter
 	updateGeneralizedTables bool
 
-	updateIdsMu sync.Mutex
-	updatedIds  map[string][]int64
+	updateIDsMu sync.Mutex
+	updatedIDs  map[string][]int64
 }
 
 func (pg *PostGIS) Open() error {
@@ -447,7 +447,7 @@ func (pg *PostGIS) Open() error {
 	return nil
 }
 
-func (pg *PostGIS) InsertPoint(elem element.OSMElem, geom geom.Geometry, matches []mapping.Match) error {
+func (pg *PostGIS) InsertPoint(elem osm.OSMElem, geom geom.Geometry, matches []mapping.Match) error {
 	for _, match := range matches {
 		row := match.Row(&elem, &geom)
 		if err := pg.txRouter.Insert(match.Table.Name, row); err != nil {
@@ -457,28 +457,7 @@ func (pg *PostGIS) InsertPoint(elem element.OSMElem, geom geom.Geometry, matches
 	return nil
 }
 
-func (pg *PostGIS) InsertLineString(elem element.OSMElem, geom geom.Geometry, matches []mapping.Match) error {
-	for _, match := range matches {
-		row := match.Row(&elem, &geom)
-		if err := pg.txRouter.Insert(match.Table.Name, row); err != nil {
-			return err
-		}
-	}
-	if pg.updateGeneralizedTables {
-		genMatches := pg.generalizedFromMatches(matches)
-		if len(genMatches) > 0 {
-			pg.updateIdsMu.Lock()
-			for _, generalizedTable := range genMatches {
-				pg.updatedIds[generalizedTable.Name] = append(pg.updatedIds[generalizedTable.Name], elem.Id)
-
-			}
-			pg.updateIdsMu.Unlock()
-		}
-	}
-	return nil
-}
-
-func (pg *PostGIS) InsertPolygon(elem element.OSMElem, geom geom.Geometry, matches []mapping.Match) error {
+func (pg *PostGIS) InsertLineString(elem osm.OSMElem, geom geom.Geometry, matches []mapping.Match) error {
 	for _, match := range matches {
 		row := match.Row(&elem, &geom)
 		if err := pg.txRouter.Insert(match.Table.Name, row); err != nil {
@@ -488,18 +467,39 @@ func (pg *PostGIS) InsertPolygon(elem element.OSMElem, geom geom.Geometry, match
 	if pg.updateGeneralizedTables {
 		genMatches := pg.generalizedFromMatches(matches)
 		if len(genMatches) > 0 {
-			pg.updateIdsMu.Lock()
+			pg.updateIDsMu.Lock()
 			for _, generalizedTable := range genMatches {
-				pg.updatedIds[generalizedTable.Name] = append(pg.updatedIds[generalizedTable.Name], elem.Id)
+				pg.updatedIDs[generalizedTable.Name] = append(pg.updatedIDs[generalizedTable.Name], elem.ID)
 
 			}
-			pg.updateIdsMu.Unlock()
+			pg.updateIDsMu.Unlock()
 		}
 	}
 	return nil
 }
 
-func (pg *PostGIS) InsertRelationMember(rel element.Relation, m element.Member, geom geom.Geometry, matches []mapping.Match) error {
+func (pg *PostGIS) InsertPolygon(elem osm.OSMElem, geom geom.Geometry, matches []mapping.Match) error {
+	for _, match := range matches {
+		row := match.Row(&elem, &geom)
+		if err := pg.txRouter.Insert(match.Table.Name, row); err != nil {
+			return err
+		}
+	}
+	if pg.updateGeneralizedTables {
+		genMatches := pg.generalizedFromMatches(matches)
+		if len(genMatches) > 0 {
+			pg.updateIDsMu.Lock()
+			for _, generalizedTable := range genMatches {
+				pg.updatedIDs[generalizedTable.Name] = append(pg.updatedIDs[generalizedTable.Name], elem.ID)
+
+			}
+			pg.updateIDsMu.Unlock()
+		}
+	}
+	return nil
+}
+
+func (pg *PostGIS) InsertRelationMember(rel osm.Relation, m osm.Member, geom geom.Geometry, matches []mapping.Match) error {
 	for _, match := range matches {
 		row := match.MemberRow(&rel, &m, &geom)
 		if err := pg.txRouter.Insert(match.Table.Name, row); err != nil {
@@ -549,7 +549,7 @@ func (pg *PostGIS) sortedGeneralizedTables() []string {
 
 func (pg *PostGIS) EnableGeneralizeUpdates() {
 	pg.updateGeneralizedTables = true
-	pg.updatedIds = make(map[string][]int64)
+	pg.updatedIDs = make(map[string][]int64)
 }
 
 func (pg *PostGIS) Begin() error {

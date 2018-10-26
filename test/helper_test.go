@@ -9,9 +9,9 @@ import (
 
 	"github.com/lib/pq/hstore"
 
+	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/cache"
 	"github.com/omniscale/imposm3/config"
-	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/geom/geos"
 	"github.com/omniscale/imposm3/import_"
 	"github.com/omniscale/imposm3/log"
@@ -420,20 +420,20 @@ func (ts *importTestSuite) assertGeomType(t *testing.T, e checkElem, expect stri
 	}
 }
 
-func (ts *importTestSuite) assertCachedWay(t *testing.T, c *cache.OSMCache, id int64) *element.Way {
+func (ts *importTestSuite) assertCachedWay(t *testing.T, c *cache.OSMCache, id int64) *osm.Way {
 	way, err := c.Ways.GetWay(id)
 	if err == cache.NotFound {
 		t.Errorf("missing way %d", id)
 	} else if err != nil {
 		t.Fatal(err)
 	}
-	if way.Id != id {
-		t.Errorf("cached way contains invalid id, %d != %d", way.Id, id)
+	if way.ID != id {
+		t.Errorf("cached way contains invalid id, %d != %d", way.ID, id)
 	}
 	return way
 }
 
-func (ts *importTestSuite) assertCachedNode(t *testing.T, c *cache.OSMCache, id int64) *element.Node {
+func (ts *importTestSuite) assertCachedNode(t *testing.T, c *cache.OSMCache, id int64) *osm.Node {
 	node, err := c.Nodes.GetNode(id)
 	if err == cache.NotFound {
 		node, err = c.Coords.GetCoord(id)
@@ -444,8 +444,8 @@ func (ts *importTestSuite) assertCachedNode(t *testing.T, c *cache.OSMCache, id 
 	} else if err != nil {
 		t.Fatal(err)
 	}
-	if node.Id != id {
-		t.Errorf("cached node contains invalid id, %d != %d", node.Id, id)
+	if node.ID != id {
+		t.Errorf("cached node contains invalid id, %d != %d", node.ID, id)
 	}
 	return node
 }

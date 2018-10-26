@@ -7,13 +7,13 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/omniscale/imposm3/element"
+	osm "github.com/omniscale/go-osm"
 )
 
-func mknode(id int64) element.Node {
-	return element.Node{
-		OSMElem: element.OSMElem{
-			Id: id,
+func mknode(id int64) osm.Node {
+	return osm.Node{
+		OSMElem: osm.OSMElem{
+			ID: id,
 		},
 		Long: 8,
 		Lat:  10,
@@ -21,7 +21,7 @@ func mknode(id int64) element.Node {
 }
 
 func TestRemoveSkippedNodes(t *testing.T) {
-	nodes := []element.Node{
+	nodes := []osm.Node{
 		mknode(0),
 		mknode(1),
 		mknode(-1),
@@ -32,11 +32,11 @@ func TestRemoveSkippedNodes(t *testing.T) {
 	if l := len(nodes); l != 3 {
 		t.Fatal(nodes)
 	}
-	if nodes[0].Id != 0 || nodes[1].Id != 1 || nodes[2].Id != 2 {
+	if nodes[0].ID != 0 || nodes[1].ID != 1 || nodes[2].ID != 2 {
 		t.Fatal(nodes)
 	}
 
-	nodes = []element.Node{
+	nodes = []osm.Node{
 		mknode(-1),
 		mknode(-1),
 	}
@@ -45,7 +45,7 @@ func TestRemoveSkippedNodes(t *testing.T) {
 		t.Fatal(nodes)
 	}
 
-	nodes = []element.Node{
+	nodes = []osm.Node{
 		mknode(-1),
 		mknode(1),
 		mknode(-1),
@@ -57,7 +57,7 @@ func TestRemoveSkippedNodes(t *testing.T) {
 	if l := len(nodes); l != 2 {
 		t.Fatal(nodes)
 	}
-	if nodes[0].Id != 1 || nodes[1].Id != 2 {
+	if nodes[0].ID != 1 || nodes[1].ID != 2 {
 		t.Fatal(nodes)
 	}
 }
@@ -83,17 +83,17 @@ func checkReadWriteDeltaCoords(t *testing.T, withLinearImport bool) {
 		cache.SetLinearImport(true)
 	}
 
-	// create list with nodes from Id 0->999 in random order
-	nodeIds := rand.Perm(1000)
-	nodes := make([]element.Node, 1000)
+	// create list with nodes from ID 0->999 in random order
+	nodeIDs := rand.Perm(1000)
+	nodes := make([]osm.Node, 1000)
 	for i := 0; i < len(nodes); i++ {
-		nodes[i] = mknode(int64(nodeIds[i]))
+		nodes[i] = mknode(int64(nodeIDs[i]))
 	}
 
 	// add nodes in batches of ten
 	for i := 0; i <= len(nodes)-10; i = i + 10 {
 		// sort each batch as required by PutCoords
-		sort.Sort(byId(nodes[i : i+10]))
+		sort.Sort(byID(nodes[i : i+10]))
 		cache.PutCoords(nodes[i : i+10])
 	}
 
@@ -108,7 +108,7 @@ func checkReadWriteDeltaCoords(t *testing.T, withLinearImport bool) {
 		} else if err != nil {
 			t.Fatal(err)
 		}
-		if data.Id != int64(i) {
+		if data.ID != int64(i) {
 			t.Errorf("unexpected result of GetNode: %v", data)
 		}
 	}
@@ -130,7 +130,7 @@ func insertAndCheck(t *testing.T, cache *DeltaCoordsCache, id int64, lon, lat fl
 	newNode.Long = lon
 	newNode.Lat = lat
 
-	err := cache.PutCoords([]element.Node{newNode})
+	err := cache.PutCoords([]osm.Node{newNode})
 	if err != nil {
 		t.Errorf("error during PutCoords for %v: %s", newNode, err)
 	}
@@ -198,9 +198,9 @@ func BenchmarkWriteDeltaCoords(b *testing.B) {
 	}
 	defer cache.Close()
 
-	nodes := make([]element.Node, 10000)
+	nodes := make([]osm.Node, 10000)
 	for i := range nodes {
-		nodes[i].Id = rand.Int63n(50000)
+		nodes[i].ID = rand.Int63n(50000)
 		nodes[i].Long = rand.Float64() - 0.5*360
 		nodes[i].Lat = rand.Float64() - 0.5*180
 	}
@@ -208,7 +208,7 @@ func BenchmarkWriteDeltaCoords(b *testing.B) {
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		for _, n := range nodes {
-			if err := cache.PutCoords([]element.Node{n}); err != nil {
+			if err := cache.PutCoords([]osm.Node{n}); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -226,14 +226,14 @@ func BenchmarkReadDeltaCoords(b *testing.B) {
 	}
 	defer cache.Close()
 
-	nodes := make([]element.Node, 10000)
+	nodes := make([]osm.Node, 10000)
 	for i := range nodes {
-		nodes[i].Id = rand.Int63n(50000)
+		nodes[i].ID = rand.Int63n(50000)
 		nodes[i].Long = rand.Float64() - 0.5*360
 		nodes[i].Lat = rand.Float64() - 0.5*180
 	}
 	for _, n := range nodes {
-		if err := cache.PutCoords([]element.Node{n}); err != nil {
+		if err := cache.PutCoords([]osm.Node{n}); err != nil {
 			b.Fatal(err)
 		}
 	}

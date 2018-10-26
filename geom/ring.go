@@ -1,14 +1,16 @@
 package geom
 
 import (
-	"github.com/omniscale/imposm3/element"
+	"math"
+
+	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/geom/geos"
 )
 
 type ring struct {
-	ways        []*element.Way
+	ways        []*osm.Way
 	refs        []int64
-	nodes       []element.Node
+	nodes       []osm.Node
 	geom        *geos.Geom
 	holes       map[*ring]bool
 	containedBy int
@@ -21,15 +23,27 @@ func (r *ring) isClosed() bool {
 	return len(r.refs) >= 4 && r.refs[0] == r.refs[len(r.refs)-1]
 }
 
+// tryClose closes the way if both end nodes are nearly identical.
+// Returns true if it succeeds.
 func (r *ring) tryClose(maxRingGap float64) bool {
-	return element.TryCloseWay(r.refs, r.nodes, maxRingGap)
+	if len(r.refs) < 4 {
+		return false
+	}
+	start, end := r.nodes[0], r.nodes[len(r.nodes)-1]
+	dist := math.Hypot(start.Lat-end.Lat, start.Long-end.Long)
+	if dist < maxRingGap {
+		r.refs[len(r.refs)-1] = r.refs[0]
+		r.nodes[len(r.nodes)-1] = r.nodes[0]
+		return true
+	}
+	return false
 }
 
-func newRing(way *element.Way) *ring {
+func newRing(way *osm.Way) *ring {
 	r := ring{}
-	r.ways = []*element.Way{way}
+	r.ways = []*osm.Way{way}
 	r.refs = make([]int64, len(way.Refs))
-	r.nodes = make([]element.Node, len(way.Nodes))
+	r.nodes = make([]osm.Node, len(way.Nodes))
 	r.containedBy = -1
 	r.holes = make(map[*ring]bool)
 	copy(r.refs, way.Refs)
@@ -43,7 +57,7 @@ func reverseRefs(refs []int64) {
 	}
 }
 
-func reverseNodes(nodes []element.Node) {
+func reverseNodes(nodes []osm.Node) {
 	for i, j := 0, len(nodes)-1; i < j; i, j = i+1, j-1 {
 		nodes[i], nodes[j] = nodes[j], nodes[i]
 	}

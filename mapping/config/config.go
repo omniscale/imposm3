@@ -11,9 +11,9 @@ type Mapping struct {
 	GeneralizedTables GeneralizedTables `yaml:"generalized_tables"`
 	Tags              Tags              `yaml:"tags"`
 	Areas             Areas             `yaml:"areas"`
-	// SingleIdSpace mangles the overlapping node/way/relation IDs
+	// SingleIDSpace mangles the overlapping node/way/relation IDs
 	// to be unique (nodes positive, ways negative, relations negative -1e17)
-	SingleIdSpace bool `yaml:"use_single_id_space"`
+	SingleIDSpace bool `yaml:"use_single_id_space"`
 }
 
 type Column struct {
