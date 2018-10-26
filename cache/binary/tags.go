@@ -56,7 +56,7 @@ func addTagCodePoint(key, value string) {
 	}
 
 	codePointToTag[nextCodePoint] = tag{key, value}
-	nextCodePoint += 1
+	nextCodePoint++
 }
 
 func addCommonKey(key string) {
@@ -65,7 +65,7 @@ func addCommonKey(key string) {
 	}
 	commonKeys[key] = nextKeyCodePoint
 	codePointToCommonKey[uint8(nextKeyCodePoint)] = key
-	nextKeyCodePoint += 1
+	nextKeyCodePoint++
 }
 
 func tagsFromArray(arr []string) osm.Tags {
@@ -73,7 +73,7 @@ func tagsFromArray(arr []string) osm.Tags {
 		return osm.Tags{}
 	}
 	result := make(osm.Tags)
-	for i := 0; i < len(arr); i += 1 {
+	for i := 0; i < len(arr); i++ {
 		if r, size := utf8.DecodeRuneInString(arr[i]); size >= 3 {
 			if r == escapeRune {
 				// remove escape rune

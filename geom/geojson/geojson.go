@@ -150,7 +150,7 @@ func constructPolygonFeatures(obj *object) ([]Feature, error) {
 			return nil, err
 		}
 		properties := stringProperties(obj.Properties)
-		for i, _ := range features {
+		for i := range features {
 			features[i].Properties = properties
 		}
 		return features, err

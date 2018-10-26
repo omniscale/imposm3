@@ -42,15 +42,15 @@ func (col *ColumnSpec) AsSQL() string {
 }
 
 func (spec *TableSpec) CreateTableSQL() string {
-	foundIdCol := false
+	foundIDCol := false
 	for _, cs := range spec.Columns {
 		if cs.Name == "id" {
-			foundIdCol = true
+			foundIDCol = true
 		}
 	}
 
 	cols := []string{}
-	if !foundIdCol {
+	if !foundIDCol {
 		// only add id column if there is no id configured
 		// TODO allow to disable id column?
 		cols = append(cols, "id SERIAL PRIMARY KEY")
@@ -79,7 +79,7 @@ func (spec *TableSpec) InsertSQL() string {
 	for _, col := range spec.Columns {
 		cols = append(cols, "\""+col.Name+"\"")
 		vars = append(vars,
-			col.Type.PrepareInsertSql(len(vars)+1, spec))
+			col.Type.PrepareInsertSQL(len(vars)+1, spec))
 	}
 	columns := strings.Join(cols, ", ")
 	placeholders := strings.Join(vars, ", ")
@@ -149,7 +149,6 @@ func NewTableSpec(pg *PostGIS, t *config.Table) (*TableSpec, error) {
 		pgType, ok := pgTypes[columnType.GoType]
 		if !ok {
 			return nil, errors.Errorf("unhandled column type %v, using string type", columnType)
-			pgType = pgTypes["string"]
 		}
 		col := ColumnSpec{column.Name, *columnType, pgType}
 		spec.Columns = append(spec.Columns, col)
@@ -204,7 +203,7 @@ func (spec *GeneralizedTableSpec) InsertSQL() string {
 
 	var cols []string
 	for _, col := range spec.Source.Columns {
-		cols = append(cols, col.Type.GeneralizeSql(&col, spec))
+		cols = append(cols, col.Type.GeneralizeSQL(&col, spec))
 	}
 
 	where := fmt.Sprintf(` WHERE "%s" = $1`, idColumnName)

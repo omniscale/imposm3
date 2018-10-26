@@ -6,14 +6,14 @@ import (
 	"github.com/omniscale/imposm3/element"
 )
 
-func TestmarshalBunch(t *testing.T) {
+func TestMarshalBunch(t *testing.T) {
 	bunch := []element.IDRefs{
-		{123923123, []int64{1213123}},
-		{123923133, []int64{1231237}},
-		{123924123, []int64{912412210, 912412213}},
-		{123924129, []int64{812412213}},
-		{123924130, []int64{91241213}},
-		{123924132, []int64{912412210, 9124213, 212412210}},
+		{ID: 123923123, Refs: []int64{1213123}},
+		{ID: 123923133, Refs: []int64{1231237}},
+		{ID: 123924123, Refs: []int64{912412210, 912412213}},
+		{ID: 123924129, Refs: []int64{812412213}},
+		{ID: 123924130, Refs: []int64{91241213}},
+		{ID: 123924132, Refs: []int64{912412210, 9124213, 212412210}},
 	}
 
 	buf := MarshalIDRefsBunch2(bunch, nil)
@@ -40,12 +40,12 @@ func TestmarshalBunch(t *testing.T) {
 
 func BenchmarkMarshalBunch(b *testing.B) {
 	bunch := []element.IDRefs{
-		{123923123, []int64{1213123}},
-		{123923133, []int64{1231237}},
-		{123924123, []int64{912412210, 912412213}},
-		{123924129, []int64{812412213}},
-		{123924130, []int64{91241213}},
-		{123924132, []int64{912412210, 9124213, 212412210}},
+		{ID: 123923123, Refs: []int64{1213123}},
+		{ID: 123923133, Refs: []int64{1231237}},
+		{ID: 123924123, Refs: []int64{912412210, 912412213}},
+		{ID: 123924129, Refs: []int64{812412213}},
+		{ID: 123924130, Refs: []int64{91241213}},
+		{ID: 123924132, Refs: []int64{912412210, 9124213, 212412210}},
 	}
 	idRefs := []element.IDRefs{}
 	buf := []byte{}

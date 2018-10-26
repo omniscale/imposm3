@@ -133,7 +133,7 @@ func mergeRings(rings []*ring) []*ring {
 		uniqueRings[ring] = true
 	}
 	result := make([]*ring, 0, len(uniqueRings))
-	for ring, _ := range uniqueRings {
+	for ring := range uniqueRings {
 		result = append(result, ring)
 	}
 	return result

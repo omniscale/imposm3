@@ -137,7 +137,7 @@ func Usage() {
 	os.Exit(1)
 }
 
-func printJson(obj interface{}) {
+func printJSON(obj interface{}) {
 	bytes, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
 		log.Fatal(err)
@@ -201,5 +201,5 @@ func Query(args []string) {
 		result.Nodes = collectNodes(osmCache, diffCache, ids, *deps)
 	}
 
-	printJson(result)
+	printJSON(result)
 }

@@ -20,7 +20,7 @@ func newWaysCache(path string) (*WaysCache, error) {
 	return &cache, err
 }
 
-func (p *WaysCache) PutWay(way *osm.Way) error {
+func (c *WaysCache) PutWay(way *osm.Way) error {
 	if way.ID == SKIP {
 		return nil
 	}
@@ -29,10 +29,10 @@ func (p *WaysCache) PutWay(way *osm.Way) error {
 	if err != nil {
 		return err
 	}
-	return p.db.Put(p.wo, keyBuf, data)
+	return c.db.Put(c.wo, keyBuf, data)
 }
 
-func (p *WaysCache) PutWays(ways []osm.Way) error {
+func (c *WaysCache) PutWays(ways []osm.Way) error {
 	batch := levigo.NewWriteBatch()
 	defer batch.Close()
 
@@ -47,12 +47,12 @@ func (p *WaysCache) PutWays(ways []osm.Way) error {
 		}
 		batch.Put(keyBuf, data)
 	}
-	return p.db.Write(p.wo, batch)
+	return c.db.Write(c.wo, batch)
 }
 
-func (p *WaysCache) GetWay(id int64) (*osm.Way, error) {
+func (c *WaysCache) GetWay(id int64) (*osm.Way, error) {
 	keyBuf := idToKeyBuf(id)
-	data, err := p.db.Get(p.ro, keyBuf)
+	data, err := c.db.Get(c.ro, keyBuf)
 	if err != nil {
 		return nil, err
 	}
@@ -67,17 +67,17 @@ func (p *WaysCache) GetWay(id int64) (*osm.Way, error) {
 	return way, nil
 }
 
-func (p *WaysCache) DeleteWay(id int64) error {
+func (c *WaysCache) DeleteWay(id int64) error {
 	keyBuf := idToKeyBuf(id)
-	return p.db.Delete(p.wo, keyBuf)
+	return c.db.Delete(c.wo, keyBuf)
 }
 
-func (p *WaysCache) Iter() chan *osm.Way {
+func (c *WaysCache) Iter() chan *osm.Way {
 	ways := make(chan *osm.Way, 1024)
 	go func() {
 		ro := levigo.NewReadOptions()
 		ro.SetFillCache(false)
-		it := p.db.NewIterator(ro)
+		it := c.db.NewIterator(ro)
 		// we need to Close the iter before closing the
 		// chan (and thus signaling that we are done)
 		// to avoid race where db is closed before the iterator
@@ -96,7 +96,7 @@ func (p *WaysCache) Iter() chan *osm.Way {
 	return ways
 }
 
-func (self *WaysCache) FillMembers(members []osm.Member) error {
+func (c *WaysCache) FillMembers(members []osm.Member) error {
 	if members == nil || len(members) == 0 {
 		return nil
 	}
@@ -104,7 +104,7 @@ func (self *WaysCache) FillMembers(members []osm.Member) error {
 		if member.Type != osm.WayMember {
 			continue
 		}
-		way, err := self.GetWay(member.ID)
+		way, err := c.GetWay(member.ID)
 		if err != nil {
 			return err
 		}

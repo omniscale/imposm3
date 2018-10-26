@@ -10,25 +10,25 @@ import (
 )
 
 func TestCreateCache(t *testing.T) {
-	cache_dir, _ := ioutil.TempDir("", "imposm_test")
-	defer os.RemoveAll(cache_dir)
+	cacheDir, _ := ioutil.TempDir("", "imposm_test")
+	defer os.RemoveAll(cacheDir)
 
-	cache, err := newNodesCache(cache_dir)
+	cache, err := newNodesCache(cacheDir)
 	if err != nil {
 		t.Fatal()
 	}
 	defer cache.Close()
 
-	if stat, err := os.Stat(cache_dir); err != nil || !stat.IsDir() {
+	if stat, err := os.Stat(cacheDir); err != nil || !stat.IsDir() {
 		t.Error("cache dir not created")
 	}
 }
 
 func TestReadWriteNode(t *testing.T) {
-	cache_dir, _ := ioutil.TempDir("", "imposm_test")
-	defer os.RemoveAll(cache_dir)
+	cacheDir, _ := ioutil.TempDir("", "imposm_test")
+	defer os.RemoveAll(cacheDir)
 
-	cache, err := newNodesCache(cache_dir)
+	cache, err := newNodesCache(cacheDir)
 	if err != nil {
 		t.Fatal()
 	}
@@ -40,7 +40,7 @@ func TestReadWriteNode(t *testing.T) {
 	cache.PutNode(node)
 	cache.Close()
 
-	cache, err = newNodesCache(cache_dir)
+	cache, err = newNodesCache(cacheDir)
 	if err != nil {
 		t.Fatal()
 	}
@@ -59,10 +59,10 @@ func TestReadWriteNode(t *testing.T) {
 }
 
 func TestReadWriteWay(t *testing.T) {
-	cache_dir, _ := ioutil.TempDir("", "imposm_test")
-	defer os.RemoveAll(cache_dir)
+	cacheDir, _ := ioutil.TempDir("", "imposm_test")
+	defer os.RemoveAll(cacheDir)
 
-	cache, err := newWaysCache(cache_dir)
+	cache, err := newWaysCache(cacheDir)
 	if err != nil {
 		t.Fatal()
 	}
@@ -75,7 +75,7 @@ func TestReadWriteWay(t *testing.T) {
 	cache.PutWay(way)
 	cache.Close()
 
-	cache, err = newWaysCache(cache_dir)
+	cache, err = newWaysCache(cacheDir)
 	if err != nil {
 		t.Fatal()
 	}
@@ -94,10 +94,10 @@ func TestReadWriteWay(t *testing.T) {
 }
 
 func TestReadMissingWay(t *testing.T) {
-	cache_dir, _ := ioutil.TempDir("", "imposm_test")
-	defer os.RemoveAll(cache_dir)
+	cacheDir, _ := ioutil.TempDir("", "imposm_test")
+	defer os.RemoveAll(cacheDir)
 
-	cache, err := newWaysCache(cache_dir)
+	cache, err := newWaysCache(cacheDir)
 	if err != nil {
 		t.Fatal()
 	}
@@ -112,10 +112,10 @@ func TestReadMissingWay(t *testing.T) {
 
 func BenchmarkWriteWay(b *testing.B) {
 	b.StopTimer()
-	cache_dir, _ := ioutil.TempDir("", "imposm_test")
-	defer os.RemoveAll(cache_dir)
+	cacheDir, _ := ioutil.TempDir("", "imposm_test")
+	defer os.RemoveAll(cacheDir)
 
-	cache, err := newWaysCache(cache_dir)
+	cache, err := newWaysCache(cacheDir)
 	if err != nil {
 		b.Fatal()
 	}
@@ -134,10 +134,10 @@ func BenchmarkWriteWay(b *testing.B) {
 
 func BenchmarkReadWay(b *testing.B) {
 	b.StopTimer()
-	cache_dir, _ := ioutil.TempDir("", "imposm_test")
-	defer os.RemoveAll(cache_dir)
+	cacheDir, _ := ioutil.TempDir("", "imposm_test")
+	defer os.RemoveAll(cacheDir)
 
-	cache, err := newWaysCache(cache_dir)
+	cache, err := newWaysCache(cacheDir)
 	if err != nil {
 		b.Fatal()
 	}

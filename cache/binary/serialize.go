@@ -2,14 +2,14 @@ package binary
 
 import osm "github.com/omniscale/go-osm"
 
-const COORD_FACTOR float64 = 11930464.7083 // ((2<<31)-1)/360.0
+const coordFactor float64 = 11930464.7083 // ((2<<31)-1)/360.0
 
 func CoordToInt(coord float64) uint32 {
-	return uint32((coord + 180.0) * COORD_FACTOR)
+	return uint32((coord + 180.0) * coordFactor)
 }
 
 func IntToCoord(coord uint32) float64 {
-	return float64((float64(coord) / COORD_FACTOR) - 180.0)
+	return float64((float64(coord) / coordFactor) - 180.0)
 }
 
 func MarshalNode(node *osm.Node) ([]byte, error) {
@@ -97,7 +97,7 @@ func UnmarshalRelation(data []byte) (relation *osm.Relation, err error) {
 
 	relation = &osm.Relation{}
 	relation.Members = make([]osm.Member, len(pbfRelation.MemberIds))
-	for i, _ := range pbfRelation.MemberIds {
+	for i := range pbfRelation.MemberIds {
 		relation.Members[i].ID = pbfRelation.MemberIds[i]
 		relation.Members[i].Type = osm.MemberType(pbfRelation.MemberTypes[i])
 		relation.Members[i].Role = pbfRelation.MemberRoles[i]

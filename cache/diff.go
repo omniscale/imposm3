@@ -189,8 +189,8 @@ type bunchRefCache struct {
 	write        chan idRefBunches
 	addc         chan idRef
 	mu           sync.Mutex
-	waitAdd      *sync.WaitGroup
-	waitWrite    *sync.WaitGroup
+	waitAdd      sync.WaitGroup
+	waitWrite    sync.WaitGroup
 }
 
 func newRefIndex(path string, opts *cacheOptions) (*bunchRefCache, error) {
@@ -204,20 +204,17 @@ func newRefIndex(path string, opts *cacheOptions) (*bunchRefCache, error) {
 	index.buffer = make(idRefBunches, bufferSize)
 	index.addc = make(chan idRef, 1024)
 
-	index.waitWrite = &sync.WaitGroup{}
-	index.waitAdd = &sync.WaitGroup{}
-
 	return &index, nil
 }
 
 type CoordsRefIndex struct {
-	bunchRefCache
+	*bunchRefCache
 }
 type CoordsRelRefIndex struct {
-	bunchRefCache
+	*bunchRefCache
 }
 type WaysRefIndex struct {
-	bunchRefCache
+	*bunchRefCache
 }
 
 func newCoordsRefIndex(dir string) (*CoordsRefIndex, error) {
@@ -225,7 +222,7 @@ func newCoordsRefIndex(dir string) (*CoordsRefIndex, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &CoordsRefIndex{*cache}, nil
+	return &CoordsRefIndex{cache}, nil
 }
 
 func newCoordsRelRefIndex(dir string) (*CoordsRelRefIndex, error) {
@@ -233,7 +230,7 @@ func newCoordsRelRefIndex(dir string) (*CoordsRelRefIndex, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &CoordsRelRefIndex{*cache}, nil
+	return &CoordsRelRefIndex{cache}, nil
 }
 
 func newWaysRefIndex(dir string) (*WaysRefIndex, error) {
@@ -241,7 +238,7 @@ func newWaysRefIndex(dir string) (*WaysRefIndex, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &WaysRefIndex{*cache}, nil
+	return &WaysRefIndex{cache}, nil
 }
 
 func (index *bunchRefCache) getBunchID(id int64) int64 {
@@ -515,7 +512,7 @@ func (index *bunchRefCache) writeRefs(idRefs idRefBunches) error {
 	}
 
 	go func() {
-		for k, _ := range idRefs {
+		for k := range idRefs {
 			delete(idRefs, k)
 		}
 		select {

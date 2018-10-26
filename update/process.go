@@ -105,7 +105,7 @@ func Update(
 	lastStateFile := filepath.Join(baseOpts.DiffDir, LastStateFilename)
 	lastState, err := diffstate.ParseFile(lastStateFile)
 	if err != nil && !os.IsNotExist(err) {
-		return errors.Wrapf(err, "parsing last state from", lastStateFile)
+		return errors.Wrapf(err, "parsing last state from %s", lastStateFile)
 	}
 
 	if lastState != nil && lastState.Sequence != 0 && state != nil && state.Sequence <= lastState.Sequence {
@@ -336,7 +336,7 @@ func Update(
 	}
 
 	// mark member ways from deleted relations for re-insert
-	for id, _ := range deleter.DeletedMemberWays() {
+	for id := range deleter.DeletedMemberWays() {
 		wayIDs[id] = struct{}{}
 	}
 
@@ -352,7 +352,7 @@ func Update(
 	progress = stats.NewStatsReporter()
 
 	// mark depending ways for (re)insert
-	for nodeID, _ := range nodeIDs {
+	for nodeID := range nodeIDs {
 		dependers := diffCache.Coords.Get(nodeID)
 		for _, way := range dependers {
 			wayIDs[way] = struct{}{}
@@ -360,13 +360,13 @@ func Update(
 	}
 
 	// mark depending relations for (re)insert
-	for nodeID, _ := range nodeIDs {
+	for nodeID := range nodeIDs {
 		dependers := diffCache.CoordsRel.Get(nodeID)
 		for _, rel := range dependers {
 			relIDs[rel] = struct{}{}
 		}
 	}
-	for wayID, _ := range wayIDs {
+	for wayID := range wayIDs {
 		dependers := diffCache.Ways.Get(wayID)
 		// mark depending relations for (re)insert
 		for _, rel := range dependers {
@@ -374,7 +374,7 @@ func Update(
 		}
 	}
 
-	for relID, _ := range relIDs {
+	for relID := range relIDs {
 		rel, err := osmCache.Relations.GetRelation(relID)
 		if err != nil {
 			if err != cache.NotFound {
@@ -387,7 +387,7 @@ func Update(
 		relations <- rel
 	}
 
-	for wayID, _ := range wayIDs {
+	for wayID := range wayIDs {
 		way, err := osmCache.Ways.GetWay(wayID)
 		if err != nil {
 			if err != cache.NotFound {
@@ -400,7 +400,7 @@ func Update(
 		ways <- way
 	}
 
-	for nodeID, _ := range nodeIDs {
+	for nodeID := range nodeIDs {
 		node, err := osmCache.Nodes.GetNode(nodeID)
 		if err != nil {
 			if err != cache.NotFound {

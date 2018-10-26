@@ -131,7 +131,7 @@ func ReadPbf(
 				if skipWays {
 					continue
 				}
-				for i, _ := range ws {
+				for i := range ws {
 					m.Filter(&ws[i].Tags)
 					if withLimiter {
 						cached, err := cache.Coords.FirstRefIsCached(ws[i].Refs)
@@ -140,10 +140,10 @@ func ReadPbf(
 							cached = true // don't skip in case of error
 						}
 						if cached {
-							hit += 1
+							hit++
 						} else {
 							ws[i].ID = osmcache.SKIP
-							skip += 1
+							skip++
 						}
 					}
 				}
@@ -166,10 +166,10 @@ func ReadPbf(
 			m := tagmapping.RelationTagFilter()
 			for rels := range relations {
 				numWithTags := 0
-				for i, _ := range rels {
+				for i := range rels {
 					m.Filter(&rels[i].Tags)
 					if len(rels[i].Tags) > 0 {
-						numWithTags += 1
+						numWithTags++
 					}
 					if withLimiter {
 						cached, err := cache.FirstMemberIsCached(rels[i].Members)
@@ -178,9 +178,9 @@ func ReadPbf(
 							cached = true // don't skip in case of error
 						}
 						if cached {
-							hit += 1
+							hit++
 						} else {
-							skip += 1
+							skip++
 							rels[i].ID = osmcache.SKIP
 						}
 					}
@@ -213,12 +213,12 @@ func ReadPbf(
 					continue
 				}
 				if withLimiter {
-					for i, _ := range nds {
+					for i := range nds {
 						if !limiter.IntersectsBuffer(g, nds[i].Long, nds[i].Lat) {
-							skip += 1
+							skip++
 							nds[i].ID = osmcache.SKIP
 						} else {
-							hit += 1
+							hit++
 						}
 					}
 				}
@@ -246,10 +246,10 @@ func ReadPbf(
 					continue
 				}
 				numWithTags := 0
-				for i, _ := range nds {
+				for i := range nds {
 					m.Filter(&nds[i].Tags)
 					if len(nds[i].Tags) > 0 {
-						numWithTags += 1
+						numWithTags++
 					}
 					if withLimiter {
 						if !limiter.IntersectsBuffer(g, nds[i].Long, nds[i].Lat) {

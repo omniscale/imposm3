@@ -57,12 +57,12 @@ func MarshalDeltaNodes(nodes []osm.Node, buf []byte) []byte {
 	return buf[:nextPos]
 }
 
-var varintErr = errors.New("unmarshal delta coords: missing data for varint or overflow")
+var errVarInt = errors.New("unmarshal delta coords: missing data for varint or overflow")
 
 func UnmarshalDeltaNodes(buf []byte, nodes []osm.Node) ([]osm.Node, error) {
 	length, n := binary.Uvarint(buf)
 	if n <= 0 {
-		return nil, varintErr
+		return nil, errVarInt
 	}
 	var offset = n
 
@@ -76,7 +76,7 @@ func UnmarshalDeltaNodes(buf []byte, nodes []osm.Node) ([]osm.Node, error) {
 	for i := 0; uint64(i) < length; i++ {
 		id, n := binary.Varint(buf[offset:])
 		if n <= 0 {
-			return nil, varintErr
+			return nil, errVarInt
 		}
 		offset += n
 		id = lastID + id
@@ -88,7 +88,7 @@ func UnmarshalDeltaNodes(buf []byte, nodes []osm.Node) ([]osm.Node, error) {
 	for i := 0; uint64(i) < length; i++ {
 		long, n := binary.Varint(buf[offset:])
 		if n <= 0 {
-			return nil, varintErr
+			return nil, errVarInt
 		}
 		offset += n
 		long = lastLong + long
@@ -100,7 +100,7 @@ func UnmarshalDeltaNodes(buf []byte, nodes []osm.Node) ([]osm.Node, error) {
 	for i := 0; uint64(i) < length; i++ {
 		lat, n := binary.Varint(buf[offset:])
 		if n <= 0 {
-			return nil, varintErr
+			return nil, errVarInt
 		}
 		offset += n
 		lat = lastLat + lat

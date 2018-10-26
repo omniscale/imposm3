@@ -162,24 +162,24 @@ func buildRelGeometry(g *geos.Geos, rel *osm.Relation, rings []*ring) (*geos.Geo
 	}
 
 	var polygons []*geos.Geom
-	for shell, _ := range shells {
+	for shell := range shells {
 		var interiors []*geos.Geom
-		for hole, _ := range shell.holes {
+		for hole := range shell.holes {
 			ring := g.Clone(g.ExteriorRing(hole.geom))
 			g.Destroy(hole.geom)
 			if ring == nil {
-				return nil, errors.New("Error while getting exterior ring.")
+				return nil, errors.New("unable to get exterior ring")
 			}
 			interiors = append(interiors, ring)
 		}
 		exterior := g.Clone(g.ExteriorRing(shell.geom))
 		g.Destroy(shell.geom)
 		if exterior == nil {
-			return nil, errors.New("Error while getting exterior ring.")
+			return nil, errors.New("unable to get exterior ring")
 		}
 		polygon := g.Polygon(exterior, interiors)
 		if polygon == nil {
-			return nil, errors.New("Error while building polygon.")
+			return nil, errors.New("unable to build polygon")
 		}
 		polygons = append(polygons, polygon)
 	}
@@ -190,7 +190,7 @@ func buildRelGeometry(g *geos.Geos, rel *osm.Relation, rings []*ring) (*geos.Geo
 	} else {
 		result = g.MultiPolygon(polygons)
 		if result == nil {
-			return nil, errors.New("Error while building multi-polygon.")
+			return nil, errors.New("unable to build mulipolygon")
 		}
 	}
 	var err error
@@ -232,7 +232,7 @@ func ringIsHole(rings []*ring, idx int) bool {
 
 			break
 		}
-		containedCounter += 1
+		containedCounter++
 	}
 	return containedCounter%2 == 1
 }

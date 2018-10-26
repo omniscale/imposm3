@@ -29,8 +29,8 @@ type Index struct {
 	geoms []IndexGeom
 }
 
-func (this *Geos) CreateIndex() *Index {
-	tree := C.GEOSSTRtree_create_r(this.v, 10)
+func (g *Geos) CreateIndex() *Index {
+	tree := C.GEOSSTRtree_create_r(g.v, 10)
 	if tree == nil {
 		panic("unable to create tree")
 	}
@@ -38,17 +38,17 @@ func (this *Geos) CreateIndex() *Index {
 }
 
 // IndexQuery adds a geom to the index with the id.
-func (this *Geos) IndexAdd(index *Index, geom *Geom) {
+func (g *Geos) IndexAdd(index *Index, geom *Geom) {
 	index.mu.Lock()
 	defer index.mu.Unlock()
 	id := len(index.geoms)
-	C.IndexAdd(this.v, index.v, geom.v, C.size_t(id))
+	C.IndexAdd(g.v, index.v, geom.v, C.size_t(id))
 	index.geoms = append(index.geoms, IndexGeom{geom})
 }
 
 // IndexQueryGeoms queries the index for intersections with geom.
-func (this *Geos) IndexQueryGeoms(index *Index, geom *Geom) []IndexGeom {
-	hits := this.IndexQuery(index, geom)
+func (g *Geos) IndexQueryGeoms(index *Index, geom *Geom) []IndexGeom {
+	hits := g.IndexQuery(index, geom)
 
 	var geoms []IndexGeom
 	for _, idx := range hits {
@@ -58,11 +58,11 @@ func (this *Geos) IndexQueryGeoms(index *Index, geom *Geom) []IndexGeom {
 }
 
 // IndexQuery queries the index for intersections with geom.
-func (this *Geos) IndexQuery(index *Index, geom *Geom) []int {
+func (g *Geos) IndexQuery(index *Index, geom *Geom) []int {
 	index.mu.Lock()
 	defer index.mu.Unlock()
 	var num C.uint32_t
-	r := C.IndexQuery(this.v, index.v, geom.v, &num)
+	r := C.IndexQuery(g.v, index.v, geom.v, &num)
 	if r == nil {
 		return nil
 	}

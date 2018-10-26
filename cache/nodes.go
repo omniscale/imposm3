@@ -53,7 +53,7 @@ func (p *NodesCache) PutNodes(nodes []osm.Node) (int, error) {
 			return 0, err
 		}
 		batch.Put(keyBuf, data)
-		n += 1
+		n++
 	}
 	return n, p.db.Write(p.wo, batch)
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/omniscale/imposm3/geom/geos"
 )
 
-type GeomError struct {
+type GeometryError struct {
 	message string
 	level   int
 }
@@ -18,27 +18,27 @@ type Geometry struct {
 	Wkb  []byte
 }
 
-func (e *GeomError) Error() string {
+func (e *GeometryError) Error() string {
 	return e.message
 }
 
-func (e *GeomError) Level() int {
+func (e *GeometryError) Level() int {
 	return e.level
 }
 
-func newGeomError(message string, level int) *GeomError {
-	return &GeomError{message, level}
+func newGeometryError(message string, level int) *GeometryError {
+	return &GeometryError{message, level}
 }
 
 var (
-	ErrorOneNodeWay = newGeomError("need at least two separate nodes for way", 0)
-	ErrorNoRing     = newGeomError("linestrings do not form ring", 0)
+	ErrorOneNodeWay = newGeometryError("need at least two separate nodes for way", 0)
+	ErrorNoRing     = newGeometryError("linestrings do not form ring", 0)
 )
 
 func Point(g *geos.Geos, node osm.Node) (*geos.Geom, error) {
 	geom := g.Point(node.Long, node.Lat)
 	if geom == nil {
-		return nil, newGeomError("couldn't create point", 1)
+		return nil, newGeometryError("couldn't create point", 1)
 	}
 	g.DestroyLater(geom)
 	return geom, nil

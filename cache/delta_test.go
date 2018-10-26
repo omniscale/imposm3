@@ -71,10 +71,10 @@ func TestReadWriteDeltaCoordsLinearImport(t *testing.T) {
 }
 
 func checkReadWriteDeltaCoords(t *testing.T, withLinearImport bool) {
-	cache_dir, _ := ioutil.TempDir("", "imposm_test")
-	defer os.RemoveAll(cache_dir)
+	cacheDir, _ := ioutil.TempDir("", "imposm_test")
+	defer os.RemoveAll(cacheDir)
 
-	cache, err := newDeltaCoordsCache(cache_dir)
+	cache, err := newDeltaCoordsCache(cacheDir)
 	if err != nil {
 		t.Fatal()
 	}
@@ -157,10 +157,10 @@ func deleteAndCheck(t *testing.T, cache *DeltaCoordsCache, id int64) {
 }
 
 func TestSingleUpdate(t *testing.T) {
-	cache_dir, _ := ioutil.TempDir("", "imposm_test")
-	defer os.RemoveAll(cache_dir)
+	cacheDir, _ := ioutil.TempDir("", "imposm_test")
+	defer os.RemoveAll(cacheDir)
 
-	cache, err := newDeltaCoordsCache(cache_dir)
+	cache, err := newDeltaCoordsCache(cacheDir)
 	if err != nil {
 		t.Fatal()
 	}
@@ -189,10 +189,10 @@ func TestSingleUpdate(t *testing.T) {
 
 func BenchmarkWriteDeltaCoords(b *testing.B) {
 	b.StopTimer()
-	cache_dir, _ := ioutil.TempDir("", "imposm_test")
-	defer os.RemoveAll(cache_dir)
+	cacheDir, _ := ioutil.TempDir("", "imposm_test")
+	defer os.RemoveAll(cacheDir)
 
-	cache, err := newDeltaCoordsCache(cache_dir)
+	cache, err := newDeltaCoordsCache(cacheDir)
 	if err != nil {
 		b.Fatal()
 	}
@@ -217,10 +217,10 @@ func BenchmarkWriteDeltaCoords(b *testing.B) {
 
 func BenchmarkReadDeltaCoords(b *testing.B) {
 	b.StopTimer()
-	cache_dir, _ := ioutil.TempDir("", "imposm_test")
-	defer os.RemoveAll(cache_dir)
+	cacheDir, _ := ioutil.TempDir("", "imposm_test")
+	defer os.RemoveAll(cacheDir)
 
-	cache, err := newDeltaCoordsCache(cache_dir)
+	cache, err := newDeltaCoordsCache(cacheDir)
 	if err != nil {
 		b.Fatal()
 	}

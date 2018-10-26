@@ -305,7 +305,7 @@ func (pg *PostGIS) generalizeTable(table *GeneralizedTableSpec) error {
 	var cols []string
 
 	for _, col := range table.Source.Columns {
-		cols = append(cols, col.Type.GeneralizeSql(&col, table))
+		cols = append(cols, col.Type.GeneralizeSQL(&col, table))
 	}
 
 	if err := dropTableIfExists(tx, pg.Config.ImportSchema, table.FullName); err != nil {
