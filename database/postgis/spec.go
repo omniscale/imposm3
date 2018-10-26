@@ -162,7 +162,7 @@ func NewGeneralizedTableSpec(pg *PostGIS, t *config.GeneralizedTable) *Generaliz
 		FullName:   pg.Prefix + t.Name,
 		Schema:     pg.Config.ImportSchema,
 		Tolerance:  t.Tolerance,
-		Where:      t.SqlFilter,
+		Where:      t.SQLFilter,
 		SourceName: t.SourceTableName,
 	}
 	return &spec

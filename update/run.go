@@ -41,19 +41,19 @@ func Run(baseOpts config.Base) {
 	if err != nil {
 		log.Fatal("[fatal] Unable to read last.state.txt:", err)
 	}
-	replicationUrl := baseOpts.ReplicationUrl
-	if replicationUrl == "" {
-		replicationUrl = s.URL
+	replicationURL := baseOpts.ReplicationURL
+	if replicationURL == "" {
+		replicationURL = s.URL
 	}
-	if replicationUrl == "" {
-		log.Fatal("[fatal] No replicationUrl in last.state.txt " +
+	if replicationURL == "" {
+		log.Fatal("[fatal] No replicationURL in last.state.txt " +
 			"or replication_url in -config")
 	}
-	log.Printf("[info] Starting replication from %s with %s interval", replicationUrl, baseOpts.ReplicationInterval)
+	log.Printf("[info] Starting replication from %s with %s interval", replicationURL, baseOpts.ReplicationInterval)
 
 	downloader := diff.NewDownloader(
 		baseOpts.DiffDir,
-		replicationUrl,
+		replicationURL,
 		s.Sequence,
 		baseOpts.ReplicationInterval,
 	)
@@ -110,11 +110,11 @@ func Run(baseOpts config.Base) {
 				continue
 			}
 			fname := seq.Filename
-			seqId := seq.Sequence
+			seqID := seq.Sequence
 			seqTime := seq.Time
 			for {
-				log.Printf("[info] Importing #%d including changes till %s (%s behind)", seqId, seqTime, time.Since(seqTime).Truncate(time.Second))
-				finishedImport := log.Step(fmt.Sprintf("Importing #%d", seqId))
+				log.Printf("[info] Importing #%d including changes till %s (%s behind)", seqID, seqTime, time.Since(seqTime).Truncate(time.Second))
+				finishedImport := log.Step(fmt.Sprintf("Importing #%d", seqID))
 
 				err := Update(baseOpts, fname, geometryLimiter, tileExpireor, osmCache, diffCache, false)
 
@@ -140,7 +140,7 @@ func Run(baseOpts config.Base) {
 				}
 
 				if err != nil {
-					log.Printf("[error] Importing #%d: %s", seqId, err)
+					log.Printf("[error] Importing #%d: %s", seqID, err)
 					log.Println("[info] Retrying in", exp.Duration())
 					// TODO handle <-sigc during wait
 					exp.Wait()

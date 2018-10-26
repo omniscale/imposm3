@@ -43,7 +43,7 @@ type GeneralizedTable struct {
 	Name            string
 	SourceTableName string  `yaml:"source"`
 	Tolerance       float64 `yaml:"tolerance"`
-	SqlFilter       string  `yaml:"sql_filter"`
+	SQLFilter       string  `yaml:"sql_filter"`
 }
 
 type Filters struct {
@@ -101,7 +101,7 @@ func (kv *KeyValues) UnmarshalYAML(unmarshal func(interface{}) error) error {
 			} else {
 				return fmt.Errorf("mapping value '%s' not a string", v)
 			}
-			order += 1
+			order++
 		}
 	}
 	return nil

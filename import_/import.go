@@ -129,7 +129,7 @@ func Import(importOpts config.Import) {
 		osmCache.Close()
 		step()
 		if importOpts.Diff {
-			diffstate, err := estimateFromPBF(importOpts.Read, baseOpts.DiffStateBefore, baseOpts.ReplicationUrl, baseOpts.ReplicationInterval)
+			diffstate, err := estimateFromPBF(importOpts.Read, baseOpts.DiffStateBefore, baseOpts.ReplicationURL, baseOpts.ReplicationInterval)
 			if err != nil {
 				log.Println("[error] parsing diff state form PBF", err)
 			} else if diffstate != nil {

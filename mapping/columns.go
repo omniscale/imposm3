@@ -395,7 +395,7 @@ func MakeSuffixReplace(columnName string, columnType ColumnType, column config.C
 		strChanges[k.(string)] = v.(string)
 	}
 	var suffixes []string
-	for k, _ := range strChanges {
+	for k := range strChanges {
 		suffixes = append(suffixes, k)
 	}
 	reStr := `(` + strings.Join(suffixes, "|") + `)\b`

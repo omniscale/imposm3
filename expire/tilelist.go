@@ -25,7 +25,7 @@ var mercRes [20]float64
 func init() {
 	res := 2 * 20037508.342789244 / 256
 
-	for i, _ := range mercRes {
+	for i := range mercRes {
 		mercRes[i] = res
 		res /= 2
 	}
@@ -135,7 +135,7 @@ func (tl *TileList) expireBox(b bbox) {
 }
 
 func (tl *TileList) writeTiles(w io.Writer) error {
-	for tileKey, _ := range tl.tiles {
+	for tileKey := range tl.tiles {
 		_, err := fmt.Fprintf(w, "%d/%d/%d\n", tl.zoom, tileKey.X, tileKey.Y)
 		if err != nil {
 			return err

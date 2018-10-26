@@ -22,7 +22,7 @@ type Config struct {
 	Schemas             Schemas         `json:"schemas"`
 	ExpireTilesDir      string          `json:"expiretiles_dir"`
 	ExpireTilesZoom     int             `json:"expiretiles_zoom"`
-	ReplicationUrl      string          `json:"replication_url"`
+	ReplicationURL      string          `json:"replication_url"`
 	ReplicationInterval MinutesInterval `json:"replication_interval"`
 	DiffStateBefore     MinutesInterval `json:"diff_state_before"`
 }
@@ -48,12 +48,12 @@ type Base struct {
 	LimitTo             string
 	LimitToCacheBuffer  float64
 	ConfigFile          string
-	Httpprofile         string
+	HTTPProfile         string
 	Quiet               bool
 	Schemas             Schemas
 	ExpireTilesDir      string
 	ExpireTilesZoom     int
-	ReplicationUrl      string
+	ReplicationURL      string
 	ReplicationInterval time.Duration
 	DiffStateBefore     time.Duration
 }
@@ -129,7 +129,7 @@ func (o *Base) updateFromConfig() error {
 	if o.ReplicationInterval < time.Minute {
 		o.ReplicationInterval = time.Minute
 	}
-	o.ReplicationUrl = conf.ReplicationUrl
+	o.ReplicationURL = conf.ReplicationURL
 
 	if o.DiffDir == "" {
 		if conf.DiffDir == "" {
@@ -179,7 +179,7 @@ func addBaseFlags(opts *Base, flags *flag.FlagSet) {
 	flags.StringVar(&opts.LimitTo, "limitto", "", "limit to geometries")
 	flags.Float64Var(&opts.LimitToCacheBuffer, "limittocachebuffer", 0.0, "limit to buffer for cache")
 	flags.StringVar(&opts.ConfigFile, "config", "", "config (json)")
-	flags.StringVar(&opts.Httpprofile, "httpprofile", "", "bind address for profile server")
+	flags.StringVar(&opts.HTTPProfile, "httpprofile", "", "bind address for profile server")
 	flags.BoolVar(&opts.Quiet, "quiet", false, "quiet log output")
 	flags.StringVar(&opts.Schemas.Import, "dbschema-import", defaultSchemaImport, "db schema for imports")
 	flags.StringVar(&opts.Schemas.Production, "dbschema-production", defaultSchemaProduction, "db schema for production")

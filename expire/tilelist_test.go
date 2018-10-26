@@ -75,7 +75,7 @@ func TestTileList_ExpireNodes(t *testing.T) {
 		tl.ExpireNodes(test.nodes, test.polygon)
 		if len(tl.tiles) != test.expected {
 			t.Errorf("expected %d tiles, got %d", test.expected, len(tl.tiles))
-			for tk, _ := range tl.tiles {
+			for tk := range tl.tiles {
 				t.Errorf("\t%v", tk)
 			}
 		}
