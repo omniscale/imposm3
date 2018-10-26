@@ -3,7 +3,11 @@
 
 [[projects]]
   name = "github.com/gogo/protobuf"
-  packages = ["gogoproto","proto","protoc-gen-gogo/descriptor"]
+  packages = [
+    "gogoproto",
+    "proto",
+    "protoc-gen-gogo/descriptor"
+  ]
   revision = "342cbe0a04158f6dcb03ca0079991a51a4248c02"
   version = "v0.5"
 
@@ -16,8 +20,27 @@
 [[projects]]
   branch = "master"
   name = "github.com/lib/pq"
-  packages = [".","hstore","oid"]
+  packages = [
+    ".",
+    "hstore",
+    "oid"
+  ]
   revision = "8c6ee72f3e6bcb1542298dd5f76cb74af9742cec"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/omniscale/go-osm"
+  packages = [
+    ".",
+    "parser/diff",
+    "parser/pbf",
+    "parser/pbf/internal/osmpbf",
+    "replication",
+    "replication/diff",
+    "replication/internal/source",
+    "state"
+  ]
+  revision = "a3a5872eba038dbd81d987f21a1308aaf13ed09d"
 
 [[projects]]
   name = "github.com/pkg/errors"
@@ -46,6 +69,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "004312fb6898913dd8cb466298c666ef32f1ced3fbc2e2b06e6f4ac0714b8f6f"
+  inputs-digest = "39ea384f03fd089d58aa5cb50e38f9ea90025b5f1535591aa6a8d55aa6c05728"
   solver-name = "gps-cdcl"
   solver-version = 1

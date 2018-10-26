@@ -1,0 +1,34 @@
+syntax = "proto2";
+
+package osmpbf;
+
+//
+//  STORAGE LAYER: Storing primitives.
+//
+
+message Blob {
+  optional bytes raw = 1; // No compression
+  optional int32 raw_size = 2; // When compressed, the uncompressed size
+
+  // Possible compressed versions of the data.
+  optional bytes zlib_data = 3;
+
+  // PROPOSED feature for LZMA compressed data. SUPPORT IS NOT REQUIRED.
+  optional bytes lzma_data = 4;
+
+  // Formerly used for bzip2 compressed data. Depreciated in 2010.
+  optional bytes OBSOLETE_bzip2_data = 5 [deprecated=true]; // Don't reuse this tag number.
+}
+
+/* A file contains an sequence of fileblock headers, each prefixed by
+their length in network byte order, followed by a data block
+containing the actual data. types staring with a "_" are reserved.
+*/
+
+message BlobHeader {
+  required string type = 1;
+  optional bytes indexdata = 2;
+  required int32 datasize = 3;
+}
+
+
