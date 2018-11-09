@@ -72,8 +72,8 @@ func addGeometryColumn(tx *sql.Tx, tableName string, spec TableSpec) error {
 	}
 
 	geomType := strings.ToUpper(spec.GeometryType)
-	if geomType == "POLYGON" {
-		geomType = "GEOMETRY" // for multipolygon support
+	if geomType == "POLYGON" || geomType == "LINESTRING" {
+		geomType = "GEOMETRY" // for multigeometry support
 	}
 	sql := fmt.Sprintf("SELECT AddGeometryColumn('%s', '%s', '%s', '%d', '%s', 2);",
 		spec.Schema, tableName, colName, spec.Srid, geomType)

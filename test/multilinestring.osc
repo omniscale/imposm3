@@ -1,0 +1,37 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osmChange version="1">
+  <create>
+    <node id="10009" version="1" timestamp="2016-01-01T00:00:00Z" lat="51.5512379" lon="-0.0405630"/>
+    <node id="10010" version="1" timestamp="2016-01-01T00:00:00Z" lat="51.5515113" lon="-0.0406333"/>
+    <way id="1006" version="1" timestamp="2016-01-01T00:00:00Z">
+      <nd ref="10009"/>
+      <nd ref="10010"/>
+    </way>
+
+    <node id="10008" version="1" timestamp="2016-01-01T00:00:00Z" lat="51.5515683" lon="-0.0406486"/>
+    <node id="10007" version="1" timestamp="2016-01-01T00:00:00Z" lat="51.5515883" lon="-0.0406757"/>
+    <way id="1007" version="1" timestamp="2016-01-01T00:00:00Z">
+      <nd ref="10008"/>
+      <nd ref="10007"/>
+    </way>
+
+    <relation id="102" version="1" timestamp="2016-01-01T00:00:00Z">
+      <member type="way" ref="1006" role=""/>
+      <member type="way" ref="1007" role=""/>
+      <tag k="network" v="lcn"/>
+      <tag k="route" v="bicycle"/>
+      <tag k="type" v="route"/>
+    </relation>
+  </create>
+
+  <modify>
+    <way id="1004" version="2" timestamp="2016-01-01T00:00:00Z">
+      <nd ref="10004"/>
+      <nd ref="10005"/>
+      <nd ref="10006"/>
+      <nd ref="10004"/>
+      <tag k="building" v="residential"/>
+      <!-- tag with area=yes removed -->
+    </way>
+  </modify>
+</osmChange>

@@ -84,7 +84,7 @@ const (
 type Mapping struct {
 	Conf                  config.Mapping
 	PointMatcher          NodeMatcher
-	LineStringMatcher     WayMatcher
+	LineStringMatcher     RelWayMatcher
 	PolygonMatcher        RelWayMatcher
 	RelationMatcher       RelationMatcher
 	RelationMemberMatcher RelationMatcher
@@ -353,6 +353,11 @@ func (m *Mapping) addRelationFilters(tableType TableType, filters tableElementFi
 							return true
 						}
 					}
+					return false
+				}
+				filters[name] = append(filters[name], f)
+			} else if TableType(t.Type) == LineStringTable {
+				f := func(tags osm.Tags, key Key, closed bool) bool {
 					return false
 				}
 				filters[name] = append(filters[name], f)

@@ -193,6 +193,7 @@ func Update(
 		tagmapping.Conf.SingleIDSpace,
 		relations,
 		db, progress,
+		tagmapping.LineStringMatcher,
 		tagmapping.PolygonMatcher,
 		tagmapping.RelationMatcher,
 		tagmapping.RelationMemberMatcher,
