@@ -84,7 +84,7 @@ func Run(baseOpts config.Base) {
 	}
 
 	shutdown := func() {
-		log.Println("[info] Exiting. (SIGTERM/SIGINT/SIGHUB)")
+		log.Println("[info] Exiting. (SIGTERM/SIGINT/SIGHUP)")
 		osmCache.Close()
 		diffCache.Close()
 		if tilelist != nil {
