@@ -28,7 +28,6 @@
   revision = "8c6ee72f3e6bcb1542298dd5f76cb74af9742cec"
 
 [[projects]]
-  branch = "master"
   name = "github.com/omniscale/go-osm"
   packages = [
     ".",
@@ -40,7 +39,8 @@
     "replication/internal/source",
     "state"
   ]
-  revision = "a3a5872eba038dbd81d987f21a1308aaf13ed09d"
+  revision = "c98f262524f0167a51f58b91c99c93e09f1d07e6"
+  version = "v0.2.0"
 
 [[projects]]
   name = "github.com/pkg/errors"
@@ -69,6 +69,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "39ea384f03fd089d58aa5cb50e38f9ea90025b5f1535591aa6a8d55aa6c05728"
+  inputs-digest = "590ff48fa0e03832e2ebf06c54a06921e25295431067fde73d4af9b5ebf57520"
   solver-name = "gps-cdcl"
   solver-version = 1

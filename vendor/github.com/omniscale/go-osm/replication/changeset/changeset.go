@@ -30,6 +30,22 @@ func NewDownloader(changesetDir, url string, seq int, interval time.Duration) re
 	return dl
 }
 
+// NewReader starts a goroutine to search for OSM changeset files (.osm.gz).
+// This can be used if another tool is already downloading changeset files.
+// Changesets are searched in changesetDir. seq is the first sequence that
+// should be returned. Changesets are returned as fast as possible if they are
+// already available in changesetDir. After that, it uses file change
+// notifications provided by your OS to detect new files. The returned
+// replication.Source provides metadata for each changeset.
+func NewReader(changesetDir string, seq int) replication.Source {
+	r := source.NewReader(changesetDir, seq)
+	r.FileExt = ".osm.gz"
+	r.StateExt = ".state.txt"
+	r.StateTime = parseYamlTime
+	go r.Start()
+	return r
+}
+
 // CurrentSequence returns the ID of the latest changeset available at the
 // given replication URL (e.g.
 // https://planet.openstreetmap.org/replication/changesets/)

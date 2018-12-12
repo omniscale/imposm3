@@ -74,7 +74,10 @@ func decodeHeaderBlock(blob []byte) (*Header, error) {
 
 	result := &Header{}
 	timestamp := header.GetOsmosisReplicationTimestamp()
-	result.Time = time.Unix(timestamp, 0 /* nanoseconds */)
+	if timestamp != 0 {
+		// keep result.Time zero if timestamp is 0
+		result.Time = time.Unix(timestamp, 0)
+	}
 	result.Sequence = header.GetOsmosisReplicationSequenceNumber()
 	result.RequiredFeatures = header.RequiredFeatures
 	result.OptionalFeatures = header.OptionalFeatures

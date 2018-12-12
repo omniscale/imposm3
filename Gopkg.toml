@@ -38,9 +38,9 @@
   version = "0.8.0"
 
 [[constraint]]
-  name = "gopkg.in/fsnotify.v1"
-  version = "1.4.2"
-
-[[constraint]]
   branch = "v2"
   name = "gopkg.in/yaml.v2"
+
+[[constraint]]
+  name = "github.com/omniscale/go-osm"
+  version = "0.2.0"
