@@ -201,6 +201,7 @@ func ParseImport(args []string) Import {
 	flags.BoolVar(&opts.RevertDeploy, "revertdeploy", false, "revert deploy to production")
 	flags.BoolVar(&opts.RemoveBackup, "removebackup", false, "remove backups from deploy")
 	flags.DurationVar(&opts.Base.DiffStateBefore, "diff-state-before", 0, "set initial diff sequence before")
+	flags.DurationVar(&opts.Base.ReplicationInterval, "replication-interval", time.Minute, "replication interval as duration (1m, 1h, 24h)")
 
 	flags.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s %s [args]\n\n", os.Args[0], os.Args[1])
