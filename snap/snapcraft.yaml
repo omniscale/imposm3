@@ -1,0 +1,29 @@
+name: imposm3
+base: core18
+version: '0.5.0'
+summary: Imposm imports OpenStreetMap data into PostGIS
+description: |
+  Imposm imports OpenStreetMap data into PostGIS
+  Github - https://github.com/omniscale/imposm3
+
+grade: devel # must be 'stable' to release into candidate/stable channels
+confinement: devmode # use 'strict' once you have the right plugs and slots
+
+parts:
+  imposm3:
+    plugin: go
+    source: https://github.com/omniscale/imposm3/archive/v0.5.0.tar.gz
+    go-importpath: github.com/omniscale/imposm3
+    build-packages:
+    - git
+    - build-essential
+    - libleveldb-dev
+    - libgeos-dev
+    stage-packages:
+    - libgeos-dev
+    - libleveldb-dev
+    - libsnappy-dev
+
+apps:
+  imposm3:
+    command: bin/imposm3
