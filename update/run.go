@@ -134,7 +134,7 @@ func Run(baseOpts config.Base) {
 				}
 
 				if err != nil {
-					log.Printf("[error] Importing #%s: %s", seqId, err)
+					log.Printf("[error] Importing #%d: %s", seqId, err)
 					log.Println("[info] Retrying in", exp.Duration())
 					// TODO handle <-sigc during wait
 					exp.Wait()
