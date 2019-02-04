@@ -107,7 +107,7 @@ func Run(baseOpts config.Base) {
 			seqId := seq.Sequence
 			seqTime := seq.Time
 			for {
-				log.Printf("[info] Importing #%d including changes till %s (%s behind)", seqId, seqTime, time.Since(seqTime).Truncate(time.Second))
+				log.Printf("[info] Importing #%d including changes till %s (%s behind)", seqId, seqTime, time.Since(seqTime).Seconds())
 				finishedImport := log.Step(fmt.Sprintf("Importing #%d", seqId))
 
 				err := Update(baseOpts, fname, geometryLimiter, tileExpireor, osmCache, diffCache, false)
