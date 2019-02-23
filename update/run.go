@@ -147,14 +147,14 @@ func Run(baseOpts config.Base) {
 			if os.Getenv("IMPOSM3_SINGLE_DIFF") != "" {
 				return
 			}
-			if time.Since(seqTime) < baseOpts.ReplicationInterval {
-				postUpdateHook(baseOpts)
+			if baseOpts.PostReplicationQuery != "" && time.Since(seqTime) < baseOpts.ReplicationInterval {
+				postReplicationHook(baseOpts)
 			}
 		}
 	}
 }
 
-func postUpdateHook(baseOpts config.Base) {
+func postReplicationHook(baseOpts config.Base) {
 	db, _, err := dbFromConf(baseOpts)
 	if err != nil {
 		log.Println("[error] Opening connection for post-update hooks", err)
@@ -165,7 +165,9 @@ func postUpdateHook(baseOpts config.Base) {
 		log.Println("[error] Post-update hook is not a PostGIS connection")
 		return
 	}
-	_, err = pg.Db.Exec("CREATE TABLE dummy();")
+	log.Println("[info] Calling Post Replication Script")
+	log.Printf("[debug] Executing SQL: %s", baseOpts.PostReplicationQuery)
+	_, err = pg.Db.Exec(baseOpts.PostReplicationQuery)
 	if err != nil {
 		log.Println("[error] Cannot apply post-update hook", err)
 		return

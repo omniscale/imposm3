@@ -12,19 +12,20 @@ import (
 )
 
 type Config struct {
-	CacheDir            string          `json:"cachedir"`
-	DiffDir             string          `json:"diffdir"`
-	Connection          string          `json:"connection"`
-	MappingFile         string          `json:"mapping"`
-	LimitTo             string          `json:"limitto"`
-	LimitToCacheBuffer  float64         `json:"limitto_cache_buffer"`
-	Srid                int             `json:"srid"`
-	Schemas             Schemas         `json:"schemas"`
-	ExpireTilesDir      string          `json:"expiretiles_dir"`
-	ExpireTilesZoom     int             `json:"expiretiles_zoom"`
-	ReplicationUrl      string          `json:"replication_url"`
-	ReplicationInterval MinutesInterval `json:"replication_interval"`
-	DiffStateBefore     MinutesInterval `json:"diff_state_before"`
+	CacheDir             string          `json:"cachedir"`
+	DiffDir              string          `json:"diffdir"`
+	Connection           string          `json:"connection"`
+	MappingFile          string          `json:"mapping"`
+	LimitTo              string          `json:"limitto"`
+	LimitToCacheBuffer   float64         `json:"limitto_cache_buffer"`
+	Srid                 int             `json:"srid"`
+	Schemas              Schemas         `json:"schemas"`
+	ExpireTilesDir       string          `json:"expiretiles_dir"`
+	ExpireTilesZoom      int             `json:"expiretiles_zoom"`
+	ReplicationUrl       string          `json:"replication_url"`
+	ReplicationInterval  MinutesInterval `json:"replication_interval"`
+	PostReplicationQuery string          `json:"post_replication_query"`
+	DiffStateBefore      MinutesInterval `json:"diff_state_before"`
 }
 
 type Schemas struct {
@@ -40,22 +41,23 @@ const defaultSchemaProduction = "public"
 const defaultSchemaBackup = "backup"
 
 type Base struct {
-	Connection          string
-	CacheDir            string
-	DiffDir             string
-	MappingFile         string
-	Srid                int
-	LimitTo             string
-	LimitToCacheBuffer  float64
-	ConfigFile          string
-	Httpprofile         string
-	Quiet               bool
-	Schemas             Schemas
-	ExpireTilesDir      string
-	ExpireTilesZoom     int
-	ReplicationUrl      string
-	ReplicationInterval time.Duration
-	DiffStateBefore     time.Duration
+	Connection           string
+	CacheDir             string
+	DiffDir              string
+	MappingFile          string
+	Srid                 int
+	LimitTo              string
+	LimitToCacheBuffer   float64
+	ConfigFile           string
+	Httpprofile          string
+	Quiet                bool
+	Schemas              Schemas
+	ExpireTilesDir       string
+	ExpireTilesZoom      int
+	ReplicationUrl       string
+	ReplicationInterval  time.Duration
+	PostReplicationQuery string
+	DiffStateBefore      time.Duration
 }
 
 func (o *Base) updateFromConfig() error {
@@ -130,6 +132,7 @@ func (o *Base) updateFromConfig() error {
 		o.ReplicationInterval = time.Minute
 	}
 	o.ReplicationUrl = conf.ReplicationUrl
+	o.PostReplicationQuery = conf.PostReplicationQuery
 
 	if o.DiffDir == "" {
 		if conf.DiffDir == "" {
