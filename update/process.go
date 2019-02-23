@@ -111,20 +111,7 @@ func Update(
 		return err
 	}
 
-	tagmapping, err := mapping.FromFile(baseOpts.MappingFile)
-	if err != nil {
-		return err
-	}
-
-	dbConf := database.Config{
-		ConnectionParams: baseOpts.Connection,
-		Srid:             baseOpts.Srid,
-		// we apply diff imports on the Production schema
-		ImportSchema:     baseOpts.Schemas.Production,
-		ProductionSchema: baseOpts.Schemas.Production,
-		BackupSchema:     baseOpts.Schemas.Backup,
-	}
-	db, err := database.Open(dbConf, &tagmapping.Conf)
+	db, tagmapping, err := dbFromConf(baseOpts)
 	if err != nil {
 		return errors.Wrap(err, "opening database")
 	}
@@ -424,4 +411,22 @@ func Update(
 		}
 	}
 	return nil
+}
+
+func dbFromConf(baseOpts config.Base) (database.DB, *mapping.Mapping, error) {
+	tagmapping, err := mapping.FromFile(baseOpts.MappingFile)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	dbConf := database.Config{
+		ConnectionParams: baseOpts.Connection,
+		Srid:             baseOpts.Srid,
+		// we apply diff imports on the Production schema
+		ImportSchema:     baseOpts.Schemas.Production,
+		ProductionSchema: baseOpts.Schemas.Production,
+		BackupSchema:     baseOpts.Schemas.Backup,
+	}
+	db, err := database.Open(dbConf, &tagmapping.Conf)
+	return db, tagmapping, err
 }

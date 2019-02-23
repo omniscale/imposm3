@@ -9,6 +9,7 @@ import (
 
 	"github.com/omniscale/imposm3/cache"
 	"github.com/omniscale/imposm3/config"
+	"github.com/omniscale/imposm3/database/postgis"
 	"github.com/omniscale/imposm3/expire"
 	"github.com/omniscale/imposm3/geom/limit"
 	"github.com/omniscale/imposm3/log"
@@ -146,7 +147,28 @@ func Run(baseOpts config.Base) {
 			if os.Getenv("IMPOSM3_SINGLE_DIFF") != "" {
 				return
 			}
+			if time.Since(seqTime) < baseOpts.ReplicationInterval {
+				postUpdateHook(baseOpts)
+			}
 		}
+	}
+}
+
+func postUpdateHook(baseOpts config.Base) {
+	db, _, err := dbFromConf(baseOpts)
+	if err != nil {
+		log.Println("[error] Opening connection for post-update hooks", err)
+		return
+	}
+	pg, ok := db.(*postgis.PostGIS)
+	if !ok {
+		log.Println("[error] Post-update hook is not a PostGIS connection")
+		return
+	}
+	_, err = pg.Db.Exec("CREATE TABLE dummy();")
+	if err != nil {
+		log.Println("[error] Cannot apply post-update hook", err)
+		return
 	}
 }
 
