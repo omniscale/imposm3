@@ -167,11 +167,13 @@ func postReplicationHook(baseOpts config.Base) {
 	}
 	log.Println("[info] Calling Post Replication Script")
 	log.Printf("[debug] Executing SQL: %s", baseOpts.PostReplicationQuery)
+	tstart := time.Now()
 	_, err = pg.Db.Exec(baseOpts.PostReplicationQuery)
 	if err != nil {
 		log.Println("[error] Cannot apply post-update hook", err)
 		return
 	}
+	log.Printf("[info] Post Replication Script completed after %v", time.Since(tstart))
 }
 
 type expBackoff struct {
