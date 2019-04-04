@@ -37,7 +37,7 @@ func (this *Geos) CreateIndex() *Index {
 	return &Index{tree, &sync.Mutex{}, []IndexGeom{}}
 }
 
-// IndexQuery adds a geom to the index with the id.
+// IndexAdd adds a geom to the index with the id.
 func (this *Geos) IndexAdd(index *Index, geom *Geom) {
 	index.mu.Lock()
 	defer index.mu.Unlock()
