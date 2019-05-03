@@ -125,7 +125,7 @@ before_deploy:
 deploy:
   provider: releases
   api_key:
-    secure: fBhtCy6vdxxxuLYuJWXeTHJb3SAZCCbUJncIvR9ZOLCDWMJAPBnzPoqJFbByWzl6XghVRwhy9fe/82vzqByKiB/AQpqGqBxlwA9dSsqvSQcQxomAoHKKfZVdOuxM2bLDW3v5pJpmFtCMwhWjgwIOb9WxnBVeLxBbsq2Ox49tgHw=
+    secure: BLksCdG9x/D3Giprtq1VtFGQSF2k9+0OjeOL2bjAaf/4mFho1IDGsJlsOEKBNUngacHIB2udoHeta4Cijs6NLCQrzHcO1la6djF/HYJ5oCFkM7RxPWK5Zim4b2FB8ktVEX20VOjPpsDrBi56P97YI7bVVrOaSThashz4bpj/3Z4=
   file: /tmp/imposm-${BUILD_VERSION}.tar.gz
   skip_cleanup: true
   on:
