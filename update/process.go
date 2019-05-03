@@ -231,9 +231,9 @@ func Update(
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel() // make sure parser is stopped if we return early with an error
 
-	var parseError error
+	parseError := make(chan error)
 	go func() {
-		parseError = parser.Parse(ctx)
+		parseError <- parser.Parse(ctx)
 	}()
 
 	for elem := range diffs {
@@ -343,7 +343,8 @@ func Update(
 	progress.Stop()
 	step()
 
-	if parseError != nil {
+	err = <-parseError
+	if err != nil {
 		return errors.Wrapf(err, "parsing diff %s", oscFile)
 	}
 
