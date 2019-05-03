@@ -511,11 +511,15 @@ func (pg *PostGIS) InsertRelationMember(rel osm.Relation, m osm.Member, geom geo
 
 func (pg *PostGIS) Delete(id int64, matches []mapping.Match) error {
 	for _, match := range matches {
-		pg.txRouter.Delete(match.Table.Name, id)
+		if err := pg.txRouter.Delete(match.Table.Name, id); err != nil {
+			return errors.Wrapf(err, "deleting %d from %q", id, match.Table.Name)
+		}
 	}
 	if pg.updateGeneralizedTables {
 		for _, generalizedTable := range pg.generalizedFromMatches(matches) {
-			pg.txRouter.Delete(generalizedTable.Name, id)
+			if err := pg.txRouter.Delete(generalizedTable.Name, id); err != nil {
+				return errors.Wrapf(err, "deleting %d from %q", id, generalizedTable.Name)
+			}
 		}
 	}
 	return nil
