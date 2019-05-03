@@ -5,7 +5,8 @@ language: go
 
 go:
   - "1.9.x"
-  - "1.10.x" # we use this for releases, see deploy.on.condition below
+  - "1.10.x"
+  - "1.12.x" # we use this for releases, see deploy.on.condition below
   - tip
 
 matrix:
@@ -15,11 +16,10 @@ matrix:
 
 env:
   global:
-    - GEOS_VERSION=3.6.2
-    - PROTOBUF_VERSION=3.5.1
-    - LEVELDB_VERSION=1.21 # TODO: update before_script when 1.21 is released
+    - GEOS_VERSION=3.7.2
+    - LEVELDB_VERSION=1.21
     # NOTE increase DEPS_REVISION everytime one of the compiled deps changes!
-    - DEPS_REVISION=1
+    - DEPS_REVISION=2
     # PREFIX is where we install our compiled deps
     - PREFIX=${HOME}/local-${DEPS_REVISION}
 
@@ -76,7 +76,7 @@ before_install:
   - |
     if [[ ! -e ${PREFIX}/lib/libleveldb.so ]]; then
       mkdir -p ${HOME}/build/leveldb
-      curl -fsSL https://github.com/google/leveldb/archive/master.tar.gz | \
+      curl -fsSL https://github.com/google/leveldb/archive/${LEVELDB_VERSION}.tar.gz | \
         tar -zxf - --strip-components 1 -C ${HOME}/build/leveldb
       mkdir -p ${HOME}/build/leveldb/build
       cd ${HOME}/build/leveldb/build
@@ -130,5 +130,5 @@ deploy:
   on:
     repo: omniscale/imposm3
     tags: true
-    condition: $TRAVIS_GO_VERSION =~ ^1\.10(\.[0-9]+)?$
+    condition: $TRAVIS_GO_VERSION =~ ^1\.12(\.[0-9]+)?$
 
