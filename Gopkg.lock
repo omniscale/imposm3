@@ -39,8 +39,8 @@
     "replication/internal/source",
     "state"
   ]
-  revision = "c98f262524f0167a51f58b91c99c93e09f1d07e6"
-  version = "v0.2.0"
+  revision = "6111e6289a124c7c9815c230beb08bdf5c97f4f9"
+  version = "v0.2.1"
 
 [[projects]]
   name = "github.com/pkg/errors"
@@ -69,6 +69,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "590ff48fa0e03832e2ebf06c54a06921e25295431067fde73d4af9b5ebf57520"
+  inputs-digest = "9ef9caf6859d503a8311e7f9d571a8c54aa01f5fd5d8a75f894ac1408a6fea1c"
   solver-name = "gps-cdcl"
   solver-version = 1

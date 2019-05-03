@@ -169,7 +169,7 @@ func (d *downloader) downloadTillSuccess(ctx context.Context, seq int, ext strin
 		if err == nil {
 			break
 		}
-		if err, ok := err.(*NotAvailable); ok {
+		if _, ok := err.(*NotAvailable); ok {
 			wait(ctx, d.naWaittime)
 		} else {
 			debug("[error] Downloading file:", err)
@@ -298,6 +298,7 @@ func (d *reader) fetchNextLoop() {
 			continue
 		}
 		if d.ctx.Err() != nil {
+			close(d.sequences)
 			return
 		}
 		d.lastSequence = nextSeq

@@ -43,4 +43,4 @@
 
 [[constraint]]
   name = "github.com/omniscale/go-osm"
-  version = "0.2.0"
+  version = "0.2.1"
