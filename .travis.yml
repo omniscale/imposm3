@@ -59,6 +59,7 @@ before_script:
 
 
 before_install:
+  - echo "TRAVIS_GO_VERSION = " ${TRAVIS_GO_VERSION}
   - ccache --show-stats
 
   # build GEOS
@@ -130,5 +131,5 @@ deploy:
   on:
     repo: omniscale/imposm3
     tags: true
-    condition: $TRAVIS_GO_VERSION =~ ^1\.12(\.[0-9]+)?$
+    condition: $TRAVIS_GO_VERSION =~ ^1\.12
 
