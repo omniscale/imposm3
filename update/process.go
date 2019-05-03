@@ -1,26 +1,31 @@
 package update
 
 import (
+	"context"
 	"fmt"
-	"io"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 
+	osm "github.com/omniscale/go-osm"
+	"github.com/omniscale/go-osm/parser/diff"
+	diffstate "github.com/omniscale/go-osm/state"
 	"github.com/omniscale/imposm3/cache"
 	"github.com/omniscale/imposm3/config"
 	"github.com/omniscale/imposm3/database"
 	_ "github.com/omniscale/imposm3/database/postgis"
-	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/expire"
 	"github.com/omniscale/imposm3/geom/geos"
 	"github.com/omniscale/imposm3/geom/limit"
 	"github.com/omniscale/imposm3/log"
 	"github.com/omniscale/imposm3/mapping"
-	"github.com/omniscale/imposm3/parser/diff"
 	"github.com/omniscale/imposm3/stats"
-	diffstate "github.com/omniscale/imposm3/update/state"
 	"github.com/omniscale/imposm3/writer"
 )
+
+const LastStateFilename = "last.state.txt"
 
 func Diff(baseOpts config.Base, files []string) {
 	if baseOpts.Quiet {
@@ -88,13 +93,19 @@ func Update(
 	diffCache *cache.DiffCache,
 	force bool,
 ) error {
-	state, err := diffstate.FromOscGz(oscFile)
-	if err != nil {
-		return err
+	var state *diffstate.DiffState
+	if strings.HasSuffix(oscFile, ".osc.gz") {
+		var err error
+		stateFile := oscFile[:len(oscFile)-len(".osc.gz")] + ".state.txt"
+		state, err = diffstate.ParseFile(stateFile)
+		if err != nil && !os.IsNotExist(err) {
+			return errors.Wrapf(err, "reading state %s", stateFile)
+		}
 	}
-	lastState, err := diffstate.ParseLastState(baseOpts.DiffDir)
-	if err != nil {
-		log.Printf("[warn] Parsing last state from %s: %s", baseOpts.DiffDir, err)
+	lastStateFile := filepath.Join(baseOpts.DiffDir, LastStateFilename)
+	lastState, err := diffstate.ParseFile(lastStateFile)
+	if err != nil && !os.IsNotExist(err) {
+		return errors.Wrapf(err, "parsing last state from %s", lastStateFile)
 	}
 
 	if lastState != nil && lastState.Sequence != 0 && state != nil && state.Sequence <= lastState.Sequence {
@@ -106,9 +117,19 @@ func Update(
 
 	defer log.Step(fmt.Sprintf("Processing %s", oscFile))()
 
-	parser, err := diff.NewOscGzParser(oscFile)
+	diffs := make(chan osm.Diff)
+	config := diff.Config{
+		Diffs: diffs,
+	}
+
+	f, err := os.Open(oscFile)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "opening diff file")
+	}
+	defer f.Close()
+	parser, err := diff.NewGZIP(f, config)
+	if err != nil {
+		return errors.Wrap(err, "initializing diff parser")
 	}
 
 	tagmapping, err := mapping.FromFile(baseOpts.MappingFile)
@@ -149,7 +170,7 @@ func Update(
 		delDb,
 		osmCache,
 		diffCache,
-		tagmapping.Conf.SingleIdSpace,
+		tagmapping.Conf.SingleIDSpace,
 		tagmapping.PointMatcher,
 		tagmapping.LineStringMatcher,
 		tagmapping.PolygonMatcher,
@@ -164,12 +185,12 @@ func Update(
 	wayTagFilter := tagmapping.WayTagFilter()
 	nodeTagFilter := tagmapping.NodeTagFilter()
 
-	relations := make(chan *element.Relation)
-	ways := make(chan *element.Way)
-	nodes := make(chan *element.Node)
+	relations := make(chan *osm.Relation)
+	ways := make(chan *osm.Way)
+	nodes := make(chan *osm.Node)
 
 	relWriter := writer.NewRelationWriter(osmCache, diffCache,
-		tagmapping.Conf.SingleIdSpace,
+		tagmapping.Conf.SingleIDSpace,
 		relations,
 		db, progress,
 		tagmapping.PolygonMatcher,
@@ -181,7 +202,7 @@ func Update(
 	relWriter.Start()
 
 	wayWriter := writer.NewWayWriter(osmCache, diffCache,
-		tagmapping.Conf.SingleIdSpace,
+		tagmapping.Conf.SingleIDSpace,
 		ways, db,
 		progress,
 		tagmapping.PolygonMatcher,
@@ -199,22 +220,23 @@ func Update(
 	nodeWriter.SetExpireor(expireor)
 	nodeWriter.Start()
 
-	nodeIds := make(map[int64]struct{})
-	wayIds := make(map[int64]struct{})
-	relIds := make(map[int64]struct{})
+	nodeIDs := make(map[int64]struct{})
+	wayIDs := make(map[int64]struct{})
+	relIDs := make(map[int64]struct{})
 
 	step := log.Step("Parsing changes, updating cache and removing elements")
 
 	g := geos.NewGeos()
 
-	for {
-		elem, err := parser.Next()
-		if err == io.EOF {
-			break // finished
-		}
-		if err != nil {
-			return errors.Wrap(err, "parsing diff")
-		}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel() // make sure parser is stopped if we return early with an error
+
+	var parseError error
+	go func() {
+		parseError = parser.Parse(ctx)
+	}()
+
+	for elem := range diffs {
 		if elem.Rel != nil {
 			relTagFilter.Filter(&elem.Rel.Tags)
 			progress.AddRelations(1)
@@ -234,35 +256,35 @@ func Update(
 		if err := deleter.Delete(elem); err != nil && err != cache.NotFound {
 			return errors.Wrapf(err, "delete element %#v", elem)
 		}
-		if elem.Del {
+		if elem.Delete {
 			// no new or modified elem -> remove from cache
 			if elem.Rel != nil {
-				if err := osmCache.Relations.DeleteRelation(elem.Rel.Id); err != nil && err != cache.NotFound {
+				if err := osmCache.Relations.DeleteRelation(elem.Rel.ID); err != nil && err != cache.NotFound {
 					return errors.Wrapf(err, "delete relation %v", elem.Rel)
 				}
 			} else if elem.Way != nil {
-				if err := osmCache.Ways.DeleteWay(elem.Way.Id); err != nil && err != cache.NotFound {
+				if err := osmCache.Ways.DeleteWay(elem.Way.ID); err != nil && err != cache.NotFound {
 					return errors.Wrapf(err, "delete way %v", elem.Way)
 				}
-				if err := diffCache.Ways.Delete(elem.Way.Id); err != nil && err != cache.NotFound {
+				if err := diffCache.Ways.Delete(elem.Way.ID); err != nil && err != cache.NotFound {
 					return errors.Wrapf(err, "delete way references %v", elem.Way)
 				}
 			} else if elem.Node != nil {
-				if err := osmCache.Nodes.DeleteNode(elem.Node.Id); err != nil && err != cache.NotFound {
+				if err := osmCache.Nodes.DeleteNode(elem.Node.ID); err != nil && err != cache.NotFound {
 					return errors.Wrapf(err, "delete node %v", elem.Node)
 				}
-				if err := osmCache.Coords.DeleteCoord(elem.Node.Id); err != nil && err != cache.NotFound {
+				if err := osmCache.Coords.DeleteCoord(elem.Node.ID); err != nil && err != cache.NotFound {
 					return errors.Wrapf(err, "delete coord %v", elem.Node)
 				}
 			}
 		}
-		if elem.Mod && elem.Node != nil && elem.Node.Tags == nil {
+		if elem.Modify && elem.Node != nil && elem.Node.Tags == nil {
 			// handle modifies where a node drops all tags
-			if err := osmCache.Nodes.DeleteNode(elem.Node.Id); err != nil && err != cache.NotFound {
+			if err := osmCache.Nodes.DeleteNode(elem.Node.ID); err != nil && err != cache.NotFound {
 				return errors.Wrapf(err, "delete node %v", elem.Node)
 			}
 		}
-		if elem.Add || elem.Mod {
+		if elem.Create || elem.Modify {
 			if elem.Rel != nil {
 				// check if first member is cached to avoid caching
 				// unneeded relations (typical outside of our coverage)
@@ -275,7 +297,7 @@ func Update(
 					if err != nil {
 						return errors.Wrapf(err, "put relation %v", elem.Rel)
 					}
-					relIds[elem.Rel.Id] = struct{}{}
+					relIDs[elem.Rel.ID] = struct{}{}
 				}
 			} else if elem.Way != nil {
 				// check if first coord is cached to avoid caching
@@ -289,7 +311,7 @@ func Update(
 					if err != nil {
 						return errors.Wrapf(err, "put way %v", elem.Way)
 					}
-					wayIds[elem.Way.Id] = struct{}{}
+					wayIDs[elem.Way.ID] = struct{}{}
 				}
 			} else if elem.Node != nil {
 				addNode := true
@@ -303,55 +325,60 @@ func Update(
 					if err != nil {
 						return errors.Wrapf(err, "put node %v", elem.Node)
 					}
-					err = osmCache.Coords.PutCoords([]element.Node{*elem.Node})
+					err = osmCache.Coords.PutCoords([]osm.Node{*elem.Node})
 					if err != nil {
 						return errors.Wrapf(err, "put coord %v", elem.Node)
 					}
-					nodeIds[elem.Node.Id] = struct{}{}
+					nodeIDs[elem.Node.ID] = struct{}{}
 				}
 			}
 		}
 	}
 
 	// mark member ways from deleted relations for re-insert
-	for id, _ := range deleter.DeletedMemberWays() {
-		wayIds[id] = struct{}{}
+	for id := range deleter.DeletedMemberWays() {
+		wayIDs[id] = struct{}{}
 	}
 
 	progress.Stop()
 	step()
+
+	if parseError != nil {
+		return errors.Wrapf(err, "parsing diff %s", oscFile)
+	}
+
 	step = log.Step("Importing added/modified elements")
 
 	progress = stats.NewStatsReporter()
 
 	// mark depending ways for (re)insert
-	for nodeId, _ := range nodeIds {
-		dependers := diffCache.Coords.Get(nodeId)
+	for nodeID := range nodeIDs {
+		dependers := diffCache.Coords.Get(nodeID)
 		for _, way := range dependers {
-			wayIds[way] = struct{}{}
+			wayIDs[way] = struct{}{}
 		}
 	}
 
 	// mark depending relations for (re)insert
-	for nodeId, _ := range nodeIds {
-		dependers := diffCache.CoordsRel.Get(nodeId)
+	for nodeID := range nodeIDs {
+		dependers := diffCache.CoordsRel.Get(nodeID)
 		for _, rel := range dependers {
-			relIds[rel] = struct{}{}
+			relIDs[rel] = struct{}{}
 		}
 	}
-	for wayId, _ := range wayIds {
-		dependers := diffCache.Ways.Get(wayId)
+	for wayID := range wayIDs {
+		dependers := diffCache.Ways.Get(wayID)
 		// mark depending relations for (re)insert
 		for _, rel := range dependers {
-			relIds[rel] = struct{}{}
+			relIDs[rel] = struct{}{}
 		}
 	}
 
-	for relId, _ := range relIds {
-		rel, err := osmCache.Relations.GetRelation(relId)
+	for relID := range relIDs {
+		rel, err := osmCache.Relations.GetRelation(relID)
 		if err != nil {
 			if err != cache.NotFound {
-				return errors.Wrapf(err, "fetching cached relation %v", relId)
+				return errors.Wrapf(err, "fetching cached relation %v", relID)
 			}
 			continue
 		}
@@ -360,11 +387,11 @@ func Update(
 		relations <- rel
 	}
 
-	for wayId, _ := range wayIds {
-		way, err := osmCache.Ways.GetWay(wayId)
+	for wayID := range wayIDs {
+		way, err := osmCache.Ways.GetWay(wayID)
 		if err != nil {
 			if err != cache.NotFound {
-				return errors.Wrapf(err, "fetching cached way %v", wayId)
+				return errors.Wrapf(err, "fetching cached way %v", wayID)
 			}
 			continue
 		}
@@ -373,11 +400,11 @@ func Update(
 		ways <- way
 	}
 
-	for nodeId, _ := range nodeIds {
-		node, err := osmCache.Nodes.GetNode(nodeId)
+	for nodeID := range nodeIDs {
+		node, err := osmCache.Nodes.GetNode(nodeID)
 		if err != nil {
 			if err != cache.NotFound {
-				return errors.Wrapf(err, "fetching cached node %v", nodeId)
+				return errors.Wrapf(err, "fetching cached node %v", nodeID)
 			}
 			// missing nodes can still be Coords
 			// no `continue` here
@@ -416,9 +443,9 @@ func Update(
 
 	if state != nil {
 		if lastState != nil {
-			state.Url = lastState.Url
+			state.URL = lastState.URL
 		}
-		err = diffstate.WriteLastState(baseOpts.DiffDir, state)
+		err = diffstate.WriteFile(filepath.Join(baseOpts.DiffDir, LastStateFilename), state)
 		if err != nil {
 			log.Println("[error] Unable to write last state:", err)
 		}

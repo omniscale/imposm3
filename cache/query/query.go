@@ -8,17 +8,17 @@ import (
 	"strconv"
 	"strings"
 
+	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/cache"
-	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/log"
 )
 
 var flags = flag.NewFlagSet("query-cache", flag.ExitOnError)
 
 var (
-	nodeIds  = flags.String("node", "", "node")
-	wayIds   = flags.String("way", "", "way")
-	relIds   = flags.String("rel", "", "relation")
+	nodeIDs  = flags.String("node", "", "node")
+	wayIDs   = flags.String("way", "", "way")
+	relIDs   = flags.String("rel", "", "relation")
 	full     = flags.Bool("full", false, "recurse into relations/ways")
 	deps     = flags.Bool("deps", false, "show dependent ways/relations")
 	cachedir = flags.String("cachedir", "/tmp/imposm", "cache directory")
@@ -29,18 +29,18 @@ type ways map[string]*way
 type relations map[string]*relation
 
 type node struct {
-	element.Node
+	osm.Node
 	Ways ways `json:"ways,omitempty"`
 }
 
 type way struct {
-	element.Way
+	osm.Way
 	Nodes     nodes     `json:"nodes,omitempty"`
 	Relations relations `json:"relations,omitempty"`
 }
 
 type relation struct {
-	element.Relation
+	osm.Relation
 	Ways ways `json:"ways,omitempty"`
 }
 
@@ -62,13 +62,13 @@ func collectRelations(osmCache *cache.OSMCache, ids []int64, recurse bool) relat
 		} else {
 			rels[sid] = &relation{*rel, nil}
 			if recurse {
-				memberWayIds := []int64{}
+				memberWayIDs := []int64{}
 				for _, m := range rel.Members {
-					if m.Type == element.WAY {
-						memberWayIds = append(memberWayIds, m.Id)
+					if m.Type == osm.WayMember {
+						memberWayIDs = append(memberWayIDs, m.ID)
 					}
 				}
-				rels[sid].Ways = collectWays(osmCache, nil, memberWayIds, true, false)
+				rels[sid].Ways = collectWays(osmCache, nil, memberWayIDs, true, false)
 
 			}
 		}
@@ -137,7 +137,7 @@ func Usage() {
 	os.Exit(1)
 }
 
-func printJson(obj interface{}) {
+func printJSON(obj interface{}) {
 	bytes, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
 		log.Fatal(err)
@@ -145,7 +145,7 @@ func printJson(obj interface{}) {
 	fmt.Println(string(bytes))
 }
 
-func splitIds(ids string) []int64 {
+func splitIDs(ids string) []int64 {
 	result := []int64{}
 	for _, s := range strings.Split(ids, ",") {
 		id, err := strconv.ParseInt(s, 10, 64)
@@ -186,20 +186,20 @@ func Query(args []string) {
 
 	result := result{}
 
-	if *relIds != "" {
-		ids := splitIds(*relIds)
+	if *relIDs != "" {
+		ids := splitIDs(*relIDs)
 		result.Relations = collectRelations(osmCache, ids, *full)
 	}
 
-	if *wayIds != "" {
-		ids := splitIds(*wayIds)
+	if *wayIDs != "" {
+		ids := splitIDs(*wayIDs)
 		result.Ways = collectWays(osmCache, diffCache, ids, *full, *deps)
 	}
 
-	if *nodeIds != "" {
-		ids := splitIds(*nodeIds)
+	if *nodeIDs != "" {
+		ids := splitIDs(*nodeIDs)
 		result.Nodes = collectNodes(osmCache, diffCache, ids, *deps)
 	}
 
-	printJson(result)
+	printJSON(result)
 }

@@ -5,21 +5,21 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/omniscale/imposm3/element"
+	osm "github.com/omniscale/go-osm"
 )
 
 type fataler interface {
 	Fatalf(string, ...interface{})
 }
 
-func compareNodes(t fataler, a []element.Node, b []element.Node) {
+func compareNodes(t fataler, a []osm.Node, b []osm.Node) {
 	if len(a) != len(b) {
 		t.Fatalf("length did not match %d != %d", len(a), len(b))
 	}
 
 	for i := range a {
-		if a[i].Id != b[i].Id {
-			t.Fatalf("id did not match %d != %d", a[i].Id, b[i].Id)
+		if a[i].ID != b[i].ID {
+			t.Fatalf("id did not match %d != %d", a[i].ID, b[i].ID)
 		}
 		if math.Abs(a[i].Long-b[i].Long) > 1e-7 {
 			t.Fatalf("long did not match %v != %v", a[i].Long, b[i].Long)
@@ -30,13 +30,13 @@ func compareNodes(t fataler, a []element.Node, b []element.Node) {
 	}
 }
 
-var nodes []element.Node
+var nodes []osm.Node
 
 func init() {
-	nodes = make([]element.Node, 64)
+	nodes = make([]osm.Node, 64)
 	offset := rand.Int63n(1e10)
 	for i := range nodes {
-		nodes[i] = element.Node{OSMElem: element.OSMElem{Id: offset + rand.Int63n(1000)}, Long: rand.Float64()*360 - 180, Lat: rand.Float64()*180 - 90}
+		nodes[i] = osm.Node{Element: osm.Element{ID: offset + rand.Int63n(1000)}, Long: rand.Float64()*360 - 180, Lat: rand.Float64()*180 - 90}
 	}
 }
 
@@ -63,7 +63,7 @@ func BenchmarkUnmarshalDeltaCoords(b *testing.B) {
 	b.ReportAllocs()
 	buf := MarshalDeltaNodes(nodes, nil)
 
-	var nodes2 []element.Node
+	var nodes2 []osm.Node
 	for n := 0; n < b.N; n++ {
 		nodes2, _ = UnmarshalDeltaNodes(buf, nodes2)
 	}

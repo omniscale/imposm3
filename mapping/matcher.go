@@ -1,7 +1,7 @@
 package mapping
 
 import (
-	"github.com/omniscale/imposm3/element"
+	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/geom"
 )
 
@@ -91,15 +91,15 @@ func (m *Mapping) relationMemberMatcher() (RelationMatcher, error) {
 }
 
 type NodeMatcher interface {
-	MatchNode(node *element.Node) []Match
+	MatchNode(node *osm.Node) []Match
 }
 
 type WayMatcher interface {
-	MatchWay(way *element.Way) []Match
+	MatchWay(way *osm.Way) []Match
 }
 
 type RelationMatcher interface {
-	MatchRelation(rel *element.Relation) []Match
+	MatchRelation(rel *osm.Relation) []Match
 }
 
 type RelWayMatcher interface {
@@ -114,11 +114,11 @@ type Match struct {
 	builder *rowBuilder
 }
 
-func (m *Match) Row(elem *element.OSMElem, geom *geom.Geometry) []interface{} {
+func (m *Match) Row(elem *osm.Element, geom *geom.Geometry) []interface{} {
 	return m.builder.MakeRow(elem, geom, *m)
 }
 
-func (m *Match) MemberRow(rel *element.Relation, member *element.Member, geom *geom.Geometry) []interface{} {
+func (m *Match) MemberRow(rel *osm.Relation, member *osm.Member, geom *geom.Geometry) []interface{} {
 	return m.builder.MakeMemberRow(rel, member, geom, *m)
 }
 
@@ -130,11 +130,11 @@ type tagMatcher struct {
 	matchAreas bool
 }
 
-func (tm *tagMatcher) MatchNode(node *element.Node) []Match {
+func (tm *tagMatcher) MatchNode(node *osm.Node) []Match {
 	return tm.match(node.Tags, false, false)
 }
 
-func (tm *tagMatcher) MatchWay(way *element.Way) []Match {
+func (tm *tagMatcher) MatchWay(way *osm.Way) []Match {
 	if tm.matchAreas { // match way as polygon
 		if way.IsClosed() {
 			if way.Tags["area"] == "no" {
@@ -154,7 +154,7 @@ func (tm *tagMatcher) MatchWay(way *element.Way) []Match {
 	return nil
 }
 
-func (tm *tagMatcher) MatchRelation(rel *element.Relation) []Match {
+func (tm *tagMatcher) MatchRelation(rel *osm.Relation) []Match {
 	return tm.match(rel.Tags, true, true)
 }
 
@@ -163,7 +163,7 @@ type orderedMatch struct {
 	order int
 }
 
-func (tm *tagMatcher) match(tags element.Tags, closed bool, relation bool) []Match {
+func (tm *tagMatcher) match(tags osm.Tags, closed bool, relation bool) []Match {
 	tables := make(map[DestTable]orderedMatch)
 
 	addTables := func(k, v string, tbls []orderedDestTable) {
@@ -237,22 +237,22 @@ type valueBuilder struct {
 	colType ColumnType
 }
 
-func (v *valueBuilder) Value(elem *element.OSMElem, geom *geom.Geometry, match Match) interface{} {
+func (v *valueBuilder) Value(elem *osm.Element, geom *geom.Geometry, match Match) interface{} {
 	if v.colType.Func != nil {
 		return v.colType.Func(elem.Tags[string(v.key)], elem, geom, match)
 	}
 	return nil
 }
 
-func (v *valueBuilder) MemberValue(rel *element.Relation, member *element.Member, geom *geom.Geometry, match Match) interface{} {
+func (v *valueBuilder) MemberValue(rel *osm.Relation, member *osm.Member, geom *geom.Geometry, match Match) interface{} {
 	if v.colType.Func != nil {
 		if v.colType.FromMember {
-			if member.Elem == nil {
+			if member.Element == nil {
 				return nil
 			}
-			return v.colType.Func(member.Elem.Tags[string(v.key)], member.Elem, geom, match)
+			return v.colType.Func(member.Element.Tags[string(v.key)], member.Element, geom, match)
 		}
-		return v.colType.Func(rel.Tags[string(v.key)], &rel.OSMElem, geom, match)
+		return v.colType.Func(rel.Tags[string(v.key)], &rel.Element, geom, match)
 	}
 	if v.colType.MemberFunc != nil {
 		return v.colType.MemberFunc(rel, member, match)
@@ -264,7 +264,7 @@ type rowBuilder struct {
 	columns []valueBuilder
 }
 
-func (r *rowBuilder) MakeRow(elem *element.OSMElem, geom *geom.Geometry, match Match) []interface{} {
+func (r *rowBuilder) MakeRow(elem *osm.Element, geom *geom.Geometry, match Match) []interface{} {
 	var row []interface{}
 	for _, column := range r.columns {
 		row = append(row, column.Value(elem, geom, match))
@@ -272,7 +272,7 @@ func (r *rowBuilder) MakeRow(elem *element.OSMElem, geom *geom.Geometry, match M
 	return row
 }
 
-func (r *rowBuilder) MakeMemberRow(rel *element.Relation, member *element.Member, geom *geom.Geometry, match Match) []interface{} {
+func (r *rowBuilder) MakeMemberRow(rel *osm.Relation, member *osm.Member, geom *geom.Geometry, match Match) []interface{} {
 	var row []interface{}
 	for _, column := range r.columns {
 		row = append(row, column.MemberValue(rel, member, geom, match))

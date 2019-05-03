@@ -176,7 +176,7 @@ func TestExpireTiles(t *testing.T) {
 		if len(tiles) > 0 {
 			t.Errorf("found %d unexpected tiles", len(tiles))
 		}
-		for tile, _ := range tiles {
+		for tile := range tiles {
 			t.Errorf("unexpected tile expired: %v", tile)
 		}
 	})

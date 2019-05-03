@@ -3,9 +3,9 @@ package writer
 import (
 	"sync"
 
+	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/cache"
 	"github.com/omniscale/imposm3/database"
-	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/expire"
 	geomp "github.com/omniscale/imposm3/geom"
 	"github.com/omniscale/imposm3/geom/geos"
@@ -16,13 +16,13 @@ import (
 
 type NodeWriter struct {
 	OsmElemWriter
-	nodes        chan *element.Node
+	nodes        chan *osm.Node
 	pointMatcher mapping.NodeMatcher
 }
 
 func NewNodeWriter(
 	osmCache *cache.OSMCache,
-	nodes chan *element.Node,
+	nodes chan *osm.Node,
 	inserter database.Inserter,
 	progress *stats.Statistics,
 	matcher mapping.NodeMatcher,
@@ -74,14 +74,14 @@ func (nw *NodeWriter) loop() {
 					continue
 				}
 				if len(parts) >= 1 {
-					if err := nw.inserter.InsertPoint(n.OSMElem, geom, matches); err != nil {
+					if err := nw.inserter.InsertPoint(n.Element, geom, matches); err != nil {
 						log.Println("[warn]: ", err)
 						continue
 					}
 					inserted = true
 				}
 			} else {
-				if err := nw.inserter.InsertPoint(n.OSMElem, geom, matches); err != nil {
+				if err := nw.inserter.InsertPoint(n.Element, geom, matches); err != nil {
 					log.Println("[warn]: ", err)
 					continue
 				}

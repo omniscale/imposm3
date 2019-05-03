@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 
-	"github.com/omniscale/imposm3/element"
+	osm "github.com/omniscale/go-osm"
 )
 
 const (
@@ -14,7 +14,7 @@ const (
 	wkbPolygonType    = 3
 )
 
-func NodesAsEWKBHexLineString(nodes []element.Node, srid int) ([]byte, error) {
+func NodesAsEWKBHexLineString(nodes []osm.Node, srid int) ([]byte, error) {
 	nodes = unduplicateNodes(nodes)
 	if len(nodes) < 2 {
 		return nil, ErrorOneNodeWay
@@ -40,7 +40,7 @@ func NodesAsEWKBHexLineString(nodes []element.Node, srid int) ([]byte, error) {
 	return dst, nil
 }
 
-func NodesAsEWKBHexPolygon(nodes []element.Node, srid int) ([]byte, error) {
+func NodesAsEWKBHexPolygon(nodes []osm.Node, srid int) ([]byte, error) {
 	// TODO undup nodes and check if closed
 	buf := &bytes.Buffer{}
 	binary.Write(buf, binary.LittleEndian, uint8(1)) // little endian

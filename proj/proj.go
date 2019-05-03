@@ -1,8 +1,9 @@
 package proj
 
 import (
-	"github.com/omniscale/imposm3/element"
 	"math"
+
+	osm "github.com/omniscale/go-osm"
 )
 
 const pole = 6378137 * math.Pi // 20037508.342789244
@@ -19,12 +20,12 @@ func MercToWgs(x, y float64) (long, lat float64) {
 	return long, lat
 }
 
-func NodesToMerc(nodes []element.Node) {
+func NodesToMerc(nodes []osm.Node) {
 	for i, nd := range nodes {
 		nodes[i].Long, nodes[i].Lat = WgsToMerc(nd.Long, nd.Lat)
 	}
 }
 
-func NodeToMerc(node *element.Node) {
+func NodeToMerc(node *osm.Node) {
 	node.Long, node.Lat = WgsToMerc(node.Long, node.Lat)
 }

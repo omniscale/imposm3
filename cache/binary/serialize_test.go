@@ -3,7 +3,7 @@ package binary
 import (
 	"testing"
 
-	"github.com/omniscale/imposm3/element"
+	osm "github.com/omniscale/go-osm"
 )
 
 func compareRefs(a []int64, b []int64) bool {
@@ -19,9 +19,9 @@ func compareRefs(a []int64, b []int64) bool {
 }
 
 func TestMarshalNode(t *testing.T) {
-	node := &element.Node{}
-	node.Id = 12345
-	node.Tags = make(element.Tags)
+	node := &osm.Node{}
+	node.ID = 12345
+	node.Tags = make(osm.Tags)
 	node.Tags["name"] = "test"
 	node.Tags["place"] = "city"
 
@@ -42,9 +42,9 @@ func TestMarshalNode(t *testing.T) {
 }
 
 func TestMarshalWay(t *testing.T) {
-	way := &element.Way{}
-	way.Id = 12345
-	way.Tags = make(element.Tags)
+	way := &osm.Way{}
+	way.ID = 12345
+	way.Tags = make(osm.Tags)
 	way.Tags["name"] = "test"
 	way.Tags["highway"] = "trunk"
 	way.Refs = append(way.Refs, 1, 2, 3, 4)
@@ -71,9 +71,9 @@ func TestMarshalWay(t *testing.T) {
 
 func BenchmarkMarshalWay(b *testing.B) {
 	b.ReportAllocs()
-	way := &element.Way{}
-	way.Id = 12345
-	way.Tags = make(element.Tags)
+	way := &osm.Way{}
+	way.ID = 12345
+	way.Tags = make(osm.Tags)
 	way.Tags["name"] = "test"
 	way.Tags["highway"] = "trunk"
 	way.Refs = append(way.Refs, 1, 2, 3, 4)
@@ -85,9 +85,9 @@ func BenchmarkMarshalWay(b *testing.B) {
 
 func BenchmarkUnmarshalWay(b *testing.B) {
 	b.ReportAllocs()
-	way := &element.Way{}
-	way.Id = 12345
-	way.Tags = make(element.Tags)
+	way := &osm.Way{}
+	way.ID = 12345
+	way.Tags = make(osm.Tags)
 	way.Tags["name"] = "test"
 	way.Tags["highway"] = "trunk"
 	way.Refs = append(way.Refs, 1, 2, 3, 4)
@@ -99,13 +99,13 @@ func BenchmarkUnmarshalWay(b *testing.B) {
 }
 
 func TestMarshalRelation(t *testing.T) {
-	rel := &element.Relation{}
-	rel.Id = 12345
-	rel.Tags = make(element.Tags)
+	rel := &osm.Relation{}
+	rel.ID = 12345
+	rel.Tags = make(osm.Tags)
 	rel.Tags["name"] = "test"
 	rel.Tags["landusage"] = "forest"
-	rel.Members = append(rel.Members, element.Member{Id: 123, Type: element.WAY, Role: "outer"})
-	rel.Members = append(rel.Members, element.Member{Id: 124, Type: element.WAY, Role: "inner"})
+	rel.Members = append(rel.Members, osm.Member{ID: 123, Type: osm.WayMember, Role: "outer"})
+	rel.Members = append(rel.Members, osm.Member{ID: 124, Type: osm.WayMember, Role: "inner"})
 
 	data, _ := MarshalRelation(rel)
 	rel, _ = UnmarshalRelation(data)
@@ -125,11 +125,11 @@ func TestMarshalRelation(t *testing.T) {
 		t.Error("members len does not match")
 	}
 
-	if rel.Members[0].Id != 123 || rel.Members[0].Type != element.WAY || rel.Members[0].Role != "outer" {
+	if rel.Members[0].ID != 123 || rel.Members[0].Type != osm.WayMember || rel.Members[0].Role != "outer" {
 		t.Error("members do not match", rel.Members[0])
 	}
 
-	if rel.Members[1].Id != 124 || rel.Members[1].Type != element.WAY || rel.Members[1].Role != "inner" {
+	if rel.Members[1].ID != 124 || rel.Members[1].Type != osm.WayMember || rel.Members[1].Role != "inner" {
 		t.Error("members do not match", rel.Members[1])
 	}
 }

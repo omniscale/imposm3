@@ -4,9 +4,9 @@ import (
 	"testing"
 )
 
-func TestIdRefs(t *testing.T) {
+func TestIDRefs(t *testing.T) {
 
-	idRefs := IdRefs{}
+	idRefs := IDRefs{}
 
 	idRefs.Add(1)
 	if idRefs.Refs[0] != 1 {

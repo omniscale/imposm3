@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/omniscale/imposm3/element"
+	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/proj"
 )
 
@@ -25,7 +25,7 @@ var mercRes [20]float64
 func init() {
 	res := 2 * 20037508.342789244 / 256
 
-	for i, _ := range mercRes {
+	for i := range mercRes {
 		mercRes[i] = res
 		res /= 2
 	}
@@ -67,7 +67,7 @@ func (tl *TileList) Expire(long, lat float64) {
 	tl.addCoord(long, lat)
 }
 
-func (tl *TileList) ExpireNodes(nodes []element.Node, closed bool) {
+func (tl *TileList) ExpireNodes(nodes []osm.Node, closed bool) {
 	if len(nodes) == 0 {
 		return
 	}
@@ -101,7 +101,7 @@ func (tl *TileList) addCoord(long, lat float64) {
 
 // expireLine expires all tiles that are intersected by the line segments
 // between the nodes
-func (tl *TileList) expireLine(nodes []element.Node) {
+func (tl *TileList) expireLine(nodes []osm.Node) {
 	if len(nodes) == 1 {
 		tl.addCoord(nodes[0].Long, nodes[0].Lat)
 		return
@@ -135,7 +135,7 @@ func (tl *TileList) expireBox(b bbox) {
 }
 
 func (tl *TileList) writeTiles(w io.Writer) error {
-	for tileKey, _ := range tl.tiles {
+	for tileKey := range tl.tiles {
 		_, err := fmt.Fprintf(w, "%d/%d/%d\n", tl.zoom, tileKey.X, tileKey.Y)
 		if err != nil {
 			return err
@@ -176,7 +176,7 @@ type bbox struct {
 	minx, miny, maxx, maxy float64
 }
 
-func nodesBbox(nodes []element.Node) bbox {
+func nodesBbox(nodes []osm.Node) bbox {
 	b := bbox{nodes[0].Long, nodes[0].Lat, nodes[0].Long, nodes[0].Lat}
 
 	for i := 1; i < len(nodes); i++ {

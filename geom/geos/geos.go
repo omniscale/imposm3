@@ -52,10 +52,10 @@ func NewGeos() *Geos {
 	return geos
 }
 
-func (this *Geos) Finish() {
-	if this.v != nil {
-		C.finishGEOS_r(this.v)
-		this.v = nil
+func (g *Geos) Finish() {
+	if g.v != nil {
+		C.finishGEOS_r(g.v)
+		g.v = nil
 	}
 }
 
@@ -71,10 +71,10 @@ func init() {
 	C.initGEOS_debug()
 }
 
-func (this *Geos) Destroy(geom *Geom) {
+func (g *Geos) Destroy(geom *Geom) {
 	runtime.SetFinalizer(geom, nil)
 	if geom.v != nil {
-		C.GEOSGeom_destroy_r(this.v, geom.v)
+		C.GEOSGeom_destroy_r(g.v, geom.v)
 		geom.v = nil
 	} else {
 		log.Printf("double free?")
@@ -85,41 +85,41 @@ func destroyGeom(geom *Geom) {
 	C.GEOSGeom_destroy(geom.v)
 }
 
-func (this *Geos) DestroyLater(geom *Geom) {
+func (g *Geos) DestroyLater(geom *Geom) {
 	runtime.SetFinalizer(geom, destroyGeom)
 }
 
-func (this *Geos) Clone(geom *Geom) *Geom {
+func (g *Geos) Clone(geom *Geom) *Geom {
 	if geom == nil || geom.v == nil {
 		return nil
 	}
 
-	result := C.GEOSGeom_clone_r(this.v, geom.v)
+	result := C.GEOSGeom_clone_r(g.v, geom.v)
 	if result == nil {
 		return nil
 	}
 	return &Geom{result}
 }
 
-func (this *Geos) SetHandleSrid(srid int) {
-	this.srid = srid
+func (g *Geos) SetHandleSrid(srid int) {
+	g.srid = srid
 }
 
-func (this *Geos) NumGeoms(geom *Geom) int32 {
-	count := int32(C.GEOSGetNumGeometries_r(this.v, geom.v))
+func (g *Geos) NumGeoms(geom *Geom) int32 {
+	count := int32(C.GEOSGetNumGeometries_r(g.v, geom.v))
 	return count
 }
 
-func (this *Geos) NumCoordinates(geom *Geom) int32 {
-	count := int32(C.GEOSGetNumCoordinates_r(this.v, geom.v))
+func (g *Geos) NumCoordinates(geom *Geom) int32 {
+	count := int32(C.GEOSGetNumCoordinates_r(g.v, geom.v))
 	return count
 }
 
-func (this *Geos) Geoms(geom *Geom) []*Geom {
-	count := this.NumGeoms(geom)
+func (g *Geos) Geoms(geom *Geom) []*Geom {
+	count := g.NumGeoms(geom)
 	var result []*Geom
 	for i := 0; int32(i) < count; i++ {
-		part := C.GEOSGetGeometryN_r(this.v, geom.v, C.int(i))
+		part := C.GEOSGetGeometryN_r(g.v, geom.v, C.int(i))
 		if part == nil {
 			return nil
 		}
@@ -128,69 +128,69 @@ func (this *Geos) Geoms(geom *Geom) []*Geom {
 	return result
 }
 
-func (this *Geos) ExteriorRing(geom *Geom) *Geom {
-	ring := C.GEOSGetExteriorRing_r(this.v, geom.v)
+func (g *Geos) ExteriorRing(geom *Geom) *Geom {
+	ring := C.GEOSGetExteriorRing_r(g.v, geom.v)
 	if ring == nil {
 		return nil
 	}
 	return &Geom{ring}
 }
 
-func (this *Geos) BoundsPolygon(bounds Bounds) *Geom {
-	coordSeq, err := this.CreateCoordSeq(5, 2)
+func (g *Geos) BoundsPolygon(bounds Bounds) *Geom {
+	coordSeq, err := g.CreateCoordSeq(5, 2)
 	if err != nil {
 		return nil
 	}
 	// coordSeq inherited by LineString, no destroy
 
-	if err := coordSeq.SetXY(this, 0, bounds.MinX, bounds.MinY); err != nil {
+	if err := coordSeq.SetXY(g, 0, bounds.MinX, bounds.MinY); err != nil {
 		return nil
 	}
-	if err := coordSeq.SetXY(this, 1, bounds.MaxX, bounds.MinY); err != nil {
+	if err := coordSeq.SetXY(g, 1, bounds.MaxX, bounds.MinY); err != nil {
 		return nil
 	}
-	if err := coordSeq.SetXY(this, 2, bounds.MaxX, bounds.MaxY); err != nil {
+	if err := coordSeq.SetXY(g, 2, bounds.MaxX, bounds.MaxY); err != nil {
 		return nil
 	}
-	if err := coordSeq.SetXY(this, 3, bounds.MinX, bounds.MaxY); err != nil {
+	if err := coordSeq.SetXY(g, 3, bounds.MinX, bounds.MaxY); err != nil {
 		return nil
 	}
-	if err := coordSeq.SetXY(this, 4, bounds.MinX, bounds.MinY); err != nil {
+	if err := coordSeq.SetXY(g, 4, bounds.MinX, bounds.MinY); err != nil {
 		return nil
 	}
 
-	geom, err := coordSeq.AsLinearRing(this)
+	geom, err := coordSeq.AsLinearRing(g)
 	if err != nil {
 		return nil
 	}
 	// geom inherited by Polygon, no destroy
 
-	geom = this.Polygon(geom, nil)
+	geom = g.Polygon(geom, nil)
 	return geom
 
 }
 
-func (this *Geos) Point(x, y float64) *Geom {
-	coordSeq, err := this.CreateCoordSeq(1, 2)
+func (g *Geos) Point(x, y float64) *Geom {
+	coordSeq, err := g.CreateCoordSeq(1, 2)
 	if err != nil {
 		return nil
 	}
 	// coordSeq inherited by LineString
-	coordSeq.SetXY(this, 0, x, y)
-	geom, err := coordSeq.AsPoint(this)
+	coordSeq.SetXY(g, 0, x, y)
+	geom, err := coordSeq.AsPoint(g)
 	if err != nil {
 		return nil
 	}
 	return geom
 }
 
-func (this *Geos) Polygon(exterior *Geom, interiors []*Geom) *Geom {
+func (g *Geos) Polygon(exterior *Geom, interiors []*Geom) *Geom {
 	if len(interiors) == 0 {
-		geom := C.GEOSGeom_createPolygon_r(this.v, exterior.v, nil, C.uint(0))
+		geom := C.GEOSGeom_createPolygon_r(g.v, exterior.v, nil, C.uint(0))
 		if geom == nil {
 			return nil
 		}
-		err := C.GEOSNormalize_r(this.v, geom)
+		err := C.GEOSNormalize_r(g.v, geom)
 		if err != 0 {
 			C.GEOSGeom_destroy(geom)
 			return nil
@@ -202,11 +202,11 @@ func (this *Geos) Polygon(exterior *Geom, interiors []*Geom) *Geom {
 	for i, geom := range interiors {
 		interiorPtr[i] = geom.v
 	}
-	geom := C.GEOSGeom_createPolygon_r(this.v, exterior.v, &interiorPtr[0], C.uint(len(interiors)))
+	geom := C.GEOSGeom_createPolygon_r(g.v, exterior.v, &interiorPtr[0], C.uint(len(interiors)))
 	if geom == nil {
 		return nil
 	}
-	err := C.GEOSNormalize_r(this.v, geom)
+	err := C.GEOSNormalize_r(g.v, geom)
 	if err != 0 {
 		C.GEOSGeom_destroy(geom)
 		return nil
@@ -214,7 +214,7 @@ func (this *Geos) Polygon(exterior *Geom, interiors []*Geom) *Geom {
 	return &Geom{geom}
 }
 
-func (this *Geos) MultiPolygon(polygons []*Geom) *Geom {
+func (g *Geos) MultiPolygon(polygons []*Geom) *Geom {
 	if len(polygons) == 0 {
 		return nil
 	}
@@ -222,13 +222,13 @@ func (this *Geos) MultiPolygon(polygons []*Geom) *Geom {
 	for i, geom := range polygons {
 		polygonPtr[i] = geom.v
 	}
-	geom := C.GEOSGeom_createCollection_r(this.v, C.GEOS_MULTIPOLYGON, &polygonPtr[0], C.uint(len(polygons)))
+	geom := C.GEOSGeom_createCollection_r(g.v, C.GEOS_MULTIPOLYGON, &polygonPtr[0], C.uint(len(polygons)))
 	if geom == nil {
 		return nil
 	}
 	return &Geom{geom}
 }
-func (this *Geos) MultiLineString(lines []*Geom) *Geom {
+func (g *Geos) MultiLineString(lines []*Geom) *Geom {
 	if len(lines) == 0 {
 		return nil
 	}
@@ -236,36 +236,36 @@ func (this *Geos) MultiLineString(lines []*Geom) *Geom {
 	for i, geom := range lines {
 		linePtr[i] = geom.v
 	}
-	geom := C.GEOSGeom_createCollection_r(this.v, C.GEOS_MULTILINESTRING, &linePtr[0], C.uint(len(lines)))
+	geom := C.GEOSGeom_createCollection_r(g.v, C.GEOS_MULTILINESTRING, &linePtr[0], C.uint(len(lines)))
 	if geom == nil {
 		return nil
 	}
 	return &Geom{geom}
 }
 
-func (this *Geos) IsValid(geom *Geom) bool {
-	if C.GEOSisValid_r(this.v, geom.v) == 1 {
+func (g *Geos) IsValid(geom *Geom) bool {
+	if C.GEOSisValid_r(g.v, geom.v) == 1 {
 		return true
 	}
 	return false
 }
 
-func (this *Geos) IsSimple(geom *Geom) bool {
-	if C.GEOSisSimple_r(this.v, geom.v) == 1 {
+func (g *Geos) IsSimple(geom *Geom) bool {
+	if C.GEOSisSimple_r(g.v, geom.v) == 1 {
 		return true
 	}
 	return false
 }
 
-func (this *Geos) IsEmpty(geom *Geom) bool {
-	if C.GEOSisEmpty_r(this.v, geom.v) == 1 {
+func (g *Geos) IsEmpty(geom *Geom) bool {
+	if C.GEOSisEmpty_r(g.v, geom.v) == 1 {
 		return true
 	}
 	return false
 }
 
-func (this *Geos) Type(geom *Geom) string {
-	geomType := C.GEOSGeomType_r(this.v, geom.v)
+func (g *Geos) Type(geom *Geom) string {
+	geomType := C.GEOSGeomType_r(g.v, geom.v)
 	if geomType == nil {
 		return "Unknown"
 	}
@@ -273,8 +273,8 @@ func (this *Geos) Type(geom *Geom) string {
 	return C.GoString(geomType)
 }
 
-func (this *Geos) Equals(a, b *Geom) bool {
-	result := C.GEOSEquals_r(this.v, a.v, b.v)
+func (g *Geos) Equals(a, b *Geom) bool {
+	result := C.GEOSEquals_r(g.v, a.v, b.v)
 	if result == 1 {
 		return true
 	}
@@ -294,22 +294,20 @@ func (g *Geos) MakeValid(geom *Geom) (*Geom, error) {
 	return fixed, nil
 }
 
-func (this *Geom) Area() float64 {
+func (g *Geom) Area() float64 {
 	var area C.double
-	if ret := C.GEOSArea(this.v, &area); ret == 1 {
+	if ret := C.GEOSArea(g.v, &area); ret == 1 {
 		return float64(area)
-	} else {
-		return 0
 	}
+	return 0
 }
 
-func (this *Geom) Length() float64 {
+func (g *Geom) Length() float64 {
 	var length C.double
-	if ret := C.GEOSLength(this.v, &length); ret == 1 {
+	if ret := C.GEOSLength(g.v, &length); ret == 1 {
 		return float64(length)
-	} else {
-		return 0
 	}
+	return 0
 }
 
 type Bounds struct {
@@ -319,10 +317,19 @@ type Bounds struct {
 	MaxY float64
 }
 
+func MakeBounds(minx, miny, maxx, maxy float64) Bounds {
+	return Bounds{
+		MinX: minx,
+		MinY: miny,
+		MaxX: maxx,
+		MaxY: maxy,
+	}
+}
+
 var NilBounds = Bounds{1e20, 1e20, -1e20, -1e20}
 
-func (this *Geom) Bounds() Bounds {
-	geom := C.GEOSEnvelope(this.v)
+func (g *Geom) Bounds() Bounds {
+	geom := C.GEOSEnvelope(g.v)
 	if geom == nil {
 		return NilBounds
 	}

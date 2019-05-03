@@ -8,14 +8,14 @@ import (
 
 func TestTileBounds(t *testing.T) {
 	expected := []geos.Bounds{
-		{-1.0, 1.0, -0.5, 1.5},
-		{-1.0, 1.5, -0.5, 2.0},
-		{-0.5, 1.0, 0.0, 1.5},
-		{-0.5, 1.5, 0.0, 2.0},
-		{0.0, 1.0, 0.5, 1.5},
-		{0.0, 1.5, 0.5, 2.0},
+		geos.MakeBounds(-1.0, 1.0, -0.5, 1.5),
+		geos.MakeBounds(-1.0, 1.5, -0.5, 2.0),
+		geos.MakeBounds(-0.5, 1.0, 0.0, 1.5),
+		geos.MakeBounds(-0.5, 1.5, 0.0, 2.0),
+		geos.MakeBounds(0.0, 1.0, 0.5, 1.5),
+		geos.MakeBounds(0.0, 1.5, 0.5, 2.0),
 	}
-	for i, bounds := range tileBounds(geos.Bounds{-1, 1, 0.49, 1.51}, 0.5) {
+	for i, bounds := range tileBounds(geos.MakeBounds(-1, 1, 0.49, 1.51), 0.5) {
 		if expected[i] != bounds {
 			t.Fatalf("%v != %v\n", expected[i], bounds)
 		}
@@ -24,21 +24,21 @@ func TestTileBounds(t *testing.T) {
 
 func TestSplitPolygonAtGrids(t *testing.T) {
 	expected := []geos.Bounds{
-		{0, 0, 0.05, 0.05},
-		{0, 0.05, 0.05, 0.1},
-		{0.05, 0, 0.1, 0.05},
-		{0.05, 0.05, 0.1, 0.1},
-		{0, 0.1, 0.05, 0.11},
-		{0.05, 0.1, 0.1, 0.11},
-		{0.1, 0, 0.15, 0.05},
-		{0.1, 0.05, 0.15, 0.1},
-		{0.1, 0.1, 0.15, 0.11},
+		geos.MakeBounds(0, 0, 0.05, 0.05),
+		geos.MakeBounds(0, 0.05, 0.05, 0.1),
+		geos.MakeBounds(0.05, 0, 0.1, 0.05),
+		geos.MakeBounds(0.05, 0.05, 0.1, 0.1),
+		geos.MakeBounds(0, 0.1, 0.05, 0.11),
+		geos.MakeBounds(0.05, 0.1, 0.1, 0.11),
+		geos.MakeBounds(0.1, 0, 0.15, 0.05),
+		geos.MakeBounds(0.1, 0.05, 0.15, 0.1),
+		geos.MakeBounds(0.1, 0.1, 0.15, 0.11),
 	}
 
 	g := geos.NewGeos()
 	defer g.Finish()
 
-	geom := g.BoundsPolygon(geos.Bounds{0, 0, 0.15, 0.11})
+	geom := g.BoundsPolygon(geos.MakeBounds(0, 0, 0.15, 0.11))
 
 	geoms, _ := splitPolygonAtGrid(g, geom, 0.05, 0.2)
 	for _, geom := range geoms {
@@ -59,8 +59,8 @@ func TestMergePolygonGeometries(t *testing.T) {
 	// check non intersecting polygons
 	// should return multipolygon
 	geoms := []*geos.Geom{
-		g.BoundsPolygon(geos.Bounds{0, 0, 10, 10}),
-		g.BoundsPolygon(geos.Bounds{20, 20, 30, 30}),
+		g.BoundsPolygon(geos.MakeBounds(0, 0, 10, 10)),
+		g.BoundsPolygon(geos.MakeBounds(20, 20, 30, 30)),
 	}
 	result := mergeGeometries(g, geoms, "Polygon")
 
@@ -77,8 +77,8 @@ func TestMergePolygonGeometries(t *testing.T) {
 	// check intersecting polygons
 	// should return single polygon
 	geoms = []*geos.Geom{
-		g.BoundsPolygon(geos.Bounds{0, 0, 10, 10}),
-		g.BoundsPolygon(geos.Bounds{5, 5, 30, 30}),
+		g.BoundsPolygon(geos.MakeBounds(0, 0, 10, 10)),
+		g.BoundsPolygon(geos.MakeBounds(5, 5, 30, 30)),
 	}
 	result = mergeGeometries(g, geoms, "Polygon")
 
@@ -94,8 +94,8 @@ func TestMergePolygonGeometries(t *testing.T) {
 
 	// same with multipolygon type
 	geoms = []*geos.Geom{
-		g.BoundsPolygon(geos.Bounds{0, 0, 10, 10}),
-		g.BoundsPolygon(geos.Bounds{5, 5, 30, 30}),
+		g.BoundsPolygon(geos.MakeBounds(0, 0, 10, 10)),
+		g.BoundsPolygon(geos.MakeBounds(5, 5, 30, 30)),
 	}
 	result = mergeGeometries(g, geoms, "MultiPolygon")
 
@@ -112,9 +112,9 @@ func TestMergePolygonGeometries(t *testing.T) {
 	// strip non Polygons
 	geoms = []*geos.Geom{
 		g.FromWkt("POINT(0 0)"),
-		g.BoundsPolygon(geos.Bounds{0, 0, 10, 10}),
+		g.BoundsPolygon(geos.MakeBounds(0, 0, 10, 10)),
 		g.FromWkt("LINESTRING(0 0, 0 10)"),
-		g.BoundsPolygon(geos.Bounds{5, 5, 30, 30}),
+		g.BoundsPolygon(geos.MakeBounds(5, 5, 30, 30)),
 	}
 	result = mergeGeometries(g, geoms, "Polygon")
 
@@ -322,7 +322,7 @@ func TestClipperWithBuffer(t *testing.T) {
 func TestSplitParams(t *testing.T) {
 	var gridWidth, startWidth float64
 
-	gridWidth, startWidth = splitParams(geos.Bounds{0, 0, 10000, 10000}, 10, 2000)
+	gridWidth, startWidth = splitParams(geos.MakeBounds(0, 0, 10000, 10000), 10, 2000)
 	if gridWidth != 2000.0 {
 		t.Fatal(gridWidth)
 	}
@@ -330,7 +330,7 @@ func TestSplitParams(t *testing.T) {
 		t.Fatal(startWidth)
 	}
 
-	gridWidth, startWidth = splitParams(geos.Bounds{0, 0, 10000, 10000}, 10, 1000)
+	gridWidth, startWidth = splitParams(geos.MakeBounds(0, 0, 10000, 10000), 10, 1000)
 	if gridWidth != 1000.0 {
 		t.Fatal(gridWidth)
 	}
@@ -338,7 +338,7 @@ func TestSplitParams(t *testing.T) {
 		t.Fatal(startWidth)
 	}
 
-	gridWidth, startWidth = splitParams(geos.Bounds{0, 0, 10000, 10000}, 10, 500)
+	gridWidth, startWidth = splitParams(geos.MakeBounds(0, 0, 10000, 10000), 10, 500)
 	if gridWidth != 1000.0 {
 		t.Fatal(gridWidth)
 	}
@@ -346,7 +346,7 @@ func TestSplitParams(t *testing.T) {
 		t.Fatal(startWidth)
 	}
 
-	gridWidth, startWidth = splitParams(geos.Bounds{0, 0, 10000, 5000}, 10, 500)
+	gridWidth, startWidth = splitParams(geos.MakeBounds(0, 0, 10000, 5000), 10, 500)
 	if gridWidth != 1000.0 {
 		t.Fatal(gridWidth)
 	}
@@ -354,7 +354,7 @@ func TestSplitParams(t *testing.T) {
 		t.Fatal(startWidth)
 	}
 
-	gridWidth, startWidth = splitParams(geos.Bounds{0, 0, 10000, 20000}, 10, 500)
+	gridWidth, startWidth = splitParams(geos.MakeBounds(0, 0, 10000, 20000), 10, 500)
 	if gridWidth != 2000.0 {
 		t.Fatal(gridWidth)
 	}
@@ -362,7 +362,7 @@ func TestSplitParams(t *testing.T) {
 		t.Fatal(startWidth)
 	}
 
-	gridWidth, startWidth = splitParams(geos.Bounds{0, 0, 10000, 20000}, 50, 100)
+	gridWidth, startWidth = splitParams(geos.MakeBounds(0, 0, 10000, 20000), 50, 100)
 	if gridWidth != 400.0 {
 		t.Fatal(gridWidth)
 	}

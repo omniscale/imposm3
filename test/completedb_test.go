@@ -6,9 +6,9 @@ import (
 	"io/ioutil"
 	"os"
 
+	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/cache"
 
-	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/geom"
 	"github.com/omniscale/imposm3/proj"
 
@@ -300,7 +300,7 @@ func TestComplete(t *testing.T) {
 		})
 	})
 
-	t.Run("DuplicateIds", func(t *testing.T) {
+	t.Run("DuplicateIDs", func(t *testing.T) {
 		// Relation/way with same ID is inserted.
 
 		ts.assertRecords(t, []checkElem{
@@ -423,18 +423,18 @@ func TestComplete(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			var osmId, count int64
+			var osmID, count int64
 			for rows.Next() {
-				if err := rows.Scan(&osmId, &count); err != nil {
+				if err := rows.Scan(&osmID, &count); err != nil {
 					t.Fatal(err)
 				}
-				if table == "osm_roads" && osmId == 18001 {
+				if table == "osm_roads" && osmID == 18001 {
 					// # duplicate for TestNodeWayInsertedTwice is expected
 					if count != 2 {
-						t.Error("highway not inserted twice", osmId, count)
+						t.Error("highway not inserted twice", osmID, count)
 					}
 				} else {
-					t.Error("found duplicate way in osm_roads", osmId, count)
+					t.Error("found duplicate way in osm_roads", osmID, count)
 				}
 			}
 		}
@@ -443,7 +443,7 @@ func TestComplete(t *testing.T) {
 	t.Run("UpdatedLandusage", func(t *testing.T) {
 		// Multipolygon relation was modified
 
-		nd := element.Node{Long: 13.4, Lat: 47.5}
+		nd := osm.Node{Long: 13.4, Lat: 47.5}
 		proj.NodeToMerc(&nd)
 		point, err := geom.Point(ts.g, nd)
 		if err != nil {
@@ -564,7 +564,7 @@ func TestComplete(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if len(rel.Members) != 2 || rel.Members[0].Id != 16001 || rel.Members[1].Id != 16011 {
+		if len(rel.Members) != 2 || rel.Members[0].ID != 16001 || rel.Members[1].ID != 16011 {
 			t.Error("unexpected relation members", rel)
 		}
 
@@ -650,7 +650,7 @@ func TestComplete(t *testing.T) {
 		})
 	})
 
-	t.Run("DuplicateIds2", func(t *testing.T) {
+	t.Run("DuplicateIDs2", func(t *testing.T) {
 		// Only relation/way with same ID was deleted.
 
 		ts.assertRecords(t, []checkElem{

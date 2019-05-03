@@ -2,8 +2,8 @@ package cache
 
 import (
 	"github.com/jmhodges/levigo"
+	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/cache/binary"
-	"github.com/omniscale/imposm3/element"
 )
 
 type NodesCache struct {
@@ -20,14 +20,14 @@ func newNodesCache(path string) (*NodesCache, error) {
 	return &cache, err
 }
 
-func (p *NodesCache) PutNode(node *element.Node) error {
-	if node.Id == SKIP {
+func (p *NodesCache) PutNode(node *osm.Node) error {
+	if node.ID == SKIP {
 		return nil
 	}
 	if node.Tags == nil {
 		return nil
 	}
-	keyBuf := idToKeyBuf(node.Id)
+	keyBuf := idToKeyBuf(node.ID)
 	data, err := binary.MarshalNode(node)
 	if err != nil {
 		return err
@@ -35,30 +35,30 @@ func (p *NodesCache) PutNode(node *element.Node) error {
 	return p.db.Put(p.wo, keyBuf, data)
 }
 
-func (p *NodesCache) PutNodes(nodes []element.Node) (int, error) {
+func (p *NodesCache) PutNodes(nodes []osm.Node) (int, error) {
 	batch := levigo.NewWriteBatch()
 	defer batch.Close()
 
 	var n int
 	for _, node := range nodes {
-		if node.Id == SKIP {
+		if node.ID == SKIP {
 			continue
 		}
 		if len(node.Tags) == 0 {
 			continue
 		}
-		keyBuf := idToKeyBuf(node.Id)
+		keyBuf := idToKeyBuf(node.ID)
 		data, err := binary.MarshalNode(&node)
 		if err != nil {
 			return 0, err
 		}
 		batch.Put(keyBuf, data)
-		n += 1
+		n++
 	}
 	return n, p.db.Write(p.wo, batch)
 }
 
-func (p *NodesCache) GetNode(id int64) (*element.Node, error) {
+func (p *NodesCache) GetNode(id int64) (*osm.Node, error) {
 	keyBuf := idToKeyBuf(id)
 	data, err := p.db.Get(p.ro, keyBuf)
 	if err != nil {
@@ -71,7 +71,7 @@ func (p *NodesCache) GetNode(id int64) (*element.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	node.Id = id
+	node.ID = id
 	return node, nil
 }
 
@@ -80,8 +80,8 @@ func (p *NodesCache) DeleteNode(id int64) error {
 	return p.db.Delete(p.wo, keyBuf)
 }
 
-func (p *NodesCache) Iter() chan *element.Node {
-	nodes := make(chan *element.Node)
+func (p *NodesCache) Iter() chan *osm.Node {
+	nodes := make(chan *osm.Node)
 	go func() {
 		ro := levigo.NewReadOptions()
 		ro.SetFillCache(false)
@@ -97,7 +97,7 @@ func (p *NodesCache) Iter() chan *element.Node {
 			if err != nil {
 				panic(err)
 			}
-			node.Id = idFromKeyBuf(it.Key())
+			node.ID = idFromKeyBuf(it.Key())
 
 			nodes <- node
 		}

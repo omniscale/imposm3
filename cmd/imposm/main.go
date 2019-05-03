@@ -42,22 +42,22 @@ func Main(usage func()) {
 	switch os.Args[1] {
 	case "import":
 		opts := config.ParseImport(os.Args[2:])
-		if opts.Base.Httpprofile != "" {
-			stats.StartHttpPProf(opts.Base.Httpprofile)
+		if opts.Base.HTTPProfile != "" {
+			stats.StartHTTPPProf(opts.Base.HTTPProfile)
 		}
 		import_.Import(opts)
 	case "diff":
 		opts, files := config.ParseDiffImport(os.Args[2:])
 
-		if opts.Httpprofile != "" {
-			stats.StartHttpPProf(opts.Httpprofile)
+		if opts.HTTPProfile != "" {
+			stats.StartHTTPPProf(opts.HTTPProfile)
 		}
 		update.Diff(opts, files)
 	case "run":
 		opts := config.ParseRunImport(os.Args[2:])
 
-		if opts.Httpprofile != "" {
-			stats.StartHttpPProf(opts.Httpprofile)
+		if opts.HTTPProfile != "" {
+			stats.StartHTTPPProf(opts.HTTPProfile)
 		}
 		update.Run(opts)
 	case "query-cache":

@@ -9,6 +9,7 @@ import (
 
 	"github.com/jmhodges/levigo"
 
+	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/cache/binary"
 	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/log"
@@ -114,60 +115,60 @@ type idRef struct {
 	ref int64
 }
 
-// idRefBunch stores multiple IdRefs
+// idRefBunch stores multiple IDRefs
 type idRefBunch struct {
 	id     int64 // the bunch id
-	idRefs []element.IdRefs
+	idRefs []element.IDRefs
 }
 
 // idRefBunches can hold multiple idRefBunch
 type idRefBunches map[int64]idRefBunch
 
-func (bunches *idRefBunches) add(bunchId, id, ref int64) {
-	idRefs := bunches.getCreate(bunchId, id)
+func (bunches *idRefBunches) add(bunchID, id, ref int64) {
+	idRefs := bunches.getCreate(bunchID, id)
 	idRefs.Add(ref)
 }
 
-func (bunches *idRefBunches) getCreate(bunchId, id int64) *element.IdRefs {
-	bunch, ok := (*bunches)[bunchId]
+func (bunches *idRefBunches) getCreate(bunchID, id int64) *element.IDRefs {
+	bunch, ok := (*bunches)[bunchID]
 	if !ok {
-		bunch = idRefBunch{id: bunchId}
+		bunch = idRefBunch{id: bunchID}
 	}
 	result := bunch.getCreate(id)
 
-	(*bunches)[bunchId] = bunch
+	(*bunches)[bunchID] = bunch
 	return result
 }
 
-func (bunch *idRefBunch) get(id int64) *element.IdRefs {
-	var result *element.IdRefs
+func (bunch *idRefBunch) get(id int64) *element.IDRefs {
+	var result *element.IDRefs
 
 	i := sort.Search(len(bunch.idRefs), func(i int) bool {
-		return bunch.idRefs[i].Id >= id
+		return bunch.idRefs[i].ID >= id
 	})
-	if i < len(bunch.idRefs) && bunch.idRefs[i].Id == id {
+	if i < len(bunch.idRefs) && bunch.idRefs[i].ID == id {
 		result = &bunch.idRefs[i]
 	}
 	return result
 }
 
-func (bunch *idRefBunch) getCreate(id int64) *element.IdRefs {
-	var result *element.IdRefs
+func (bunch *idRefBunch) getCreate(id int64) *element.IDRefs {
+	var result *element.IDRefs
 
 	i := sort.Search(len(bunch.idRefs), func(i int) bool {
-		return bunch.idRefs[i].Id >= id
+		return bunch.idRefs[i].ID >= id
 	})
-	if i < len(bunch.idRefs) && bunch.idRefs[i].Id >= id {
-		if bunch.idRefs[i].Id == id {
+	if i < len(bunch.idRefs) && bunch.idRefs[i].ID >= id {
+		if bunch.idRefs[i].ID == id {
 			result = &bunch.idRefs[i]
 		} else {
-			bunch.idRefs = append(bunch.idRefs, element.IdRefs{})
+			bunch.idRefs = append(bunch.idRefs, element.IDRefs{})
 			copy(bunch.idRefs[i+1:], bunch.idRefs[i:])
-			bunch.idRefs[i] = element.IdRefs{Id: id}
+			bunch.idRefs[i] = element.IDRefs{ID: id}
 			result = &bunch.idRefs[i]
 		}
 	} else {
-		bunch.idRefs = append(bunch.idRefs, element.IdRefs{Id: id})
+		bunch.idRefs = append(bunch.idRefs, element.IDRefs{ID: id})
 		result = &bunch.idRefs[len(bunch.idRefs)-1]
 	}
 
@@ -188,8 +189,8 @@ type bunchRefCache struct {
 	write        chan idRefBunches
 	addc         chan idRef
 	mu           sync.Mutex
-	waitAdd      *sync.WaitGroup
-	waitWrite    *sync.WaitGroup
+	waitAdd      sync.WaitGroup
+	waitWrite    sync.WaitGroup
 }
 
 func newRefIndex(path string, opts *cacheOptions) (*bunchRefCache, error) {
@@ -203,20 +204,17 @@ func newRefIndex(path string, opts *cacheOptions) (*bunchRefCache, error) {
 	index.buffer = make(idRefBunches, bufferSize)
 	index.addc = make(chan idRef, 1024)
 
-	index.waitWrite = &sync.WaitGroup{}
-	index.waitAdd = &sync.WaitGroup{}
-
 	return &index, nil
 }
 
 type CoordsRefIndex struct {
-	bunchRefCache
+	*bunchRefCache
 }
 type CoordsRelRefIndex struct {
-	bunchRefCache
+	*bunchRefCache
 }
 type WaysRefIndex struct {
-	bunchRefCache
+	*bunchRefCache
 }
 
 func newCoordsRefIndex(dir string) (*CoordsRefIndex, error) {
@@ -224,7 +222,7 @@ func newCoordsRefIndex(dir string) (*CoordsRefIndex, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &CoordsRefIndex{*cache}, nil
+	return &CoordsRefIndex{cache}, nil
 }
 
 func newCoordsRelRefIndex(dir string) (*CoordsRelRefIndex, error) {
@@ -232,7 +230,7 @@ func newCoordsRelRefIndex(dir string) (*CoordsRelRefIndex, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &CoordsRelRefIndex{*cache}, nil
+	return &CoordsRelRefIndex{cache}, nil
 }
 
 func newWaysRefIndex(dir string) (*WaysRefIndex, error) {
@@ -240,10 +238,10 @@ func newWaysRefIndex(dir string) (*WaysRefIndex, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &WaysRefIndex{*cache}, nil
+	return &WaysRefIndex{cache}, nil
 }
 
-func (index *bunchRefCache) getBunchId(id int64) int64 {
+func (index *bunchRefCache) getBunchID(id int64) int64 {
 	return id / 64
 }
 
@@ -268,7 +266,7 @@ func (index *bunchRefCache) Get(id int64) []int64 {
 	if index.linearImport {
 		panic("programming error: get not supported in linearImport mode")
 	}
-	keyBuf := idToKeyBuf(index.getBunchId(id))
+	keyBuf := idToKeyBuf(index.getBunchID(id))
 
 	data, err := index.db.Get(index.ro, keyBuf)
 	if err != nil {
@@ -278,8 +276,8 @@ func (index *bunchRefCache) Get(id int64) []int64 {
 	if data != nil {
 		idRefs := idRefsPool.get()
 		defer idRefsPool.release(idRefs)
-		for _, idRef := range binary.UnmarshalIdRefsBunch2(data, idRefs) {
-			if idRef.Id == id {
+		for _, idRef := range binary.UnmarshalIDRefsBunch2(data, idRefs) {
+			if idRef.ID == id {
 				return idRef.Refs
 			}
 		}
@@ -288,27 +286,27 @@ func (index *bunchRefCache) Get(id int64) []int64 {
 }
 
 func (index *bunchRefCache) Add(id, ref int64) error {
-	keyBuf := idToKeyBuf(index.getBunchId(id))
+	keyBuf := idToKeyBuf(index.getBunchID(id))
 
 	data, err := index.db.Get(index.ro, keyBuf)
 	if err != nil {
 		return err
 	}
 
-	var idRefs []element.IdRefs
+	var idRefs []element.IDRefs
 	if data != nil {
 		idRefs = idRefsPool.get()
 		defer idRefsPool.release(idRefs)
-		idRefs = binary.UnmarshalIdRefsBunch2(data, idRefs)
+		idRefs = binary.UnmarshalIDRefsBunch2(data, idRefs)
 	}
 
-	idRefBunch := idRefBunch{index.getBunchId(id), idRefs}
+	idRefBunch := idRefBunch{index.getBunchID(id), idRefs}
 	idRef := idRefBunch.getCreate(id)
 	idRef.Add(ref)
 
 	data = bytePool.get()
 	defer bytePool.release(data)
-	data = binary.MarshalIdRefsBunch2(idRefBunch.idRefs, data)
+	data = binary.MarshalIDRefsBunch2(idRefBunch.idRefs, data)
 
 	return index.db.Put(index.wo, keyBuf, data)
 }
@@ -318,7 +316,7 @@ func (index *bunchRefCache) DeleteRef(id, ref int64) error {
 		panic("programming error: delete not supported in linearImport mode")
 	}
 
-	keyBuf := idToKeyBuf(index.getBunchId(id))
+	keyBuf := idToKeyBuf(index.getBunchID(id))
 
 	data, err := index.db.Get(index.ro, keyBuf)
 	if err != nil {
@@ -328,14 +326,14 @@ func (index *bunchRefCache) DeleteRef(id, ref int64) error {
 	if data != nil {
 		idRefs := idRefsPool.get()
 		defer idRefsPool.release(idRefs)
-		idRefs = binary.UnmarshalIdRefsBunch2(data, idRefs)
-		idRefBunch := idRefBunch{index.getBunchId(id), idRefs}
+		idRefs = binary.UnmarshalIDRefsBunch2(data, idRefs)
+		idRefBunch := idRefBunch{index.getBunchID(id), idRefs}
 		idRef := idRefBunch.get(id)
 		if idRef != nil {
 			idRef.Delete(ref)
 			data := bytePool.get()
 			defer bytePool.release(data)
-			data = binary.MarshalIdRefsBunch2(idRefs, data)
+			data = binary.MarshalIDRefsBunch2(idRefs, data)
 			return index.db.Put(index.wo, keyBuf, data)
 		}
 	}
@@ -347,7 +345,7 @@ func (index *bunchRefCache) Delete(id int64) error {
 		panic("programming error: delete not supported in linearImport mode")
 	}
 
-	keyBuf := idToKeyBuf(index.getBunchId(id))
+	keyBuf := idToKeyBuf(index.getBunchID(id))
 
 	data, err := index.db.Get(index.ro, keyBuf)
 	if err != nil {
@@ -357,58 +355,58 @@ func (index *bunchRefCache) Delete(id int64) error {
 	if data != nil {
 		idRefs := idRefsPool.get()
 		defer idRefsPool.release(idRefs)
-		idRefs = binary.UnmarshalIdRefsBunch2(data, idRefs)
-		idRefBunch := idRefBunch{index.getBunchId(id), idRefs}
+		idRefs = binary.UnmarshalIDRefsBunch2(data, idRefs)
+		idRefBunch := idRefBunch{index.getBunchID(id), idRefs}
 		idRef := idRefBunch.get(id)
 		if idRef != nil {
 			idRef.Refs = []int64{}
 			data := bytePool.get()
 			defer bytePool.release(data)
-			data = binary.MarshalIdRefsBunch2(idRefs, data)
+			data = binary.MarshalIDRefsBunch2(idRefs, data)
 			return index.db.Put(index.wo, keyBuf, data)
 		}
 	}
 	return nil
 }
 
-func (index *CoordsRefIndex) AddFromWay(way *element.Way) {
+func (index *CoordsRefIndex) AddFromWay(way *osm.Way) {
 	for _, node := range way.Nodes {
 		if index.linearImport {
-			index.addc <- idRef{id: node.Id, ref: way.Id}
+			index.addc <- idRef{id: node.ID, ref: way.ID}
 		} else {
-			index.Add(node.Id, way.Id)
+			index.Add(node.ID, way.ID)
 		}
 	}
 }
 
-func (index *CoordsRefIndex) DeleteFromWay(way *element.Way) {
+func (index *CoordsRefIndex) DeleteFromWay(way *osm.Way) {
 	if index.linearImport {
 		panic("programming error: delete not supported in linearImport mode")
 	}
 	for _, node := range way.Nodes {
-		index.DeleteRef(node.Id, way.Id)
+		index.DeleteRef(node.ID, way.ID)
 	}
 }
 
-func (index *CoordsRelRefIndex) AddFromMembers(relId int64, members []element.Member) {
+func (index *CoordsRelRefIndex) AddFromMembers(relID int64, members []osm.Member) {
 	for _, member := range members {
-		if member.Type == element.NODE {
+		if member.Type == osm.NodeMember {
 			if index.linearImport {
-				index.addc <- idRef{id: member.Id, ref: relId}
+				index.addc <- idRef{id: member.ID, ref: relID}
 			} else {
-				index.Add(member.Id, relId)
+				index.Add(member.ID, relID)
 			}
 		}
 	}
 }
 
-func (index *WaysRefIndex) AddFromMembers(relId int64, members []element.Member) {
+func (index *WaysRefIndex) AddFromMembers(relID int64, members []osm.Member) {
 	for _, member := range members {
-		if member.Type == element.WAY {
+		if member.Type == osm.WayMember {
 			if index.linearImport {
-				index.addc <- idRef{id: member.Id, ref: relId}
+				index.addc <- idRef{id: member.ID, ref: relID}
 			} else {
-				index.Add(member.Id, relId)
+				index.Add(member.ID, relID)
 			}
 		}
 	}
@@ -450,7 +448,7 @@ func (index *bunchRefCache) writer() {
 
 func (index *bunchRefCache) dispatch() {
 	for idRef := range index.addc {
-		index.buffer.add(index.getBunchId(idRef.id), idRef.id, idRef.ref)
+		index.buffer.add(index.getBunchID(idRef.id), idRef.id, idRef.ref)
 		if len(index.buffer) >= bufferSize {
 			index.write <- index.buffer
 			select {
@@ -468,12 +466,12 @@ func (index *bunchRefCache) dispatch() {
 }
 
 type loadBunchItem struct {
-	bunchId int64
+	bunchID int64
 	bunch   idRefBunch
 }
 
 type writeBunchItem struct {
-	bunchIdBuf []byte
+	bunchIDBuf []byte
 	data       []byte
 }
 
@@ -489,7 +487,7 @@ func (index *bunchRefCache) writeRefs(idRefs idRefBunches) error {
 		wg.Add(1)
 		go func() {
 			for item := range loadc {
-				keyBuf := idToKeyBuf(item.bunchId)
+				keyBuf := idToKeyBuf(item.bunchID)
 				putc <- writeBunchItem{
 					keyBuf,
 					index.loadMergeMarshal(keyBuf, item.bunch.idRefs),
@@ -500,8 +498,8 @@ func (index *bunchRefCache) writeRefs(idRefs idRefBunches) error {
 	}
 
 	go func() {
-		for bunchId, bunch := range idRefs {
-			loadc <- loadBunchItem{bunchId, bunch}
+		for bunchID, bunch := range idRefs {
+			loadc <- loadBunchItem{bunchID, bunch}
 		}
 		close(loadc)
 		wg.Wait()
@@ -509,12 +507,12 @@ func (index *bunchRefCache) writeRefs(idRefs idRefBunches) error {
 	}()
 
 	for item := range putc {
-		batch.Put(item.bunchIdBuf, item.data)
+		batch.Put(item.bunchIDBuf, item.data)
 		bytePool.release(item.data)
 	}
 
 	go func() {
-		for k, _ := range idRefs {
+		for k := range idRefs {
 			delete(idRefs, k)
 		}
 		select {
@@ -524,61 +522,61 @@ func (index *bunchRefCache) writeRefs(idRefs idRefBunches) error {
 	return index.db.Write(index.wo, batch)
 }
 
-func mergeBunch(bunch, newBunch []element.IdRefs) []element.IdRefs {
+func mergeBunch(bunch, newBunch []element.IDRefs) []element.IDRefs {
 	lastIdx := 0
 
-NextIdRef:
+NextIDRef:
 	// for each new idRef...
-	for _, newIdRefs := range newBunch {
+	for _, newIDRefs := range newBunch {
 		// search place in bunch
 		for i := lastIdx; i < len(bunch); i++ {
-			if bunch[i].Id == newIdRefs.Id {
+			if bunch[i].ID == newIDRefs.ID {
 				// id already present
-				if len(newIdRefs.Refs) == 0 {
+				if len(newIDRefs.Refs) == 0 {
 					// no new refs -> delete
 					bunch = append(bunch[:i], bunch[i+1:]...)
 				} else { // otherwise add refs
-					for _, r := range newIdRefs.Refs {
+					for _, r := range newIDRefs.Refs {
 						bunch[i].Add(r)
 					}
 				}
 				lastIdx = i
-				continue NextIdRef
+				continue NextIDRef
 			}
-			if bunch[i].Id > newIdRefs.Id {
+			if bunch[i].ID > newIDRefs.ID {
 				// insert before
-				if len(newIdRefs.Refs) > 0 {
-					bunch = append(bunch, element.IdRefs{})
+				if len(newIDRefs.Refs) > 0 {
+					bunch = append(bunch, element.IDRefs{})
 					copy(bunch[i+1:], bunch[i:])
-					bunch[i] = newIdRefs
+					bunch[i] = newIDRefs
 				}
 				lastIdx = i
-				continue NextIdRef
+				continue NextIDRef
 			}
 		}
 		// insert at the end
-		if len(newIdRefs.Refs) > 0 {
-			bunch = append(bunch, newIdRefs)
+		if len(newIDRefs.Refs) > 0 {
+			bunch = append(bunch, newIDRefs)
 			lastIdx = len(bunch) - 1
 		}
 	}
 	return bunch
 }
 
-// loadMergeMarshal loads an existing bunch, merges the IdRefs and
+// loadMergeMarshal loads an existing bunch, merges the IDRefs and
 // marshals the result again.
-func (index *bunchRefCache) loadMergeMarshal(keyBuf []byte, newBunch []element.IdRefs) []byte {
+func (index *bunchRefCache) loadMergeMarshal(keyBuf []byte, newBunch []element.IDRefs) []byte {
 	data, err := index.db.Get(index.ro, keyBuf)
 	if err != nil {
 		panic(err)
 	}
 
-	var bunch []element.IdRefs
+	var bunch []element.IDRefs
 
 	if data != nil {
 		bunch = idRefsPool.get()
 		defer idRefsPool.release(bunch)
-		bunch = binary.UnmarshalIdRefsBunch2(data, bunch)
+		bunch = binary.UnmarshalIDRefsBunch2(data, bunch)
 	}
 
 	if bunch == nil {
@@ -588,7 +586,7 @@ func (index *bunchRefCache) loadMergeMarshal(keyBuf []byte, newBunch []element.I
 	}
 
 	data = bytePool.get()
-	data = binary.MarshalIdRefsBunch2(bunch, data)
+	data = binary.MarshalIDRefsBunch2(bunch, data)
 	return data
 }
 
@@ -614,9 +612,9 @@ func (p *bytePoolWrapper) release(buf []byte) {
 	}
 }
 
-type idRefsPoolWrapper chan []element.IdRefs
+type idRefsPoolWrapper chan []element.IDRefs
 
-func (p *idRefsPoolWrapper) get() []element.IdRefs {
+func (p *idRefsPoolWrapper) get() []element.IDRefs {
 	select {
 	case idRefs := <-(*p):
 		return idRefs
@@ -625,7 +623,7 @@ func (p *idRefsPoolWrapper) get() []element.IdRefs {
 	}
 }
 
-func (p *idRefsPoolWrapper) release(idRefs []element.IdRefs) {
+func (p *idRefsPoolWrapper) release(idRefs []element.IDRefs) {
 	select {
 	case (*p) <- idRefs:
 	default:

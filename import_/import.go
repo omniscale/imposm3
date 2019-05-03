@@ -5,7 +5,9 @@ package import_
 
 import (
 	"os"
+	"path/filepath"
 
+	"github.com/omniscale/go-osm/state"
 	"github.com/omniscale/imposm3/cache"
 	"github.com/omniscale/imposm3/config"
 	"github.com/omniscale/imposm3/database"
@@ -15,7 +17,7 @@ import (
 	"github.com/omniscale/imposm3/mapping"
 	"github.com/omniscale/imposm3/reader"
 	"github.com/omniscale/imposm3/stats"
-	"github.com/omniscale/imposm3/update/state"
+	"github.com/omniscale/imposm3/update"
 	"github.com/omniscale/imposm3/writer"
 )
 
@@ -74,7 +76,7 @@ func Import(importOpts config.Import) {
 
 	if importOpts.Read != "" && osmCache.Exists() {
 		if importOpts.Overwritecache {
-			log.Printf("removing existing cache %s", baseOpts.CacheDir)
+			log.Printf("[info] removing existing cache %s", baseOpts.CacheDir)
 			err := osmCache.Remove()
 			if err != nil {
 				log.Fatal("unable to remove cache:", err)
@@ -121,12 +123,12 @@ func Import(importOpts config.Import) {
 		osmCache.Close()
 		step()
 		if importOpts.Diff {
-			diffstate, err := state.FromPbf(importOpts.Read, baseOpts.DiffStateBefore, baseOpts.ReplicationUrl, baseOpts.ReplicationInterval)
+			diffstate, err := estimateFromPBF(importOpts.Read, baseOpts.DiffStateBefore, baseOpts.ReplicationURL, baseOpts.ReplicationInterval)
 			if err != nil {
 				log.Println("[error] parsing diff state form PBF", err)
 			} else if diffstate != nil {
 				os.MkdirAll(baseOpts.DiffDir, 0755)
-				err := state.WriteLastState(baseOpts.DiffDir, diffstate)
+				err := state.WriteFile(filepath.Join(baseOpts.DiffDir, update.LastStateFilename), diffstate)
 				if err != nil {
 					log.Println("[error] writing last.state.txt: ", err)
 				}
@@ -177,7 +179,7 @@ func Import(importOpts config.Import) {
 
 		relations := osmCache.Relations.Iter()
 		relWriter := writer.NewRelationWriter(osmCache, diffCache,
-			tagmapping.Conf.SingleIdSpace,
+			tagmapping.Conf.SingleIDSpace,
 			relations,
 			db, progress,
 			tagmapping.PolygonMatcher,
@@ -193,7 +195,7 @@ func Import(importOpts config.Import) {
 
 		ways := osmCache.Ways.Iter()
 		wayWriter := writer.NewWayWriter(osmCache, diffCache,
-			tagmapping.Conf.SingleIdSpace,
+			tagmapping.Conf.SingleIDSpace,
 			ways, db,
 			progress,
 			tagmapping.PolygonMatcher,

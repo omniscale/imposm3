@@ -1,6 +1,7 @@
 package reader
 
 import (
+	"context"
 	"math"
 	"os"
 	"runtime"
@@ -8,14 +9,15 @@ import (
 	"strings"
 	"sync"
 
+	osm "github.com/omniscale/go-osm"
+	"github.com/omniscale/go-osm/parser/pbf"
 	osmcache "github.com/omniscale/imposm3/cache"
-	"github.com/omniscale/imposm3/element"
 	"github.com/omniscale/imposm3/geom/geos"
 	"github.com/omniscale/imposm3/geom/limit"
 	"github.com/omniscale/imposm3/log"
 	"github.com/omniscale/imposm3/mapping"
-	"github.com/omniscale/imposm3/parser/pbf"
 	"github.com/omniscale/imposm3/stats"
+	"github.com/pkg/errors"
 )
 
 var skipCoords, skipNodes, skipWays bool
@@ -55,29 +57,27 @@ func ReadPbf(
 	tagmapping *mapping.Mapping,
 	limiter *limit.Limiter,
 ) error {
-	nodes := make(chan []element.Node, 4)
-	coords := make(chan []element.Node, 4)
-	ways := make(chan []element.Way, 4)
-	relations := make(chan []element.Relation, 4)
+	nodes := make(chan []osm.Node, 4)
+	coords := make(chan []osm.Node, 4)
+	ways := make(chan []osm.Way, 4)
+	relations := make(chan []osm.Relation, 4)
 
 	withLimiter := false
 	if limiter != nil {
 		withLimiter = true
 	}
 
-	parser, err := pbf.NewParser(filename)
-	if err != nil {
-		return err
-	}
-
-	if header := parser.Header(); header.Time.Unix() != 0 {
-		log.Printf("[info] reading %s with data till %v", filename, header.Time.Local())
+	config := pbf.Config{
+		Coords:    coords,
+		Nodes:     nodes,
+		Ways:      ways,
+		Relations: relations,
 	}
 
 	// wait for all coords/nodes to be processed before continuing with
 	// ways. required for -limitto checks
 	coordsSync := sync.WaitGroup{}
-	parser.RegisterFirstWayCallback(func() {
+	config.OnFirstWay = func() {
 		for i := 0; int64(i) < nCoords; i++ {
 			coords <- nil
 		}
@@ -85,17 +85,33 @@ func ReadPbf(
 			nodes <- nil
 		}
 		coordsSync.Wait()
-	})
+	}
 
 	// wait for all ways to be processed before continuing with
 	// relations. required for -limitto checks
 	waysSync := sync.WaitGroup{}
-	parser.RegisterFirstRelationCallback(func() {
+	config.OnFirstRelation = func() {
 		for i := 0; int64(i) < nWays; i++ {
 			ways <- nil
 		}
 		waysSync.Wait()
-	})
+	}
+
+	f, err := os.Open(filename)
+	if err != nil {
+		return errors.Wrap(err, "opening PBF file")
+	}
+	defer f.Close()
+
+	parser := pbf.New(f, config)
+	header, err := parser.Header()
+	if err != nil {
+		return errors.Wrap(err, "parsing PBF header")
+	}
+
+	if header.Time.Unix() != 0 {
+		log.Printf("[info] reading %s with data till %v", filename, header.Time.Local())
+	}
 
 	waitWriter := sync.WaitGroup{}
 
@@ -115,19 +131,19 @@ func ReadPbf(
 				if skipWays {
 					continue
 				}
-				for i, _ := range ws {
+				for i := range ws {
 					m.Filter(&ws[i].Tags)
 					if withLimiter {
 						cached, err := cache.Coords.FirstRefIsCached(ws[i].Refs)
 						if err != nil {
-							log.Printf("[error] checking for cached refs of way %d: %v", ws[i].Id, err)
+							log.Printf("[error] checking for cached refs of way %d: %v", ws[i].ID, err)
 							cached = true // don't skip in case of error
 						}
 						if cached {
-							hit += 1
+							hit++
 						} else {
-							ws[i].Id = osmcache.SKIP
-							skip += 1
+							ws[i].ID = osmcache.SKIP
+							skip++
 						}
 					}
 				}
@@ -150,22 +166,22 @@ func ReadPbf(
 			m := tagmapping.RelationTagFilter()
 			for rels := range relations {
 				numWithTags := 0
-				for i, _ := range rels {
+				for i := range rels {
 					m.Filter(&rels[i].Tags)
 					if len(rels[i].Tags) > 0 {
-						numWithTags += 1
+						numWithTags++
 					}
 					if withLimiter {
 						cached, err := cache.FirstMemberIsCached(rels[i].Members)
 						if err != nil {
-							log.Printf("[error] checking for cached members of relation %d: %v", rels[i].Id, err)
+							log.Printf("[error] checking for cached members of relation %d: %v", rels[i].ID, err)
 							cached = true // don't skip in case of error
 						}
 						if cached {
-							hit += 1
+							hit++
 						} else {
-							skip += 1
-							rels[i].Id = osmcache.SKIP
+							skip++
+							rels[i].ID = osmcache.SKIP
 						}
 					}
 				}
@@ -197,12 +213,12 @@ func ReadPbf(
 					continue
 				}
 				if withLimiter {
-					for i, _ := range nds {
+					for i := range nds {
 						if !limiter.IntersectsBuffer(g, nds[i].Long, nds[i].Lat) {
-							skip += 1
-							nds[i].Id = osmcache.SKIP
+							skip++
+							nds[i].ID = osmcache.SKIP
 						} else {
-							hit += 1
+							hit++
 						}
 					}
 				}
@@ -230,14 +246,14 @@ func ReadPbf(
 					continue
 				}
 				numWithTags := 0
-				for i, _ := range nds {
+				for i := range nds {
 					m.Filter(&nds[i].Tags)
 					if len(nds[i].Tags) > 0 {
-						numWithTags += 1
+						numWithTags++
 					}
 					if withLimiter {
 						if !limiter.IntersectsBuffer(g, nds[i].Long, nds[i].Lat) {
-							nds[i].Id = osmcache.SKIP
+							nds[i].ID = osmcache.SKIP
 						}
 					}
 				}
@@ -247,12 +263,10 @@ func ReadPbf(
 			waitWriter.Done()
 		}()
 	}
-
-	parser.Parse(coords, nodes, ways, relations)
-	close(nodes)
-	close(coords)
-	close(ways)
-	close(relations)
+	ctx := context.Background()
+	if err := parser.Parse(ctx); err != nil {
+		return errors.Wrap(err, "parsing PBF")
+	}
 	waitWriter.Wait()
 
 	return nil

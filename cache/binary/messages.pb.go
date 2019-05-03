@@ -35,20 +35,20 @@ const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 type Relation_MemberType int32
 
 const (
-	Relation_NODE     Relation_MemberType = 0
-	Relation_WAY      Relation_MemberType = 1
-	Relation_RELATION Relation_MemberType = 2
+	Relation_NodeMember     Relation_MemberType = 0
+	Relation_WayMember      Relation_MemberType = 1
+	Relation_RelationMember Relation_MemberType = 2
 )
 
 var Relation_MemberType_name = map[int32]string{
-	0: "NODE",
-	1: "WAY",
-	2: "RELATION",
+	0: "NodeMember",
+	1: "WayMember",
+	2: "RelationMember",
 }
 var Relation_MemberType_value = map[string]int32{
-	"NODE":     0,
-	"WAY":      1,
-	"RELATION": 2,
+	"NodeMember":     0,
+	"WayMember":      1,
+	"RelationMember": 2,
 }
 
 func (x Relation_MemberType) Enum() *Relation_MemberType {

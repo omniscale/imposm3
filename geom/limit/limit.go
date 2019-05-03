@@ -318,14 +318,14 @@ func (l *Limiter) Clip(geom *geos.Geom) ([]*geos.Geom, error) {
 
 // IntersectsBuffer returns true if the point (EPSG:4326) intersects the buffered
 // LimitTo geometry.
-func (c *Limiter) IntersectsBuffer(g *geos.Geos, x, y float64) bool {
-	if c.bufferedPrep == nil {
+func (l *Limiter) IntersectsBuffer(g *geos.Geos, x, y float64) bool {
+	if l.bufferedPrep == nil {
 		return true
 	}
-	if x < c.bufferedBbox.MinX ||
-		y < c.bufferedBbox.MinY ||
-		x > c.bufferedBbox.MaxX ||
-		y > c.bufferedBbox.MaxY {
+	if x < l.bufferedBbox.MinX ||
+		y < l.bufferedBbox.MinY ||
+		x > l.bufferedBbox.MaxX ||
+		y > l.bufferedBbox.MaxY {
 		return false
 	}
 	p := g.Point(x, y)
@@ -334,9 +334,9 @@ func (c *Limiter) IntersectsBuffer(g *geos.Geos, x, y float64) bool {
 	}
 	defer g.Destroy(p)
 
-	c.bufferedPrepMu.Lock()
-	defer c.bufferedPrepMu.Unlock()
-	return g.PreparedIntersects(c.bufferedPrep, p)
+	l.bufferedPrepMu.Lock()
+	defer l.bufferedPrepMu.Unlock()
+	return g.PreparedIntersects(l.bufferedPrep, p)
 }
 
 func flattenPolygons(g *geos.Geos, geoms []*geos.Geom) []*geos.Geom {

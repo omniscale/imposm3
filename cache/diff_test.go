@@ -5,35 +5,36 @@ import (
 	"os"
 	"testing"
 
+	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/element"
 )
 
 func TestDiffCache(t *testing.T) {
 
-	cache_dir, _ := ioutil.TempDir("", "imposm_test")
-	defer os.RemoveAll(cache_dir)
+	cacheDir, _ := ioutil.TempDir("", "imposm_test")
+	defer os.RemoveAll(cacheDir)
 
-	cache, err := newCoordsRefIndex(cache_dir)
+	cache, err := newCoordsRefIndex(cacheDir)
 	if err != nil {
 		t.Fatal()
 	}
 	defer cache.Close()
 
-	w1 := element.Way{}
-	w1.Id = 100
-	w1.Nodes = []element.Node{
-		{OSMElem: element.OSMElem{Id: 1000}},
-		{OSMElem: element.OSMElem{Id: 1001}},
-		{OSMElem: element.OSMElem{Id: 1002}},
+	w1 := osm.Way{}
+	w1.ID = 100
+	w1.Nodes = []osm.Node{
+		{Element: osm.Element{ID: 1000}},
+		{Element: osm.Element{ID: 1001}},
+		{Element: osm.Element{ID: 1002}},
 	}
 	cache.AddFromWay(&w1)
 
-	w2 := element.Way{}
-	w2.Id = 200
-	w2.Nodes = []element.Node{
-		{OSMElem: element.OSMElem{Id: 1002}},
-		{OSMElem: element.OSMElem{Id: 1003}},
-		{OSMElem: element.OSMElem{Id: 1004}},
+	w2 := osm.Way{}
+	w2.ID = 200
+	w2.Nodes = []osm.Node{
+		{Element: osm.Element{ID: 1002}},
+		{Element: osm.Element{ID: 1003}},
+		{Element: osm.Element{ID: 1004}},
 	}
 	cache.AddFromWay(&w2)
 
@@ -49,10 +50,10 @@ func TestDiffCache(t *testing.T) {
 }
 
 func TestWriteDiff(t *testing.T) {
-	cache_dir, _ := ioutil.TempDir("", "imposm_test")
-	defer os.RemoveAll(cache_dir)
+	cacheDir, _ := ioutil.TempDir("", "imposm_test")
+	defer os.RemoveAll(cacheDir)
 
-	cache, err := newRefIndex(cache_dir, &globalCacheOptions.CoordsIndex)
+	cache, err := newRefIndex(cacheDir, &globalCacheOptions.CoordsIndex)
 	if err != nil {
 		t.Fatal()
 	}
@@ -77,10 +78,10 @@ func TestWriteDiff(t *testing.T) {
 
 func BenchmarkWriteDiff(b *testing.B) {
 	b.StopTimer()
-	cache_dir, _ := ioutil.TempDir("", "imposm_test")
-	defer os.RemoveAll(cache_dir)
+	cacheDir, _ := ioutil.TempDir("", "imposm_test")
+	defer os.RemoveAll(cacheDir)
 
-	cache, err := newRefIndex(cache_dir, &globalCacheOptions.CoordsIndex)
+	cache, err := newRefIndex(cacheDir, &globalCacheOptions.CoordsIndex)
 	if err != nil {
 		b.Fatal()
 	}
@@ -98,35 +99,35 @@ func BenchmarkWriteDiff(b *testing.B) {
 
 }
 
-func TestMergeIdRefs(t *testing.T) {
-	bunch := []element.IdRefs{}
+func TestMergeIDRefs(t *testing.T) {
+	bunch := []element.IDRefs{}
 
-	bunch = mergeBunch(bunch, []element.IdRefs{element.IdRefs{50, []int64{1}}})
-	if b := bunch[0]; b.Id != 50 || b.Refs[0] != 1 {
+	bunch = mergeBunch(bunch, []element.IDRefs{element.IDRefs{ID: 50, Refs: []int64{1}}})
+	if b := bunch[0]; b.ID != 50 || b.Refs[0] != 1 {
 		t.Fatal(bunch)
 	}
 
 	// before
-	bunch = mergeBunch(bunch, []element.IdRefs{element.IdRefs{40, []int64{3}}})
-	if b := bunch[0]; b.Id != 40 || b.Refs[0] != 3 {
+	bunch = mergeBunch(bunch, []element.IDRefs{element.IDRefs{ID: 40, Refs: []int64{3}}})
+	if b := bunch[0]; b.ID != 40 || b.Refs[0] != 3 {
 		t.Fatal(bunch)
 	}
 
 	// after
-	bunch = mergeBunch(bunch, []element.IdRefs{element.IdRefs{70, []int64{4}}})
-	if b := bunch[2]; b.Id != 70 || b.Refs[0] != 4 {
+	bunch = mergeBunch(bunch, []element.IDRefs{element.IDRefs{ID: 70, Refs: []int64{4}}})
+	if b := bunch[2]; b.ID != 70 || b.Refs[0] != 4 {
 		t.Fatal(bunch)
 	}
 
 	// in between
-	bunch = mergeBunch(bunch, []element.IdRefs{element.IdRefs{60, []int64{5}}})
-	if b := bunch[2]; b.Id != 60 || b.Refs[0] != 5 {
+	bunch = mergeBunch(bunch, []element.IDRefs{element.IDRefs{ID: 60, Refs: []int64{5}}})
+	if b := bunch[2]; b.ID != 60 || b.Refs[0] != 5 {
 		t.Fatal(bunch)
 	}
 
 	// same (50:1 already inserted)
-	bunch = mergeBunch(bunch, []element.IdRefs{element.IdRefs{50, []int64{0, 5}}})
-	if b := bunch[1]; b.Id != 50 || len(b.Refs) != 3 ||
+	bunch = mergeBunch(bunch, []element.IDRefs{element.IDRefs{ID: 50, Refs: []int64{0, 5}}})
+	if b := bunch[1]; b.ID != 50 || len(b.Refs) != 3 ||
 		b.Refs[0] != 0 || b.Refs[1] != 1 || b.Refs[2] != 5 {
 		t.Fatal(bunch)
 	}
@@ -136,55 +137,55 @@ func TestMergeIdRefs(t *testing.T) {
 	}
 
 	// remove multiple
-	bunch = mergeBunch(bunch, []element.IdRefs{element.IdRefs{40, []int64{}}, element.IdRefs{60, []int64{}}})
-	if bunch[0].Id != 50 || bunch[1].Id != 70 || len(bunch) != 2 {
+	bunch = mergeBunch(bunch, []element.IDRefs{element.IDRefs{ID: 40, Refs: []int64{}}, element.IDRefs{ID: 60, Refs: []int64{}}})
+	if bunch[0].ID != 50 || bunch[1].ID != 70 || len(bunch) != 2 {
 		t.Fatal(bunch)
 	}
 
 	// add multiple
-	bunch = mergeBunch(bunch, []element.IdRefs{element.IdRefs{40, []int64{1}}, element.IdRefs{60, []int64{1}}, element.IdRefs{80, []int64{1}}})
-	if len(bunch) != 5 || bunch[0].Id != 40 ||
-		bunch[2].Id != 60 || bunch[4].Id != 80 {
+	bunch = mergeBunch(bunch, []element.IDRefs{element.IDRefs{ID: 40, Refs: []int64{1}}, element.IDRefs{ID: 60, Refs: []int64{1}}, element.IDRefs{ID: 80, Refs: []int64{1}}})
+	if len(bunch) != 5 || bunch[0].ID != 40 ||
+		bunch[2].ID != 60 || bunch[4].ID != 80 {
 		t.Fatal(bunch)
 	}
 
 }
 
-func TestIdRefBunches(t *testing.T) {
+func TestIDRefBunches(t *testing.T) {
 	bunches := make(idRefBunches)
 	bunches.add(1, 100, 999)
 
-	if r := bunches[1].idRefs[0]; r.Id != 100 || r.Refs[0] != 999 {
+	if r := bunches[1].idRefs[0]; r.ID != 100 || r.Refs[0] != 999 {
 		t.Fatal(bunches)
 	}
 
 	// before
 	bunches.add(1, 99, 888)
-	if r := bunches[1].idRefs[0]; r.Id != 99 || r.Refs[0] != 888 {
+	if r := bunches[1].idRefs[0]; r.ID != 99 || r.Refs[0] != 888 {
 		t.Fatal(bunches)
 	}
 
 	// after
 	bunches.add(1, 102, 777)
-	if r := bunches[1].idRefs[2]; r.Id != 102 || r.Refs[0] != 777 {
+	if r := bunches[1].idRefs[2]; r.ID != 102 || r.Refs[0] != 777 {
 		t.Fatal(bunches)
 	}
 
 	// in between
 	bunches.add(1, 101, 666)
-	if r := bunches[1].idRefs[2]; r.Id != 101 || r.Refs[0] != 666 {
+	if r := bunches[1].idRefs[2]; r.ID != 101 || r.Refs[0] != 666 {
 		t.Fatal(bunches)
 	}
 
 	// same id
 	bunches.add(1, 100, 998)
-	if r := bunches[1].idRefs[1]; r.Id != 100 || r.Refs[0] != 998 || r.Refs[1] != 999 {
+	if r := bunches[1].idRefs[1]; r.ID != 100 || r.Refs[0] != 998 || r.Refs[1] != 999 {
 		t.Fatal(bunches)
 	}
 
 	// duplicate with same id and same ref
 	bunches.add(1, 100, 998)
-	if r := bunches[1].idRefs[1]; r.Id != 100 || r.Refs[0] != 998 || r.Refs[1] != 999 {
+	if r := bunches[1].idRefs[1]; r.ID != 100 || r.Refs[0] != 998 || r.Refs[1] != 999 {
 		t.Fatal(bunches)
 	}
 

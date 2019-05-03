@@ -121,10 +121,10 @@ func (pg *PostGIS) RemoveBackup() error {
 // tableNames returns a list of all tables (without prefix).
 func (pg *PostGIS) tableNames() []string {
 	var names []string
-	for name, _ := range pg.Tables {
+	for name := range pg.Tables {
 		names = append(names, name)
 	}
-	for name, _ := range pg.GeneralizedTables {
+	for name := range pg.GeneralizedTables {
 		names = append(names, name)
 	}
 	return names

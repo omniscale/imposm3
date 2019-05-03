@@ -23,7 +23,7 @@ type bulkTableTx struct {
 	Table      string
 	Spec       *TableSpec
 	InsertStmt *sql.Stmt
-	InsertSql  string
+	InsertSQL  string
 	wg         *sync.WaitGroup
 	rows       chan []interface{}
 }
@@ -56,11 +56,11 @@ func (tt *bulkTableTx) Begin(tx *sql.Tx) error {
 		return err
 	}
 
-	tt.InsertSql = tt.Spec.CopySQL()
+	tt.InsertSQL = tt.Spec.CopySQL()
 
-	stmt, err := tt.Tx.Prepare(tt.InsertSql)
+	stmt, err := tt.Tx.Prepare(tt.InsertSQL)
 	if err != nil {
-		return &SQLError{tt.InsertSql, err}
+		return &SQLError{tt.InsertSQL, err}
 	}
 	tt.InsertStmt = stmt
 
@@ -78,7 +78,7 @@ func (tt *bulkTableTx) loop() {
 		if err != nil {
 			// InsertStmt uses COPY so the error may not be related to this row.
 			// Abort the import as the whole transaction is lost anyway.
-			log.Fatalf("[fatal] bulk insert into %q: %s", tt.Table, &SQLError{tt.InsertSql, err})
+			log.Fatalf("[fatal] bulk insert into %q: %s", tt.Table, &SQLError{tt.InsertSQL, err})
 		}
 	}
 	tt.wg.Done()
@@ -120,8 +120,8 @@ type syncTableTx struct {
 	Spec       tableSpec
 	InsertStmt *sql.Stmt
 	DeleteStmt *sql.Stmt
-	InsertSql  string
-	DeleteSql  string
+	InsertSQL  string
+	DeleteSQL  string
 }
 
 type tableSpec interface {
@@ -148,18 +148,18 @@ func (tt *syncTableTx) Begin(tx *sql.Tx) error {
 	}
 	tt.Tx = tx
 
-	tt.InsertSql = tt.Spec.InsertSQL()
+	tt.InsertSQL = tt.Spec.InsertSQL()
 
-	stmt, err := tt.Tx.Prepare(tt.InsertSql)
+	stmt, err := tt.Tx.Prepare(tt.InsertSQL)
 	if err != nil {
-		return &SQLError{tt.InsertSql, err}
+		return &SQLError{tt.InsertSQL, err}
 	}
 	tt.InsertStmt = stmt
 
-	tt.DeleteSql = tt.Spec.DeleteSQL()
-	stmt, err = tt.Tx.Prepare(tt.DeleteSql)
+	tt.DeleteSQL = tt.Spec.DeleteSQL()
+	stmt, err = tt.Tx.Prepare(tt.DeleteSQL)
 	if err != nil {
-		return &SQLError{tt.DeleteSql, err}
+		return &SQLError{tt.DeleteSQL, err}
 	}
 	tt.DeleteStmt = stmt
 
@@ -169,7 +169,7 @@ func (tt *syncTableTx) Begin(tx *sql.Tx) error {
 func (tt *syncTableTx) Insert(row []interface{}) error {
 	_, err := tt.InsertStmt.Exec(row...)
 	if err != nil {
-		return &SQLInsertError{SQLError{tt.InsertSql, err}, row}
+		return &SQLInsertError{SQLError{tt.InsertSQL, err}, row}
 	}
 	return nil
 }
@@ -177,7 +177,7 @@ func (tt *syncTableTx) Insert(row []interface{}) error {
 func (tt *syncTableTx) Delete(id int64) error {
 	_, err := tt.DeleteStmt.Exec(id)
 	if err != nil {
-		return &SQLInsertError{SQLError{tt.DeleteSql, err}, id}
+		return &SQLInsertError{SQLError{tt.DeleteSQL, err}, id}
 	}
 	return nil
 }

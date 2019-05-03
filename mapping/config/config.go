@@ -11,9 +11,9 @@ type Mapping struct {
 	GeneralizedTables GeneralizedTables `yaml:"generalized_tables"`
 	Tags              Tags              `yaml:"tags"`
 	Areas             Areas             `yaml:"areas"`
-	// SingleIdSpace mangles the overlapping node/way/relation IDs
+	// SingleIDSpace mangles the overlapping node/way/relation IDs
 	// to be unique (nodes positive, ways negative, relations negative -1e17)
-	SingleIdSpace bool `yaml:"use_single_id_space"`
+	SingleIDSpace bool `yaml:"use_single_id_space"`
 }
 
 type Column struct {
@@ -43,7 +43,7 @@ type GeneralizedTable struct {
 	Name            string
 	SourceTableName string  `yaml:"source"`
 	Tolerance       float64 `yaml:"tolerance"`
-	SqlFilter       string  `yaml:"sql_filter"`
+	SQLFilter       string  `yaml:"sql_filter"`
 }
 
 type Filters struct {
@@ -101,7 +101,7 @@ func (kv *KeyValues) UnmarshalYAML(unmarshal func(interface{}) error) error {
 			} else {
 				return fmt.Errorf("mapping value '%s' not a string", v)
 			}
-			order += 1
+			order++
 		}
 	}
 	return nil

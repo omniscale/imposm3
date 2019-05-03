@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/omniscale/imposm3/element"
+	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/geom"
 	"github.com/omniscale/imposm3/mapping"
 	"github.com/omniscale/imposm3/mapping/config"
@@ -34,10 +34,10 @@ type BulkBeginner interface {
 type Inserter interface {
 	// InsertXxx inserts element of that type into the database.
 	// element.Geom is set to that type.
-	InsertPoint(element.OSMElem, geom.Geometry, []mapping.Match) error
-	InsertLineString(element.OSMElem, geom.Geometry, []mapping.Match) error
-	InsertPolygon(element.OSMElem, geom.Geometry, []mapping.Match) error
-	InsertRelationMember(element.Relation, element.Member, geom.Geometry, []mapping.Match) error
+	InsertPoint(osm.Element, geom.Geometry, []mapping.Match) error
+	InsertLineString(osm.Element, geom.Geometry, []mapping.Match) error
+	InsertPolygon(osm.Element, geom.Geometry, []mapping.Match) error
+	InsertRelationMember(osm.Relation, osm.Member, geom.Geometry, []mapping.Match) error
 }
 
 type Deployer interface {
@@ -94,15 +94,15 @@ func Open(conf Config, m *config.Mapping) (DB, error) {
 // nullDb is a dummy database that imports into /dev/null
 type nullDb struct{}
 
-func (n *nullDb) Init() error                                                            { return nil }
-func (n *nullDb) Begin() error                                                           { return nil }
-func (n *nullDb) End() error                                                             { return nil }
-func (n *nullDb) Close() error                                                           { return nil }
-func (n *nullDb) Abort() error                                                           { return nil }
-func (n *nullDb) InsertPoint(element.OSMElem, geom.Geometry, []mapping.Match) error      { return nil }
-func (n *nullDb) InsertLineString(element.OSMElem, geom.Geometry, []mapping.Match) error { return nil }
-func (n *nullDb) InsertPolygon(element.OSMElem, geom.Geometry, []mapping.Match) error    { return nil }
-func (n *nullDb) InsertRelationMember(element.Relation, element.Member, geom.Geometry, []mapping.Match) error {
+func (n *nullDb) Init() error                                                        { return nil }
+func (n *nullDb) Begin() error                                                       { return nil }
+func (n *nullDb) End() error                                                         { return nil }
+func (n *nullDb) Close() error                                                       { return nil }
+func (n *nullDb) Abort() error                                                       { return nil }
+func (n *nullDb) InsertPoint(osm.Element, geom.Geometry, []mapping.Match) error      { return nil }
+func (n *nullDb) InsertLineString(osm.Element, geom.Geometry, []mapping.Match) error { return nil }
+func (n *nullDb) InsertPolygon(osm.Element, geom.Geometry, []mapping.Match) error    { return nil }
+func (n *nullDb) InsertRelationMember(osm.Relation, osm.Member, geom.Geometry, []mapping.Match) error {
 	return nil
 }
 

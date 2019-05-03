@@ -12,16 +12,16 @@ type PreparedGeom struct {
 	v *C.GEOSPreparedGeometry
 }
 
-func (this *Geos) Prepare(geom *Geom) *PreparedGeom {
-	prep := C.GEOSPrepare_r(this.v, geom.v)
+func (g *Geos) Prepare(geom *Geom) *PreparedGeom {
+	prep := C.GEOSPrepare_r(g.v, geom.v)
 	if prep == nil {
 		return nil
 	}
 	return &PreparedGeom{prep}
 }
 
-func (this *Geos) PreparedContains(a *PreparedGeom, b *Geom) bool {
-	result := C.GEOSPreparedContains_r(this.v, a.v, b.v)
+func (g *Geos) PreparedContains(a *PreparedGeom, b *Geom) bool {
+	result := C.GEOSPreparedContains_r(g.v, a.v, b.v)
 	if result == 1 {
 		return true
 	}
@@ -29,8 +29,8 @@ func (this *Geos) PreparedContains(a *PreparedGeom, b *Geom) bool {
 	return false
 }
 
-func (this *Geos) PreparedIntersects(a *PreparedGeom, b *Geom) bool {
-	result := C.GEOSPreparedIntersects_r(this.v, a.v, b.v)
+func (g *Geos) PreparedIntersects(a *PreparedGeom, b *Geom) bool {
+	result := C.GEOSPreparedIntersects_r(g.v, a.v, b.v)
 	if result == 1 {
 		return true
 	}
@@ -38,9 +38,9 @@ func (this *Geos) PreparedIntersects(a *PreparedGeom, b *Geom) bool {
 	return false
 }
 
-func (this *Geos) PreparedDestroy(geom *PreparedGeom) {
+func (g *Geos) PreparedDestroy(geom *PreparedGeom) {
 	if geom.v != nil {
-		C.GEOSPreparedGeom_destroy_r(this.v, geom.v)
+		C.GEOSPreparedGeom_destroy_r(g.v, geom.v)
 		geom.v = nil
 	} else {
 		log.Printf("double free?")
