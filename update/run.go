@@ -54,7 +54,7 @@ func Run(baseOpts config.Base) {
 	downloader := diff.NewDownloader(
 		baseOpts.DiffDir,
 		replicationURL,
-		s.Sequence,
+		s.Sequence+1,
 		baseOpts.ReplicationInterval,
 	)
 	nextSeq := downloader.Sequences()
