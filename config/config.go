@@ -56,6 +56,7 @@ type Base struct {
 	ReplicationURL      string
 	ReplicationInterval time.Duration
 	DiffStateBefore     time.Duration
+	ForceDiffImport     bool
 }
 
 func (o *Base) updateFromConfig() error {
@@ -236,6 +237,7 @@ func ParseDiffImport(args []string) (Base, []string) {
 	addBaseFlags(&opts, flags)
 	flags.StringVar(&opts.ExpireTilesDir, "expiretiles-dir", "", "write expire tiles into dir")
 	flags.IntVar(&opts.ExpireTilesZoom, "expiretiles-zoom", 14, "write expire tiles in this zoom level")
+	flags.BoolVar(&opts.ForceDiffImport, "force", false, "force import of diff if sequence was already imported")
 
 	flags.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s %s [args] [.osc.gz, ...]\n\n", os.Args[0], os.Args[1])

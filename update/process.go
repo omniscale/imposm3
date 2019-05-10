@@ -72,7 +72,7 @@ func Diff(baseOpts config.Base, files []string) {
 	}
 
 	for _, oscFile := range files {
-		err := Update(baseOpts, oscFile, geometryLimiter, exp, osmCache, diffCache, false)
+		err := Update(baseOpts, oscFile, geometryLimiter, exp, osmCache, diffCache, baseOpts.ForceDiffImport)
 		if err != nil {
 			osmCache.Close()
 			diffCache.Close()
