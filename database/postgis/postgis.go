@@ -196,6 +196,13 @@ func (pg *PostGIS) Finish() error {
 }
 
 func createIndex(pg *PostGIS, tableName string, columns []ColumnSpec) error {
+	foundIDCol := false
+	for _, cs := range columns {
+		if cs.Name == "id" {
+			foundIDCol = true
+		}
+	}
+
 	for _, col := range columns {
 		if col.Type.Name() == "GEOMETRY" {
 			sql := fmt.Sprintf(`CREATE INDEX "%s_geom" ON "%s"."%s" USING GIST ("%s")`,
@@ -207,7 +214,11 @@ func createIndex(pg *PostGIS, tableName string, columns []ColumnSpec) error {
 				return err
 			}
 		}
-		if col.FieldType.Name == "id" {
+		if col.FieldType.Name == "id" && foundIDCol {
+			// Create index for OSM ID required for diff updates, but only if
+			// the table does have an `id` column.
+			// The explicit `id` column prevented the creation of our composite
+			// PRIMARY KEY index of id (serial) and OSM ID.
 			sql := fmt.Sprintf(`CREATE INDEX "%s_%s_idx" ON "%s"."%s" USING BTREE ("%s")`,
 				tableName, col.Name, pg.Config.ImportSchema, tableName, col.Name)
 			step := log.Step(fmt.Sprintf("Creating OSM id index on %s", tableName))

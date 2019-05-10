@@ -43,17 +43,21 @@ func (col *ColumnSpec) AsSQL() string {
 
 func (spec *TableSpec) CreateTableSQL() string {
 	foundIDCol := false
+	pkCols := []string{}
 	for _, cs := range spec.Columns {
 		if cs.Name == "id" {
 			foundIDCol = true
+		}
+		if cs.FieldType.Name == "id" {
+			pkCols = append(pkCols, cs.Name)
 		}
 	}
 
 	cols := []string{}
 	if !foundIDCol {
-		// only add id column if there is no id configured
-		// TODO allow to disable id column?
-		cols = append(cols, "id SERIAL PRIMARY KEY")
+		// Create explicit id column only if there is no id configured.
+		cols = append(cols, "id SERIAL")
+		pkCols = append(pkCols, "id")
 	}
 
 	for _, col := range spec.Columns {
@@ -61,6 +65,12 @@ func (spec *TableSpec) CreateTableSQL() string {
 			continue
 		}
 		cols = append(cols, col.AsSQL())
+	}
+
+	// Make composite PRIMARY KEY of serial `id` and OSM ID. But only if the
+	// user did not provide a custom `id` colum which might not be unique.
+	if pkCols != nil && !foundIDCol {
+		cols = append(cols, `PRIMARY KEY ("`+strings.Join(pkCols, `", "`)+`")`)
 	}
 	columnSQL := strings.Join(cols, ",\n")
 	return fmt.Sprintf(`
