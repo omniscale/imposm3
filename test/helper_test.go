@@ -207,15 +207,21 @@ func (ts *importTestSuite) query(t *testing.T, table string, id int64, keys []st
 		columns = "hstore(ARRAY[" + columns + "])"
 	}
 	stmt := fmt.Sprintf(`SELECT osm_id, name, type, ST_AsText(geometry), %s FROM "%s"."%s" WHERE osm_id=$1`, columns, ts.dbschemaProduction(), table)
-	row := ts.db.QueryRow(stmt, id)
+	rows, err := ts.db.Query(stmt, id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+
 	r := record{}
 	h := hstore.Hstore{}
-	if err := row.Scan(&r.id, &r.name, &r.osmType, &r.wkt, &h); err != nil {
-		if err == sql.ErrNoRows {
-			r.missing = true
-		} else {
-			t.Fatal(err)
-		}
+
+	if !rows.Next() {
+		r.missing = true
+		return r
+	}
+	if err := rows.Scan(&r.id, &r.name, &r.osmType, &r.wkt, &h); err != nil {
+		t.Fatal(err)
 	}
 	if len(h.Map) > 0 {
 		r.tags = make(map[string]string)
@@ -224,6 +230,10 @@ func (ts *importTestSuite) query(t *testing.T, table string, id int64, keys []st
 		if v.Valid {
 			r.tags[k] = v.String
 		}
+	}
+
+	if rows.Next() {
+		t.Errorf("duplicate row for %d in %q", id, table)
 	}
 	return r
 }

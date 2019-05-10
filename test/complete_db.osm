@@ -1005,6 +1005,19 @@
     <tag k="type" v="multipolygon"/>
   </relation>
 
+  <!-- test duplicate 'create node' does not result in duplicate way -->
+  <node id="53101" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="10"/>
+  <node id="53102" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="11"/>
+  <node id="53103" version="1" timestamp="2011-11-11T00:11:11Z" lat="64" lon="10"/>
+  <node id="53104" version="1" timestamp="2011-11-11T00:11:11Z" lat="64" lon="11"/>
+  <way id="53111" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="53101"/>
+    <nd ref="53102"/>
+    <nd ref="53103"/>
+    <nd ref="53104"/>
+    <nd ref="53101"/>
+    <tag k="building" v="way"/>
+  </way>
 
   <!-- zig-zag line with coords internaly cached in differend deltacoords bunches -->
   <node id="60001" version="1" timestamp="2011-11-11T00:11:11Z" lat="0.01" lon="20.00"/>

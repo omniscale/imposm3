@@ -214,6 +214,9 @@ func (d *Deleter) deleteNode(id int64) error {
 	return nil
 }
 
+// Delete deletes the provided element from all matching tables. Depending
+// elements are also removed (e.g. all ways and relations that are affected by
+// a node).
 func (d *Deleter) Delete(delElem osm.Diff) error {
 	if delElem.Rel != nil {
 		if err := d.deleteRelation(delElem.Rel.ID, true, true); err != nil {
@@ -224,7 +227,10 @@ func (d *Deleter) Delete(delElem osm.Diff) error {
 			return err
 		}
 
-		if delElem.Modify {
+		if delElem.Modify || delElem.Create {
+			// Delete depending elements even if the element is new.
+			// Overlapping initial and diff imports can result in new elements
+			// that are already imported.
 			dependers := d.diffCache.Ways.Get(delElem.Way.ID)
 			for _, rel := range dependers {
 				if _, ok := d.deletedRelations[rel]; ok {
@@ -239,7 +245,10 @@ func (d *Deleter) Delete(delElem osm.Diff) error {
 		if err := d.deleteNode(delElem.Node.ID); err != nil {
 			return err
 		}
-		if delElem.Modify {
+		if delElem.Modify || delElem.Create {
+			// Delete depending elements even if the element is new.
+			// Overlapping initial and diff imports can result in new elements
+			// that are already imported.
 			dependers := d.diffCache.Coords.Get(delElem.Node.ID)
 			for _, way := range dependers {
 				if _, ok := d.deletedWays[way]; ok {

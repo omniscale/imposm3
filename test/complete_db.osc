@@ -223,5 +223,9 @@
     <node id="52101" version="1" timestamp="2011-11-11T00:11:11Z" lat="61" lon="10"/>
   </modify>
 
+  <!-- test duplicate 'create node' does not result in duplicate way -->
+  <create>
+    <node id="53101" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="10"/>
+  </create>
 
 </osmChange>

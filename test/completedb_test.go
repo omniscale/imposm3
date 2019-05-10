@@ -667,6 +667,14 @@ func TestComplete(t *testing.T) {
 		ts.assertGeomArea(t, checkElem{"osm_buildings", -52121, "yes", nil}, 16276875196.653734)
 	})
 
+	t.Run("DuplicateNodeCreate", func(t *testing.T) {
+		// Duplicate 'create node' does not result in duplicate way.
+
+		ts.assertRecords(t, []checkElem{
+			{"osm_buildings", 53111, "way", nil},
+		})
+	})
+
 	t.Run("UpdatedWay2", func(t *testing.T) {
 		// All nodes of straightened way are updated.
 
