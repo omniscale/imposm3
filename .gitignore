@@ -7,3 +7,4 @@ config.json
 test/build
 test/.lasttestrun*
 test/*.pyc
+pkg/mod/cache/
