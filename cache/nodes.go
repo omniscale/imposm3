@@ -1,9 +1,10 @@
 package cache
 
 import (
-	"github.com/jmhodges/levigo"
 	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/cache/binary"
+	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/opt"
 )
 
 type NodesCache struct {
@@ -32,12 +33,11 @@ func (p *NodesCache) PutNode(node *osm.Node) error {
 	if err != nil {
 		return err
 	}
-	return p.db.Put(p.wo, keyBuf, data)
+	return p.db.Put(keyBuf, data, p.wo)
 }
 
 func (p *NodesCache) PutNodes(nodes []osm.Node) (int, error) {
-	batch := levigo.NewWriteBatch()
-	defer batch.Close()
+	batch := new(leveldb.Batch)
 
 	var n int
 	for _, node := range nodes {
@@ -55,13 +55,13 @@ func (p *NodesCache) PutNodes(nodes []osm.Node) (int, error) {
 		batch.Put(keyBuf, data)
 		n++
 	}
-	return n, p.db.Write(p.wo, batch)
+	return n, p.db.Write(batch, p.wo)
 }
 
 func (p *NodesCache) GetNode(id int64) (*osm.Node, error) {
 	keyBuf := idToKeyBuf(id)
-	data, err := p.db.Get(p.ro, keyBuf)
-	if err != nil {
+	data, err := p.db.Get(keyBuf, p.ro)
+	if err != nil && err != leveldb.ErrNotFound {
 		return nil, err
 	}
 	if data == nil {
@@ -77,21 +77,21 @@ func (p *NodesCache) GetNode(id int64) (*osm.Node, error) {
 
 func (p *NodesCache) DeleteNode(id int64) error {
 	keyBuf := idToKeyBuf(id)
-	return p.db.Delete(p.wo, keyBuf)
+	return p.db.Delete(keyBuf, p.wo)
 }
 
 func (p *NodesCache) Iter() chan *osm.Node {
 	nodes := make(chan *osm.Node)
 	go func() {
-		ro := levigo.NewReadOptions()
-		ro.SetFillCache(false)
-		it := p.db.NewIterator(ro)
+		ro := opt.ReadOptions{}
+		ro.DontFillCache = true
+		it := p.db.NewIterator(nil, &ro)
 		// we need to Close the iter before closing the
 		// chan (and thus signaling that we are done)
 		// to avoid race where db is closed before the iterator
 		defer close(nodes)
-		defer it.Close()
-		it.SeekToFirst()
+		defer it.Release()
+		it.First()
 		for ; it.Valid(); it.Next() {
 			node, err := binary.UnmarshalNode(it.Value())
 			if err != nil {
