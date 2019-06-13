@@ -175,7 +175,7 @@ func (pg *PostGIS) Finish() error {
 		tableName := tbl.FullName
 		table := tbl
 		p.in <- func() error {
-			return createIndex(pg, tableName, table.Columns)
+			return createIndex(pg, tableName, table.Columns, false)
 		}
 	}
 
@@ -183,7 +183,7 @@ func (pg *PostGIS) Finish() error {
 		tableName := tbl.FullName
 		table := tbl
 		p.in <- func() error {
-			return createIndex(pg, tableName, table.Source.Columns)
+			return createIndex(pg, tableName, table.Source.Columns, true)
 		}
 	}
 
@@ -195,7 +195,7 @@ func (pg *PostGIS) Finish() error {
 	return nil
 }
 
-func createIndex(pg *PostGIS, tableName string, columns []ColumnSpec) error {
+func createIndex(pg *PostGIS, tableName string, columns []ColumnSpec, generalizedTable bool) error {
 	foundIDCol := false
 	for _, cs := range columns {
 		if cs.Name == "id" {
@@ -214,11 +214,12 @@ func createIndex(pg *PostGIS, tableName string, columns []ColumnSpec) error {
 				return err
 			}
 		}
-		if col.FieldType.Name == "id" && foundIDCol {
+		if col.FieldType.Name == "id" && (foundIDCol || generalizedTable) {
 			// Create index for OSM ID required for diff updates, but only if
 			// the table does have an `id` column.
 			// The explicit `id` column prevented the creation of our composite
 			// PRIMARY KEY index of id (serial) and OSM ID.
+			// Generalized tables also do not have a PRIMARY KEY.
 			sql := fmt.Sprintf(`CREATE INDEX "%s_%s_idx" ON "%s"."%s" USING BTREE ("%s")`,
 				tableName, col.Name, pg.Config.ImportSchema, tableName, col.Name)
 			step := log.Step(fmt.Sprintf("Creating OSM id index on %s", tableName))

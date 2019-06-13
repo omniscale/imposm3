@@ -69,6 +69,22 @@ func TestComplete(t *testing.T) {
 		}
 	})
 
+	t.Run("CheckIndices", func(t *testing.T) {
+		if !ts.indexExists(t, ts.dbschemaProduction(), "osm_roads", "osm_roads_pkey") {
+			t.Fatal("osm_id idx missing for osm_roads")
+		}
+		if !ts.indexExists(t, ts.dbschemaProduction(), "osm_roads", "osm_roads_geom") {
+			t.Fatal("geom idx missing for osm_roads")
+		}
+		if !ts.indexExists(t, ts.dbschemaProduction(), "osm_landusages_gen0", "osm_landusages_gen0_osm_id_idx") {
+			t.Fatal("osm_id idx missing for osm_landusages_gen0")
+		}
+		if !ts.indexExists(t, ts.dbschemaProduction(), "osm_landusages_gen0", "osm_landusages_gen0_geom") {
+			t.Fatal("geom idx missing for osm_landusages_gen0")
+		}
+
+	})
+
 	t.Run("OnlyNewStyleMultipolgon", func(t *testing.T) {
 		ts.assertRecords(t, []checkElem{
 			{"osm_landusages", -1001, "wood", nil},

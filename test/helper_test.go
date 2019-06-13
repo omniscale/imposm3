@@ -177,7 +177,23 @@ func (ts *importTestSuite) dropSchemas() {
 }
 
 func (ts *importTestSuite) tableExists(t *testing.T, schema, table string) bool {
-	row := ts.db.QueryRow(fmt.Sprintf(`SELECT EXISTS(SELECT * FROM information_schema.tables WHERE table_name='%s' AND table_schema='%s')`, table, schema))
+	row := ts.db.QueryRow(
+		`SELECT EXISTS(SELECT * FROM information_schema.tables WHERE table_name=$1 AND table_schema=$2)`,
+		table, schema,
+	)
+	var exists bool
+	if err := row.Scan(&exists); err != nil {
+		t.Error(err)
+		return false
+	}
+	return exists
+}
+
+func (ts *importTestSuite) indexExists(t *testing.T, schema, table, index string) bool {
+	row := ts.db.QueryRow(
+		`SELECT EXISTS(SELECT * FROM pg_indexes WHERE tablename=$1 AND schemaname=$2 AND indexname like $3)`,
+		table, schema, index,
+	)
 	var exists bool
 	if err := row.Scan(&exists); err != nil {
 		t.Error(err)
