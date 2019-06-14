@@ -275,13 +275,13 @@ func (c *DeltaCoordsCache) putCoordsPacked(bunchID int64, nodes []osm.Node) erro
 	keyBuf := idToKeyBuf(bunchID)
 
 	if len(nodes) == 0 {
-		return c.db.Delete(c.wo, keyBuf)
+		return c.db.Delete(keyBuf)
 	}
 
 	data := make([]byte, 512)
 	data = binary.MarshalDeltaNodes(nodes, data)
 
-	err := c.db.Put(c.wo, keyBuf, data)
+	err := c.db.Put(keyBuf, data)
 	if err != nil {
 		return err
 	}
@@ -292,7 +292,7 @@ func (c *DeltaCoordsCache) putCoordsPacked(bunchID int64, nodes []osm.Node) erro
 func (c *DeltaCoordsCache) getCoordsPacked(bunchID int64, nodes []osm.Node) ([]osm.Node, error) {
 	keyBuf := idToKeyBuf(bunchID)
 
-	data, err := c.db.Get(c.ro, keyBuf)
+	data, err := c.db.Get(keyBuf)
 	if err != nil {
 		return nil, err
 	}

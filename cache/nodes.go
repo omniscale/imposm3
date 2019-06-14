@@ -1,8 +1,8 @@
 package cache
 
 import (
-	"github.com/jmhodges/levigo"
-	osm "github.com/omniscale/go-osm"
+	"github.com/dgraph-io/badger"
+	"github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/cache/binary"
 )
 
@@ -32,12 +32,12 @@ func (p *NodesCache) PutNode(node *osm.Node) error {
 	if err != nil {
 		return err
 	}
-	return p.db.Put(p.wo, keyBuf, data)
+	return p.db.Put(keyBuf, data)
 }
 
 func (p *NodesCache) PutNodes(nodes []osm.Node) (int, error) {
-	batch := levigo.NewWriteBatch()
-	defer batch.Close()
+	batch := p.db.NewWriteBatch()
+	defer batch.Cancel()
 
 	var n int
 	for _, node := range nodes {
@@ -52,15 +52,15 @@ func (p *NodesCache) PutNodes(nodes []osm.Node) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-		batch.Put(keyBuf, data)
+		batch.Set(keyBuf, data, 0)
 		n++
 	}
-	return n, p.db.Write(p.wo, batch)
+	return n, batch.Flush()
 }
 
 func (p *NodesCache) GetNode(id int64) (*osm.Node, error) {
 	keyBuf := idToKeyBuf(id)
-	data, err := p.db.Get(p.ro, keyBuf)
+	data, err := p.db.Get(keyBuf)
 	if err != nil {
 		return nil, err
 	}
@@ -77,30 +77,38 @@ func (p *NodesCache) GetNode(id int64) (*osm.Node, error) {
 
 func (p *NodesCache) DeleteNode(id int64) error {
 	keyBuf := idToKeyBuf(id)
-	return p.db.Delete(p.wo, keyBuf)
+	return p.db.Delete(keyBuf)
 }
 
 func (p *NodesCache) Iter() chan *osm.Node {
 	nodes := make(chan *osm.Node)
 	go func() {
-		ro := levigo.NewReadOptions()
-		ro.SetFillCache(false)
-		it := p.db.NewIterator(ro)
-		// we need to Close the iter before closing the
-		// chan (and thus signaling that we are done)
-		// to avoid race where db is closed before the iterator
-		defer close(nodes)
-		defer it.Close()
-		it.SeekToFirst()
-		for ; it.Valid(); it.Next() {
-			node, err := binary.UnmarshalNode(it.Value())
-			if err != nil {
-				panic(err)
-			}
-			node.ID = idFromKeyBuf(it.Key())
+		ro := badger.DefaultIteratorOptions
+		ro.PrefetchSize = 100
 
-			nodes <- node
-		}
+		_ = p.db.View(func(txn *badger.Txn) error {
+			it := txn.NewIterator(ro)
+			// we need to Close the iter before closing the
+			// chan (and thus signaling that we are done)
+			// to avoid race where db is closed before the iterator
+			defer close(nodes)
+			defer it.Close()
+			var node *osm.Node
+			for it.Rewind(); it.Valid(); it.Next() {
+				_ = it.Item().Value(func(val []byte) error {
+					var err error
+					node, err = binary.UnmarshalNode(val)
+					if err != nil {
+						panic(err)
+					}
+					return err
+				})
+				node.ID = idFromKeyBuf(it.Item().Key())
+
+				nodes <- node
+			}
+			return nil
+		})
 	}()
 	return nodes
 }

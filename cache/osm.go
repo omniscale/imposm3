@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/jmhodges/levigo"
-	osm "github.com/omniscale/go-osm"
+	"github.com/dgraph-io/badger"
+	"github.com/omniscale/go-osm"
 )
 
 var (
@@ -149,45 +149,24 @@ func (c *OSMCache) FirstMemberIsCached(members []osm.Member) (bool, error) {
 }
 
 type cache struct {
-	db      *levigo.DB
+	db      *BadgerDB
 	options *cacheOptions
-	cache   *levigo.Cache
-	wo      *levigo.WriteOptions
-	ro      *levigo.ReadOptions
 }
 
 func (c *cache) open(path string) error {
-	opts := levigo.NewOptions()
-	opts.SetCreateIfMissing(true)
-	if c.options.CacheSizeM > 0 {
-		c.cache = levigo.NewLRUCache(c.options.CacheSizeM * 1024 * 1024)
-		opts.SetCache(c.cache)
-	}
-	if c.options.MaxOpenFiles > 0 {
-		opts.SetMaxOpenFiles(c.options.MaxOpenFiles)
-	}
-	if c.options.BlockRestartInterval > 0 {
-		opts.SetBlockRestartInterval(c.options.BlockRestartInterval)
-	}
-	if c.options.WriteBufferSizeM > 0 {
-		opts.SetWriteBufferSize(c.options.WriteBufferSizeM * 1024 * 1024)
-	}
-	if c.options.BlockSizeK > 0 {
-		opts.SetBlockSize(c.options.BlockSizeK * 1024)
-	}
-	if c.options.MaxFileSizeM > 0 {
-		// max file size option is only available with LevelDB 1.21 and higher
-		// build with -tags="ldppost121" to enable this option.
-		setMaxFileSize(opts, c.options.MaxFileSizeM*1024*1024)
-	}
+	opts := badger.DefaultOptions
+	opts.Dir = path
+	opts.ValueDir = path
 
-	db, err := levigo.Open(path, opts)
+	db, err := badger.Open(opts)
 	if err != nil {
+		panic(err)
 		return err
 	}
-	c.db = db
-	c.wo = levigo.NewWriteOptions()
-	c.ro = levigo.NewReadOptions()
+
+	bdb := BadgerDB{}
+	c.db = &bdb
+	c.db.DB = db
 
 	return nil
 }
@@ -203,20 +182,8 @@ func idFromKeyBuf(buf []byte) int64 {
 }
 
 func (c *cache) Close() {
-	if c.ro != nil {
-		c.ro.Close()
-		c.ro = nil
-	}
-	if c.wo != nil {
-		c.wo.Close()
-		c.wo = nil
-	}
 	if c.db != nil {
-		c.db.Close()
+		c.db.DB.Close()
 		c.db = nil
-	}
-	if c.cache != nil {
-		c.cache.Close()
-		c.cache = nil
 	}
 }
