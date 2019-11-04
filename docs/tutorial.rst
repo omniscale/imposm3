@@ -195,7 +195,7 @@ It needs to cache a few more information to be able to update the database from 
 
   imposm import -config config.json -read hamburg.osm.pbf -write -diff -cachedir ./cache -diffdir ./diff
 
-.. note:: Each diff import requires access to the cache files from this initial import. So it is a good idea to set ``-cachedir`` to a premanent location instead of `/tmp/`.
+.. note:: Each diff import requires access to the cache files from this initial import. So it is a good idea to set ``-cachedir`` to a permanent location instead of `/tmp/`.
 
 .. note:: You should not make changes to the mapping file after the initial import. Changes are not detected and this can result aborted updates or incomplete data.
 
