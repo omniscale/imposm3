@@ -1,9 +1,10 @@
 package cache
 
 import (
-	"github.com/jmhodges/levigo"
 	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/cache/binary"
+	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/opt"
 )
 
 type WaysCache struct {
@@ -29,12 +30,11 @@ func (c *WaysCache) PutWay(way *osm.Way) error {
 	if err != nil {
 		return err
 	}
-	return c.db.Put(c.wo, keyBuf, data)
+	return c.db.Put(keyBuf, data, c.wo)
 }
 
 func (c *WaysCache) PutWays(ways []osm.Way) error {
-	batch := levigo.NewWriteBatch()
-	defer batch.Close()
+	batch := new(leveldb.Batch)
 
 	for _, way := range ways {
 		if way.ID == SKIP {
@@ -47,13 +47,13 @@ func (c *WaysCache) PutWays(ways []osm.Way) error {
 		}
 		batch.Put(keyBuf, data)
 	}
-	return c.db.Write(c.wo, batch)
+	return c.db.Write(batch, c.wo)
 }
 
 func (c *WaysCache) GetWay(id int64) (*osm.Way, error) {
 	keyBuf := idToKeyBuf(id)
-	data, err := c.db.Get(c.ro, keyBuf)
-	if err != nil {
+	data, err := c.db.Get(keyBuf, c.ro)
+	if err != nil && err != leveldb.ErrNotFound {
 		return nil, err
 	}
 	if data == nil {
@@ -69,21 +69,21 @@ func (c *WaysCache) GetWay(id int64) (*osm.Way, error) {
 
 func (c *WaysCache) DeleteWay(id int64) error {
 	keyBuf := idToKeyBuf(id)
-	return c.db.Delete(c.wo, keyBuf)
+	return c.db.Delete(keyBuf, c.wo)
 }
 
 func (c *WaysCache) Iter() chan *osm.Way {
 	ways := make(chan *osm.Way, 1024)
 	go func() {
-		ro := levigo.NewReadOptions()
-		ro.SetFillCache(false)
-		it := c.db.NewIterator(ro)
+		ro := opt.ReadOptions{}
+		ro.DontFillCache = true
+		it := c.db.NewIterator(nil, &ro)
 		// we need to Close the iter before closing the
 		// chan (and thus signaling that we are done)
 		// to avoid race where db is closed before the iterator
 		defer close(ways)
-		defer it.Close()
-		it.SeekToFirst()
+		defer it.Release()
+		it.First()
 		for ; it.Valid(); it.Next() {
 			way, err := binary.UnmarshalWay(it.Value())
 			if err != nil {

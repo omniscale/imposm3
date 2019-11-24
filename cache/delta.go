@@ -7,6 +7,7 @@ import (
 
 	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/cache/binary"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 type byID []osm.Node
@@ -275,13 +276,13 @@ func (c *DeltaCoordsCache) putCoordsPacked(bunchID int64, nodes []osm.Node) erro
 	keyBuf := idToKeyBuf(bunchID)
 
 	if len(nodes) == 0 {
-		return c.db.Delete(c.wo, keyBuf)
+		return c.db.Delete(keyBuf, c.wo)
 	}
 
 	data := make([]byte, 512)
 	data = binary.MarshalDeltaNodes(nodes, data)
 
-	err := c.db.Put(c.wo, keyBuf, data)
+	err := c.db.Put(keyBuf, data, c.wo)
 	if err != nil {
 		return err
 	}
@@ -292,8 +293,8 @@ func (c *DeltaCoordsCache) putCoordsPacked(bunchID int64, nodes []osm.Node) erro
 func (c *DeltaCoordsCache) getCoordsPacked(bunchID int64, nodes []osm.Node) ([]osm.Node, error) {
 	keyBuf := idToKeyBuf(bunchID)
 
-	data, err := c.db.Get(c.ro, keyBuf)
-	if err != nil {
+	data, err := c.db.Get(keyBuf, c.ro)
+	if err != nil && err != leveldb.ErrNotFound {
 		return nil, err
 	}
 	if data == nil {

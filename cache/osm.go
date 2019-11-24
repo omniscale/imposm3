@@ -6,8 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/jmhodges/levigo"
-	osm "github.com/omniscale/go-osm"
+	"github.com/omniscale/go-osm"
+	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/opt"
 )
 
 var (
@@ -149,45 +150,43 @@ func (c *OSMCache) FirstMemberIsCached(members []osm.Member) (bool, error) {
 }
 
 type cache struct {
-	db      *levigo.DB
+	db      *leveldb.DB
 	options *cacheOptions
-	cache   *levigo.Cache
-	wo      *levigo.WriteOptions
-	ro      *levigo.ReadOptions
+	wo      *opt.WriteOptions
+	ro      *opt.ReadOptions
 }
 
 func (c *cache) open(path string) error {
-	opts := levigo.NewOptions()
-	opts.SetCreateIfMissing(true)
+	opts := &opt.Options{}
+	opts.ErrorIfMissing = false
 	if c.options.CacheSizeM > 0 {
-		c.cache = levigo.NewLRUCache(c.options.CacheSizeM * 1024 * 1024)
-		opts.SetCache(c.cache)
+		opts.BlockCacheCapacity = c.options.CacheSizeM * 1024 * 1024
 	}
 	if c.options.MaxOpenFiles > 0 {
-		opts.SetMaxOpenFiles(c.options.MaxOpenFiles)
+		opts.OpenFilesCacheCapacity = c.options.MaxOpenFiles
 	}
 	if c.options.BlockRestartInterval > 0 {
-		opts.SetBlockRestartInterval(c.options.BlockRestartInterval)
+		opts.BlockRestartInterval = c.options.BlockRestartInterval
 	}
 	if c.options.WriteBufferSizeM > 0 {
-		opts.SetWriteBufferSize(c.options.WriteBufferSizeM * 1024 * 1024)
+		opts.WriteBuffer = c.options.WriteBufferSizeM * 1024 * 1024
 	}
 	if c.options.BlockSizeK > 0 {
-		opts.SetBlockSize(c.options.BlockSizeK * 1024)
+		opts.BlockSize = c.options.BlockSizeK * 1024
 	}
-	if c.options.MaxFileSizeM > 0 {
-		// max file size option is only available with LevelDB 1.21 and higher
-		// build with -tags="ldppost121" to enable this option.
-		setMaxFileSize(opts, c.options.MaxFileSizeM*1024*1024)
-	}
+	//if c.options.MaxFileSizeM > 0 {
+	//	// max file size option is only available with LevelDB 1.21 and higher
+	//	// build with -tags="ldppost121" to enable this option.
+	//	setMaxFileSize(opts, c.options.MaxFileSizeM*1024*1024)
+	//}
 
-	db, err := levigo.Open(path, opts)
+	db, err := leveldb.OpenFile(path, opts)
 	if err != nil {
 		return err
 	}
 	c.db = db
-	c.wo = levigo.NewWriteOptions()
-	c.ro = levigo.NewReadOptions()
+	c.wo = &opt.WriteOptions{}
+	c.ro = &opt.ReadOptions{}
 
 	return nil
 }
@@ -204,19 +203,13 @@ func idFromKeyBuf(buf []byte) int64 {
 
 func (c *cache) Close() {
 	if c.ro != nil {
-		c.ro.Close()
 		c.ro = nil
 	}
 	if c.wo != nil {
-		c.wo.Close()
 		c.wo = nil
 	}
 	if c.db != nil {
 		c.db.Close()
 		c.db = nil
-	}
-	if c.cache != nil {
-		c.cache.Close()
-		c.cache = nil
 	}
 }
