@@ -20,8 +20,15 @@ type Deleter struct {
 	tmRelationMember mapping.RelationMatcher
 	expireor         expire.Expireor
 	singleIDSpace    bool
+
+	// Cache deleted nodes with lat/long and ways with refs, to be able to
+	// calculate expire tiles when nodes/ways are removed before the depending
+	// ways/relations.
+	deletedNodes map[int64]osm.Node
+	deletedWays  map[int64][]int64
+
+	// Cache deleted elements to avoid processing them multiple times.
 	deletedRelations map[int64]struct{}
-	deletedWays      map[int64]struct{}
 	deletedMembers   map[int64]struct{}
 }
 
@@ -43,8 +50,9 @@ func NewDeleter(db database.Deleter, osmCache *cache.OSMCache, diffCache *cache.
 		tmRelation:       tmRelation,
 		tmRelationMember: tmRelationMember,
 		singleIDSpace:    singleIDSpace,
+		deletedNodes:     make(map[int64]osm.Node),
 		deletedRelations: make(map[int64]struct{}),
-		deletedWays:      make(map[int64]struct{}),
+		deletedWays:      make(map[int64][]int64),
 		deletedMembers:   make(map[int64]struct{}),
 	}
 }
@@ -126,7 +134,10 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 	}
 
 	if deleted && d.expireor != nil {
-		if err := d.osmCache.Ways.FillMembers(elem.Members); err != nil {
+		err := d.osmCache.Ways.FillMembers(elem.Members)
+		if err == cache.NotFound {
+			d.fillMembersFromDeleted(elem.Members)
+		} else if err != nil {
 			return err
 		}
 		for _, m := range elem.Members {
@@ -134,7 +145,9 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 				continue
 			}
 			err := d.osmCache.Coords.FillWay(m.Way)
-			if err != nil {
+			if err == cache.NotFound {
+				d.fillWayFromDeleted(m.Way)
+			} else if err != nil {
 				continue
 			}
 			expire.ExpireProjectedNodes(d.expireor, m.Way.Nodes, 4326, deletedPolygon)
@@ -144,7 +157,7 @@ func (d *Deleter) deleteRelation(id int64, deleteRefs bool, deleteMembers bool) 
 }
 
 func (d *Deleter) deleteWay(id int64, deleteRefs bool) error {
-	d.deletedWays[id] = struct{}{}
+	d.deletedWays[id] = nil
 
 	elem, err := d.osmCache.Ways.GetWay(id)
 	if err != nil {
@@ -153,6 +166,8 @@ func (d *Deleter) deleteWay(id int64, deleteRefs bool) error {
 		}
 		return err
 	}
+
+	d.deletedWays[id] = elem.Refs
 	if elem.Tags == nil {
 		return nil
 	}
@@ -180,9 +195,12 @@ func (d *Deleter) deleteWay(id int64, deleteRefs bool) error {
 	}
 	if deleted && d.expireor != nil {
 		err := d.osmCache.Coords.FillWay(elem)
-		if err != nil {
+		if err == cache.NotFound {
+			d.fillWayFromDeleted(elem)
+		} else if err != nil {
 			return err
 		}
+
 		expire.ExpireProjectedNodes(d.expireor, elem.Nodes, 4326, deletedPolygon)
 	}
 	return nil
@@ -192,10 +210,18 @@ func (d *Deleter) deleteNode(id int64) error {
 	elem, err := d.osmCache.Nodes.GetNode(id)
 	if err != nil {
 		if err == cache.NotFound {
+			if elem, err := d.osmCache.Coords.GetCoord(id); err == nil {
+				// Cache from Coords for fillWayFromDeleted.
+				d.deletedNodes[id] = *elem
+			}
 			return nil
 		}
 		return err
 	}
+
+	// Cache for fillWayFromDeleted.
+	d.deletedNodes[id] = *elem
+
 	if elem.Tags == nil {
 		return nil
 	}
@@ -288,4 +314,24 @@ func (d *Deleter) Delete(delElem osm.Diff) error {
 		}
 	}
 	return nil
+}
+
+func (d *Deleter) fillWayFromDeleted(w *osm.Way) {
+	for i := range w.Nodes {
+		if w.Nodes[i].ID == 0 {
+			if nd, ok := d.deletedNodes[w.Refs[i]]; ok {
+				w.Nodes[i] = nd
+			}
+		}
+	}
+}
+
+func (d *Deleter) fillMembersFromDeleted(members []osm.Member) {
+	for i, m := range members {
+		if m.Type == osm.WayMember && m.Way == nil {
+			if refs, ok := d.deletedWays[m.ID]; ok {
+				members[i].Way = &osm.Way{Element: osm.Element{ID: m.ID}, Refs: refs}
+			}
+		}
+	}
 }

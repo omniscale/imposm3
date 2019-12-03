@@ -49,23 +49,33 @@
   </modify>
 
   <!-- create way -->
-  <node id="20401" version="1" timestamp="2011-11-11T00:11:11Z" lon="4.0001" lat="2" />
-  <node id="20402" version="1" timestamp="2011-11-11T00:11:11Z" lon="4.0002" lat="2" />
-  <way id="20451" version="1" timestamp="2011-11-11T00:11:11Z">
-    <nd ref="20401"/>
-    <nd ref="20402"/>
-    <tag k="highway" v="motorway"/>
-  </way>
+  <create>
+    <node id="20401" version="1" timestamp="2011-11-11T00:11:11Z" lon="4.0001" lat="2" />
+    <node id="20402" version="1" timestamp="2011-11-11T00:11:11Z" lon="4.0002" lat="2" />
+    <way id="20451" version="1" timestamp="2011-11-11T00:11:11Z">
+      <nd ref="20401"/>
+      <nd ref="20402"/>
+      <tag k="highway" v="motorway"/>
+    </way>
+  </create>
 
   <!-- create long way -->
-  <node id="20501" version="1" timestamp="2011-11-11T00:11:11Z" lon="5.00" lat="2" />
-  <node id="20502" version="1" timestamp="2011-11-11T00:11:11Z" lon="5.05" lat="2" />
-  <way id="20551" version="1" timestamp="2011-11-11T00:11:11Z">
-    <nd ref="20501"/>
-    <nd ref="20502"/>
-    <tag k="highway" v="motorway"/>
-  </way>
+  <create>
+    <node id="20501" version="1" timestamp="2011-11-11T00:11:11Z" lon="5.00" lat="2" />
+    <node id="20502" version="1" timestamp="2011-11-11T00:11:11Z" lon="5.05" lat="2" />
+    <way id="20551" version="1" timestamp="2011-11-11T00:11:11Z">
+      <nd ref="20501"/>
+      <nd ref="20502"/>
+      <tag k="highway" v="motorway"/>
+    </way>
+  </create>
 
+  <!-- delete way including its nodes -->
+  <delete>
+    <node id="20601" version="2" timestamp="2011-11-11T00:11:11Z" lon="6.0001" lat="2" />
+    <node id="20602" version="2" timestamp="2011-11-11T00:11:11Z" lon="6.0002" lat="2" />
+    <way id="20651" version="2" timestamp="2011-11-11T00:11:11Z" />
+  </delete>
 
 
   <!-- modify relation -->
@@ -79,6 +89,7 @@
 
   <!-- delete relation -->
   <delete>
+    <way id="30251" version="1" timestamp="2011-11-11T00:11:11Z" />
     <relation id="30291" version="1" timestamp="2011-11-11T00:11:11Z">
       <member type="way" ref="30251" role="outer"/>
       <tag k="building" v="true"/>

@@ -52,6 +52,14 @@
   <!-- create long way -->
   <!-- <way id="20551" ... -->
 
+  <!-- delete way including its nodes -->
+  <node id="20601" version="1" timestamp="2011-11-11T00:11:11Z" lon="6.0001" lat="2" />
+  <node id="20602" version="1" timestamp="2011-11-11T00:11:11Z" lon="6.0002" lat="2" />
+  <way id="20651" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="20601"/>
+    <nd ref="20602"/>
+    <tag k="highway" v="motorway"/>
+  </way>
 
   <!-- modify relation -->
   <node id="30101" version="1" timestamp="2011-11-11T00:11:11Z" lon="1.0001" lat="3" />

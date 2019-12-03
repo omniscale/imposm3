@@ -63,6 +63,7 @@ func TestExpireTiles(t *testing.T) {
 			{"osm_roads", 20151, "motorway", nil},
 			{"osm_roads", 20251, "motorway", nil},
 			{"osm_roads", 20351, "motorway", nil},
+			{"osm_roads", 20651, "motorway", nil},
 
 			{"osm_buildings", -30191, "yes", nil},
 			{"osm_buildings", -30291, "yes", nil},
@@ -106,6 +107,7 @@ func TestExpireTiles(t *testing.T) {
 			{"modify way from node (new)", []tile{{8328, 8283, 14}}, true},
 			{"create way", []tile{{8374, 8100, 14}}, true},
 			{"create long way", []tile{{8419, 8100, 14}, {8420, 8100, 14}, {8421, 8100, 14}}, true},
+			{"delete way including its nodes", []tile{{8465, 8100, 14}}, true},
 
 			{"modify relation", []tile{{8237, 8055, 14}}, true},
 			{"delete relation", []tile{{8283, 8055, 14}}, true},
