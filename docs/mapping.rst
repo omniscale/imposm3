@@ -471,7 +471,7 @@ You can configure these default interpretations with the ``areas`` option.
 .. code-block:: yaml
 
     areas:
-      area_tags: [buildings, landuse, leisure, natural, aeroway]
+      area_tags: [building, landuse, leisure, natural, aeroway]
       linear_tags: [highway, barrier]
 
 
