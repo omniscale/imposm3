@@ -40,6 +40,10 @@ func init() {
 		"zorder":               {"zorder", "int32", nil, MakeZOrder, nil, false},
 		"enumerate":            {"enumerate", "int32", nil, MakeEnumerate, nil, false},
 		"string_suffixreplace": {"string_suffixreplace", "string", nil, MakeSuffixReplace, nil, false},
+
+		"categorize_int":             {Name: "categorize_int", GoType: "int32", MakeFunc: MakeCategorizeInt},
+		"geojson_intersects":         {Name: "geojson_intersects", GoType: "bool", MakeFunc: MakeIntersectsField},
+		"geojson_intersects_feature": {Name: "geojson_intersects_feature", GoType: "string", MakeFunc: MakeIntersectsFeatureField},
 	}
 }
 

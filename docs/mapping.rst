@@ -270,6 +270,47 @@ Use ``default`` to set the default rank.
 A ``motorway`` will have a ``zorder`` value of 5, a ``residential`` with ``bridge=yes`` will be 8 (3+5).
 
 
+``categorize``
+^^^^^^^^^^^^^^
+
+Stores a number depending on a value, similar to ``enumerate``. However, ``categorize`` allows you to explicitly configure the number for each value, multiple values can have the same number and it can search in multiple keys. You can use this to implement a scale rank for sorting elements depending on their relative importance.
+
+
+::
+    - args:
+        default: 0
+        values: {
+          FR: 10, NL: 8, LU: 3,
+        }
+      keys:
+      - country_code_iso3166_1_alpha_2
+      - ISO3166-1:alpha2
+      - ISO3166-1
+      name: scalerank
+      type: categorize_int
+
+
+``geojson_intersects`` and ``geojson_intersects_field``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Checks whether the geometry of the element intersects geometries from a provided GeoJSON file. ``geojson_intersects`` returns true if it intersects any geometry. ``geojson_intersects_field`` returns a string property of the intersected feature.
+
+
+::
+    - args:
+        geojson: special_interest_areas.geojson
+      name: in_special_interest_area
+      type: geojson_intersects
+
+
+::
+    - args:
+        geojson: special_interest_areas.geojson
+        property: area
+      name: special_interest_area_name
+      type: geojson_intersects_field
+
+
 Element types
 ~~~~~~~~~~~~~
 
