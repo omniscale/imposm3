@@ -241,6 +241,18 @@ func Import(importOpts config.Import) {
 			log.Fatal("database not generalizeable")
 		}
 
+		// Optimize before creating indices.
+		if importOpts.Optimize {
+			if db, ok := db.(database.Optimizer); ok {
+				if err := db.Optimize(); err != nil {
+					log.Fatal(err)
+				}
+			} else {
+				log.Fatal("database not optimizable")
+			}
+		}
+
+		// Create indices in finisher.
 		if db, ok := db.(database.Finisher); ok {
 			if err := db.Finish(); err != nil {
 				log.Fatal(err)
@@ -251,7 +263,7 @@ func Import(importOpts config.Import) {
 		importFinished()
 	}
 
-	if importOpts.Optimize {
+	if importOpts.Optimize && !importOpts.Write { // Optimize already called in Write.
 		if db, ok := db.(database.Optimizer); ok {
 			if err := db.Optimize(); err != nil {
 				log.Fatal(err)

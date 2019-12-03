@@ -52,7 +52,7 @@ func (ts *importTestSuite) importOsm(t *testing.T) {
 		"-diff",
 		"-overwritecache",
 		"-dbschema-import", ts.dbschemaImport(),
-		// "-optimize",
+		"-optimize",
 		"-mapping", ts.config.mappingFileName,
 		"-quiet",
 		"-revertdeploy=false",
