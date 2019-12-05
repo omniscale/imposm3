@@ -6,7 +6,8 @@ language: go
 go:
   - "1.9.x"
   - "1.10.x"
-  - "1.12.x" # we use this for releases, see deploy.on.condition below
+  - "1.12.x"
+  - "1.13.x" # we use this for releases, see deploy.on.condition below
   - tip
 
 matrix:
@@ -16,10 +17,10 @@ matrix:
 
 env:
   global:
-    - GEOS_VERSION=3.7.2
-    - LEVELDB_VERSION=1.21
+    - GEOS_VERSION=3.7.3
+    - LEVELDB_VERSION=1.22
     # NOTE increase DEPS_REVISION everytime one of the compiled deps changes!
-    - DEPS_REVISION=2
+    - DEPS_REVISION=3
     # PREFIX is where we install our compiled deps
     - PREFIX=${HOME}/local-${DEPS_REVISION}
 
@@ -81,7 +82,7 @@ before_install:
         tar -zxf - --strip-components 1 -C ${HOME}/build/leveldb
       mkdir -p ${HOME}/build/leveldb/build
       cd ${HOME}/build/leveldb/build
-      cmake .. -DBUILD_SHARED_LIBS=1 && make -j 2
+      cmake .. -DBUILD_SHARED_LIBS=1 -DCMAKE_BUILD_TYPE=Release && make -j 2
       mkdir -p ${PREFIX}/{lib,include}
       cp -R ${HOME}/build/leveldb/build/liblevel* ${PREFIX}/lib/
       cp -R ${HOME}/build/leveldb/include/leveldb ${PREFIX}/include/
@@ -131,5 +132,5 @@ deploy:
   on:
     repo: omniscale/imposm3
     tags: true
-    condition: $TRAVIS_GO_VERSION =~ ^1\.12
+    condition: $TRAVIS_GO_VERSION =~ ^1\.13
 
