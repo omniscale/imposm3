@@ -277,6 +277,7 @@ Stores a number depending on a value, similar to ``enumerate``. However, ``categ
 
 
 ::
+
     - args:
         default: 0
         values: {
@@ -297,6 +298,7 @@ Checks whether the geometry of the element intersects geometries from a provided
 
 
 ::
+
     - args:
         geojson: special_interest_areas.geojson
       name: in_special_interest_area
@@ -304,6 +306,7 @@ Checks whether the geometry of the element intersects geometries from a provided
 
 
 ::
+
     - args:
         geojson: special_interest_areas.geojson
         property: area
