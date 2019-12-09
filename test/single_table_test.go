@@ -111,6 +111,7 @@ func TestSingleTable(t *testing.T) {
 		ts.assertHstore(t, []checkElem{
 			{"osm_all", -20201, "*", map[string]string{"random": "tag", "highway": "yes"}},
 		})
+		ts.assertGeomLength(t, checkElem{"osm_all", -20201, "*", nil}, 111319.5)
 	})
 
 	t.Run("NonMappedClosedWayIsMissing", func(t *testing.T) {
@@ -207,6 +208,10 @@ func TestSingleTable(t *testing.T) {
 		if len(rows) != 1 {
 			t.Errorf("found duplicate row: %v", rows)
 		}
+	})
+
+	t.Run("ModifiedWayGeometryAfterNodeMoved", func(t *testing.T) {
+		ts.assertGeomLength(t, checkElem{"osm_all", -20201, "*", nil}, 222639)
 	})
 
 	t.Run("Cleanup", func(t *testing.T) {

@@ -23,4 +23,9 @@
       <tag k="building" v="office"/>
     </relation>
   </modify>
+
+  <modify>
+    <node id="20002" version="2" timestamp="2011-11-11T00:11:11Z" lat="43" lon="13"/>
+  </modify>
+
 </osmChange>

@@ -89,8 +89,6 @@ func (ww *WayWriter) loop() {
 			return true
 		}
 
-		w.ID = ww.wayID(w.ID)
-
 		var err error
 		inserted := false
 		insertedPolygon := false
@@ -140,16 +138,17 @@ func (ww *WayWriter) buildAndInsert(
 
 	// make copy to avoid interference with polygon/linestring matches
 	way := osm.Way(*w)
+	way.ID = ww.wayID(way.ID)
 
 	// Shortcut for non-clipped LineStrings:
 	// We don't need any function from GEOS, so we can directly create the WKB hex string.
 	if ww.limiter == nil && !isPolygon {
-		wkb, err := geomp.NodesAsEWKBHexLineString(w.Nodes, ww.srid)
+		wkb, err := geomp.NodesAsEWKBHexLineString(way.Nodes, ww.srid)
 		if err != nil {
 			return err, false
 		}
 		geom := geomp.Geometry{Wkb: wkb}
-		if err := ww.inserter.InsertLineString(w.Element, geom, matches); err != nil {
+		if err := ww.inserter.InsertLineString(way.Element, geom, matches); err != nil {
 			return err, false
 		}
 		return nil, true
@@ -200,7 +199,6 @@ func (ww *WayWriter) buildAndInsert(
 			inserted = false
 		}
 		for _, p := range parts {
-			way := osm.Way(*w)
 			geom = geomp.Geometry{Geom: p, Wkb: g.AsEwkbHex(p)}
 			if isPolygon {
 				if err := ww.inserter.InsertPolygon(way.Element, geom, matches); err != nil {
