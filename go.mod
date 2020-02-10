@@ -4,8 +4,8 @@ go 1.12
 
 require (
 	github.com/fsnotify/fsnotify v1.4.7 // indirect
-	github.com/gogo/protobuf v0.0.0-20171007142547-342cbe0a0415
-	github.com/jmhodges/levigo v0.0.0-20161115193449-c42d9e0ca023
+	github.com/gogo/protobuf v1.3.1
+	github.com/jmhodges/levigo v0.0.0-20191214093932-ed89ec741d96
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/lib/pq v0.0.0-20171113044440-8c6ee72f3e6b
 	github.com/omniscale/go-osm v0.2.1
