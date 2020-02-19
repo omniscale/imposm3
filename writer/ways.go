@@ -141,31 +141,6 @@ func (ww *WayWriter) buildAndInsert(
 	// make copy to avoid interference with polygon/linestring matches
 	way := osm.Way(*w)
 
-	// Shortcut for non-clipped LineStrings:
-	// We don't need any function from GEOS, so we can directly create the WKB hex string.
-	if ww.limiter == nil && !isPolygon {
-		wkb, err := geomp.NodesAsEWKBHexLineString(w.Nodes, ww.srid)
-		if err != nil {
-			return err, false
-		}
-		geom := geomp.Geometry{Wkb: wkb}
-		if err := ww.inserter.InsertLineString(w.Element, geom, matches); err != nil {
-			return err, false
-		}
-		return nil, true
-	}
-	// TODO: We could also apply this shortcut for simple Polygons that we we don't
-	// need to make valid (e.g. no holes, only 4 points).
-	// However, this does not work with (Webmerc)Area columns, unless we have
-	// a non-GEOS implementation.
-	// if ww.limiter == nil && isPolygon && len(w.Nodes) <= 5 {
-	// 	geom := geomp.Geometry{Wkb: geomp.WayAsEWKBHexPolygon(w.Nodes, ww.srid)}
-	// 	if err := ww.inserter.InsertPolygon(w.Element, geom, matches); err != nil {
-	// 		return err, false
-	// 	}
-	// 	return nil, true
-	// }
-
 	var err error
 	var geosgeom *geos.Geom
 
