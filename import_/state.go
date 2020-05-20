@@ -23,7 +23,7 @@ func estimateFromPBF(filename string, before time.Duration, replicationURL strin
 	header, err := pbfparser.Header()
 
 	var timestamp time.Time
-	if err == nil && header.Time.Unix() != 0 {
+	if err == nil && header.Time.Unix() > 0 {
 		timestamp = header.Time
 	} else {
 		fstat, err := os.Stat(filename)
