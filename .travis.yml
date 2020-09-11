@@ -4,10 +4,10 @@ sudo: false
 language: go
 
 go:
-  - "1.9.x"
   - "1.10.x"
-  - "1.12.x"
-  - "1.13.x" # we use this for releases, see deploy.on.condition below
+  - "1.13.x"
+  - "1.14.x"
+  - "1.15.x" # we use this for releases, see deploy.on.condition below
   - tip
 
 matrix:
@@ -132,5 +132,5 @@ deploy:
   on:
     repo: omniscale/imposm3
     tags: true
-    condition: $TRAVIS_GO_VERSION =~ ^1\.13
+    condition: $TRAVIS_GO_VERSION =~ ^1\.15
 
