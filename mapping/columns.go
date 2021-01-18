@@ -217,7 +217,8 @@ func MakeWayZOrder(columnName string, columnType ColumnType, column config.Colum
 
 	wayZOrder := func(val string, elem *osm.Element, geom *geom.Geometry, match Match) interface{} {
 		var z int
-		layer, _ := strconv.ParseInt(elem.Tags["layer"], 10, 64)
+		layer, _ := strconv.ParseInt(elem.Tags["layer"], 10, 32)
+
 		z += int(layer) * levelOffset
 
 		rank, ok := ranks[match.Value]
@@ -236,6 +237,9 @@ func MakeWayZOrder(columnName string, columnType ColumnType, column config.Colum
 			z += levelOffset
 		}
 
+		if z < math.MinInt32 || z > math.MaxInt32 {
+			return nil
+		}
 		return z
 	}
 	return wayZOrder, nil
@@ -285,6 +289,9 @@ func DefaultWayZOrder(val string, elem *osm.Element, geom *geom.Geometry, match 
 		z += 10
 	}
 
+	if z < math.MinInt32 || z > math.MaxInt32 {
+		return nil
+	}
 	return z
 }
 

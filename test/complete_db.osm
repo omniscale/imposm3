@@ -743,6 +743,16 @@
     <tag k="landuse" v="park"/>
   </relation>
 
+  <!-- way with invalid layer -->
+  <way id="17003" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="17001"/>
+    <nd ref="17002"/>
+    <nd ref="17003"/>
+    <tag k="name" v="way 17003"/>
+    <tag k="layer" v="11111111111111111"/>
+    <tag k="highway" v="residential"/>
+  </way>
+
   <way id="17101" version="1" timestamp="2011-11-11T00:11:11Z">
     <nd ref="17001"/>
     <nd ref="17002"/>

@@ -5,16 +5,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"testing"
 
 	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/cache"
-
 	"github.com/omniscale/imposm3/geom"
-	"github.com/omniscale/imposm3/proj"
-
-	"testing"
-
 	"github.com/omniscale/imposm3/geom/geos"
+	"github.com/omniscale/imposm3/proj"
 )
 
 func TestComplete(t *testing.T) {
@@ -168,6 +165,13 @@ func TestComplete(t *testing.T) {
 			{"osm_landusages", -17101, Missing, nil},
 			{"osm_roads", 17101, "residential", nil},
 			{"osm_roads", 17102, Missing, nil},
+		})
+	})
+
+	t.Run("WayWithInvalidLayer", func(t *testing.T) {
+		// Layer value is not a valid int32.
+		ts.assertRecords(t, []checkElem{
+			{"osm_roads", 17003, "residential", map[string]string{"z_order": "NULL"}},
 		})
 	})
 
@@ -589,6 +593,13 @@ func TestComplete(t *testing.T) {
 			{"osm_roads", 16002, Missing, nil},
 		})
 		ts.assertGeomArea(t, checkElem{"osm_landusages", -16001, "park", nil}, 12779350582)
+	})
+
+	t.Run("WayWithInvalidLayerUpdate", func(t *testing.T) {
+		// Layer value is now a valid int32.
+		ts.assertRecords(t, []checkElem{
+			{"osm_roads", 17003, "residential", map[string]string{"z_order": "23"}},
+		})
 	})
 
 	t.Run("NodeWayRefAfterDelete2", func(t *testing.T) {

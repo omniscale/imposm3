@@ -245,6 +245,8 @@ func (ts *importTestSuite) query(t *testing.T, table string, id int64, keys []st
 	for k, v := range h.Map {
 		if v.Valid {
 			r.tags[k] = v.String
+		} else {
+			r.tags[k] = "NULL"
 		}
 	}
 

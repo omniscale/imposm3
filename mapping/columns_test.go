@@ -208,6 +208,7 @@ func TestWayZOrder(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	NIL := 999 // marker value
 	tests := []struct {
 		key      string
 		tags     osm.Tags
@@ -223,12 +224,18 @@ func TestWayZOrder(t *testing.T) {
 		{"path", osm.Tags{"tunnel": "yes"}, -10},
 		{"unknown", osm.Tags{"tunnel": "yes"}, -6},
 		{"unknown", osm.Tags{"tunnel": "yes", "layer": "1"}, 5},
+		{"unknown", osm.Tags{"tunnel": "yes", "layer": "123456789123456789"}, NIL},
 	}
 	for _, test := range tests {
 		elem := &osm.Element{Tags: test.tags}
 		match := Match{Value: test.key}
 
-		if v := zOrder("", elem, nil, match); v.(int) != test.expected {
+		if test.expected == NIL {
+			if v := zOrder("", elem, nil, match); v != nil {
+				t.Errorf("%v %v %#v != nil", test.key, test.tags, v)
+			}
+
+		} else if v := zOrder("", elem, nil, match); v.(int) != test.expected {
 			t.Errorf("%v %v %d != %d", test.key, test.tags, v, test.expected)
 		}
 	}

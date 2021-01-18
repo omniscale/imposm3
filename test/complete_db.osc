@@ -96,6 +96,17 @@
     </relation>
   </modify>
 
+  <modify>
+    <way id="17003" version="2" timestamp="2011-11-11T00:11:11Z">
+      <nd ref="17001"/>
+      <nd ref="17002"/>
+      <nd ref="17003"/>
+      <tag k="name" v="way 17003"/>
+      <tag k="layer" v="2"/>
+      <tag k="highway" v="residential"/>
+    </way>
+  </modify>
+
   <!-- test merge relation way -->
   <delete>
     <way id="16002" version="2" timestamp="2011-11-11T00:11:11Z"/>
