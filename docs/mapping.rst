@@ -63,7 +63,7 @@ For tables of type ``polygon``: Only build multi-polygons for relations which ha
 ``columns``
 ~~~~~~~~~~~
 
-``columns`` is a list of columns that Imposm should create for this table. Each column is a YAML object with a ``type`` and a ``name`` and optionally ``key``, ``args`` and ``from_member``.
+``columns`` is a list of columns that Imposm should create for this table. Each column is a YAML object with a ``type`` and a ``name`` and optionally ``key``, ``args`` and ``from_member``.  The legacy name of ``columns`` parameter is ``fields``, but it should not be used. If both ``columns`` and ``fields`` exist in the same mapping, ``fields`` will be used. Support for ``fields` will be removed in the future versions.
 
 ``name``
 ^^^^^^^^^
