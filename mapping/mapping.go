@@ -130,7 +130,7 @@ func (m *Mapping) prepare() error {
 
 		if TableType(t.Type) == GeometryTable {
 			if t.Mapping != nil || t.Mappings != nil {
-				return errors.Errorf("table with type:geometry requires type_mapping for table %s", name)
+				return errors.Errorf("table with type:geometry requires type_mappings for table %s", name)
 			}
 		}
 	}
