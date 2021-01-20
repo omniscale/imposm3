@@ -150,6 +150,7 @@ func Run(baseOpts config.Base) {
 				}
 			}
 			if os.Getenv("IMPOSM3_SINGLE_DIFF") != "" {
+				shutdown()
 				return
 			}
 		}
