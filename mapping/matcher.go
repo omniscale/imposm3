@@ -20,17 +20,20 @@ func (m *Mapping) pointMatcher() (NodeMatcher, error) {
 	}, err
 }
 
-func (m *Mapping) lineStringMatcher() (WayMatcher, error) {
+func (m *Mapping) lineStringMatcher() (RelWayMatcher, error) {
 	mappings := make(TagTableMapping)
 	m.mappings(LineStringTable, mappings)
 	filters := make(tableElementFilters)
 	m.addFilters(filters)
 	m.addTypedFilters(LineStringTable, filters)
+	relFilters := make(tableElementFilters)
+	m.addRelationFilters(LineStringTable, relFilters)
 	tables, err := m.tables(LineStringTable)
 	return &tagMatcher{
 		mappings:   mappings,
 		filters:    filters,
 		tables:     tables,
+		relFilters: relFilters,
 		matchAreas: false,
 	}, err
 }
@@ -155,7 +158,7 @@ func (tm *tagMatcher) MatchWay(way *osm.Way) []Match {
 }
 
 func (tm *tagMatcher) MatchRelation(rel *osm.Relation) []Match {
-	return tm.match(rel.Tags, true, true)
+	return tm.match(rel.Tags, tm.matchAreas, true)
 }
 
 type orderedMatch struct {
