@@ -57,7 +57,7 @@ func TestFromPBF(t *testing.T) {
 			url:         "https://unknownurl_planet.openstreetmap.org/replication/day/",
 			before:      time.Hour * 24 * 3,
 			interval:    time.Hour * 24,
-			errContains: "no such host",
+			errContains: "No address associated with hostname",
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
