@@ -187,6 +187,16 @@ func addBaseFlags(opts *Base, flags *flag.FlagSet) {
 	flags.StringVar(&opts.Schemas.Backup, "dbschema-backup", defaultSchemaBackup, "db schema for backups")
 }
 
+func isFlagActual(flags *flag.FlagSet, name string) bool {
+	found := false
+	flags.Visit(func(f *flag.Flag) {
+		if f.Name == name {
+			found = true
+		}
+	})
+	return found
+}
+
 func ParseImport(args []string) Import {
 	flags := flag.NewFlagSet("import", flag.ExitOnError)
 	opts := Import{}
@@ -254,6 +264,11 @@ func ParseDiffImport(args []string) (Base, []string) {
 		log.Fatal(err)
 	}
 
+	// If expiretiles-zoom hasn't been explicitly set on the command-line, use the
+	// value from config.json or fall back to the default value.
+	if !isFlagActual(flags, "expiretiles-zoom") {
+		flags.Set("expiretiles-zoom", "0")
+	}
 	err = opts.updateFromConfig()
 	if err != nil {
 		log.Fatal(err)
@@ -292,6 +307,11 @@ func ParseRunImport(args []string) Base {
 		log.Fatal(err)
 	}
 
+	// If expiretiles-zoom hasn't been explicitly set on the command-line, use the
+	// value from config.json or fall back to the default value.
+	if !isFlagActual(flags, "expiretiles-zoom") {
+		flags.Set("expiretiles-zoom", "0")
+	}
 	err = opts.updateFromConfig()
 	if err != nil {
 		log.Fatal(err)
