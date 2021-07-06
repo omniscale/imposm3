@@ -1,6 +1,7 @@
 package mapping
 
 import (
+	"encoding/json"
 	"math"
 	"regexp"
 	"strconv"
@@ -33,6 +34,7 @@ func init() {
 		"geometry":             {"geometry", "geometry", Geometry, nil, nil, false},
 		"validated_geometry":   {"validated_geometry", "validated_geometry", Geometry, nil, nil, false},
 		"hstore_tags":          {"hstore_tags", "hstore_string", nil, MakeHStoreString, nil, false},
+		"jsonb_tags":          {"jsonb_tags", "jsonb_string", nil, MakeJSONBString, nil, false},
 		"wayzorder":            {"wayzorder", "int32", nil, MakeWayZOrder, nil, false},
 		"pseudoarea":           {"pseudoarea", "float32", nil, MakePseudoArea, nil, false},
 		"area":                 {"area", "float32", Area, nil, nil, false},
@@ -193,6 +195,34 @@ func MakeHStoreString(columnName string, columnType ColumnType, column config.Co
 		return strings.Join(tags, ", ")
 	}
 	return hstoreString, nil
+}
+
+
+func MakeJSONBString(columnName string, columnType ColumnType, column config.Column) (MakeValue, error) {
+	var includeAll bool
+	var err error
+	var include map[string]int
+	if _, ok := column.Args["include"]; !ok {
+		includeAll = true
+	} else {
+		include, err = decodeEnumArg(column, "include")
+		if err != nil {
+			return nil, err
+		}
+
+	}
+
+	jsonbString := func(val string, elem *osm.Element, geom *geom.Geometry, match Match) interface{} {
+		tags := make(map[string]string)
+		for k, v := range elem.Tags {
+			if includeAll || include[k] != 0 {
+				tags[k] = v
+			}
+		}
+		json, _ := json.Marshal(tags)
+		return string(json);
+	}
+	return jsonbString, nil
 }
 
 func MakeWayZOrder(columnName string, columnType ColumnType, column config.Column) (MakeValue, error) {
