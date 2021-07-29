@@ -55,8 +55,8 @@ func NewRelationWriter(
 		polygonMatcher:        matcher,
 		relationMatcher:       relMatcher,
 		relationMemberMatcher: relMemberMatcher,
-		rel:    rel,
-		maxGap: maxGap,
+		rel:                   rel,
+		maxGap:                maxGap,
 	}
 	rw.OsmElemWriter.writer = &rw
 	return &rw.OsmElemWriter
@@ -250,7 +250,7 @@ func handleRelationMembers(rw *RelationWriter, r *osm.Relation, geos *geosp.Geos
 		}
 	}
 
-	for _, m := range r.Members {
+	for mi, m := range r.Members {
 		var g *geosp.Geom
 		var err error
 		if m.Node != nil {
@@ -277,7 +277,7 @@ func handleRelationMembers(rw *RelationWriter, r *osm.Relation, geos *geosp.Geos
 		}
 		rel := osm.Relation(*r)
 		rel.ID = rw.relID(r.ID)
-		rw.inserter.InsertRelationMember(rel, m, gelem, relMemberMatches)
+		rw.inserter.InsertRelationMember(rel, m, mi, gelem, relMemberMatches)
 	}
 	return true
 }

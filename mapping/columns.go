@@ -48,7 +48,7 @@ func init() {
 }
 
 type MakeValue func(string, *osm.Element, *geom.Geometry, Match) interface{}
-type MakeMemberValue func(*osm.Relation, *osm.Member, Match) interface{}
+type MakeMemberValue func(*osm.Relation, *osm.Member, int, Match) interface{}
 
 type MakeMakeValue func(string, ColumnType, config.Column) (MakeValue, error)
 
@@ -102,25 +102,20 @@ func ValueName(val string, elem *osm.Element, geom *geom.Geometry, match Match) 
 	return match.Value
 }
 
-func RelationMemberType(rel *osm.Relation, member *osm.Member, match Match) interface{} {
+func RelationMemberType(rel *osm.Relation, member *osm.Member, memberIndex int, match Match) interface{} {
 	return member.Type
 }
 
-func RelationMemberRole(rel *osm.Relation, member *osm.Member, match Match) interface{} {
+func RelationMemberRole(rel *osm.Relation, member *osm.Member, memberIndex int, match Match) interface{} {
 	return member.Role
 }
 
-func RelationMemberID(rel *osm.Relation, member *osm.Member, match Match) interface{} {
+func RelationMemberID(rel *osm.Relation, member *osm.Member, memberIndex int, match Match) interface{} {
 	return member.ID
 }
 
-func RelationMemberIndex(rel *osm.Relation, member *osm.Member, match Match) interface{} {
-	for i := range rel.Members {
-		if rel.Members[i].ID == member.ID {
-			return i
-		}
-	}
-	return -1
+func RelationMemberIndex(rel *osm.Relation, member *osm.Member, memberIndex int, match Match) interface{} {
+	return memberIndex
 }
 
 func Direction(val string, elem *osm.Element, geom *geom.Geometry, match Match) interface{} {

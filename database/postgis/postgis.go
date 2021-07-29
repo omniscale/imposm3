@@ -511,9 +511,9 @@ func (pg *PostGIS) InsertPolygon(elem osm.Element, geom geom.Geometry, matches [
 	return nil
 }
 
-func (pg *PostGIS) InsertRelationMember(rel osm.Relation, m osm.Member, geom geom.Geometry, matches []mapping.Match) error {
+func (pg *PostGIS) InsertRelationMember(rel osm.Relation, m osm.Member, mi int, geom geom.Geometry, matches []mapping.Match) error {
 	for _, match := range matches {
-		row := match.MemberRow(&rel, &m, &geom)
+		row := match.MemberRow(&rel, &m, mi, &geom)
 		if err := pg.txRouter.Insert(match.Table.Name, row); err != nil {
 			return err
 		}
