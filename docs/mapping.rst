@@ -18,7 +18,7 @@ The most important part is the ``tables`` definition. Each table is a YAML objec
 ``type``
 ~~~~~~~~
 
-``type`` can be ``point``, ``linestring``, ``polygon``, ``geometry``, ``relation`` and ``relation_member``. ``geometry`` requires a special ``mapping``. :doc:`Relations are described in more detail here <relations>`.
+``type`` can be ``point``, ``linestring``, ``polygon``, ``geometry``, ``relation`` and ``relation_member``. ``geometry`` requires a special ``type_mappings``. :doc:`Relations are described in more detail here <relations>`.
 
 
 ``mapping``
@@ -182,6 +182,39 @@ An OSM element is only inserted once even if a mapping matches multiple tags. So
             mapping:
               highway: [__any__]
           …
+
+
+``type_mappings``
+~~~~~~~~~~~~~~~~~
+
+A ``table`` with a ``type`` of ``geomery`` can contain different geometry types, such as points, linestrings, and/or polygons.
+The ``type_mappings`` provides separate mapping for the required geometries types.
+
+
+.. code-block:: yaml
+   :emphasize-lines: 11-21
+
+    tables:
+      all:
+        columns:
+          - name: osm_id
+            type: id
+          - name: geometry
+            type: geometry
+          - name: tags
+            type: hstore_tags
+        type: geometry
+        type_mappings:
+          points:
+            amenity: [__any__]
+            poi: [__any__]
+            shop: [__any__]
+          linestrings:
+            highway: [__any__]
+          polygons:
+            landuse: [__any__]
+            poi: [__any__]
+            shop: [__any__]
 
 
 .. _column_types:
