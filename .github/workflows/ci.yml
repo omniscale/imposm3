@@ -10,9 +10,24 @@ jobs:
       PGPASSWORD: postgres
       PGUSER: postgres
 
+    strategy:
+      matrix:
+        go:
+          - '1.12'
+          - '1.19'
+        postgis:
+          - '9.5-2.5'
+          - '9.5-3.0'
+          - '10-2.5'
+          - '10-3.0'
+          - '10-3.1'
+          - '10-3.2'
+          - '14-3.1'
+          - '14-3.2'
+
     services:
       postgres:
-        image: postgis/postgis:9.5-2.5
+        image: postgis/postgis:${{ matrix.postgis }}
         env:
           POSTGRES_PASSWORD: postgres
         options: >-
@@ -23,17 +38,7 @@ jobs:
         ports:
           - 5432:5432
 
-    strategy:
-      matrix:
-        go:
-          - '1.10'
-          - '1.13'
-          - '1.14'
-          - '1.15'
-          - '1.18'
-          - '1.19'
-
-    name: Build with go v${{ matrix.go }}
+    name: Build with go v${{ matrix.go }} with postgis image ${{ matrix.postgis }}
 
     steps:
       - uses: actions/checkout@v3
