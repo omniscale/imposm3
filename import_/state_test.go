@@ -25,13 +25,13 @@ func TestFromPBF(t *testing.T) {
 	}{
 		{
 			name:     "minutely defaults",
-			minSeq:   1350000,
+			minSeq:   1349000,
 			maxSeq:   1368233,
 			interval: time.Minute,
 		},
 		{
 			name:     "minutely before 5d",
-			minSeq:   1345000,
+			minSeq:   1342000,
 			maxSeq:   1361033,
 			before:   time.Hour * 24 * 5,
 			interval: time.Minute,
@@ -57,7 +57,7 @@ func TestFromPBF(t *testing.T) {
 			url:         "https://unknownurl_planet.openstreetmap.org/replication/day/",
 			before:      time.Hour * 24 * 3,
 			interval:    time.Hour * 24,
-			errContains: "no such host",
+			errContains: "No address associated with hostname",
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
