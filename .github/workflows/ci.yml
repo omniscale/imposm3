@@ -11,6 +11,7 @@ jobs:
       PGUSER: postgres
 
     strategy:
+      fail-fast: false
       matrix:
         go:
           - '1.12'
