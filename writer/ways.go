@@ -89,8 +89,6 @@ func (ww *WayWriter) loop() {
 			return true
 		}
 
-		w.ID = ww.wayID(w.ID)
-
 		var err error
 		inserted := false
 		insertedPolygon := false
@@ -140,6 +138,7 @@ func (ww *WayWriter) buildAndInsert(
 
 	// make copy to avoid interference with polygon/linestring matches
 	way := osm.Way(*w)
+	way.ID = ww.wayID(way.ID)
 
 	var err error
 	var geosgeom *geos.Geom
@@ -172,7 +171,6 @@ func (ww *WayWriter) buildAndInsert(
 			inserted = false
 		}
 		for _, p := range parts {
-			way := osm.Way(*w)
 			geom = geomp.Geometry{Geom: p, Wkb: g.AsEwkbHex(p)}
 			if isPolygon {
 				if err := ww.inserter.InsertPolygon(way.Element, geom, matches); err != nil {
