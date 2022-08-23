@@ -1,7 +1,7 @@
 package import_
 
 import (
-	"strings"
+	"regexp"
 	"testing"
 	"time"
 )
@@ -21,7 +21,7 @@ func TestFromPBF(t *testing.T) {
 		before         time.Duration
 		interval       time.Duration
 		url            string
-		errContains    string
+		errMatch       string
 	}{
 		{
 			name:     "minutely defaults",
@@ -53,20 +53,20 @@ func TestFromPBF(t *testing.T) {
 			interval: time.Hour * 24,
 		},
 		{
-			name:        "unable to fetch current state",
-			url:         "https://unknownurl_planet.openstreetmap.org/replication/day/",
-			before:      time.Hour * 24 * 3,
-			interval:    time.Hour * 24,
-			errContains: "No address associated with hostname",
+			name:     "unable to fetch current state",
+			url:      "https://unknownurl_planet.openstreetmap.org/replication/day/",
+			before:   time.Hour * 24 * 3,
+			interval: time.Hour * 24,
+			errMatch: "no such host|No address associated with hostname",
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			state, err := estimateFromPBF("../vendor/github.com/omniscale/go-osm/parser/pbf/monaco-20150428.osm.pbf", tt.before, tt.url, tt.interval)
-			if tt.errContains != "" {
+			if tt.errMatch != "" {
 				if err == nil {
-					t.Errorf("expected error with %q, got nil", tt.errContains)
-				} else if !strings.Contains(err.Error(), tt.errContains) {
-					t.Errorf("expected error with %q, got %s", tt.errContains, err)
+					t.Errorf("expected error with %q, got nil", tt.errMatch)
+				} else if ok, merr := regexp.MatchString(tt.errMatch, err.Error()); !ok || merr != nil {
+					t.Errorf("expected error with %q, got %s", tt.errMatch, err)
 				}
 				return
 			}
