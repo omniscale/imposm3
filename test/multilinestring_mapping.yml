@@ -1,0 +1,42 @@
+areas:
+    area_tags:
+        - leisure
+tables:
+    multilinestring:
+        type: linestring
+        columns:
+            - name: osm_id
+              type: id
+            - name: geometry
+              type: geometry
+            - name: name
+              type: string
+              key: name
+            - name: type
+              type: mapping_value
+        relation_types:
+            - route
+        mapping:
+            type:
+                - route
+            highway:
+                - trunk
+            building:
+                - residential
+            leisure:
+                - park
+    multilinestring_no_relations:
+        type: linestring
+        columns:
+            - name: osm_id
+              type: id
+            - name: geometry
+              type: geometry
+            - name: name
+              type: string
+              key: name
+            - name: type
+              type: mapping_value
+        mapping:
+            type:
+                - route

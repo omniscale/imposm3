@@ -1,0 +1,52 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osm version="1">
+  <node id="10002" version="1" timestamp="2015-12-31T23:59:99Z" lat="51.5107973" lon="-0.0930300" />
+  <node id="10003" version="1" timestamp="2015-12-31T23:59:99Z" lat="51.5108542" lon="-0.0930091" />
+  <way id="1000" version="1" timestamp="2015-12-31T23:59:99Z">
+    <nd ref="10002"/>
+    <nd ref="10003"/>
+    <tag k="highway" v="trunk"/>
+  </way>
+
+  <node id="10000" version="1" timestamp="2015-12-31T23:59:99Z" lat="51.5107776" lon="-0.0930375"/>
+  <way id="1005" version="1" timestamp="2015-12-31T23:59:99Z">
+    <nd ref="10000"/>
+    <nd ref="10002"/>
+  </way>
+
+  <node id="10001" version="1" timestamp="2015-12-31T23:59:99Z" lat="51.5106434" lon="-0.0930826" />
+  <way id="1001" version="1" timestamp="2015-12-31T23:59:99Z">
+    <nd ref="10001"/>
+    <nd ref="10000"/>
+  </way>
+  <relation id="100" version="1" timestamp="2015-12-31T23:59:99Z">
+    <member type="way" ref="1000" role=""/>
+    <member type="way" ref="1005" role=""/>
+    <member type="way" ref="1001" role=""/>
+    <tag k="route" v="bicycle"/>
+    <tag k="type" v="route"/>
+  </relation>
+
+  <node id="10004" version="1" timestamp="2015-12-31T23:59:99Z" lat="51.4860918" lon="-0.0873508"/>
+  <node id="10006" version="1" timestamp="2015-12-31T23:59:99Z" lat="51.4860020" lon="-0.0875372"/>
+  <node id="10005" version="1" timestamp="2015-12-31T23:59:99Z" lat="51.4853370" lon="-0.0864133"/>
+  <way id="1004" version="1" timestamp="2015-12-31T23:59:99Z">
+    <nd ref="10004"/>
+    <nd ref="10005"/>
+    <nd ref="10006"/>
+    <nd ref="10004"/>
+    <tag k="building" v="residential"/>
+    <tag k="area" v="yes"/>
+  </way>
+
+  <node id="10011" version="1" timestamp="2015-12-31T23:59:99Z" lat="51.5004084" lon="-0.0824810"/>
+  <node id="10012" version="1" timestamp="2015-12-31T23:59:99Z" lat="51.5003998" lon="-0.0833872"/>
+  <node id="10013" version="1" timestamp="2015-12-31T23:59:99Z" lat="51.5003917" lon="-0.0836970"/>
+  <way id="1008" version="1" timestamp="2015-12-31T23:59:99Z">
+    <nd ref="10011"/>
+    <nd ref="10012"/>
+    <nd ref="10013"/>
+    <nd ref="10011"/>
+    <tag k="leisure" v="park"/>
+  </way>
+</osm>

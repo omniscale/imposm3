@@ -3,6 +3,7 @@ package geom
 import (
 	"errors"
 	"math"
+	"runtime"
 
 	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/imposm3/geom/geos"
@@ -134,6 +135,42 @@ func Polygon(g *geos.Geos, nodes []osm.Node) (*geos.Geom, error) {
 	}
 	g.DestroyLater(geom)
 	return geom, nil
+}
+
+func MultiLinestring(rel *osm.Relation, srid int) (*geos.Geom, error) {
+	g := geos.NewGeos()
+	g.SetHandleSrid(srid)
+	defer g.Finish()
+
+	var lines []*geos.Geom
+
+	for _, member := range rel.Members {
+		if member.Way == nil {
+			continue
+		}
+
+		line, err := LineString(g, member.Way.Nodes)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if line != nil {
+			// Clear the finalizer created in LineString()
+			// as we want to make the object a part of MultiLineString.
+			runtime.SetFinalizer(line, nil)
+			lines = append(lines, line)
+		}
+	}
+
+	result := g.MultiLineString(lines)
+	if result == nil {
+		return nil, errors.New("Error while building multi-linestring.")
+	}
+
+	g.DestroyLater(result)
+
+	return result, nil
 }
 
 func AsGeomElement(g *geos.Geos, geom *geos.Geom) (Geometry, error) {
