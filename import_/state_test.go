@@ -31,7 +31,7 @@ func TestFromPBF(t *testing.T) {
 		},
 		{
 			name:     "minutely before 5d",
-			minSeq:   1342000,
+			minSeq:   1341000,
 			maxSeq:   1361033,
 			before:   time.Hour * 24 * 5,
 			interval: time.Minute,
