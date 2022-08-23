@@ -1,3 +1,5 @@
+[![GoDoc](https://godoc.org/github.com/jmhodges/levigo?status.svg)](https://godoc.org/github.com/jmhodges/levigo)
+
 # levigo
 
 levigo is a Go wrapper for LevelDB.
@@ -50,3 +52,11 @@ LevelDB C API available to your in your client package when you import levigo.
 
 An example of writing your own Comparator can be found in
 <https://github.com/jmhodges/levigo/blob/master/examples>.
+
+## Status
+
+Build: [![Build Status](https://travis-ci.org/jmhodges/levigo.svg)](https://travis-ci.org/jmhodges/levigo)
+
+Documentation: [![GoDoc](https://godoc.org/github.com/jmhodges/levigo?status.svg)](https://godoc.org/github.com/jmhodges/levigo)
+
+Lint: [Go Lint](http://go-lint.appspot.com/github.com/jmhodges/levigo)

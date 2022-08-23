@@ -27,6 +27,7 @@ func NewBloomFilter(bitsPerKey int) *FilterPolicy {
 	return &FilterPolicy{policy}
 }
 
+// Close reaps the resources associated with this FilterPolicy.
 func (fp *FilterPolicy) Close() {
 	C.leveldb_filterpolicy_destroy(fp.Policy)
 }
