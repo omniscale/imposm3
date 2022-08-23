@@ -1,0 +1,63 @@
+name: Build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      PGPASSWORD: postgres
+      PGUSER: postgres
+
+    strategy:
+      fail-fast: false
+      matrix:
+        go:
+          - '1.12'
+          - '1.19'
+        postgis:
+          - '9.5-2.5'
+          - '9.5-3.0'
+          - '10-2.5'
+          - '10-3.0'
+          - '10-3.1'
+          - '10-3.2'
+          - '14-3.1'
+          - '14-3.2'
+
+    services:
+      postgres:
+        image: postgis/postgis:${{ matrix.postgis }}
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    name: Build with go v${{ matrix.go }} with postgis image ${{ matrix.postgis }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-go@v3
+        with:
+          go-version: ${{ matrix.go }}
+          check-latest: true
+
+      - name: Prepare postgres
+        run: >-
+          psql --host localhost --dbname postgres -c "create extension if not exists postgis; create extension if not exists hstore;"
+
+      - name: Install deps
+        run: >-
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends \
+            libgeos-dev \
+            libleveldb-dev \
+            osmosis \
+
+      - run: make
