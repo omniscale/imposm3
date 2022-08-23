@@ -118,8 +118,8 @@ func (m *Match) Row(elem *osm.Element, geom *geom.Geometry) []interface{} {
 	return m.builder.MakeRow(elem, geom, *m)
 }
 
-func (m *Match) MemberRow(rel *osm.Relation, member *osm.Member, geom *geom.Geometry) []interface{} {
-	return m.builder.MakeMemberRow(rel, member, geom, *m)
+func (m *Match) MemberRow(rel *osm.Relation, member *osm.Member, memberIndex int, geom *geom.Geometry) []interface{} {
+	return m.builder.MakeMemberRow(rel, member, memberIndex, geom, *m)
 }
 
 type tagMatcher struct {
@@ -244,7 +244,7 @@ func (v *valueBuilder) Value(elem *osm.Element, geom *geom.Geometry, match Match
 	return nil
 }
 
-func (v *valueBuilder) MemberValue(rel *osm.Relation, member *osm.Member, geom *geom.Geometry, match Match) interface{} {
+func (v *valueBuilder) MemberValue(rel *osm.Relation, member *osm.Member, memberIndex int, geom *geom.Geometry, match Match) interface{} {
 	if v.colType.Func != nil {
 		if v.colType.FromMember {
 			if member.Element == nil {
@@ -255,7 +255,7 @@ func (v *valueBuilder) MemberValue(rel *osm.Relation, member *osm.Member, geom *
 		return v.colType.Func(rel.Tags[string(v.key)], &rel.Element, geom, match)
 	}
 	if v.colType.MemberFunc != nil {
-		return v.colType.MemberFunc(rel, member, match)
+		return v.colType.MemberFunc(rel, member, memberIndex, match)
 	}
 	return nil
 }
@@ -272,10 +272,10 @@ func (r *rowBuilder) MakeRow(elem *osm.Element, geom *geom.Geometry, match Match
 	return row
 }
 
-func (r *rowBuilder) MakeMemberRow(rel *osm.Relation, member *osm.Member, geom *geom.Geometry, match Match) []interface{} {
+func (r *rowBuilder) MakeMemberRow(rel *osm.Relation, member *osm.Member, memberIndex int, geom *geom.Geometry, match Match) []interface{} {
 	var row []interface{}
 	for _, column := range r.columns {
-		row = append(row, column.MemberValue(rel, member, geom, match))
+		row = append(row, column.MemberValue(rel, member, memberIndex, geom, match))
 	}
 	return row
 }

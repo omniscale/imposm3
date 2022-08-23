@@ -37,7 +37,7 @@ type Inserter interface {
 	InsertPoint(osm.Element, geom.Geometry, []mapping.Match) error
 	InsertLineString(osm.Element, geom.Geometry, []mapping.Match) error
 	InsertPolygon(osm.Element, geom.Geometry, []mapping.Match) error
-	InsertRelationMember(osm.Relation, osm.Member, geom.Geometry, []mapping.Match) error
+	InsertRelationMember(osm.Relation, osm.Member, int, geom.Geometry, []mapping.Match) error
 }
 
 type Deployer interface {
@@ -102,7 +102,7 @@ func (n *nullDb) Abort() error                                                  
 func (n *nullDb) InsertPoint(osm.Element, geom.Geometry, []mapping.Match) error      { return nil }
 func (n *nullDb) InsertLineString(osm.Element, geom.Geometry, []mapping.Match) error { return nil }
 func (n *nullDb) InsertPolygon(osm.Element, geom.Geometry, []mapping.Match) error    { return nil }
-func (n *nullDb) InsertRelationMember(osm.Relation, osm.Member, geom.Geometry, []mapping.Match) error {
+func (n *nullDb) InsertRelationMember(osm.Relation, osm.Member, int, geom.Geometry, []mapping.Match) error {
 	return nil
 }
 
