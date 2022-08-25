@@ -229,7 +229,7 @@ Value types
 ``bool``
 ^^^^^^^^
 
-Convert ``true``, ``yes`` and ``1`` values to ``true``, otherwise use ``false``.
+Convert ``no``, ``false``,  ``0`` and empty string values to ``false``, otherwise use ``true``.
 
 ``boolint``
 ^^^^^^^^^^^
