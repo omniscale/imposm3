@@ -122,6 +122,9 @@ Create a [Go workspace](http://golang.org/doc/code.html) by creating the `GOPATH
     mkdir -p go
     cd go
     export GOPATH=`pwd`
+If you have Go >=1.16, you need to run this command to not use module-aware mode:
+
+    go env -w GO111MODULE=auto
 
 Get the code and install Imposm:
 
