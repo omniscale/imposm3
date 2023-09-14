@@ -113,7 +113,7 @@ GEOS >=3.2 is recommended, since it became much more robust when handling invali
 
 
 [libleveldb]: https://github.com/google/leveldb/
-[libgeos]: http://trac.osgeo.org/geos/
+[libgeos]: https://libgeos.org/
 
 #### Compile
 
