@@ -8,8 +8,8 @@ It installs and builds all dependencies, compiles the master
 branch of this local repository and creates a .tar.gz with
 the imposm3 binary and all 3rd party dependencies.
 
-This script is made for Debian 8. The resulting binaries
-are compatible with Ubuntu 14.04, SLES 12, Fedora 21.
+This script is made for Debian 10. The resulting binaries
+should be compatible with all more recent Linux distribution.
 
 'Vagrantfile' defines a working Debian VM that will call this script
 during the provision phase. Please install Vagrant and Virtualbox first:
@@ -57,10 +57,9 @@ export GOROOT=$BUILD_BASE/go
 IMPOSM_SRC=$GOPATH/src/github.com/omniscale/imposm3
 BUILD_TMP=$BUILD_BASE/imposm-build
 
-GEOS_VERSION=3.6.2
-
-# If set, build with HyperLevelDB instead of LevelDB
-#WITH_HYPERLEVELDB=1
+GEOS_VERSION=3.12.1
+GO_VERSION=1.21.6
+LEVELDB_VERSION=1.23
 
 export CGO_CFLAGS=-I$PREFIX/include
 export CGO_LDFLAGS=-L$PREFIX/lib
@@ -74,78 +73,42 @@ mkdir -p $PREFIX/include
 mkdir -p $GOPATH
 
 
-if ! grep --silent 'Debian GNU/Linux 8' /etc/issue; then
+if ! grep --silent 'Debian GNU/Linux 10' /etc/issue; then
     echo
-    echo "ERROR: This script only works for Debian 8.0 (Jessie), see above."
+    echo "ERROR: This script only works for Debian 10.0 (Buster), see above."
     exit 1
 fi
 
-if [ ! -e /usr/bin/git ]; then
+if [ ! -e /usr/bin/unzip ]; then
     echo "-> installing dependencies"
 
     sudo apt-get update -y
-    sudo apt-get install -y build-essential unzip autoconf libtool git chrpath curl
+    sudo apt-get install -y build-essential unzip autoconf libtool git patchelf curl
 fi
 
 if [ ! -e $BUILD_BASE/go/bin/go ]; then
     echo "-> installing go"
     pushd $SRC
-        $CURL https://storage.googleapis.com/golang/go1.9.2.linux-amd64.tar.gz -O
-        tar xzf go1.9.2.linux-amd64.tar.gz -C $BUILD_BASE/
+        $CURL https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz -O
+        tar xzf go${GO_VERSION}.linux-amd64.tar.gz -C $BUILD_BASE/
     popd
 fi
 
-if [[ -z "$WITH_HYPERLEVELDB" && ! -e $PREFIX/lib/libleveldb.so ]]; then
+if [[ ! -e $PREFIX/lib/libleveldb.so ]]; then
     echo "-> installing leveldb"
     pushd $SRC
-        $CURL https://github.com/google/leveldb/archive/master.zip -L -O
-        unzip master.zip
-        pushd leveldb-master
-            make -j4
-            cp -R out-shared/liblevel* $PREFIX/lib/
-            cp -R include/leveldb $PREFIX/include/
-        popd
-    popd 
-fi
-
-if [[ -n "$WITH_HYPERLEVELDB" && ! -e $PREFIX/lib/libhyperleveldb.so ]]; then
-    echo "-> installing hyperleveldb"
-    pushd $SRC
-        $CURL https://github.com/rescrv/HyperLevelDB/archive/master.zip -O
-        unzip master.zip
-        pushd HyperLevelDB-master
-            autoreconf -i
-            ./configure --prefix=$PREFIX
-            make -j4
-            make install
+        git clone --recurse-submodules https://github.com/google/leveldb.git
+        pushd leveldb
+            git checkout $LEVELDB_VERSION
+            mkdir -p build && cd build
+            cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DLEVELDB_BUILD_TESTS=OFF -DLEVELDB_BUILD_BENCHMARKS=OFF .. && cmake --build .
+            cp -R ./liblevel* $PREFIX/lib/
+            cp -R ../include/leveldb $PREFIX/include/
         popd
     popd
 fi
 
-if [[ -n "$WITH_HYPERLEVELDB" && ! -e $PREFIX/include/leveldb ]]; then
-    echo "-> linking hyperleveldb as leveldb"
-    pushd $PREFIX/lib
-        for s in 'a', 'la', 'so'; do
-            ln -sf libhyperleveldb.$s libleveldb.$s
-        done
-    popd
-    ln -s $PREFIX/include/hyperleveldb $PREFIX/include/leveldb
-fi
-
-if [ ! -e $PREFIX/lib/libprotobuf.so ]; then
-    echo "-> installing protobuf"
-    pushd $SRC
-        $CURL https://github.com/google/protobuf/releases/download/v2.6.1/protobuf-2.6.1.tar.bz2 -O
-        tar jxf protobuf-2.6.1.tar.bz2
-        pushd protobuf-2.6.1/
-            ./configure --prefix=$PREFIX
-            make -j2
-            make install
-        popd
-    popd
-fi
-
-if [ ! -e $PREFIX/lib/libgeos-$GEOS_VERSION.so ]; then
+if [ ! -e $PREFIX/lib/libgeos.so.$GEOS_VERSION ]; then
     echo "-> installing GEOS"
     pushd $SRC
         $CURL http://download.osgeo.org/geos/geos-$GEOS_VERSION.tar.bz2 -O
@@ -174,11 +137,7 @@ pushd $IMPOSM_SRC
 
     echo '-> compiling imposm'
     make clean
-    if [[ -n "$WITH_HYPERLEVELDB" ]]; then
-        make build
-    else
-        LEVELDB_POST_121=1 make build
-    fi
+    LEVELDB_POST_121=1 make build
 popd
 
 
@@ -196,18 +155,12 @@ pushd $PREFIX/lib
     cp libgeos_c.so $BUILD_TMP/lib
     ln -s libgeos_c.so $BUILD_TMP/lib/libgeos_c.so.1
     cp libgeos.so $BUILD_TMP/lib
-    ln -s libgeos.so $BUILD_TMP/lib/libgeos-$GEOS_VERSION.so
-    if [ -n "$WITH_HYPERLEVELDB" ]; then
-        cp libhyperleveldb.so $BUILD_TMP/lib
-        ln -s libhyperleveldb.so $BUILD_TMP/lib/libhyperleveldb.so.0
-        ln -s libhyperleveldb.so $BUILD_TMP/lib/libleveldb.so.1
-    else
-        cp -R libleveldb.so* $BUILD_TMP/lib
-    fi
+    ln -s libgeos.so $BUILD_TMP/lib/libgeos.so.$GEOS_VERSION
+    cp -R libleveldb.so* $BUILD_TMP/lib
 popd
 
 pushd $BUILD_TMP/lib
-    chrpath libgeos_c.so -r '${ORIGIN}'
+    patchelf --set-rpath '$ORIGIN' libgeos_c.so
 popd
 
 

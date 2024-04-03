@@ -11,8 +11,8 @@ GOLDFLAGS=-ldflags '-r $${ORIGIN}/lib $(VERSION_LDFLAGS)'
 
 GO:=go
 
-ifdef LEVELDB_POST_121
-GOTAGS=-tags="ldbpost121"
+ifdef LEVELDB_PRE_121
+	GOTAGS=-tags="ldbpre121"
 endif
 
 BUILD_DATE=$(shell date +%Y%m%d)

@@ -113,7 +113,7 @@ GEOS >=3.2 is recommended, since it became much more robust when handling invali
 
 
 [libleveldb]: https://github.com/google/leveldb/
-[libgeos]: http://trac.osgeo.org/geos/
+[libgeos]: https://libgeos.org/
 
 #### Compile
 
@@ -137,9 +137,8 @@ See also `packaging.sh` for instructions on how to build binary packages for Lin
 
 #### LevelDB
 
-For better performance you can either use [HyperLevelDB][libhyperleveldb] as an in-place replacement for libleveldb or you can use LevelDB >1.21. You need to build Imposm with ``go build -tags="ldbpost121"`` or ``LEVELDB_POST_121=1 make build`` to enable optimizations available with LevelDB 1.21 and higher.
+For better performance you should use LevelDB >1.21. You can still build with support for 1.21 with ``go build -tags="ldbpre121"`` or ``LEVELDB_PRE_121=1 make build``.
 
-[libhyperleveldb]: https://github.com/rescrv/HyperLevelDB
 
 Usage
 -----

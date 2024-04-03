@@ -1,4 +1,4 @@
-// +build ldbpost121
+//go:build !ldbpre121
 
 package cache
 
