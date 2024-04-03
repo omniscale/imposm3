@@ -10,6 +10,8 @@ Configurations/mappings and cache files are not compatible with Imposm 2, but th
 
 The development of Imposm is sponsored by [Omniscale](https://omniscale.com/).
 
+*Imposm is in production use by the authors. It is actively maintained, with a focus on resolving future incompatibilities with dependencies such as PostGIS. However, there is no capacity for end-user support, and no new features will be developed beyond its existing scope.*
+
 
 Features
 --------
@@ -69,22 +71,6 @@ An import in diff-mode on a Hetzner PX121-SSD server (Intel Xeon E5-1650 v3 Hexa
 It's recommended that the memory size of the server is roughly twice the size of the PBF extract you are importing. For example: You should have 64GB RAM or more for a current (2017) 36GB planet file, 8GB for a 4GB regional extract, etc.
 Imports without SSDs will take longer.
 
-Current status
---------------
-
-Imposm is used in production but there is no official 3.0 release yet.
-Imposm >=3, successor of Imposm 2, was called "Imposm 3" and binaries were named `imposm3` during development. Since April 2018 the project is only called Imposm to allow semantic versioning beyond version 3.
-The repository will be renamed to github.com/omniscale/imposm in the future.
-
-### Planned features ###
-
-There are a few features we like to see in Imposm:
-
-* Support for other projections than EPSG:3857 or EPSG:4326
-* Custom field/filter functions
-* Official releases with binaries for more platforms
-
-There is no roadmap however, as the implementation of these features largely depends on external funding.
 
 Installation
 ------------
