@@ -129,7 +129,7 @@ pushd $IMPOSM_SRC
     git config --add receive.denyCurrentBranch ignore
 
     pushd /vagrant
-        git push --all -f $IMPOSM_SRC
+        git push --tags -f $IMPOSM_SRC
     popd
 
     git reset --hard
@@ -137,7 +137,7 @@ pushd $IMPOSM_SRC
 
     echo '-> compiling imposm'
     make clean
-    LEVELDB_POST_121=1 make build
+    make build
 popd
 
 
@@ -171,11 +171,4 @@ pushd $BUILD_BASE
     tar zcvf imposm-$VERSION.tar.gz imposm-$VERSION
     mkdir -p /vagrant/dist
     mv imposm-$VERSION.tar.gz /vagrant/dist/
-
-    echo "###########################################################################"
-    echo " Call the following commands to download the created binary packages:"
-    echo
-    echo "vagrant ssh-config > .vagrant_ssh_conf"
-    echo "rsync -a -v -P -e 'ssh -F .vagrant_ssh_conf' default:/vagrant/dist ./dist"
-    echo "###########################################################################"
 popd
