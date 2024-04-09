@@ -89,7 +89,7 @@ There are some dependencies:
 
 #### Compiler
 
-You need [Go >=1.10](http://golang.org).
+You need [Go](http://golang.org). 1.17 or higher is recommended.
 
 #### C/C++ libraries
 
@@ -103,18 +103,21 @@ GEOS >=3.2 is recommended, since it became much more robust when handling invali
 
 #### Compile
 
-Create a [Go workspace](http://golang.org/doc/code.html) by creating the `GOPATH` directory for all your Go code, if you don't have one already:
+The quickest way to install Imposm is to call:
 
-    mkdir -p go
-    cd go
-    export GOPATH=`pwd`
+    go install github.com/omniscale/imposm3/cmd/imposm@latest
 
-Get the code and install Imposm:
+This will download, compile and install Imposm to `~/go/bin/imposm`. You can change the location by setting the `GOBIN` environment.
 
-    go get github.com/omniscale/imposm3
-    go install github.com/omniscale/imposm3/cmd/imposm
+The recommended way for installation is:
 
-Done. You should now have an imposm binary in `$GOPATH/bin`.
+    git clone https://github.com/omniscale/imposm3.git
+    cd imposm3
+    make build
+
+`make build` will build Imposm into your local path and it will add version information to your binary.
+
+You can also directly use go to build or install imposm with `go build ./cmd/imposm`. However, this will not set the version information.
 
 Go compiles to static binaries and so Imposm has no runtime dependencies to Go.
 Just copy the `imposm` binary to your server for deployment. The C/C++ libraries listed above are still required though.
