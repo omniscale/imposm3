@@ -2,6 +2,7 @@ package import_
 
 import (
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 )
@@ -38,7 +39,6 @@ func TestStateFromTimestamp(t *testing.T) {
 			timestamp:          "2024-01-01T10:00:00+00:00",
 			expectedDailyDrift: 0.1,
 			maxSeq:             99065,
-			url:                "https://planet.openstreetmap.org/replication/hour/",
 			before:             time.Hour * 10,
 			interval:           time.Hour,
 		},
@@ -47,7 +47,6 @@ func TestStateFromTimestamp(t *testing.T) {
 			timestamp:          "2024-01-01T00:00:00+00:00",
 			expectedDailyDrift: 0.1,
 			maxSeq:             98825,
-			url:                "https://planet.openstreetmap.org/replication/hour/",
 			before:             time.Hour * 24 * 10,
 			interval:           time.Hour,
 		},
@@ -56,7 +55,6 @@ func TestStateFromTimestamp(t *testing.T) {
 			timestamp:          "2015-04-27T22:21:02+02:00",
 			expectedDailyDrift: 1.0 / 365,
 			maxSeq:             958,
-			url:                "https://planet.openstreetmap.org/replication/day/",
 			before:             time.Hour * 24 * 3,
 			interval:           time.Hour * 24,
 		},
@@ -93,7 +91,7 @@ func TestStateFromTimestamp(t *testing.T) {
 				t.Fatal(err)
 			}
 			if tt.url == "" {
-				if state.URL != "https://planet.openstreetmap.org/replication/minute/" {
+				if !strings.HasPrefix(state.URL, "https://planet.openstreetmap.org/replication/") {
 					t.Error("unexpected state URL", state)
 				}
 			} else if state.URL != tt.url {

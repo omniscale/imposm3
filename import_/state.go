@@ -37,9 +37,15 @@ func estimateFromPBF(filename string, before time.Duration, replicationURL strin
 
 func estimateFromTimestamp(timestamp time.Time, before time.Duration, replicationURL string, replicationInterval time.Duration) (*state.DiffState, error) {
 	if replicationURL == "" {
-		replicationURL = "https://planet.openstreetmap.org/replication/minute/"
+		switch replicationInterval {
+		case time.Hour:
+			replicationURL = "https://planet.openstreetmap.org/replication/hour/"
+		case time.Hour * 24:
+			replicationURL = "https://planet.openstreetmap.org/replication/day/"
+		default:
+			replicationURL = "https://planet.openstreetmap.org/replication/minute/"
+		}
 	}
-
 	seq, err := estimateSequence(replicationURL, replicationInterval, timestamp)
 	if err != nil {
 		return nil, errors.Wrap(err, "fetching current sequence for estimated import sequence")
