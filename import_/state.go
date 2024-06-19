@@ -32,7 +32,10 @@ func estimateFromPBF(filename string, before time.Duration, replicationURL strin
 		}
 		timestamp = fstat.ModTime()
 	}
+	return estimateFromTimestamp(timestamp, before, replicationURL, replicationInterval)
+}
 
+func estimateFromTimestamp(timestamp time.Time, before time.Duration, replicationURL string, replicationInterval time.Duration) (*state.DiffState, error) {
 	if replicationURL == "" {
 		replicationURL = "https://planet.openstreetmap.org/replication/minute/"
 	}
