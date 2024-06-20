@@ -66,10 +66,10 @@ Performance
 * Imposm uses efficient intermediate caches for reduced IO load during ways and relations building
 
 
-An import in diff-mode on a Hetzner PX121-SSD server (Intel Xeon E5-1650 v3 Hexa-Core, 256GB RAM and SSD RAID 1) of a 36GB planet PBF (2017-08-10) with generalized tables and spatial indices, etc. takes around 6:30h. This is for an import that is ready for minutely updates. The non-diff mode is even faster.
+An import in diff-mode on a Hetzner AX102 server (AMD Ryzen 9 7950X3D, 256GB RAM and NVMe storage) of a 78GB planet PBF (2024-01-29) with generalized tables and spatial indices, etc. takes around 7:30h. This is for an import that is ready for minutely updates. The non-diff mode is even faster.
 
-It's recommended that the memory size of the server is roughly twice the size of the PBF extract you are importing. For example: You should have 64GB RAM or more for a current (2017) 36GB planet file, 8GB for a 4GB regional extract, etc.
-Imports without SSDs will take longer.
+It's recommended that the memory size of the server is roughly twice the size of the PBF extract you are importing. For example: You should have 192GB RAM or more for a current (2024) 78GB planet file, 8GB for a 4GB regional extract, etc.
+Imports with spinning disks will take significantly longer and are not recommended.
 
 
 Installation
