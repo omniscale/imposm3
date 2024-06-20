@@ -182,6 +182,7 @@ func (tl *TileList) Flush() error {
 	if err != nil {
 		return err
 	}
+	tl.tiles = tl.tiles[:0]
 	for i := 0; i <= tl.maxZoom; i++ {
 		tl.tiles = append(tl.tiles, make(map[tileKey]struct{}))
 	}
