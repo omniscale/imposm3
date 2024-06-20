@@ -43,10 +43,10 @@ func tileCoord(long, lat float64, zoom int) (float64, float64) {
 
 type TileList struct {
 	mu    sync.Mutex
-	tiles map[tileKey]struct{}
+	tiles []map[tileKey]struct{}
 
-	zoom int
-	out  string
+	maxZoom int
+	out     string
 }
 
 type tileKey struct {
@@ -55,12 +55,16 @@ type tileKey struct {
 }
 
 func NewTileList(zoom int, out string) *TileList {
-	return &TileList{
-		tiles: make(map[tileKey]struct{}),
-		zoom:  zoom,
-		mu:    sync.Mutex{},
-		out:   out,
+	tl := TileList{
+		maxZoom: zoom,
+		mu:      sync.Mutex{},
+		out:     out,
 	}
+	for i := 0; i <= tl.maxZoom; i++ {
+		tl.tiles = append(tl.tiles, make(map[tileKey]struct{}))
+	}
+
+	return &tl
 }
 
 func (tl *TileList) Expire(long, lat float64) {
@@ -71,16 +75,21 @@ func (tl *TileList) ExpireNodes(nodes []osm.Node, closed bool) {
 	if len(nodes) == 0 {
 		return
 	}
-	if closed {
-		box := nodesBbox(nodes)
-		tiles := numBboxTiles(box, tl.zoom)
-		if tiles > 500 {
-			tl.expireLine(nodes)
-		} else if !box.isEmpty() {
-			tl.expireBox(box)
+	box := nodesBbox(nodes)
+
+	for zoom := tl.maxZoom; zoom > 0; zoom-- {
+		numTiles := numBboxTiles(box, zoom)
+		if closed {
+			if numTiles < 64 {
+				tl.expireBox(box, zoom)
+				return
+			}
+		} else {
+			if numTiles < 500 {
+				tl.expireLine(nodes, zoom)
+				return
+			}
 		}
-	} else {
-		tl.expireLine(nodes)
 	}
 }
 
@@ -90,10 +99,10 @@ func (tl *TileList) addCoord(long, lat float64) {
 	// fraction of a tile that is added as a padding around a single node
 	const tilePadding = 0.2
 	tl.mu.Lock()
-	tileX, tileY := tileCoord(long, lat, tl.zoom)
+	tileX, tileY := tileCoord(long, lat, tl.maxZoom)
 	for x := uint32(tileX - tilePadding); x <= uint32(tileX+tilePadding); x++ {
 		for y := uint32(tileY - tilePadding); y <= uint32(tileY+tilePadding); y++ {
-			tl.tiles[tileKey{x, y}] = struct{}{}
+			tl.tiles[tl.maxZoom][tileKey{x, y}] = struct{}{}
 		}
 	}
 	tl.mu.Unlock()
@@ -101,7 +110,7 @@ func (tl *TileList) addCoord(long, lat float64) {
 
 // expireLine expires all tiles that are intersected by the line segments
 // between the nodes
-func (tl *TileList) expireLine(nodes []osm.Node) {
+func (tl *TileList) expireLine(nodes []osm.Node, zoom int) {
 	if len(nodes) == 1 {
 		tl.addCoord(nodes[0].Long, nodes[0].Lat)
 		return
@@ -113,36 +122,38 @@ func (tl *TileList) expireLine(nodes []osm.Node) {
 		if (nodes[i].Long == 0 && nodes[i].Lat == 0) || (nodes[i+1].Long == 0 && nodes[i+1].Lat == 0) {
 			continue
 		}
-		x1, y1 := tileCoord(nodes[i].Long, nodes[i].Lat, tl.zoom)
-		x2, y2 := tileCoord(nodes[i+1].Long, nodes[i+1].Lat, tl.zoom)
+		x1, y1 := tileCoord(nodes[i].Long, nodes[i].Lat, zoom)
+		x2, y2 := tileCoord(nodes[i+1].Long, nodes[i+1].Lat, zoom)
 		if int(x1) == int(x2) && int(y1) == int(y2) {
-			tl.tiles[tileKey{X: uint32(x1), Y: uint32(y1)}] = struct{}{}
+			tl.tiles[zoom][tileKey{X: uint32(x1), Y: uint32(y1)}] = struct{}{}
 		} else {
 			for _, tk := range bresenham(x1, y1, x2, y2) {
-				tl.tiles[tk] = struct{}{}
+				tl.tiles[zoom][tk] = struct{}{}
 			}
 		}
 	}
 }
 
 // expireBox expires all tiles inside the bbox
-func (tl *TileList) expireBox(b bbox) {
+func (tl *TileList) expireBox(b bbox, zoom int) {
 	tl.mu.Lock()
 	defer tl.mu.Unlock()
-	x1, y1 := tileCoord(b.minx, b.maxy, tl.zoom)
-	x2, y2 := tileCoord(b.maxx, b.miny, tl.zoom)
+	x1, y1 := tileCoord(b.minx, b.maxy, zoom)
+	x2, y2 := tileCoord(b.maxx, b.miny, zoom)
 	for x := uint32(x1); x <= uint32(x2); x++ {
 		for y := uint32(y1); y <= uint32(y2); y++ {
-			tl.tiles[tileKey{x, y}] = struct{}{}
+			tl.tiles[zoom][tileKey{x, y}] = struct{}{}
 		}
 	}
 }
 
 func (tl *TileList) writeTiles(w io.Writer) error {
-	for tileKey := range tl.tiles {
-		_, err := fmt.Fprintf(w, "%d/%d/%d\n", tl.zoom, tileKey.X, tileKey.Y)
-		if err != nil {
-			return err
+	for zoom, tiles := range tl.tiles {
+		for tileKey := range tiles {
+			_, err := fmt.Fprintf(w, "%d/%d/%d\n", zoom, tileKey.X, tileKey.Y)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -171,7 +182,9 @@ func (tl *TileList) Flush() error {
 	if err != nil {
 		return err
 	}
-	tl.tiles = make(map[tileKey]struct{})
+	for i := 0; i <= tl.maxZoom; i++ {
+		tl.tiles = append(tl.tiles, make(map[tileKey]struct{}))
+	}
 	// wrote to .tiles~ and now atomically move file to .tiles
 	return os.Rename(fileName, fileName[0:len(fileName)-1])
 }
