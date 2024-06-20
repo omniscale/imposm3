@@ -132,7 +132,7 @@
     </way>
   </create>
 
-  <!-- create large polygon (outline) -->
+  <!-- create large polygon (zoom out) -->
   <create>
     <node id="40201" version="1" timestamp="2011-11-11T00:11:11Z" lon="2.0" lat="4.00" />
     <node id="40202" version="1" timestamp="2011-11-11T00:11:11Z" lon="2.6" lat="4.00" />
