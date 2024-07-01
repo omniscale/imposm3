@@ -57,12 +57,19 @@ type Finisher interface {
 }
 
 type Deleter interface {
-	Inserter
 	Delete(int64, []mapping.Match) error
 }
 
 type Optimizer interface {
 	Optimize() error
+}
+
+type FullDB interface {
+	DB
+	Deleter
+	Generalizer
+	Optimizer
+	Finisher
 }
 
 var databases map[string]func(Config, *config.Mapping) (DB, error)
