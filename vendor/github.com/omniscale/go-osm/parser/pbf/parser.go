@@ -2,13 +2,13 @@ package pbf
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"runtime"
 	"sync"
 
 	"github.com/omniscale/go-osm"
-	"github.com/pkg/errors"
 )
 
 type Config struct {
@@ -164,7 +164,7 @@ read:
 		}
 		if err != nil {
 			close(blocks)
-			return errors.Wrap(err, "parsing next block")
+			return fmt.Errorf("parsing next block: %w", err)
 		}
 		if header.GetType() != "OSMData" {
 			close(blocks)

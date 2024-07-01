@@ -4,12 +4,12 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"strconv"
 	"time"
 
 	"github.com/omniscale/go-osm"
-	"github.com/pkg/errors"
 )
 
 // Parser is a stream based parser for OSM diff files (.osc).
@@ -85,7 +85,7 @@ NextToken:
 	for {
 		token, err := decoder.Token()
 		if err != nil {
-			return errors.Wrap(err, "decoding next XML token")
+			return fmt.Errorf("decoding next XML token: %w", err)
 		}
 
 		switch tok := token.(type) {

@@ -160,14 +160,16 @@ func (d *downloader) download(seq int, ext string) error {
 	return nil
 }
 
-func (d *downloader) downloadTillSuccess(ctx context.Context, seq int, ext string) {
-	for {
+// downloadTillSuccess tries to download file till it is available, returns
+// true if available on first try.
+func (d *downloader) downloadTillSuccess(ctx context.Context, seq int, ext string) bool {
+	for tries := 0; ; tries++ {
 		if ctx.Err() != nil {
-			return
+			return false
 		}
 		err := d.download(seq, ext)
 		if err == nil {
-			break
+			return tries == 0
 		}
 		if _, ok := err.(*NotAvailable); ok {
 			wait(ctx, d.naWaittime)
@@ -216,7 +218,7 @@ func (d *downloader) fetchNextLoop() {
 		}
 		// download will retry until they succeed
 		d.downloadTillSuccess(d.ctx, nextSeq, d.StateExt)
-		d.downloadTillSuccess(d.ctx, nextSeq, d.FileExt)
+		noWait := d.downloadTillSuccess(d.ctx, nextSeq, d.FileExt)
 		if d.ctx.Err() != nil {
 			close(d.sequences)
 			return
@@ -224,11 +226,26 @@ func (d *downloader) fetchNextLoop() {
 		d.lastSequence = nextSeq
 		base := path.Join(d.dest, seqPath(d.lastSequence))
 		lastTime, _ = d.StateTime(base + d.StateExt)
+
+		var latest bool
+		if noWait {
+			if d.download(nextSeq+1, d.StateExt) == nil {
+				// next sequence is immediately available
+				latest = false
+			} else {
+				// download of next seq failed (404 or error)
+				latest = true
+			}
+		} else { // waited for this seq, so assume it's the latest
+			latest = true
+		}
+
 		d.sequences <- replication.Sequence{
 			Sequence:      d.lastSequence,
 			Filename:      base + d.FileExt,
 			StateFilename: base + d.StateExt,
 			Time:          lastTime,
+			Latest:        latest,
 		}
 	}
 }
@@ -304,13 +321,22 @@ func (d *reader) fetchNextLoop() {
 		d.lastSequence = nextSeq
 		base := path.Join(d.dest, seqPath(d.lastSequence))
 		lastTime, _ := d.StateTime(base + d.StateExt)
+
+		latest := !d.seqIsAvailable(d.lastSequence+1, d.StateExt)
 		d.sequences <- replication.Sequence{
 			Sequence:      d.lastSequence,
 			Filename:      base + d.FileExt,
 			StateFilename: base + d.StateExt,
 			Time:          lastTime,
+			Latest:        latest,
 		}
 	}
+}
+
+func (d *reader) seqIsAvailable(seq int, ext string) bool {
+	filename := path.Join(d.dest, seqPath(seq)+ext)
+	_, err := os.Stat(filename)
+	return err == nil
 }
 
 // waitTillPresent blocks till file is present. Returns without error if context was canceled.

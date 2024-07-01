@@ -2,14 +2,13 @@ package state
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 type DiffState struct {
@@ -39,13 +38,13 @@ func WriteFile(filename string, state *DiffState) error {
 	tmpname := filename + "~"
 	f, err := os.Create(tmpname)
 	if err != nil {
-		return errors.Wrap(err, "creating temp file for writing state file")
+		return fmt.Errorf("creating temp file for writing state file: %w", err)
 	}
 	err = state.write(f)
 	if err != nil {
 		f.Close()
 		os.Remove(tmpname)
-		return errors.Wrapf(err, "writing state to %q", tmpname)
+		return fmt.Errorf("writing state to %q: %w", tmpname, err)
 	}
 	f.Close()
 	return os.Rename(tmpname, filename)
@@ -65,7 +64,7 @@ func ParseFile(stateFile string) (*DiffState, error) {
 func Parse(f io.Reader) (*DiffState, error) {
 	values, err := parseSimpleIni(f)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing state file as INI")
+		return nil, fmt.Errorf("parsing state file as INI: %w", err)
 	}
 
 	timestamp, err := parseTimeStamp(values["timestamp"])

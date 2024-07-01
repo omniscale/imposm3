@@ -16,6 +16,8 @@ type Sequence struct {
 	// Time specifies the creation time of this replication sequence. The
 	// replication file will only contain data older then this timestamp.
 	Time time.Time
+	// Latest is true if the next Sequence is not yet available.
+	Latest bool
 }
 
 // A Source provides a stream of replication files.
