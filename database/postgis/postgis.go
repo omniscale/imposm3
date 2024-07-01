@@ -242,6 +242,7 @@ func (pg *PostGIS) GeneralizeUpdates() error {
 			}
 		}
 	}
+	pg.updatedIDs = make(map[string][]int64) // reset for multiple diff imports in same tx
 	return nil
 }
 
