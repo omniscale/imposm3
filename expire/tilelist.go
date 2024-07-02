@@ -162,7 +162,15 @@ func (tl *TileList) writeTiles(w io.Writer) error {
 func (tl *TileList) Flush() error {
 	tl.mu.Lock()
 	defer tl.mu.Unlock()
-	if len(tl.tiles) == 0 {
+
+	foundTiles := false
+	for _, tiles := range tl.tiles {
+		if len(tiles) > 0 {
+			foundTiles = true
+			break
+		}
+	}
+	if !foundTiles {
 		return nil
 	}
 
