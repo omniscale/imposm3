@@ -2,16 +2,12 @@ package update
 
 import (
 	"context"
-	"fmt"
 	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/pkg/errors"
 
 	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/go-osm/parser/diff"
-	diffstate "github.com/omniscale/go-osm/state"
 	"github.com/omniscale/imposm3/cache"
 	"github.com/omniscale/imposm3/config"
 	"github.com/omniscale/imposm3/database"
@@ -27,96 +23,16 @@ import (
 
 const LastStateFilename = "last.state.txt"
 
-func Diff(baseOpts config.Base, files []string) {
-	if baseOpts.Quiet {
-		log.SetMinLevel(log.LInfo)
-	}
-
-	var geometryLimiter *limit.Limiter
-	if baseOpts.LimitTo != "" {
-		var err error
-		step := log.Step("Reading limitto geometries")
-		geometryLimiter, err = limit.NewFromGeoJSON(
-			baseOpts.LimitTo,
-			baseOpts.LimitToCacheBuffer,
-			baseOpts.Srid,
-		)
-		if err != nil {
-			log.Fatal("[fatal] Reading limitto geometry:", err)
-		}
-		step()
-	}
-	osmCache := cache.NewOSMCache(baseOpts.CacheDir)
-	err := osmCache.Open()
-	if err != nil {
-		log.Fatal("[fatal] Opening OSM cache:", err)
-	}
-	defer osmCache.Close()
-
-	diffCache := cache.NewDiffCache(baseOpts.CacheDir)
-	err = diffCache.Open()
-	if err != nil {
-		log.Fatal("[fatal] Opening diff cache:", err)
-	}
-
-	var exp expire.Expireor
-
-	if baseOpts.ExpireTilesDir != "" {
-		tileexpire := expire.NewTileList(baseOpts.ExpireTilesZoom, baseOpts.ExpireTilesDir)
-		exp = tileexpire
-		defer func() {
-			if err := tileexpire.Flush(); err != nil {
-				log.Println("[error] Writing tile expire file:", err)
-			}
-		}()
-	}
-
-	for _, oscFile := range files {
-		err := Update(baseOpts, oscFile, geometryLimiter, exp, osmCache, diffCache, baseOpts.ForceDiffImport)
-		if err != nil {
-			osmCache.Close()
-			diffCache.Close()
-			log.Fatalf("[fatal] Unable to process %s: %v", oscFile, err)
-		}
-	}
-	// explicitly Close since os.Exit prevents defers
-	osmCache.Close()
-	diffCache.Close()
-}
-
 func Update(
 	baseOpts config.Base,
 	oscFile string,
+	db database.FullDB,
+	tagmapping *mapping.Mapping,
 	geometryLimiter *limit.Limiter,
 	expireor expire.Expireor,
 	osmCache *cache.OSMCache,
 	diffCache *cache.DiffCache,
-	force bool,
 ) error {
-	var state *diffstate.DiffState
-	if strings.HasSuffix(oscFile, ".osc.gz") {
-		var err error
-		stateFile := oscFile[:len(oscFile)-len(".osc.gz")] + ".state.txt"
-		state, err = diffstate.ParseFile(stateFile)
-		if err != nil && !os.IsNotExist(err) {
-			return errors.Wrapf(err, "reading state %s", stateFile)
-		}
-	}
-	lastStateFile := filepath.Join(baseOpts.DiffDir, LastStateFilename)
-	lastState, err := diffstate.ParseFile(lastStateFile)
-	if err != nil && !os.IsNotExist(err) {
-		return errors.Wrapf(err, "parsing last state from %s", lastStateFile)
-	}
-
-	if lastState != nil && lastState.Sequence != 0 && state != nil && state.Sequence <= lastState.Sequence {
-		if !force {
-			log.Println("[warn] Skipping ", state, ", already imported")
-			return nil
-		}
-	}
-
-	defer log.Step(fmt.Sprintf("Processing %s", oscFile))()
-
 	diffs := make(chan osm.Diff)
 	config := diff.Config{
 		Diffs: diffs,
@@ -132,42 +48,10 @@ func Update(
 		return errors.Wrap(err, "initializing diff parser")
 	}
 
-	tagmapping, err := mapping.FromFile(baseOpts.MappingFile)
-	if err != nil {
-		return err
-	}
-
-	dbConf := database.Config{
-		ConnectionParams: baseOpts.Connection,
-		Srid:             baseOpts.Srid,
-		// we apply diff imports on the Production schema
-		ImportSchema:     baseOpts.Schemas.Production,
-		ProductionSchema: baseOpts.Schemas.Production,
-		BackupSchema:     baseOpts.Schemas.Backup,
-	}
-	db, err := database.Open(dbConf, &tagmapping.Conf)
-	if err != nil {
-		return errors.Wrap(err, "opening database")
-	}
-	defer db.Close()
-
-	err = db.Begin()
-	if err != nil {
-		return err
-	}
-
-	delDb, ok := db.(database.Deleter)
-	if !ok {
-		return errors.New("database not deletable")
-	}
-
-	genDb, ok := db.(database.Generalizer)
-	if ok {
-		genDb.EnableGeneralizeUpdates()
-	}
+	db.EnableGeneralizeUpdates()
 
 	deleter := NewDeleter(
-		delDb,
+		db,
 		osmCache,
 		diffCache,
 		tagmapping.Conf.SingleIDSpace,
@@ -425,31 +309,10 @@ func Update(
 	relWriter.Wait()
 	wayWriter.Wait()
 
-	if genDb != nil {
-		genDb.GeneralizeUpdates()
-	}
-
-	err = db.End()
-	if err != nil {
-		return err
-	}
-	err = db.Close()
-	if err != nil {
-		return err
-	}
-
-	step()
+	db.GeneralizeUpdates()
 
 	progress.Stop()
+	step()
 
-	if state != nil {
-		if lastState != nil {
-			state.URL = lastState.URL
-		}
-		err = diffstate.WriteFile(filepath.Join(baseOpts.DiffDir, LastStateFilename), state)
-		if err != nil {
-			log.Println("[error] Unable to write last state:", err)
-		}
-	}
 	return nil
 }
