@@ -22,6 +22,7 @@ type Config struct {
 	Schemas             Schemas         `json:"schemas"`
 	ExpireTilesDir      string          `json:"expiretiles_dir"`
 	ExpireTilesZoom     int             `json:"expiretiles_zoom"`
+	CommitLatest        bool            `json:"commit_latest"`
 	ReplicationURL      string          `json:"replication_url"`
 	ReplicationInterval MinutesInterval `json:"replication_interval"`
 	DiffStateBefore     MinutesInterval `json:"diff_state_before"`
@@ -53,6 +54,7 @@ type Base struct {
 	Schemas             Schemas
 	ExpireTilesDir      string
 	ExpireTilesZoom     int
+	CommitLatest        bool
 	ReplicationURL      string
 	ReplicationInterval time.Duration
 	DiffStateBefore     time.Duration
@@ -122,6 +124,10 @@ func (o *Base) updateFromConfig() error {
 	}
 	if o.ExpireTilesZoom < 6 || o.ExpireTilesZoom > 18 {
 		o.ExpireTilesZoom = 14
+	}
+
+	if !o.CommitLatest {
+		o.CommitLatest = conf.CommitLatest
 	}
 
 	if conf.ReplicationInterval.Duration != 0 && o.ReplicationInterval == time.Minute {
@@ -248,6 +254,7 @@ func ParseDiffImport(args []string) (Base, []string) {
 	flags.StringVar(&opts.ExpireTilesDir, "expiretiles-dir", "", "write expire tiles into dir")
 	flags.IntVar(&opts.ExpireTilesZoom, "expiretiles-zoom", 14, "write expire tiles in this zoom level")
 	flags.BoolVar(&opts.ForceDiffImport, "force", false, "force import of diff if sequence was already imported")
+	flags.BoolVar(&opts.CommitLatest, "commit-latest", false, "commit after last diff, instead after each diff")
 
 	flags.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s %s [args] [.osc.gz, ...]\n\n", os.Args[0], os.Args[1])
@@ -290,6 +297,7 @@ func ParseRunImport(args []string) Base {
 	addBaseFlags(&opts, flags)
 	flags.StringVar(&opts.ExpireTilesDir, "expiretiles-dir", "", "write expire tiles into dir")
 	flags.IntVar(&opts.ExpireTilesZoom, "expiretiles-zoom", 14, "write expire tiles in this zoom level")
+	flags.BoolVar(&opts.CommitLatest, "commit-latest", false, "commit after last diff, instead after each diff")
 	flags.DurationVar(&opts.ReplicationInterval, "replication-interval", time.Minute, "replication interval as duration (1m, 1h, 24h)")
 
 	flags.Usage = func() {

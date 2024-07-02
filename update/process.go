@@ -9,7 +9,6 @@ import (
 	osm "github.com/omniscale/go-osm"
 	"github.com/omniscale/go-osm/parser/diff"
 	"github.com/omniscale/imposm3/cache"
-	"github.com/omniscale/imposm3/config"
 	"github.com/omniscale/imposm3/database"
 	_ "github.com/omniscale/imposm3/database/postgis"
 	"github.com/omniscale/imposm3/expire"
@@ -21,13 +20,11 @@ import (
 	"github.com/omniscale/imposm3/writer"
 )
 
-const LastStateFilename = "last.state.txt"
-
-func Update(
-	baseOpts config.Base,
+func importDiffFile(
 	oscFile string,
 	db database.FullDB,
 	tagmapping *mapping.Mapping,
+	srid int,
 	geometryLimiter *limit.Limiter,
 	expireor expire.Expireor,
 	osmCache *cache.OSMCache,
@@ -80,7 +77,7 @@ func Update(
 		tagmapping.PolygonMatcher,
 		tagmapping.RelationMatcher,
 		tagmapping.RelationMemberMatcher,
-		baseOpts.Srid)
+		srid)
 	relWriter.SetLimiter(geometryLimiter)
 	relWriter.SetExpireor(expireor)
 	relWriter.Start()
@@ -91,7 +88,7 @@ func Update(
 		progress,
 		tagmapping.PolygonMatcher,
 		tagmapping.LineStringMatcher,
-		baseOpts.Srid)
+		srid)
 	wayWriter.SetLimiter(geometryLimiter)
 	wayWriter.SetExpireor(expireor)
 	wayWriter.Start()
@@ -99,7 +96,7 @@ func Update(
 	nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
 		progress,
 		tagmapping.PointMatcher,
-		baseOpts.Srid)
+		srid)
 	nodeWriter.SetLimiter(geometryLimiter)
 	nodeWriter.SetExpireor(expireor)
 	nodeWriter.Start()
