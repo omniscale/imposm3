@@ -119,13 +119,6 @@ func (d *downloader) download(seq int, ext string) error {
 		return err
 	}
 
-	tmpDest := fmt.Sprintf("%s~%d", dest, os.Getpid())
-	out, err := os.Create(tmpDest)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return err
@@ -145,6 +138,13 @@ func (d *downloader) download(seq int, ext string) error {
 	if resp.StatusCode != 200 {
 		return errors.New(fmt.Sprintf("invalid response: %v", resp))
 	}
+
+	tmpDest := fmt.Sprintf("%s~%d", dest, os.Getpid())
+	out, err := os.Create(tmpDest)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {

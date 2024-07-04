@@ -14,7 +14,7 @@ github.com/lib/pq
 github.com/lib/pq/hstore
 github.com/lib/pq/oid
 github.com/lib/pq/scram
-# github.com/omniscale/go-osm v0.3.0
+# github.com/omniscale/go-osm v0.3.1
 ## explicit; go 1.21.0
 github.com/omniscale/go-osm
 github.com/omniscale/go-osm/parser/diff
