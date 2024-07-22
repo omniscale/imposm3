@@ -301,7 +301,7 @@ func ParseRunImport(args []string) Base {
 	flags.DurationVar(&opts.ReplicationInterval, "replication-interval", time.Minute, "replication interval as duration (1m, 1h, 24h)")
 
 	flags.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s %s [args] [.osc.gz, ...]\n\n", os.Args[0], os.Args[1])
+		fmt.Fprintf(os.Stderr, "Usage: %s %s [args]\n\n", os.Args[0], os.Args[1])
 		flags.PrintDefaults()
 		os.Exit(2)
 	}
