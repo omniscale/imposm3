@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-
 	"gopkg.in/yaml.v2"
 )
 
@@ -99,7 +98,7 @@ func (kv *KeyValues) UnmarshalYAML(unmarshal func(interface{}) error) error {
 			if v, ok := v.(string); ok {
 				(*kv)[Key(k)] = append((*kv)[Key(k)], OrderedValue{Value: Value(v), Order: order})
 			} else {
-				return fmt.Errorf("mapping value '%s' not a string", v)
+				return fmt.Errorf("mapping value '%v' (tied to mapping key '%s') not a string", v, k)
 			}
 			order++
 		}
