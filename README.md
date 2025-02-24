@@ -122,7 +122,7 @@ You can also directly use go to build or install imposm with `go build ./cmd/imp
 Go compiles to static binaries and so Imposm has no runtime dependencies to Go.
 Just copy the `imposm` binary to your server for deployment. The C/C++ libraries listed above are still required though.
 
-See also `packaging.sh` for instructions on how to build binary packages for Linux.
+See also `Dockerfile` for instructions on how to build standalone binary packages for Linux.
 
 #### LevelDB
 
