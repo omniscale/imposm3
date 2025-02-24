@@ -87,6 +87,20 @@ func TestTileList_ExpireNodesAdaptive(t *testing.T) {
 			{Long: 160, Lat: 70},
 			{Long: -160, Lat: 70},
 		}, 48, 3, true},
+
+		// expire tiles use Webmercator, ignore nodes at the poles
+		{[]osm.Node{
+			{Long: 0, Lat: 90},
+			{Long: 0, Lat: 89},
+		}, 0, 0, true},
+		{[]osm.Node{
+			{Long: 0, Lat: -90},
+			{Long: 0, Lat: -89},
+		}, 0, 0, true},
+		{[]osm.Node{
+			{Long: -170, Lat: 89},
+			{Long: 170, Lat: 70},
+		}, 0, 0, true},
 	} {
 		t.Run("", func(t *testing.T) {
 			tl := NewTileList(14, "")

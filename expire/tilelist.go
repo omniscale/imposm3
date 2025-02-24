@@ -33,6 +33,9 @@ func init() {
 
 func tileCoord(long, lat float64, zoom int) (float64, float64) {
 	x, y := proj.WgsToMerc(long, lat)
+	if x < mercBbox[0] || x > mercBbox[2] || y < mercBbox[1] || y > mercBbox[3] {
+		return -1, -1
+	}
 	res := mercRes[zoom]
 	x = x - mercBbox[0]
 	y = mercBbox[3] - y
@@ -100,6 +103,9 @@ func (tl *TileList) addCoord(long, lat float64) {
 	const tilePadding = 0.2
 	tl.mu.Lock()
 	tileX, tileY := tileCoord(long, lat, tl.maxZoom)
+	if tileX < 0 {
+		return
+	}
 	for x := uint32(tileX - tilePadding); x <= uint32(tileX+tilePadding); x++ {
 		for y := uint32(tileY - tilePadding); y <= uint32(tileY+tilePadding); y++ {
 			tl.tiles[tl.maxZoom][tileKey{x, y}] = struct{}{}
@@ -124,6 +130,9 @@ func (tl *TileList) expireLine(nodes []osm.Node, zoom int) {
 		}
 		x1, y1 := tileCoord(nodes[i].Long, nodes[i].Lat, zoom)
 		x2, y2 := tileCoord(nodes[i+1].Long, nodes[i+1].Lat, zoom)
+		if x1 < 0 || x2 < 0 {
+			return
+		}
 		if int(x1) == int(x2) && int(y1) == int(y2) {
 			tl.tiles[zoom][tileKey{X: uint32(x1), Y: uint32(y1)}] = struct{}{}
 		} else {
@@ -140,6 +149,9 @@ func (tl *TileList) expireBox(b bbox, zoom int) {
 	defer tl.mu.Unlock()
 	x1, y1 := tileCoord(b.minx, b.maxy, zoom)
 	x2, y2 := tileCoord(b.maxx, b.miny, zoom)
+	if x1 < 0 || x2 < 0 {
+		return
+	}
 	for x := uint32(x1); x <= uint32(x2); x++ {
 		for y := uint32(y1); y <= uint32(y2); y++ {
 			tl.tiles[zoom][tileKey{x, y}] = struct{}{}
@@ -233,6 +245,9 @@ func nodesBbox(nodes []osm.Node) bbox {
 func numBboxTiles(b bbox, zoom int) int {
 	x1, y1 := tileCoord(b.minx, b.maxy, zoom)
 	x2, y2 := tileCoord(b.maxx, b.miny, zoom)
+	if x1 < 0 || x2 < 0 {
+		return 0
+	}
 	return int(math.Abs((x2 - x1 + 1) * (y2 - y1 + 1)))
 }
 
