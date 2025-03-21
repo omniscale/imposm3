@@ -56,7 +56,7 @@ func (spec *TableSpec) CreateTableSQL() string {
 	cols := []string{}
 	if !foundIDCol {
 		// Create explicit id column only if there is no id configured.
-		cols = append(cols, "id SERIAL")
+		cols = append(cols, "id BIGSERIAL")
 		pkCols = append(pkCols, "id")
 	}
 
