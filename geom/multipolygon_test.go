@@ -659,3 +659,38 @@ func TestClosedAndOpenRing(t *testing.T) {
 		t.Fatal("geometry not valid", g.AsWkt(geom.Geom))
 	}
 }
+
+func TestSimpleMultiLineString(t *testing.T) {
+	w1 := makeWay(1, osm.Tags{}, []coord{
+		{1, 1, 0},
+		{2, 2, 0},
+	})
+	w2 := makeWay(2, osm.Tags{}, []coord{
+		{3, 2, 0},
+		{4, 3, 0},
+	})
+
+	rel := osm.Relation{
+		Element: osm.Element{ID: 1, Tags: osm.Tags{}}}
+	rel.Members = []osm.Member{
+		{ID: 1, Type: osm.WayMember, Role: "", Way: &w1},
+		{ID: 2, Type: osm.WayMember, Role: "", Way: &w2},
+	}
+
+	geom, err := MultiLinestring(&rel, 3857)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	g := geos.NewGeos()
+	defer g.Finish()
+
+	if !g.IsValid(geom) {
+		t.Fatal("geometry not valid", g.AsWkt(geom))
+	}
+
+	if length := geom.Length(); length != 2 {
+		t.Fatal("length invalid", length)
+	}
+}
