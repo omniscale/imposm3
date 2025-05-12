@@ -324,10 +324,10 @@ Stores a number depending on a value, similar to ``enumerate``. However, ``categ
       type: categorize_int
 
 
-``geojson_intersects`` and ``geojson_intersects_field``
+``geojson_intersects`` and ``geojson_intersects_feature``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Checks whether the geometry of the element intersects geometries from a provided GeoJSON file. ``geojson_intersects`` returns true if it intersects any geometry. ``geojson_intersects_field`` returns a string property of the intersected feature.
+Checks whether the geometry of the element intersects geometries from a provided GeoJSON file. ``geojson_intersects`` returns true if it intersects any geometry. ``geojson_intersects_feature`` returns a string property of the intersected feature.
 
 
 ::
@@ -344,7 +344,7 @@ Checks whether the geometry of the element intersects geometries from a provided
         geojson: special_interest_areas.geojson
         property: area
       name: special_interest_area_name
-      type: geojson_intersects_field
+      type: geojson_intersects_feature
 
 
 Element types
