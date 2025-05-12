@@ -10,8 +10,8 @@
 #
 # Release tar.gz is copied to /imposm/dist, use mounts to get the file.
 # Example:
-#  podman build -t imposm-build-debian10 .
-#  podman run --rm -v ./dist:/imposm/dist -t imposm-build-debian10
+#  podman build --platform=linux/amd64 -t imposm-build-debian10 .
+#  podman run --platform=linux/amd64 --rm -v ./dist:/imposm/dist -t imposm-build-debian10
 
 FROM debian:10
 
