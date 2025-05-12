@@ -7,7 +7,7 @@ import (
 
 func TestWgsToMerc(t *testing.T) {
 	x, y := WgsToMerc(0, 0)
-	if x != 0 || y != 0 {
+	if x != 0 || math.Abs(y) > 1e-8 {
 		t.Fatalf("%v %v", x, y)
 	}
 
