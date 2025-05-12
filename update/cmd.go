@@ -277,12 +277,23 @@ func (u *updater) importDiff(seq replication.Sequence) error {
 		exptiles = u.tilelist
 	}
 
+	var err error
 	for {
+		if err != nil {
+			// previous loop failed, reconnect DB
+			u.db.Abort()
+			err = u.db.Begin()
+		}
 
-		if err := importDiffFile(seq.Filename, u.db,
-			u.tagmapping, u.baseOpts.Srid, u.geometryLimiter, exptiles,
-			u.osmCache, u.diffCache,
-		); err != nil {
+		if err == nil {
+			err = importDiffFile(seq.Filename, u.db,
+				u.tagmapping, u.baseOpts.Srid, u.geometryLimiter, exptiles,
+				u.osmCache, u.diffCache,
+			)
+		}
+
+		if err != nil {
+			// import or db.Begin failed
 			if u.commitEachDiff {
 				// we can retry if we commited the previous import
 				log.Printf("[error] Importing %s: %v", logName, err)
@@ -292,7 +303,6 @@ func (u *updater) importDiff(seq replication.Sequence) error {
 					log.Println("[info] Exiting. (SIGTERM/SIGINT/SIGHUP)")
 					return StopImport
 				case <-exp.Wait():
-				default:
 				}
 				continue
 			} else {

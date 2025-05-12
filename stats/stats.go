@@ -77,7 +77,11 @@ func (s *Statistics) AddNodes(n int)     { s.counter.Nodes.Add(n) }
 func (s *Statistics) AddWays(n int)      { s.counter.Ways.Add(n) }
 func (s *Statistics) AddRelations(n int) { s.counter.Relations.Add(n) }
 func (s *Statistics) Stop() *ElementCounts {
-	s.done <- true
+	select {
+	// non-blocking to allow multiple Stop calls
+	case s.done <- true:
+	default:
+	}
 	return s.counter.CurrentCount()
 }
 

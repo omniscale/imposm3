@@ -60,7 +60,8 @@ func importDiffFile(
 	)
 	deleter.SetExpireor(expireor)
 
-	progress := stats.NewStatsReporter()
+	parseProgress := stats.NewStatsReporter()
+	defer parseProgress.Stop()
 
 	relTagFilter := tagmapping.RelationTagFilter()
 	wayTagFilter := tagmapping.WayTagFilter()
@@ -73,7 +74,7 @@ func importDiffFile(
 	relWriter := writer.NewRelationWriter(osmCache, diffCache,
 		tagmapping.Conf.SingleIDSpace,
 		relations,
-		db, progress,
+		db, parseProgress,
 		tagmapping.PolygonMatcher,
 		tagmapping.RelationMatcher,
 		tagmapping.RelationMemberMatcher,
@@ -85,7 +86,7 @@ func importDiffFile(
 	wayWriter := writer.NewWayWriter(osmCache, diffCache,
 		tagmapping.Conf.SingleIDSpace,
 		ways, db,
-		progress,
+		parseProgress,
 		tagmapping.PolygonMatcher,
 		tagmapping.LineStringMatcher,
 		srid)
@@ -94,7 +95,7 @@ func importDiffFile(
 	wayWriter.Start()
 
 	nodeWriter := writer.NewNodeWriter(osmCache, nodes, db,
-		progress,
+		parseProgress,
 		tagmapping.PointMatcher,
 		srid)
 	nodeWriter.SetLimiter(geometryLimiter)
@@ -120,16 +121,16 @@ func importDiffFile(
 	for elem := range diffs {
 		if elem.Rel != nil {
 			relTagFilter.Filter(&elem.Rel.Tags)
-			progress.AddRelations(1)
+			parseProgress.AddRelations(1)
 		} else if elem.Way != nil {
 			wayTagFilter.Filter(&elem.Way.Tags)
-			progress.AddWays(1)
+			parseProgress.AddWays(1)
 		} else if elem.Node != nil {
 			nodeTagFilter.Filter(&elem.Node.Tags)
 			if len(elem.Node.Tags) > 0 {
-				progress.AddNodes(1)
+				parseProgress.AddNodes(1)
 			}
-			progress.AddCoords(1)
+			parseProgress.AddCoords(1)
 		}
 
 		// always delete, to prevent duplicate elements from overlap of initial
@@ -221,7 +222,7 @@ func importDiffFile(
 		wayIDs[id] = struct{}{}
 	}
 
-	progress.Stop()
+	parseProgress.Stop()
 	step()
 
 	err = <-parseError
@@ -231,7 +232,8 @@ func importDiffFile(
 
 	step = log.Step("Importing added/modified elements")
 
-	progress = stats.NewStatsReporter()
+	importProgress := stats.NewStatsReporter()
+	defer importProgress.Stop()
 
 	// mark depending ways for (re)insert
 	for nodeID := range nodeIDs {
@@ -265,7 +267,7 @@ func importDiffFile(
 			continue
 		}
 		// insert new relation
-		progress.AddRelations(1)
+		importProgress.AddRelations(1)
 		relations <- rel
 	}
 
@@ -278,7 +280,7 @@ func importDiffFile(
 			continue
 		}
 		// insert new way
-		progress.AddWays(1)
+		importProgress.AddWays(1)
 		ways <- way
 	}
 
@@ -293,7 +295,7 @@ func importDiffFile(
 		}
 		if node != nil {
 			// insert new node
-			progress.AddNodes(1)
+			importProgress.AddNodes(1)
 			nodes <- node
 		}
 	}
@@ -308,7 +310,7 @@ func importDiffFile(
 
 	db.GeneralizeUpdates()
 
-	progress.Stop()
+	importProgress.Stop()
 	step()
 
 	return nil

@@ -582,11 +582,17 @@ func (pg *PostGIS) BeginBulk() error {
 }
 
 func (pg *PostGIS) Abort() error {
-	return pg.txRouter.Abort()
+	if pg.txRouter != nil {
+		return pg.txRouter.Abort()
+	}
+	return nil
 }
 
 func (pg *PostGIS) End() error {
-	return pg.txRouter.End()
+	if pg.txRouter != nil {
+		return pg.txRouter.End()
+	}
+	return nil
 }
 
 func (pg *PostGIS) Close() error {
