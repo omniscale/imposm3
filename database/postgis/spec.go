@@ -221,10 +221,16 @@ func (spec *GeneralizedTableSpec) InsertSQL() string {
 		where += " AND (" + spec.Where + ")"
 	}
 
+	var sourceTable string
+	if spec.SourceGeneralized != nil {
+		sourceTable = spec.SourceGeneralized.FullName
+	} else {
+		sourceTable = spec.Source.FullName
+	}
 	columnSQL := strings.Join(cols, ",\n")
 	sql := fmt.Sprintf(`INSERT INTO "%s"."%s" (SELECT %s FROM "%s"."%s"%s)`,
 		spec.Schema, spec.FullName, columnSQL, spec.Source.Schema,
-		spec.Source.FullName, where)
+		sourceTable, where)
 	return sql
 
 }
