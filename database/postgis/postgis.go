@@ -554,7 +554,7 @@ func (pg *PostGIS) sortedGeneralizedTables() []string {
 	for len(pg.GeneralizedTables) > len(sorted) {
 		for _, tbl := range pg.GeneralizedTables {
 			if _, ok := added[tbl.Name]; !ok {
-				if tbl.Source != nil || added[tbl.SourceGeneralized.Name] {
+				if tbl.SourceGeneralized == nil || added[tbl.SourceGeneralized.Name] {
 					added[tbl.Name] = true
 					sorted = append(sorted, tbl.Name)
 				}
