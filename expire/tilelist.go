@@ -102,6 +102,7 @@ func (tl *TileList) addCoord(long, lat float64) {
 	// fraction of a tile that is added as a padding around a single node
 	const tilePadding = 0.2
 	tl.mu.Lock()
+	defer tl.mu.Unlock()
 	tileX, tileY := tileCoord(long, lat, tl.maxZoom)
 	if tileX < 0 {
 		return
@@ -111,7 +112,6 @@ func (tl *TileList) addCoord(long, lat float64) {
 			tl.tiles[tl.maxZoom][tileKey{x, y}] = struct{}{}
 		}
 	}
-	tl.mu.Unlock()
 }
 
 // expireLine expires all tiles that are intersected by the line segments
