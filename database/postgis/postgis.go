@@ -182,7 +182,7 @@ func createIndex(pg *PostGIS, tableName string, columns []ColumnSpec, generalize
 
 	for _, col := range columns {
 		if col.Type.Name() == "GEOMETRY" {
-			sql := fmt.Sprintf(`CREATE INDEX "%s_geom" ON "%s"."%s" USING GIST ("%s")`,
+			sql := fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s_geom" ON "%s"."%s" USING GIST ("%s")`,
 				tableName, pg.Config.ImportSchema, tableName, col.Name)
 			step := log.Step(fmt.Sprintf("Creating geometry index on %s", tableName))
 			_, err := pg.Db.Exec(sql)
@@ -197,7 +197,7 @@ func createIndex(pg *PostGIS, tableName string, columns []ColumnSpec, generalize
 			// The explicit `id` column prevented the creation of our composite
 			// PRIMARY KEY index of id (serial) and OSM ID.
 			// Generalized tables also do not have a PRIMARY KEY.
-			sql := fmt.Sprintf(`CREATE INDEX "%s_%s_idx" ON "%s"."%s" USING BTREE ("%s")`,
+			sql := fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s_%s_idx" ON "%s"."%s" USING BTREE ("%s")`,
 				tableName, col.Name, pg.Config.ImportSchema, tableName, col.Name)
 			step := log.Step(fmt.Sprintf("Creating OSM id index on %s", tableName))
 			_, err := pg.Db.Exec(sql)
@@ -365,7 +365,7 @@ func clusterTable(pg *PostGIS, tableName string, srid int, columns []ColumnSpec)
 	for _, col := range columns {
 		if col.Type.Name() == "GEOMETRY" {
 			step := log.Step(fmt.Sprintf("Indexing %q on geohash", tableName))
-			sql := fmt.Sprintf(`CREATE INDEX "%s_geom_geohash" ON "%s"."%s" (ST_GeoHash(ST_Transform(ST_SetSRID(Box2D(%s), %d), 4326)))`,
+			sql := fmt.Sprintf(`CREATE INDEX IF NOT EXISTS "%s_geom_geohash" ON "%s"."%s" (ST_GeoHash(ST_Transform(ST_SetSRID(Box2D(%s), %d), 4326)))`,
 				tableName, pg.Config.ImportSchema, tableName, col.Name, srid)
 			_, err := pg.Db.Exec(sql)
 			step()
