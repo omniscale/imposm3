@@ -90,16 +90,22 @@ func (ww *WayWriter) loop() {
 		}
 
 		var err error
+		var status insertStatus
 		inserted := false
 		insertedPolygon := false
 		if matches := ww.lineMatcher.MatchWay(w); len(matches) > 0 {
 			if !fill(w) {
 				continue
 			}
-			err, inserted = ww.buildAndInsert(geos, w, matches, false)
+			status, err = ww.buildAndInsert(geos, w, matches, false)
+			inserted = status == insertSucceeded
 			if err != nil {
 				if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
 					log.Println("[warn]: ", err)
+				}
+				if status == insertFailed && ww.diffCache != nil {
+					// cache anyway, so that an updated node is able to fix the way
+					ww.diffCache.Coords.AddFromWay(w)
 				}
 				continue
 			}
@@ -109,10 +115,15 @@ func (ww *WayWriter) loop() {
 				continue
 			}
 			if w.IsClosed() {
-				err, insertedPolygon = ww.buildAndInsert(geos, w, matches, true)
+				status, err = ww.buildAndInsert(geos, w, matches, true)
+				insertedPolygon = status == insertSucceeded
 				if err != nil {
 					if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
 						log.Println("[warn]: ", err)
+					}
+					if status == insertFailed && ww.diffCache != nil {
+						// cache anyway, so that an updated node is able to fix the way
+						ww.diffCache.Coords.AddFromWay(w)
 					}
 					continue
 				}
@@ -134,7 +145,7 @@ func (ww *WayWriter) buildAndInsert(
 	w *osm.Way,
 	matches []mapping.Match,
 	isPolygon bool,
-) (error, bool) {
+) (insertStatus, error) {
 
 	// make copy to avoid interference with polygon/linestring matches
 	way := osm.Way(*w)
@@ -152,46 +163,46 @@ func (ww *WayWriter) buildAndInsert(
 		geosgeom, err = geomp.LineString(g, way.Nodes)
 	}
 	if err != nil {
-		return err, false
+		return insertFailed, err
 	}
 
 	geom, err := geomp.AsGeomElement(g, geosgeom)
 	if err != nil {
-		return err, false
+		return insertFailed, err
 	}
 
-	inserted := true
+	status := insertSucceeded
 	if ww.limiter != nil {
 		parts, err := ww.limiter.Clip(geom.Geom)
 		if err != nil {
-			return err, false
+			return insertFailed, err
 		}
 		if len(parts) == 0 {
 			// outside of limitto
-			inserted = false
+			status = insertSkipped
 		}
 		for _, p := range parts {
 			geom = geomp.Geometry{Geom: p, Wkb: g.AsEwkbHex(p)}
 			if isPolygon {
 				if err := ww.inserter.InsertPolygon(way.Element, geom, matches); err != nil {
-					return err, false
+					return insertFailed, err
 				}
 			} else {
 				if err := ww.inserter.InsertLineString(way.Element, geom, matches); err != nil {
-					return err, false
+					return insertFailed, err
 				}
 			}
 		}
 	} else {
 		if isPolygon {
 			if err := ww.inserter.InsertPolygon(way.Element, geom, matches); err != nil {
-				return err, false
+				return insertFailed, err
 			}
 		} else {
 			if err := ww.inserter.InsertLineString(way.Element, geom, matches); err != nil {
-				return err, false
+				return insertFailed, err
 			}
 		}
 	}
-	return nil, inserted
+	return status, nil
 }

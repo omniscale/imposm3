@@ -21,6 +21,15 @@ type looper interface {
 	loop()
 }
 
+type insertStatus int
+
+const (
+	insertNotMatched insertStatus = iota
+	insertFailed
+	insertSkipped
+	insertSucceeded
+)
+
 type OsmElemWriter struct {
 	osmCache   *cache.OSMCache
 	diffCache  *cache.DiffCache

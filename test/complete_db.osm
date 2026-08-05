@@ -1015,6 +1015,34 @@
     <tag k="type" v="multipolygon"/>
   </relation>
 
+  <!-- test that ways are updated after invalid polygons are fixed by a single modified node -->
+  <node id="52201" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="20"/>
+  <node id="52202" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="21"/>
+  <node id="52203" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="21"/>
+  <way id="52211" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="52201"/>
+    <nd ref="52202"/>
+    <nd ref="52203"/>
+    <nd ref="52201"/>
+    <tag k="landuse" v="park"/>
+  </way>
+
+  <!-- test that relations are updated after invalid polygons are fixed by a single modified node -->
+  <node id="52301" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="30"/>
+  <node id="52302" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="31"/>
+  <node id="52303" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="31"/>
+  <way id="52311" version="1" timestamp="2011-11-11T00:11:11Z">
+    <nd ref="52301"/>
+    <nd ref="52302"/>
+    <nd ref="52303"/>
+    <nd ref="52301"/>
+  </way>
+  <relation id="52321" version="1" timestamp="2011-11-11T00:11:11Z">
+    <member type="way" ref="52311" role="outer"/>
+    <tag k="landuse" v="forest"/>
+    <tag k="type" v="multipolygon"/>
+  </relation>
+
   <!-- test duplicate 'create node' does not result in duplicate way -->
   <node id="53101" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="10"/>
   <node id="53102" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="11"/>

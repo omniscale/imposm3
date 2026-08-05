@@ -234,6 +234,16 @@
     <node id="52101" version="1" timestamp="2011-11-11T00:11:11Z" lat="61" lon="10"/>
   </modify>
 
+  <!-- test that ways are updated after invalid polygons are fixed by a single modified node -->
+  <modify>
+    <node id="52203" version="2" timestamp="2011-11-11T00:11:11Z" lat="63" lon="21"/>
+  </modify>
+
+  <!-- test that relations are updated after invalid polygons are fixed by a single modified node -->
+  <modify>
+    <node id="52303" version="2" timestamp="2011-11-11T00:11:11Z" lat="63" lon="31"/>
+  </modify>
+
   <!-- test duplicate 'create node' does not result in duplicate way -->
   <create>
     <node id="53101" version="1" timestamp="2011-11-11T00:11:11Z" lat="62" lon="10"/>

@@ -104,25 +104,27 @@ NextRel:
 		allMembers := r.Members
 
 		inserted := false
+		indexOnError := false
 
-		if handleRelationMembers(rw, r, geos) {
+		switch handleRelationMembers(rw, r, geos) {
+		case insertSucceeded:
 			inserted = true
+		case insertFailed:
+			indexOnError = true
 		}
 		if handleRelation(rw, r, geos) {
 			inserted = true
 		}
-		if handleMultiPolygon(rw, r, geos) {
+		switch handleMultiPolygon(rw, r, geos) {
+		case insertSucceeded:
 			inserted = true
+		case insertFailed:
+			indexOnError = true
 		}
 
-		if inserted && rw.diffCache != nil {
-			rw.diffCache.Ways.AddFromMembers(r.ID, allMembers)
-			rw.diffCache.CoordsRel.AddFromMembers(r.ID, allMembers)
-			for _, member := range allMembers {
-				if member.Way != nil {
-					rw.diffCache.Coords.AddFromWay(member.Way)
-				}
-			}
+		if (inserted || indexOnError) && rw.diffCache != nil {
+			// cache even on errors, so that an updated node is able to fix the relation
+			rw.addDiffCacheRefs(r.ID, allMembers)
 		}
 		if inserted && rw.expireor != nil {
 			for _, m := range allMembers {
@@ -135,10 +137,20 @@ NextRel:
 	rw.wg.Done()
 }
 
-func handleMultiPolygon(rw *RelationWriter, r *osm.Relation, geos *geosp.Geos) bool {
+func (rw *RelationWriter) addDiffCacheRefs(relID int64, members []osm.Member) {
+	rw.diffCache.Ways.AddFromMembers(relID, members)
+	rw.diffCache.CoordsRel.AddFromMembers(relID, members)
+	for _, member := range members {
+		if member.Way != nil {
+			rw.diffCache.Coords.AddFromWay(member.Way)
+		}
+	}
+}
+
+func handleMultiPolygon(rw *RelationWriter, r *osm.Relation, geos *geosp.Geos) insertStatus {
 	matches := rw.polygonMatcher.MatchRelation(r)
 	if matches == nil {
-		return false
+		return insertNotMatched
 	}
 
 	// prepare relation (build rings)
@@ -147,7 +159,7 @@ func handleMultiPolygon(rw *RelationWriter, r *osm.Relation, geos *geosp.Geos) b
 		if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
 			log.Println("[warn]: ", err)
 		}
-		return false
+		return insertFailed
 	}
 
 	// build the multipolygon
@@ -159,7 +171,7 @@ func handleMultiPolygon(rw *RelationWriter, r *osm.Relation, geos *geosp.Geos) b
 		if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
 			log.Println("[warn]: ", err)
 		}
-		return false
+		return insertFailed
 	}
 
 	if rw.limiter != nil {
@@ -167,13 +179,13 @@ func handleMultiPolygon(rw *RelationWriter, r *osm.Relation, geos *geosp.Geos) b
 		parts, err := rw.limiter.Clip(geom.Geom)
 		if err != nil {
 			log.Println("[warn]: ", err)
-			return false
+			return insertFailed
 		}
 		if duration := time.Since(start); duration > time.Minute {
 			log.Printf("[warn]: clipping relation %d to -limitto took %s", r.ID, duration)
 		}
 		if len(parts) == 0 {
-			return false
+			return insertSkipped
 		}
 		for _, g := range parts {
 			rel := osm.Relation(*r)
@@ -195,11 +207,11 @@ func handleMultiPolygon(rw *RelationWriter, r *osm.Relation, geos *geosp.Geos) b
 			if errl, ok := err.(ErrorLevel); !ok || errl.Level() > 0 {
 				log.Println("[warn]: ", err)
 			}
-			return false
+			return insertFailed
 		}
 	}
 
-	return true
+	return insertSucceeded
 }
 
 func handleRelation(rw *RelationWriter, r *osm.Relation, geos *geosp.Geos) bool {
@@ -213,22 +225,23 @@ func handleRelation(rw *RelationWriter, r *osm.Relation, geos *geosp.Geos) bool 
 	return true
 }
 
-func handleRelationMembers(rw *RelationWriter, r *osm.Relation, geos *geosp.Geos) bool {
+func handleRelationMembers(rw *RelationWriter, r *osm.Relation, geos *geosp.Geos) insertStatus {
 	relMemberMatches := rw.relationMemberMatcher.MatchRelation(r)
 	if relMemberMatches == nil {
-		return false
+		return insertNotMatched
 	}
 	for i, m := range r.Members {
-		if m.Type == osm.RelationMember {
+		switch m.Type {
+		case osm.RelationMember:
 			mrel, err := rw.osmCache.Relations.GetRelation(m.ID)
 			if err != nil {
 				if err != cache.ErrNotFound {
 					log.Println("[warn]: ", err)
 				}
-				return false
+				return insertFailed
 			}
 			r.Members[i].Element = &mrel.Element
-		} else if m.Type == osm.NodeMember {
+		case osm.NodeMember:
 			nd, err := rw.osmCache.Nodes.GetNode(m.ID)
 			if err != nil {
 				if err == cache.ErrNotFound {
@@ -237,11 +250,11 @@ func handleRelationMembers(rw *RelationWriter, r *osm.Relation, geos *geosp.Geos
 						if err != cache.ErrNotFound {
 							log.Println("[warn]: ", err)
 						}
-						return false
+						return insertFailed
 					}
 				} else {
 					log.Println("[warn]: ", err)
-					return false
+					return insertFailed
 				}
 			}
 			rw.NodeToSrid(nd)
@@ -261,7 +274,7 @@ func handleRelationMembers(rw *RelationWriter, r *osm.Relation, geos *geosp.Geos
 
 		if err != nil {
 			log.Println("[warn]: ", err)
-			return false
+			return insertFailed
 		}
 
 		var gelem geomp.Geometry
@@ -272,12 +285,12 @@ func handleRelationMembers(rw *RelationWriter, r *osm.Relation, geos *geosp.Geos
 			gelem, err = geomp.AsGeomElement(geos, g)
 			if err != nil {
 				log.Println("[warn]: ", err)
-				return false
+				return insertFailed
 			}
 		}
 		rel := osm.Relation(*r)
 		rel.ID = rw.relID(r.ID)
 		rw.inserter.InsertRelationMember(rel, m, mi, gelem, relMemberMatches)
 	}
-	return true
+	return insertSucceeded
 }

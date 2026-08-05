@@ -341,6 +341,20 @@ func TestComplete(t *testing.T) {
 		ts.assertGeomArea(t, checkElem{"osm_buildings", -52121, "yes", nil}, 13653930440.868315)
 	})
 
+	t.Run("InvalidPolygonNotInserted", func(t *testing.T) {
+		// Polygon collapses to an invalid ring before the node update.
+		ts.assertRecords(t, []checkElem{
+			{"osm_landusages", 52211, Missing, nil},
+		})
+	})
+
+	t.Run("InvalidRelationNotInserted", func(t *testing.T) {
+		// Multipolygon member collapses to an invalid ring before the node update.
+		ts.assertRecords(t, []checkElem{
+			{"osm_landusages", -52321, Missing, nil},
+		})
+	})
+
 	t.Run("GeneralizedBananaPolygonIsValid", func(t *testing.T) {
 		// Generalized polygons are valid.
 
@@ -699,6 +713,16 @@ func TestComplete(t *testing.T) {
 		// Relations was updated after modified node.
 
 		ts.assertGeomArea(t, checkElem{"osm_buildings", -52121, "yes", nil}, 16276875196.653734)
+	})
+
+	t.Run("InvalidPolygonUpdatedByNode", func(t *testing.T) {
+		// Modified node fixes the ring without an explicit way update.
+		ts.assertGeomValid(t, checkElem{"osm_landusages", 52211, "park", nil})
+	})
+
+	t.Run("InvalidRelationUpdatedByNode", func(t *testing.T) {
+		// Modified node fixes the member ring without an explicit relation update.
+		ts.assertGeomValid(t, checkElem{"osm_landusages", -52321, "forest", nil})
 	})
 
 	t.Run("DuplicateNodeCreate", func(t *testing.T) {
