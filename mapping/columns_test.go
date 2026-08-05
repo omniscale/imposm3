@@ -352,3 +352,51 @@ func TestHstoreString(t *testing.T) {
 	}
 
 }
+
+func TestJSONBString(t *testing.T) {
+	column := config.Column{
+		Name: "tags",
+		Type: "jsonb_tags",
+	}
+	jsonbAll, err := MakeJSONBString("tags", ColumnType{}, column)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	column = config.Column{
+		Name: "tags",
+		Type: "jsonb_tags",
+		Args: map[string]interface{}{"include": []interface{}{"key1", "key2"}},
+	}
+	jsonbInclude, err := MakeJSONBString("tags", ColumnType{}, column)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, test := range []struct {
+		column   MakeValue
+		tags     osm.Tags
+		expected interface{}
+	}{
+		{jsonbAll, osm.Tags{}, `{}`},
+		{jsonbAll, osm.Tags{"key": "value"}, `{"key":"value"}`},
+		{jsonbAll, osm.Tags{`"key"`: `'"value"'`}, `{"\"key\"":"'\"value\"'"}`},
+		{jsonbAll, osm.Tags{`\`: `\\\\`}, `{"\\":"\\\\\\\\"}`},
+		{jsonbAll, osm.Tags{"Ümlåütê:": ""}, `{"Ümlåütê:":""}`},
+		{jsonbInclude, osm.Tags{"key": "value"}, `{}`},
+		{jsonbInclude, osm.Tags{"key1": "value"}, `{"key1":"value"}`},
+		{jsonbInclude, osm.Tags{"key": "value", "key2": "value"}, `{"key2":"value"}`},
+	} {
+		actual := test.column("", &osm.Element{Tags: test.tags}, nil, Match{})
+		if actual.(string) != test.expected {
+			t.Errorf("%#v != %#v for %#v", actual, test.expected, test.tags)
+		}
+	}
+
+	actual := jsonbAll("{}", &osm.Element{Tags: osm.Tags{"key1": "value", "key2": "value"}}, nil, Match{})
+	// check mutliple tags, can be in any order
+	if actual.(string) != `{"key1":"value","key2":"value"}` && actual.(string) != `{"key2":"value","key1":"value"}` {
+		t.Error("unexpected value", actual)
+	}
+
+}
