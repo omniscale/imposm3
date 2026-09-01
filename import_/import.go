@@ -21,6 +21,38 @@ import (
 	"github.com/omniscale/imposm3/writer"
 )
 
+func PostProcess(importOpts config.Import, db database.DB) {
+	if db, ok := db.(database.Generalizer); ok {
+		if err := db.Generalize(); err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		log.Fatal("database not generalizeable")
+	}
+
+	// Optimize before creating indices.
+	if importOpts.Optimize {
+		if db, ok := db.(database.Optimizer); ok {
+			if err := db.Optimize(); err != nil {
+				log.Fatal(err)
+			}
+		} else {
+			log.Fatal("database not optimizable")
+		}
+	}
+
+	// Create indices in finisher.
+	if db, ok := db.(database.Finisher); ok {
+		if err := db.Finish(); err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		log.Fatal("database not finishable")
+	}
+
+	log.Step("Importing OSM data")
+}
+
 func Import(importOpts config.Import) {
 	baseOpts := importOpts.Base
 
@@ -54,7 +86,7 @@ func Import(importOpts config.Import) {
 
 	var db database.DB
 
-	if importOpts.Write || importOpts.DeployProduction || importOpts.RevertDeploy || importOpts.RemoveBackup || importOpts.Optimize {
+	if importOpts.Write || importOpts.DeployProduction || importOpts.RevertDeploy || importOpts.RemoveBackup || importOpts.Optimize || importOpts.PostProcess {
 		if baseOpts.Connection == "" {
 			log.Fatal("[error] missing connection option in configuration")
 		}
@@ -137,8 +169,6 @@ func Import(importOpts config.Import) {
 	}
 
 	if importOpts.Write {
-		importFinished := log.Step("Importing OSM data")
-		writeFinished := log.Step("Writing OSM data")
 		progress := stats.NewStatsReporterWithEstimate(elementCounts)
 
 		err = db.Init()
@@ -231,18 +261,17 @@ func Import(importOpts config.Import) {
 			diffCache.Close()
 		}
 
-		writeFinished()
+		log.Step("Writing OSM data")
 
-		if db, ok := db.(database.Generalizer); ok {
-			if err := db.Generalize(); err != nil {
-				log.Fatal(err)
-			}
-		} else {
-			log.Fatal("database not generalizeable")
+		PostProcess(importOpts, db)
+	}
+
+	if !importOpts.Write { // these steps would already happen in Write by default
+		if importOpts.PostProcess {
+			PostProcess(importOpts, db)
 		}
 
-		// Optimize before creating indices.
-		if importOpts.Optimize {
+		if importOpts.Optimize && !importOpts.PostProcess { // optimize would already happen in PostProcess
 			if db, ok := db.(database.Optimizer); ok {
 				if err := db.Optimize(); err != nil {
 					log.Fatal(err)
@@ -250,26 +279,6 @@ func Import(importOpts config.Import) {
 			} else {
 				log.Fatal("database not optimizable")
 			}
-		}
-
-		// Create indices in finisher.
-		if db, ok := db.(database.Finisher); ok {
-			if err := db.Finish(); err != nil {
-				log.Fatal(err)
-			}
-		} else {
-			log.Fatal("database not finishable")
-		}
-		importFinished()
-	}
-
-	if importOpts.Optimize && !importOpts.Write { // Optimize already called in Write.
-		if db, ok := db.(database.Optimizer); ok {
-			if err := db.Optimize(); err != nil {
-				log.Fatal(err)
-			}
-		} else {
-			log.Fatal("database not optimizable")
 		}
 	}
 

@@ -170,6 +170,7 @@ type Import struct {
 	Appendcache      bool
 	Read             string
 	Write            bool
+	PostProcess	   	 bool
 	Optimize         bool
 	Diff             bool
 	DeployProduction bool
@@ -212,6 +213,7 @@ func ParseImport(args []string) Import {
 	flags.BoolVar(&opts.Appendcache, "appendcache", false, "append cache")
 	flags.StringVar(&opts.Read, "read", "", "read")
 	flags.BoolVar(&opts.Write, "write", false, "write")
+	flags.BoolVar(&opts.PostProcess, "postprocess", false, "Runs post-processing steps after write, always happens if -write is set. Aid in case this step fails during a -write. User can skip re-importing, by removing -write,-read and adding -postprocess.")
 	flags.BoolVar(&opts.Optimize, "optimize", false, "optimize")
 	flags.BoolVar(&opts.Diff, "diff", false, "enable diff support")
 	flags.BoolVar(&opts.DeployProduction, "deployproduction", false, "deploy production")
