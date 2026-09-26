@@ -232,6 +232,65 @@ Remember that you have to make the initial import with the ``-diff`` option. See
 
 .. note:: You should not make changes to the mapping file after the initial import. Changes are not detected and this can result aborted updates or incomplete data.
 
+Coordinator-controlled updates (``diff-stream``)
+----------------------------------------------
+
+An external scheduler can keep one importer process alive while deciding when
+it may apply the next batch of diffs::
+
+  imposm diff-stream -config config.json
+
+This retains the mapping, geographic limiter, database connection and LevelDB
+handles/block caches between requests. Unlike ``run``, it does not download diffs
+or advance autonomously. This is useful when a coordinator needs to refresh
+derived tables or generate tiles against an unchanged source between batches.
+As with ``diff``, the initial import must have used ``-diff`` and its caches must
+be retained. Only one importer should own those caches.
+
+The process first writes and flushes this line to stdout::
+
+  READY imposm-stream-v1
+
+The coordinator sends one JSON object per line to stdin::
+
+  {"id":41,"files":["/data/000000123.osc.gz","/data/000000124.osc.gz"]}
+
+After completing that request, the process writes and flushes::
+
+  OK 41
+
+The ``id`` is a positive, coordinator-supplied correlation ID, not a replication
+sequence or an exactly-once token. Each request accepts 1--64 distinct ``.osc.gz``
+filenames and is limited to 1 MiB. The coordinator must supply files in order;
+normal matching ``.state.txt`` handling and skipping of already imported diffs
+apply. Wait for ``OK`` before reading the resulting source state or sending the
+next request. Diagnostics go to stderr; do not merge stderr into the protocol
+stream.
+
+Before ``OK``, database commits, coordinate/reference buffer flushes, LevelDB WAL
+synchronization and state-file synchronization have completed. If tile expiry
+is configured, its output is flushed before acknowledgement too. There is no
+open database transaction while waiting for another request. The normal
+``-force``, ``-commit-latest``, ``-quiet`` and expiry options are supported;
+``-commit-latest`` commits the database after each request's last imported file.
+
+Close stdin and wait for process exit to stop cleanly. Invalid requests, import,
+output or synchronization errors terminate the process without acknowledging the
+failed request; later requests are not processed. This mode does not retry a
+failed import automatically. PostgreSQL and the separate LevelDB caches are
+**not one atomic transaction**: an unacknowledged batch may have partially
+modified them, and earlier files may already have committed. Recover from a
+consistent checkpoint/backup rather than assuming the whole request rolled back.
+A lost acknowledgement is not an exactly-once guarantee.
+
+A coordinator can check support without opening caches or a database::
+
+  imposm diff-stream --protocol
+
+This prints ``imposm-stream-v1``. Existing ``import``, ``diff`` and ``run``
+commands are unchanged.
+
+
 Expire tiles
 ------------
 
