@@ -20,6 +20,7 @@ func PrintCmds() {
 	fmt.Println("Available commands:")
 	fmt.Println("\timport")
 	fmt.Println("\tdiff")
+	fmt.Println("\tdiff-stream")
 	fmt.Println("\trun")
 	fmt.Println("\tquery-cache")
 	fmt.Println("\tversion")
@@ -53,6 +54,21 @@ func Main(usage func()) {
 			stats.StartHTTPPProf(opts.HTTPProfile)
 		}
 		update.Diff(opts, files)
+	case "diff-stream":
+		if len(os.Args) == 3 && os.Args[2] == "--protocol" {
+			fmt.Println("imposm-stream-v1")
+			return
+		}
+		opts, files := config.ParseDiffImport(os.Args[2:])
+		if len(files) != 0 {
+			log.Fatal("diff-stream reads filenames from stdin")
+		}
+		if opts.HTTPProfile != "" {
+			stats.StartHTTPPProf(opts.HTTPProfile)
+		}
+		if err := update.Stream(opts, os.Stdin, os.Stdout); err != nil {
+			log.Fatal(err)
+		}
 	case "run":
 		opts := config.ParseRunImport(os.Args[2:])
 
